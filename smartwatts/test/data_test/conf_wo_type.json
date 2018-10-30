@@ -1,0 +1,9 @@
+{
+ "database":
+ {
+  "host": "localhost",
+  "port": 27017,
+  "db": "smartwatts",
+  "collection": "sensor"
+ }
+}

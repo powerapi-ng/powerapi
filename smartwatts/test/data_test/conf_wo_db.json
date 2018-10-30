@@ -1,0 +1,9 @@
+{
+ "database":
+ {
+  "db_type": "mongodb",
+  "host": "localhost",
+  "port": 27017,
+  "collection": "sensor"
+ }
+}

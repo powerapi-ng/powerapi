@@ -1,0 +1,9 @@
+{
+ "database":
+ {
+  "db_type": "mongodb",
+  "host": "localhost",
+  "db": "smartwatts",
+  "collection": "sensor"
+ }
+}
