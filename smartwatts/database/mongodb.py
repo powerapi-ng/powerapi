@@ -3,26 +3,25 @@ Module MongoDB which handle a mongo database with PyMongo
 """
 
 import pymongo
-from smartwatts.database.base_db import BaseDB, MissConfigParamError
+from smartwatts.database.base_db import BaseDB
 from smartwatts.report.hwpc_report import HWPCReport
 
 
 class MongoDB(BaseDB):
-    """ MongoDB class """
+    """
+    MongoDB class
 
-    def __init__(self, config):
-        self.config = config
+    Basic parameters:
+        host_name       = "localhost"
+        port            = 27017
+        db_name         = smartwatts
+        collection_name = sensor
+    """
 
-        """ Check if config contain the necessary fields """
-        for needed in ['host', 'port', 'db', 'collection']:
-            if needed not in self.config:
-                raise MissConfigParamError
-
+    def __init__(self, host_name, port, db_name, collection_name):
         """ Database connection """
-        self.mongo_client = pymongo.MongoClient(self.config['host'],
-                                                self.config['port'])
-        self.collection = self.mongo_client[
-            self.config['db']][self.config['collection']]
+        self.mongo_client = pymongo.MongoClient(host_name, port)
+        self.collection = self.mongo_client[db_name][collection_name]
 
     def get_last_hwpc_report(self):
         """ Return the last hwpc report """

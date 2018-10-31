@@ -4,7 +4,7 @@ Module csv which allow to handle CSV db
 
 import csv
 
-from smartwatts.database.base_db import BaseDB, MissConfigParamError
+from smartwatts.database.base_db import BaseDB
 from smartwatts.report.hwpc_report import HWPCReport
 import smartwatts.utils as utils
 
@@ -13,25 +13,26 @@ class CsvDB(BaseDB):
     """
     CsvDB class
     !!! BAD PERFORMANCE (load in memory) !!!
+
+    basic parameters:
+      files_name: ['file1.csv', 'file2.csv']
     """
 
-    def __init__(self, config):
-        self.config = config
-
-        """ Check if config contain the necessary fields """
-        for needed in ['files']:
-            if needed not in self.config:
-                raise MissConfigParamError
-
+    def __init__(self, files_name):
         """
-        Dict with:
-            keys: (timestamp, sensor, target)
-            values: HWPCReport
+        Args:
+          @files_name: list of file name .csv, each one
+                       is a different group.
+
+        Attributs:
+          database:
+              keys: (timestamp, sensor, target)
+              values: HWPCReport
         """
         self.database = {}
 
         """ Get all .csv filename """
-        for path_file in self.config['files']:
+        for path_file in files_name:
             with open(path_file) as csv_file:
                 csv_reader = csv.reader(csv_file)
                 filename = path_file.split('/')[-1]

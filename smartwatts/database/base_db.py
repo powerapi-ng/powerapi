@@ -3,12 +3,6 @@ Module base_db which define every common function
 that need to be implemented by each DB module
 """
 
-
-class MissConfigParamError(Exception):
-    """ Exception """
-    pass
-
-
 class BaseDB:
     """
     BaseDB class.
