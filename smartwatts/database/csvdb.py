@@ -4,8 +4,8 @@ Module csv which allow to handle CSV db
 
 import csv
 
-from smartwatts.db.base_db import BaseDB, MissConfigParamError
-from smartwatts.model import HWPCReport
+from smartwatts.database.base_db import BaseDB, MissConfigParamError
+from smartwatts.report.hwpc_report import HWPCReport
 import smartwatts.utils as utils
 
 

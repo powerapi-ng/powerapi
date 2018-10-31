@@ -1,5 +1,6 @@
-from smartwatts.actors.formulas.abstract_formula import AbstractFormula
+from smartwatts.formula.abstract_formula import AbstractFormula
 import smartwatts.config as config
+
 
 class TestFormulaFactory:
 

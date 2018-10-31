@@ -6,8 +6,8 @@ import sys
 import os
 import pytest
 
-from smartwatts.db.db import Database, UnknownDatabaseTypeError
-from smartwatts.db.base_db import MissConfigParamError
+from smartwatts.database.db import Database, UnknownDatabaseTypeError
+from smartwatts.database.base_db import MissConfigParamError
 
 PATH_TO_TEST = "/smartwatts/test/"
 

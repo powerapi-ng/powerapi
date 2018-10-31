@@ -2,7 +2,7 @@
 Module powerspy_report which define the PowerSpyReport class
 """
 
-from smartwatts.model import Report
+from smartwatts.report import Report
 from enum import Enum
 
 

@@ -3,7 +3,7 @@ Module class Formula
 """
 
 import time
-from smartwatts.actors.abstract import ActorReceive
+from smartwatts.actor.actor_receive import ActorReceive
 import smartwatts.config as config
 from smartwatts.message import EstimationMessage
 

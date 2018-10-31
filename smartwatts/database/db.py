@@ -6,9 +6,9 @@ different kind of database (mongodb, csv, ...)
 import json
 import sys
 
-import smartwatts.db.mongodb as mongodb
-import smartwatts.db.csvdb as csvdb
-from smartwatts.db.base_db import BaseDB, MissConfigParamError
+import smartwatts.database.mongodb as mongodb
+import smartwatts.database.csvdb as csvdb
+from smartwatts.database.base_db import BaseDB, MissConfigParamError
 
 
 class UnknownDatabaseTypeError(Exception):
