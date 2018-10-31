@@ -2,14 +2,14 @@
 Module class ActorReporter
 """
 
-from smartwatts.actors.abstract import PullActor
+from smartwatts.actor.actor_pull import PullActor
 from smartwatts.message import ESTIMATION
 import smartwatts.config as config
 
 
 def gen_reporter(context, verbose=False):
     """ Factory function for generate Reporter """
-    reporter = StdOutActorReporter(context, 'reporter',
+    reporter = ActorReporterStdOut(context, 'reporter',
                                    config.REPORTER_SOCKET_ADDRESS,
                                    config.REPORTER_PULL_SOCKET_ADDRESS,
                                    verbose=verbose)
@@ -17,7 +17,7 @@ def gen_reporter(context, verbose=False):
     return reporter
 
 
-class StdOutActorReporter(PullActor):
+class ActorReporterStdOut(PullActor):
     """ StdOutActorReporter class """
 
     def __init__(self, context, name, socket_address, pull_socket_address,

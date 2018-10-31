@@ -1,5 +1,5 @@
 import unittest
-from model import DepthLevel, extract, HWPCReportCore, HWPCReportSocket, HWPCReport
+from smartwatts.report import DepthLevel, extract, HWPCReportCore, HWPCReportSocket, HWPCReport
 
 
 """

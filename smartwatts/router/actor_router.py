@@ -3,12 +3,13 @@ Module class Router
 """
 import zmq
 import smartwatts.config as config
-from smartwatts.actors.abstract import PullActor
+from smartwatts.actor.actor_pull import PullActor
 from smartwatts.message import *
 
 
 class FormulaTypeNotFoundException(Exception):
     pass
+
 
 def gen_router(context, reporter, route_table, formula_type_table,
                verbose=False):
@@ -25,14 +26,15 @@ def gen_router(context, reporter, route_table, formula_type_table,
                            table that contain mapping from sensor name matching
                            rules to the sensor corresponding formula factory
     """
-    router = Router(context, 'router', config.ROUTER_SOCKET_ADDRESS,
-                    config.ROUTER_PUSH_SOCKET_ADDRESS, reporter, route_table,
-                    formula_type_table, verbose)
+    router = RouterActor(context, 'router', config.ROUTER_SOCKET_ADDRESS,
+                         config.ROUTER_PUSH_SOCKET_ADDRESS, reporter, route_table,
+                         formula_type_table, verbose)
     router.start()
     router.connect()
     return router
 
-class Router(PullActor):
+
+class RouterActor(PullActor):
     """
     receive interface:
         report_data: route this message to the corresponding Formula Actor,
@@ -41,7 +43,7 @@ class Router(PullActor):
     """
 
     def __init__(self, context, name, cmd_socket_address, pull_socket_address,
-                 reporter, route_table = {}, formula_type_table = [],
+                 reporter, route_table={}, formula_type_table=[],
                  verbose=False):
 
         """
@@ -78,7 +80,7 @@ class Router(PullActor):
                 pattern_found = True
 
         if not pattern_found:
-            raise NoFormulaTypeFoundException('sensor name : ' + sensor_name)
+            raise FormulaTypeNotFoundException('sensor name : ' + sensor_name)
 
     def terminated_behaviour(self):
         """

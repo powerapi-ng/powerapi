@@ -4,7 +4,7 @@ Module hwpc_sensor which define the HWPCReport class
 
 from copy import deepcopy
 from enum import IntEnum
-from smartwatts.model import Report
+from smartwatts.report.report import Report
 from smartwatts.message import HWPCReportMessage
 import smartwatts.utils as utils
 

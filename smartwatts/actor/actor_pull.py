@@ -4,7 +4,7 @@ socket
 """
 
 import zmq
-from smartwatts.actors.abstract import ActorReceive
+from smartwatts.actor.actor_receive import ActorReceive
 
 
 class PullActor(ActorReceive):

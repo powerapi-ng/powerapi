@@ -3,7 +3,7 @@ Module class ActorReceive
 """
 
 import zmq
-from smartwatts.actors.abstract import Actor
+from smartwatts.actor.actor import Actor
 from smartwatts.message import TermMessage, TERM
 
 
