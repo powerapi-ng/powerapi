@@ -20,24 +20,29 @@ class MongoDB(BaseDB):
 
     def __init__(self, host_name, port, db_name, collection_name):
         """ Database connection """
-        self.mongo_client = pymongo.MongoClient(host_name, port)
-        self.collection = self.mongo_client[db_name][collection_name]
+        self.host_name = host_name
+        self.port = port
+        self.db_name = db_name
+        self.collection_name = collection_name
 
-    def get_last_hwpc_report(self):
-        """ Return the last hwpc report """
+        self.mongo_client = None
+        self.collection = None
 
-        """ Get the last datetime value """
-        last_datetime = self.collection.find().sort(
-                'timestamp',
-                pymongo.DESCENDING).limit(1).next()['timestamp']
+    def load(self):
+        """ MongoDB connection """
+        self.mongo_client = pymongo.MongoClient(self.host_name, self.port)
+        self.collection = self.mongo_client[self.db_name][self.collection_name]
 
-        """ Find all report with this datetime """
-        reports = list(self.collection.find(
-            {'timestamp': last_datetime}))
+    def get_reports_with_sensor(self, sensor):
+        """ Get all reports with this sensor """
+        reports = list(self.collection.aggregate(
+            [
+                {'$match': {'sensor': sensor}},
+                {'$addFields': {'groups': '$$ROOT'}},
+                {'$project': {'_id': 0, 'timestamp': 1, 'sensor': 1,
+                              'target': 1, 'groups': 1}},
+                {'$project': {'groups': {'_id': 0, 'timestamp': 0,
+                                         'sensor': 0, 'target': 0}}}
+            ]))
 
-        """ Feed the HWPCReport Object """
-        hwpc = HWPCReport()
-        for report in reports:
-            hwpc.feed_from_mongodb(report)
-
-        return hwpc
+        return reports

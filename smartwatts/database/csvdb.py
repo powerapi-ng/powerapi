@@ -8,6 +8,8 @@ from smartwatts.database.base_db import BaseDB
 from smartwatts.report.hwpc_report import HWPCReport
 import smartwatts.utils as utils
 
+COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
+
 
 class CsvDB(BaseDB):
     """
@@ -30,43 +32,60 @@ class CsvDB(BaseDB):
               values: HWPCReport
         """
         self.database = {}
+        self.files_name = files_name
 
+    def load(self):
         """ Get all .csv filename """
-        for path_file in files_name:
+        for path_file in self.files_name:
             with open(path_file) as csv_file:
                 csv_reader = csv.reader(csv_file)
-                filename = path_file.split('/')[-1]
+                group_name = path_file.split('/')[-1]
 
-                """ Check if the extension is good """
+                """ First line is the fields names """
                 fieldname = csv_reader.__next__()
-                for row in csv_reader:
-                    timestamp = utils.timestamp_to_datetime(int(row[0]))
-                    key = (timestamp, row[1], row[2])
+
+                for csv_row in csv_reader:
+                    row = {fieldname[i]: csv_row[i] for i in range(
+                        len(fieldname))}
+                    timestamp = utils.timestamp_to_datetime(
+                        int(row['timestamp']))
+                    key = (timestamp, row['sensor'], row['target'])
 
                     """ If Report doesn't exist, create it """
                     if key not in self.database:
-                        hwpc_report = HWPCReport(timestamp)
-                        self.database[key] = hwpc_report
+                        self.database[key] = {
+                            'timestamp': timestamp,
+                            'sensor': row['sensor'],
+                            'target': row['target'],
+                            'groups': {}}
 
-                    """
-                    Feed him with dict with fieldnames as
-                    keys and row as values.
-                    """
-                    self.database[key].feed_from_csv(
-                        {fieldname[i]: row[i]
-                         for i in range(len(fieldname))},
-                        filename)
+                    """ If group doesn't exist, create it """
+                    if group_name not in self.database[key]['groups']:
+                        self.database[key]['groups'][group_name] = {}
 
-    def get_last_hwpc_report(self):
-        """ Get the last hwpc report in the base """
-        # Find last timestamp in core
-        last_timestamp = utils.timestamp_to_datetime(0)
-        last_sensor = ""
-        last_target = ""
-        for timestamp, sensor, target in self.database:
-            if last_timestamp < timestamp:
-                last_timestamp = timestamp
-                last_sensor = sensor
-                last_target = target
+                    """ If socket doesn't exist, create it """
+                    if row['socket'] not in self.database[key]['groups'][
+                            group_name]:
+                        self.database[key]['groups'][group_name][
+                            row['socket']] = {}
 
-        return self.database[(last_timestamp, last_sensor, last_target)]
+                    """ If cpu doesn't exist, create it """
+                    if row['cpu'] not in self.database[key]['groups'][
+                            group_name][row['socket']]:
+                        self.database[key]['groups'][group_name][
+                            row['socket']][row['cpu']] = {}
+
+                    """ Add events """
+                    for k, val in row.items():
+                        if k not in COMMON_ROW:
+                            self.database[key]['groups'][group_name][
+                                row['socket']][row['cpu']][k] = int(val)
+
+    def get_reports_with_sensor(self, sensor):
+        """ Get all reports with this sensor """
+        reports = []
+        for key, _ in self.database.items():
+            if key[1] == sensor:
+                reports.append(self.database[key])
+
+        return reports
