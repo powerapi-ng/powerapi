@@ -1,6 +1,3 @@
-"""
-Module actor_puller
-"""
-class ActorPuller:
+class TestGroupBy:
     def __init__(self):
         raise NotImplementedError

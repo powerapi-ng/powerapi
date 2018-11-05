@@ -7,6 +7,8 @@ import multiprocessing
 import pickle
 import zmq
 
+from smartwatts.actor.basic_messages import PoisonPill
+
 
 class Actor(multiprocessing.Process):
     """
@@ -14,30 +16,31 @@ class Actor(multiprocessing.Process):
     An actor is a process.
     """
 
-    def __init__(self, context, name, cmd_socket_address, verbose=False):
+    def __init__(self, name, verbose=False):
         """
         Initialization and start of the process.
 
         Parameters:
-            context(zmq.Context): context of the processus that create
-            the actor
-            cmd_socket_address(str)
+            name(str): unique name that will be used to indentify the actor
+                       communication socket
         """
         multiprocessing.Process.__init__(self, name=name)
+
+        # Value used
+        # This socket is used to connect to the pull socket of this actor. It
+        # won't be created on the actor's process but on the process that want
+        # to connect to the pull socket of this actor
+        self.push_socket = None
+
         self.verbose = verbose
         self.alive = True
+        self.receive = self.initial_receive
+        self.context = None
+        self.pull_socket_address = 'ipc://@' + self.name
+        self.pull_socket = None
 
-        # If we consider this actor as a server, this context is used to
-        # produce socket to communicate from the client
-        self.context = context
-        self.poller = None
-        self.sockets = {}
-        self.cmd_socket_address = cmd_socket_address
 
-        self.cmd_socket = context.socket(zmq.PAIR)
-        self.cmd_socket.connect(cmd_socket_address)
 
-        # self.start()
 
     def log(self, message):
         """
@@ -46,26 +49,6 @@ class Actor(multiprocessing.Process):
         if self.verbose:
             print('['+str(os.getpid())+']' + ' ' + message)
 
-    def add_socket(self, socket, name, address, poll_flag, connect_mode):
-        """
-        connect the actor to a socket and add this socket to the socket
-        dictionary and the actor's poller
-
-        params:
-            socket(zmq.Socket)
-            name(str): name of the socket, used as a key in the socket
-                       dictionary
-            address(str): socket address
-            connect_mode(boolean): True to connect to socket, False to bind to
-                                   socket
-        """
-        self.sockets[name] = socket
-        self.poller.register(self.sockets[name], poll_flag)
-        if connect_mode:
-            self.sockets[name].connect(address)
-        else:
-            self.sockets[name].bind(address)
-
     def run(self):
         """
         code executed by the actor
@@ -73,24 +56,35 @@ class Actor(multiprocessing.Process):
 
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
-        self.poller = zmq.Poller()
 
-        # create the command socket (a pair socket used to communicate
-        # with
-        self.add_socket(self.context.socket(zmq.PAIR), 'cmd_socket',
-                        self.cmd_socket_address, zmq.POLLIN, False)
+        # create the pull socket (to comunicate with this actor, others process
+        # have to connect a push socket to this socket)
+        self.pull_socket = self.context.socket(zmq.PULL)
+        self.pull_socket.bind(self.pull_socket_address)
 
         self.log('I\'m ' + self.name)
-        self.log("running on address " + self.cmd_socket_address)
+        self.log("running on address " + self.pull_socket_address)
 
-        # Define actor specific socket
+        # actors specific initialisation
         self.init_actor()
 
         # Run loop
         while self.alive:
-            self.behaviour()
+            msg = self.__recv_serialized(self.pull_socket)
+            if isinstance(msg, PoisonPill):
+                self.alive = False
+            else:
+                self.receive(msg)
 
         self.terminated_behaviour()
+
+    def init_actor(self):
+        """Need to be overrided.
+
+        Define actor specific processing that is run before entering the Run
+        Loop
+        """
+        raise NotImplementedError
 
     def terminated_behaviour(self):
         """
@@ -98,31 +92,54 @@ class Actor(multiprocessing.Process):
         """
         self.log("terminated")
 
-    def behaviour(self):
+    def initial_receive(self, msg):
         """
         Need to be overrided.
-        Define the behaviour of the actor.
+        Define how to process each msg type
         """
         raise NotImplementedError
 
-    def init_actor(self):
-        """
-        Need to be overrided.
-        Function run before entering the run loop
-        """
-        raise NotImplementedError
 
-    def send_serialized(self, socket, msg):
+    def __send_serialized(self, socket, msg):
         """
         Allow to send a serialized msg with pickle
         """
         socket.send(pickle.dumps(msg))
         self.log('sent ' + str(msg) + ' to ' + self.name)
 
-    def recv_serialized(self, socket):
+    def __recv_serialized(self, socket):
         """
         Allow to recv a serialized msg with pickle
         """
         msg = pickle.loads(socket.recv())
         self.log('received : ' + str(msg))
         return msg
+
+    def connect(self, context):
+        """connect to the pull socket of this actor
+
+        open a push socket on the process that want to communicate with this
+        actor
+
+        parameters:
+            context(zmq.Context): ZMQ context of the process that want to
+                                  communicate with this actor
+
+        """
+        self.push_socket = context.socket(zmq.PUSH)
+        self.push_socket.connect(self.pull_socket_address)
+        self.log('connected to ' + self.pull_socket_address)
+
+    def send(self, msg):
+        """Send a msg to this actor
+
+        This function will not be used by this actor but by process that want to
+        send message to this actor
+        """
+        self.send_serialized(self.push_socket, msg)
+
+    def kill(self):
+        """
+        kill this actor by sending a PoisonPill message
+        """
+        self.send(PoisonPill())
