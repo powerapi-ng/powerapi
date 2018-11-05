@@ -33,10 +33,14 @@ class Report:
         """
         raise NotImplementedError
 
-    def feed_from_csv(self, csv, group):
-        """ Feed from csv db """
+    def serialize(self):
+        """
+        return the JSON format of the report
+        """
         raise NotImplementedError
 
-    def feed_from_mongodb(self, json):
-        """ Feed from mongodb """
+    def deserialize(self, json):
+        """
+        feed the report with the JSON input
+        """
         raise NotImplementedError

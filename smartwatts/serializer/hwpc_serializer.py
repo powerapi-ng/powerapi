@@ -1,3 +1,0 @@
-"""
-Module hwpc_serializer
-"""
