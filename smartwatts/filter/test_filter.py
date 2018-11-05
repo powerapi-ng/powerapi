@@ -1,6 +1,3 @@
-"""
-Module actor_puller
-"""
-class ActorPuller:
+class TestFilter:
     def __init__(self):
         raise NotImplementedError
