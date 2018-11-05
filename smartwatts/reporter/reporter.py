@@ -17,7 +17,7 @@ def gen_reporter(context, verbose=False):
     return reporter
 
 
-class ActorReporterStdOut(PullActor):
+class ActorReporter(PullActor):
     """ StdOutActorReporter class """
 
     def __init__(self, context, name, socket_address, pull_socket_address,
