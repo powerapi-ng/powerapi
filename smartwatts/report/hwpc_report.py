@@ -34,9 +34,15 @@ def extract(report, depth):
                 if report_id not in final_reports:
                     final_reports[report_id] = report.cut_child()
                 key = socket_report.hw_id
+
+
                 final_reports[report_id].set_child_report(key,
                                                           socket_report)
-            return list(final_reports.items())
+
+            result = []
+            for (final_report_id, final_report) in final_reports.items():
+                result.append(((final_report.sensor,) + final_report_id, final_report))
+            return result
 
         for (report_id, extracted_report) in extracted_reports:
             final_report = report.cut_child()
