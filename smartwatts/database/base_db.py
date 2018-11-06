@@ -3,6 +3,7 @@ Module base_db which define every common function
 that need to be implemented by each DB module
 """
 
+
 class BaseDB:
     """
     BaseDB class.
@@ -38,3 +39,4 @@ class BaseDB:
         """
         Allow to load the database
         """
+        raise NotImplementedError
