@@ -1,1 +1,1 @@
-from test_filter import TestFilter
+from smartwatts.filter import Filter

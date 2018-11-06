@@ -1,0 +1,26 @@
+"""
+Module filter
+"""
+
+
+class Filter:
+    """ Filter abstract class """
+
+    def get_type(self):
+        """
+        Need to be overrided.
+        Return the report type for a filter.
+        """
+        raise NotImplementedError
+
+    def filter(self, rule, dispatcher):
+        """
+        Need to be overrided.
+        Define a rule for a new report, and send it to the dispatcher
+        if the rule accept it.
+
+        Parameters:
+            @rule: function which return true of false
+            @dispatcher: socket to send the report
+        """
+        raise NotImplementedError
