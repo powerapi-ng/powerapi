@@ -1,3 +1,2 @@
-class TestGroupBy:
-    def __init__(self):
-        raise NotImplementedError
+def test_group_by():
+    raise NotImplementedError
