@@ -5,6 +5,7 @@ import zmq
 from smartwatts.actor import Actor
 from smartwatts.actor.basic_messages import UnknowMessageTypeException
 
+
 class ActorFormulaDispatcher(Actor):
     """
     receive interface:
