@@ -39,9 +39,6 @@ class Actor(multiprocessing.Process):
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
 
-
-
-
     def log(self, message):
         """
         Print message if verbose mode is enable.
@@ -99,7 +96,6 @@ class Actor(multiprocessing.Process):
         """
         raise NotImplementedError
 
-
     def __send_serialized(self, socket, msg):
         """
         Allow to send a serialized msg with pickle
@@ -133,10 +129,10 @@ class Actor(multiprocessing.Process):
     def send(self, msg):
         """Send a msg to this actor
 
-        This function will not be used by this actor but by process that want to
-        send message to this actor
+        This function will not be used by this actor but by process that
+        want to send message to this actor
         """
-        self.send_serialized(self.push_socket, msg)
+        self.__send_serialized(self.push_socket, msg)
 
     def kill(self):
         """
