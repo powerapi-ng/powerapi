@@ -58,6 +58,7 @@ class ActorFormulaDispatcher(Actor):
         return architecture informations that correpond to the given report
         """
         return 0
+
     def __create_formula(self, formula_id, arch_data):
         """
         create formula from router

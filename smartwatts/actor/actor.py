@@ -85,6 +85,7 @@ class Actor(multiprocessing.Process):
 
     def terminated_behaviour(self):
         """
+        Can be overrided.
         function called before killing the actor
         """
         self.log("terminated")
