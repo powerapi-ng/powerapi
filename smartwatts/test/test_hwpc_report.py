@@ -1,5 +1,6 @@
 import pytest
-from smartwatts.report import DepthLevel, extract, HWPCReportCore, HWPCReportSocket, HWPCReport
+from smartwatts.report import HWPCReportCore, HWPCReportSocket, HWPCReport
+from smartwatts.group_by import hwpc_group_by, HWPCDepthLevel
 
 
 PATH_TO_TEST = "/smartwatts/test/"
@@ -112,7 +113,8 @@ class TestDatabase():
             report_assert(report, validation_report)
 
     def test_extract_root(self):
-        extracted_reports = extract(report, DepthLevel.ROOT)
+        extract = hwpc_group_by(HWPCDepthLevel.ROOT)
+        extracted_reports = extract(report)
 
         assert len(extracted_reports) == 1
         [(key, extracted_report)] = extracted_reports
@@ -120,7 +122,8 @@ class TestDatabase():
         report_assert(report, extracted_report)
 
     def test_extract_socket(self):
-        extracted_reports = extract(report, DepthLevel.SOCKET)
+        extract = hwpc_group_by(HWPCDepthLevel.SOCKET)
+        extracted_reports = extract(report)
 
         assert len(extracted_reports) == 2
 
@@ -151,7 +154,8 @@ class TestDatabase():
 
 
     def test_extract_core(self):
-        extracted_reports = extract(report, DepthLevel.CORE)
+        extract = hwpc_group_by(HWPCDepthLevel.CORE)
+        extracted_reports = extract(report)
 
         assert len(extracted_reports) == 4
 
