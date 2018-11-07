@@ -1,6 +1,8 @@
 """
 module for using labeled tree data structure
 """
+from copy import deepcopy
+from functools import reduce
 
 
 class Node:
@@ -37,8 +39,10 @@ class Node:
         self.childs = []
         self.val = val
 
-    def add_child(self, path, val):
+    def add_leaf(self, path, val):
         """add a leaf to the tree
+
+        create unexistant node between the root node and the new leaf
 
         Parameters:
             path(list): path to the node, its length must be equal to the depth
@@ -46,7 +50,27 @@ class Node:
                         label of the leaf
             val: the value that will be stored in the leaf
         """
-        raise NotImplementedError
+        def aux(node, depth):
+            label = path[depth]
+            # if node is the leaf parent, create the leaf and add it to its
+            # parent
+            if depth == (len(path) - 1):
+                node.childs.append(Node(label, val=val))
+            # otherwise find the next node in the path and go down in the tree
+            else:
+                child_found = False
+                for child in node.childs:
+                    if child.label == label:
+                        aux(child, depth + 1)
+                        child_found = True
+                        break
+                # if no intermediate node, create it
+                if not child_found:
+                    child = Node(label)
+                    node.childs.append(child)
+                    aux(child, depth + 1)
+
+        aux(self, 1)
 
     def retrieve_leaf_values(self, path):
         """retrieves all leafs value under the node designating by path
@@ -56,4 +80,40 @@ class Node:
 
         Return (list): list of leafs value
         """
-    raise NotImplementedError
+        def aux(node, depth):
+            label = path[depth]
+            # if the current node is not in the path go back to the upper node
+            if label != node.label:
+                return []
+            # if the current node is a leaf return its value
+            if depth == (len(path) - 1):
+                return node._get_leafs()
+
+            # go down in all child nodes
+            return reduce(lambda acc, child: acc + aux(child, depth+1),
+                          node.childs, [])
+        return aux(self, 0)
+
+    def _get_leafs(self):
+        """retrives all leafs under this node"""
+        if self.is_leaf:
+            return [self.val]
+        # concat all leafs value of the node's childs
+        return reduce(lambda acc, child: acc + child._get_leafs(), self.childs,
+                      [])
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        if (self.label != other.label or self.val != other.val or
+            self.is_leaf != other.is_leaf):
+            return False
+        print('ok')
+        sorted_child = deepcopy(self.childs)
+        sorted_child.sort(key=lambda node: node.label)
+        sorted_child2 = deepcopy(other.childs)
+        sorted_child2.sort(key=lambda node: node.label)
+        for node, other_node in zip(sorted_child, sorted_child2):
+            if node != other_node:
+                return False
+        return True
