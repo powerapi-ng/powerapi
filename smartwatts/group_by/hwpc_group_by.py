@@ -1,16 +1,38 @@
+"""
+HWPC group by rules utilities
+
+"""
+
 from enum import IntEnum
+from smartwatts.group_by import AbstractGroupBy
+
 
 class HWPCDepthLevel(IntEnum):
+    """Enumeration that specify which report level use to group by the reports
+    """
+
     ROOT = 3
     SOCKET = 2
     CORE = 1
 
 
+class HWPCGroupBy(AbstractGroupBy):
+    """
+    Group by rule for HWPC report
 
-def hwpc_group_by(depth):
-    return lambda report: _extract(report, depth)
+    Attributes:
+        extract(fun Report -> [(tuple, Report)])
+    """
+    def __init__(self, depth, primary=False):
+        """
+        Parameters:
+            depth:(HWPCDepthLevel)
+        """
+        AbstractGroupBy.__init__(primary)
 
-    
+        self.extract = lambda report: _extract(report, depth)
+
+
 def _extract(report, depth):
     def extract_aux(report, current_depth):
         if current_depth == depth:
@@ -30,14 +52,13 @@ def _extract(report, depth):
                 if report_id not in final_reports:
                     final_reports[report_id] = report.cut_child()
                 key = socket_report.hw_id
-
-
                 final_reports[report_id].set_child_report(key,
                                                           socket_report)
 
             result = []
             for (final_report_id, final_report) in final_reports.items():
-                result.append(((final_report.sensor,) + final_report_id, final_report))
+                result.append(((final_report.sensor,) + final_report_id,
+                               final_report))
             return result
 
         for (report_id, extracted_report) in extracted_reports:
