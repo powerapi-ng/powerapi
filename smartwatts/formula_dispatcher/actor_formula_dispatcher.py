@@ -1,9 +1,9 @@
 """
 Module class Router
 """
-import zmq
 from smartwatts.actor import Actor
 from smartwatts.actor.basic_messages import UnknowMessageTypeException
+
 
 class ActorFormulaDispatcher(Actor):
     """
@@ -58,6 +58,7 @@ class ActorFormulaDispatcher(Actor):
         return architecture informations that correpond to the given report
         """
         return 0
+
     def __create_formula(self, formula_id, arch_data):
         """
         create formula from router
@@ -67,5 +68,5 @@ class ActorFormulaDispatcher(Actor):
         self.formulas[formula_id] = formula
         formula.connect(self.context)
 
-    def group_by(self, report_class, group_by_rule, primary=False):
+    def group_by(self, report_class, group_by_rule):
         self.route_table.append((report_class, group_by_rule))
