@@ -28,15 +28,14 @@ class BaseDB:
      }
     }
     """
-
-    def get_reports_with_sensor(self, sensor):
-        """
-        Return all reports with this sensor
-        """
-        raise NotImplementedError
-
     def load(self):
         """
         Allow to load the database
+        """
+        raise NotImplementedError
+
+    def get_next(self):
+        """
+        Return the next report on the db
         """
         raise NotImplementedError
