@@ -26,8 +26,8 @@ def main():
     reporter.store(TestReport, out1)
     reporter.store(PowerReport, out1)
 
-    dispatcher = ActorFormulaDispatcher(reporter, lambda name, reporter,
-                                        arch_data, verbose:
+    dispatcher = ActorFormulaDispatcher('dispatcher', reporter, lambda name,
+                                        reporter, arch_data, verbose:
                                         ActorTestFormula(name, reporter,
                                                          arch_data,
                                                          verbose=verbose))
