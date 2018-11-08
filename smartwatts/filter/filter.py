@@ -12,6 +12,7 @@ class Filter:
     def get_type(self):
         """
         Need to be overrided.
+
         Return the report type for a filter.
         """
         raise NotImplementedError
@@ -29,7 +30,7 @@ class Filter:
 
     def route(self, msg):
         """
-        Return the name of the dispatcher to whom
+        Return the dispatcher to whom
         send the msg, or None
 
         Parameters:

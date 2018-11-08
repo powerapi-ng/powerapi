@@ -21,29 +21,29 @@ class ActorPuller(Actor):
         self.filter = filt
 
     def init_actor(self):
-        """ Connect to all dispatcher in filter """
+        """
+        Override
+
+        Connect to all dispatcher in filter and load the db
+        """
         for _, dispatcher in self.filter.filters:
             dispatcher.connect(self.context)
 
-        # load the db
         self.database.load()
-        self.log("DB loaded.")
 
     def initial_receive(self, msg):
         """
-        Override behaviour of ActorPuller
-
-        This actor read each report in db and simply filter it
-        in his filter, then send it (or not) to the dispatcher.
+        Override
         """
-        self.log("Got msg")
+        return
 
     def behaviour(self):
         """
         Override
-        """
-        self.log("behaviour bd :D")
 
+        This actor read each report in db and simply filter it
+        in his filter, then send it (or not) to the dispatcher.
+        """
         # Read one input
         report = self.database.get_next()
 
