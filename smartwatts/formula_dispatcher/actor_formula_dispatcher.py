@@ -127,6 +127,13 @@ class ActorFormulaDispatcher(Actor):
         self.formula_tree.add(list(formula_id), formula)
 
     def group_by(self, report_class, group_by_rule):
+        """Add a group_by rule to the formula dispatcher
+
+        Parameters:
+            report_class(type): type of the message that the groub_by rule must
+                                handle
+            group_by_rule(group_by.AbstractGroupBy): group_by rule to add
+        """
         if group_by_rule.is_primary:
             if self.primary_group_by_rule is not None:
                 raise PrimaryGroupByRuleAlreadyDefinedException
