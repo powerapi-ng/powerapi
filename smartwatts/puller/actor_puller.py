@@ -25,6 +25,10 @@ class ActorPuller(Actor):
         for _, dispatcher in self.filter.filters:
             dispatcher.connect(self.context)
 
+        # load the db
+        self.database.load()
+        self.log("DB loaded.")
+
     def initial_receive(self, msg):
         """
         Override behaviour of ActorPuller
