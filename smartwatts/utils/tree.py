@@ -5,6 +5,42 @@ from copy import deepcopy
 from functools import reduce
 
 
+class Tree:
+    """
+    Encapsulate the tree data structure
+    """
+
+    def __init__(self):
+        self.root = None
+
+    def add(self, path, value):
+        """add a leaf to the tree
+
+        Parameters:
+            path(list): path to the node, its length must be equal to the depth
+                        of the tree and the last label of the path will be the
+                        label of the leaf
+            val: the value that will be stored in the leaf
+        """
+        if len(path) == 0:
+            raise ValueError
+
+        if self.root is None:
+            self.root = Node(path[0])
+
+        self.root.add_leaf(path, value)
+
+    def get(self, path):
+        """retrieves all leafs value under the node designating by path
+
+        Parameters:
+            path(list)
+
+        Return (list): list of leafs value
+        """
+        return self.root.retrieve_leaf_values(path)
+
+
 class Node:
     """A labeled tree data structure that store data in its leaf
 
@@ -90,7 +126,7 @@ class Node:
                 return node._get_leafs()
 
             # go down in all child nodes
-            return reduce(lambda acc, child: acc + aux(child, depth+1),
+            return reduce(lambda acc, child: acc + aux(child, depth + 1),
                           node.childs, [])
         return aux(self, 0)
 
