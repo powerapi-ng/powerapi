@@ -10,7 +10,7 @@ class HWPCFilter(Filter):
     """ HWPCFilter class """
 
     def __init__(self):
-        Filter.__init__()
+        Filter.__init__(self)
 
     def get_type(self):
         """ Override """
