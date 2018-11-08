@@ -8,7 +8,7 @@ from smartwatts.actor import Actor
 class ActorPuller(Actor):
     """ ActorPuller class """
 
-    def __init__(self, name, database, filt, verbose=False):
+    def __init__(self, name, database, filt, timeout, verbose=False):
         """
         Initialization
 
@@ -16,7 +16,7 @@ class ActorPuller(Actor):
             @database: BaseDB object
             @filter: Filter object
         """
-        Actor.__init__(self, name, verbose)
+        Actor.__init__(self, name, verbose, timeout=timeout)
         self.database = database
         self.filter = filt
 
@@ -36,6 +36,13 @@ class ActorPuller(Actor):
         This actor read each report in db and simply filter it
         in his filter, then send it (or not) to the dispatcher.
         """
+        self.log("Got msg")
+
+    def behaviour(self):
+        """
+        Override
+        """
+        self.log("behaviour bd :D")
 
         # Read one input
         report = self.database.get_next()
