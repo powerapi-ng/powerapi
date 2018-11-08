@@ -16,7 +16,8 @@ reporter = ActorReporter()
 reporter.store(TestReport, out1)
 reporter.store(PowerReport, out1)
 
-fd = ActorFormulaDispatcher(reporter, lambda name, reporter, arch_data, verbose:
+fd = ActorFormulaDispatcher(reporter,
+                            lambda name, reporter, arch_data, verbose:
                             ActorTestFormula(name, reporter, arch_data,
                                              verbose=verbose))
 fd.group_by(TestReport, TestGroupBy(), primary=True)

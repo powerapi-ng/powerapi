@@ -27,22 +27,28 @@ class MongoDB(BaseDB):
 
         self.mongo_client = None
         self.collection = None
+        self.cursor = None
 
     def load(self):
         """ MongoDB connection """
         self.mongo_client = pymongo.MongoClient(self.host_name, self.port)
         self.collection = self.mongo_client[self.db_name][self.collection_name]
+        self.cursor = self.collection.find({})
 
-    def get_reports_with_sensor(self, sensor):
-        """ Get all reports with this sensor """
-        reports = list(self.collection.aggregate(
-            [
-                {'$match': {'sensor': sensor}},
-                {'$addFields': {'groups': '$$ROOT'}},
-                {'$project': {'_id': 0, 'timestamp': 1, 'sensor': 1,
-                              'target': 1, 'groups': 1}},
-                {'$project': {'groups': {'_id': 0, 'timestamp': 0,
-                                         'sensor': 0, 'target': 0}}}
-            ]))
+    def get_next(self):
+        """ Return the next report on the db """
+        json = self.cursor.next()
 
-        return reports
+        # Re arrange the json before return it
+        json.pop('_id', None)
+        real_json = {}
+        real_json['groups'] = {}
+        common_keys = ['timestamp', 'sensor', 'target']
+
+        for key, val in json.items():
+            if key in common_keys:
+                real_json[key] = val
+            else:
+                real_json['groups'][key] = val
+
+        return real_json
