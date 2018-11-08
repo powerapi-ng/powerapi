@@ -1,7 +1,23 @@
 import pytest
 
 from copy import deepcopy
-from smartwatts.utils.tree import Node
+from smartwatts.utils.tree import Node, Tree
+
+
+
+class TestTree():
+    """
+    test smartwatts.tree.Tree class
+    """
+
+    def test_add_child_to_empty_tree(self):
+        tree = Tree()
+        tree.add(['A', 'B'], 1)
+
+        assert tree.root is not None
+        assert len(tree.root.childs) == 1
+        assert tree.root.label == 'A'
+        assert tree.root.childs[0] == Node('B', 1)
 
 
 class TestNode():
