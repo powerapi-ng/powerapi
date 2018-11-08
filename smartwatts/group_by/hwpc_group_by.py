@@ -28,9 +28,10 @@ class HWPCGroupBy(AbstractGroupBy):
         Parameters:
             depth:(HWPCDepthLevel)
         """
-        AbstractGroupBy.__init__(primary)
-
+        AbstractGroupBy.__init__(self, primary)
         self.extract = lambda report: _extract(report, depth)
+
+        self.fields = ['sensor', 'socket', 'core'][:(4 - depth)]
 
 
 def _extract(report, depth):
