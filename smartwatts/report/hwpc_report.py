@@ -18,20 +18,23 @@ class HWPCReportCore(Report):
 
     def __str__(self):
         display = ("  \n" +
-                   '    ' + self.core_id + ":\n" +
+                   '    ' + str(self.core_id) + ":\n" +
                    '    ' + self.events.__str__() + "\n")
         return display
 
-    def feed_from_csv(self, csv, group):
-        """ Define how to feed the object from csv input """
-        keys = list(csv.keys())
-        values = list(csv.values())
-        self.events = {
-            keys[i]: values[i] for i in range(5, len(keys))}
+    def serialize(self):
+        """
+        Return the JSON format of the report
+        """
+        return self.events
 
-    def feed_from_mongodb(self, json):
-        """ Define how to feed the object from mongodb input """
-        self.events = json
+    def deserialize(self, json):
+        """
+        Feed the report with the JSON input
+          @json dict of events
+        """
+        for event_key, event_value in json.items():
+            self.events[event_key] = int(event_value)
 
 
 class HWPCReportSocket(Report):
@@ -63,26 +66,29 @@ class HWPCReportSocket(Report):
 
     def __str__(self):
         display = (" \n" +
-                   '  ' + self.socket_id + ":\n" +
+                   '  ' + str(self.socket_id) + ":\n" +
                    '  ' + ''.join([self.cores[c].__str__()
                                    for c in self.cores]))
         return display
 
-    def feed_from_csv(self, csv, group):
-        """ Define how to feed the object from csv input """
-        if csv['cpu'] not in self.cores:
-            self.cores[csv['cpu']] = (
-                HWPCReportCore(csv['cpu']))
-        self.cores[csv['cpu']].feed_from_csv(csv, group)
+    def serialize(self):
+        """
+        Return the JSON format of the report
+        """
+        json = {}
+        for key, _ in self.cores.items():
+            json[key] = self.cores[key].serialize()
+        return json
 
-    def feed_from_mongodb(self, json):
-        """ Define how to feed the object from mongodb input """
-        cores = list(json.keys())
-
-        for core in cores:
-            if core not in self.cores:
-                self.cores[core] = HWPCReportCore(core)
-            self.cores[core].feed_from_mongodb(json[core])
+    def deserialize(self, json):
+        """
+        Feed the report with the JSON input
+          @json: socket hwpc input
+        """
+        for core_key, core_value in json.items():
+            hwpc_core = HWPCReportCore(int(core_key))
+            hwpc_core.deserialize(core_value)
+            self.cores[core_key] = hwpc_core
 
 
 class HWPCReport(Report):
@@ -94,14 +100,12 @@ class HWPCReport(Report):
         sensor:    sensor name
         target:    target name
         groups:    dict of group, a group is a dict of socket
-        rapl:      dict of rapl ground truth
         """
         Report.__init__(self, sensor)
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
         self.groups = {}
-        self.rapl = {}
 
     def get_child_reports(self):
 
@@ -128,7 +132,6 @@ class HWPCReport(Report):
                    ' ' + str(self.timestamp) + "\n" +
                    ' ' + self.sensor + "\n" +
                    ' ' + self.target + "\n" +
-                   ' ' + self.rapl.__str__() + "\n" +
                    ' '.join(['\n' + g + '\n ' +
                              ''.join([self.groups[g][s].__str__()
                                       for s in self.groups[g]])
@@ -136,72 +139,34 @@ class HWPCReport(Report):
                    "\n")
         return display
 
-    def feed_from_csv(self, csv, group):
-        """ Define how to feed the object from csv input """
-        if (self.timestamp is None or
-                self.sensor is None or
-                self.target is None):
-            self.timestamp = int(csv['timestamp'])
-            self.sensor = csv['sensor']
-            self.target = csv['target']
+    def serialize(self):
+        """
+        Return the JSON format of the report
+        """
+        json = {}
+        json['timestamp'] = self.timestamp
+        json['sensor'] = self.sensor
+        json['target'] = self.target
+        json['groups'] = {}
+        for group_key, _ in self.groups.items():
+            json['groups'][group_key] = {}
+            for socket_key, socket_value in self.groups[group_key].items():
+                json['groups'][group_key][
+                    socket_key] = socket_value.serialize()
+        return json
 
-        """ If it's RAPL and a unknown socket """
-        if group == 'rapl' and csv['socket'] not in self.rapl:
-            keys = list(csv.keys())
-            values = list(csv.values())
-            self.rapl[csv['socket']] = {
-                keys[i]: values[i] for i in range(5, len(csv))}
-        else:
-            if group not in self.groups:
-                self.groups[group] = {}
-
-            if csv['socket'] not in self.groups[group]:
-                self.groups[group][csv['socket']] = (
-                    HWPCReportSocket(csv['socket']))
-
-            self.groups[group][csv['socket']].feed_from_csv(csv, group)
-
-    def feed_from_mongodb(self, json):
-        """ Define how to feed the object from mongodb input """
-        if (self.timestamp is None or
-                self.sensor is None or
-                self.target is None):
-            self.timestamp = utils.datetime_to_timestamp(json['timestamp'])
-            self.sensor = json['sensor']
-            self.target = json['target']
-
-        """ If target are not the same, we stop here """
-        if self.target != json['target']:
-            return
-
-        """ If it's RAPL report """
-        if 'rapl' in json:
-            self.target = None
-            self.rapl = json['rapl']
-        else:
-            keys = list(json.keys())
-            """ On cherche les groupes définit dans le rapport """
-            for group in keys:
-
-                """
-                On passe si on trouve une entrée qui n'est pas
-                un groupe
-                """
-                if group in ['_id', 'sensor', 'target', 'timestamp']:
-                    continue
-
-                """ Si le groupe n'existe pas, on le crée """
-                if group not in self.groups:
-                    self.groups[group] = {}
-
-                """
-                Pour chaque socket du groupe, on crée un
-                nouveau HWPCReportSocket et on le feed
-                """
-                sockets = list(json[group].keys())
-                for socket in sockets:
-                    if socket not in self.groups[group]:
-                        self.groups[group][socket] = (
-                            HWPCReportSocket(socket))
-                    self.groups[group][socket].feed_from_mongodb(
-                        json[group][socket])
+    def deserialize(self, json):
+        """
+        Feed the report with the JSON input
+          @json: full hwpc input
+        """
+        self.timestamp = json['timestamp']
+        self.sensor = json['sensor']
+        self.target = json['target']
+        for group_key, _ in json['groups'].items():
+            self.groups[group_key] = {}
+            for socket_key, socket_value in json[
+                    'groups'][group_key].items():
+                hwpc_sock = HWPCReportSocket(int(socket_key))
+                hwpc_sock.deserialize(socket_value)
+                self.groups[group_key][socket_key] = hwpc_sock

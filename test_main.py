@@ -7,7 +7,6 @@ from smartwatts.reporter import ActorReporter
 from smartwatts.database import Stdout, Stdin
 from smartwatts.formula import ActorTestFormula
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, TestGroupBy
-from smartwatts.filter import TestFilter
 from smartwatts.report import TestReport, HWPCReport, PowerReport
 from smartwatts.puller import ActorPuller
 from smartwatts.formula_dispatcher import ActorFormulaDispatcher
@@ -36,9 +35,6 @@ def main():
                                                 primary=True))
 
     in1 = Stdin()
-    test_filter = TestFilter()
-    test_filter.filter(lambda r: dispatcher)
-
     puller = ActorPuller(in1, test_filter)
 
     dispatcher.start()

@@ -16,13 +16,16 @@ class Actor(multiprocessing.Process):
     An actor is a process.
     """
 
-    def __init__(self, name, verbose=False):
+    def __init__(self, name, verbose=False, timeout=None):
         """
         Initialization and start of the process.
 
         Parameters:
-            name(str): unique name that will be used to indentify the actor
-                       communication socket
+            @name(str): unique name that will be used to indentify the actor
+                        communication socket
+            @verbose(bool): allow to display log
+            @timeout(int): if define, do something if no msg is recv every
+                           timeout
         """
         multiprocessing.Process.__init__(self, name=name)
 
@@ -38,6 +41,7 @@ class Actor(multiprocessing.Process):
         self.context = None
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
+        self.timeout = timeout
 
     def log(self, message):
         """
@@ -68,7 +72,12 @@ class Actor(multiprocessing.Process):
         # Run loop
         while self.alive:
             msg = self.__recv_serialized(self.pull_socket)
-            if isinstance(msg, PoisonPill):
+
+            # Timeout
+            if msg is None:
+                self.behaviour()
+            # Kill msg
+            elif isinstance(msg, PoisonPill):
                 self.alive = False
             else:
                 self.receive(msg)
@@ -76,7 +85,8 @@ class Actor(multiprocessing.Process):
         self.terminated_behaviour()
 
     def init_actor(self):
-        """Need to be overrided.
+        """
+        Need to be overrided.
 
         Define actor specific processing that is run before entering the Run
         Loop
@@ -85,6 +95,8 @@ class Actor(multiprocessing.Process):
 
     def terminated_behaviour(self):
         """
+        Can be overrided.
+
         function called before killing the actor
         """
         self.log("terminated")
@@ -92,7 +104,16 @@ class Actor(multiprocessing.Process):
     def initial_receive(self, msg):
         """
         Need to be overrided.
+
         Define how to process each msg type
+        """
+        raise NotImplementedError
+
+    def behaviour(self):
+        """
+        Need to be overrided.
+
+        Define the behaviour of the actor if he is define with a timeout
         """
         raise NotImplementedError
 
@@ -107,6 +128,8 @@ class Actor(multiprocessing.Process):
         """
         Allow to recv a serialized msg with pickle
         """
+        if not socket.poll(self.timeout):
+            return None
         msg = pickle.loads(socket.recv())
         self.log('received : ' + str(msg))
         return msg
@@ -129,8 +152,8 @@ class Actor(multiprocessing.Process):
     def send(self, msg):
         """Send a msg to this actor
 
-        This function will not be used by this actor but by process that want to
-        send message to this actor
+        This function will not be used by this actor but by process that
+        want to send message to this actor
         """
         self.__send_serialized(self.push_socket, msg)
 

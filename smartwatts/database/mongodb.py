@@ -3,42 +3,52 @@ Module MongoDB which handle a mongo database with PyMongo
 """
 
 import pymongo
-from smartwatts.database.base_db import BaseDB, MissConfigParamError
+from smartwatts.database.base_db import BaseDB
 from smartwatts.report.hwpc_report import HWPCReport
 
 
 class MongoDB(BaseDB):
-    """ MongoDB class """
+    """
+    MongoDB class
 
-    def __init__(self, config):
-        self.config = config
+    Basic parameters:
+        host_name       = "localhost"
+        port            = 27017
+        db_name         = smartwatts
+        collection_name = sensor
+    """
 
-        """ Check if config contain the necessary fields """
-        for needed in ['host', 'port', 'db', 'collection']:
-            if needed not in self.config:
-                raise MissConfigParamError
-
+    def __init__(self, host_name, port, db_name, collection_name):
         """ Database connection """
-        self.mongo_client = pymongo.MongoClient(self.config['host'],
-                                                self.config['port'])
-        self.collection = self.mongo_client[
-            self.config['db']][self.config['collection']]
+        self.host_name = host_name
+        self.port = port
+        self.db_name = db_name
+        self.collection_name = collection_name
 
-    def get_last_hwpc_report(self):
-        """ Return the last hwpc report """
+        self.mongo_client = None
+        self.collection = None
+        self.cursor = None
 
-        """ Get the last datetime value """
-        last_datetime = self.collection.find().sort(
-                'timestamp',
-                pymongo.DESCENDING).limit(1).next()['timestamp']
+    def load(self):
+        """ MongoDB connection """
+        self.mongo_client = pymongo.MongoClient(self.host_name, self.port)
+        self.collection = self.mongo_client[self.db_name][self.collection_name]
+        self.cursor = self.collection.find({})
 
-        """ Find all report with this datetime """
-        reports = list(self.collection.find(
-            {'timestamp': last_datetime}))
+    def get_next(self):
+        """ Return the next report on the db """
+        json = self.cursor.next()
 
-        """ Feed the HWPCReport Object """
-        hwpc = HWPCReport()
-        for report in reports:
-            hwpc.feed_from_mongodb(report)
+        # Re arrange the json before return it
+        json.pop('_id', None)
+        real_json = {}
+        real_json['groups'] = {}
+        common_keys = ['timestamp', 'sensor', 'target']
 
-        return hwpc
+        for key, val in json.items():
+            if key in common_keys:
+                real_json[key] = val
+            else:
+                real_json['groups'][key] = val
+
+        return real_json
