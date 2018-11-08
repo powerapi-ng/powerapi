@@ -3,7 +3,7 @@ Module class Router
 """
 from smartwatts.actor import Actor
 from smartwatts.actor.basic_messages import UnknowMessageTypeException
-from smartwatts.utils.tree import Tree()
+from smartwatts.utils.tree import Tree
 
 
 class NoPrimaryGroupByRuleException(Exception):
@@ -56,7 +56,7 @@ class ActorFormulaDispatcher(Actor):
         """
         kill each formula before terminate
         """
-        for name, formula in self.formulas.items():
+        for name, formula in self.formula_dict.items():
             self.log('kill ' + name)
             formula.kill()
 
@@ -110,11 +110,10 @@ class ActorFormulaDispatcher(Actor):
         if len(formula_id) == len(self.primary_group_by_rule):
             if formula_id not in self.formula_dict:
                 self._create_formula(formula_id)
-            formula.send(report)
+            self.formula_dict[formula_id].send(report)
         else:
             for formula in self.formula_tree.get(list(formula_id)):
                 formula.send(report)
-
 
     def _create_formula(self, formula_id):
         """
@@ -125,7 +124,8 @@ class ActorFormulaDispatcher(Actor):
 
         formula.connect(self.context)
         self.formula_dict[formula_id] = formula
-        self.formula_tree.add(list(formula_id, formula))
+        self.formula_tree.add(list(formula_id), formula)
+
     def group_by(self, report_class, group_by_rule):
         if group_by_rule.is_primary:
             if self.primary_group_by_rule is not None:
