@@ -4,7 +4,7 @@ smartwatts utilisation example
 
 import os
 from smartwatts.pusher import ActorPusher
-from smartwatts.database import StdoutDB, MongoDB
+from smartwatts.database import StdoutDB, CsvDB
 from smartwatts.formula import ActorTestFormula
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, TestGroupBy
 from smartwatts.filter import HWPCFilter
@@ -38,11 +38,12 @@ def main():
                                                 primary=True))
 
     # Puller
-    mongodb = MongoDB('localhost', 27017, 'smartwatts', 'sensor')
+    # mongodb = MongoDB('localhost', 27017, 'smartwatts', 'sensor')
+    csv_input = CsvDB(['./pcu', './rapl', './core'])
     hwpc_filter = HWPCFilter()
     hwpc_filter.filter(lambda msg: True, dispatcher)
-    puller = ActorPuller("puller_mongo", mongodb,
-                         hwpc_filter, 10, verbose=True)
+    puller = ActorPuller("puller_mongo", csv_input,
+                         hwpc_filter, 3000, verbose=True)
 
     pusher.start()
     dispatcher.start()
