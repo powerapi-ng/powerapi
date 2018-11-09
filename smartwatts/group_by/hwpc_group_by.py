@@ -4,6 +4,7 @@ HWPC group by rules utilities
 
 from enum import IntEnum
 from smartwatts.group_by import AbstractGroupBy
+from smartwatts.report import HWPCReport
 
 
 class HWPCDepthLevel(IntEnum):
@@ -34,17 +35,29 @@ class HWPCGroupBy(AbstractGroupBy):
                                                      - depth)]
 
     def extract(self, report):
-        return _extract(report, self.depth)
+
+        extracted_reports = []
+        if 'rapl' in report.groups:
+            rapl_report = HWPCReport(timestamp=report.timestamp,
+                                     sensor=report.sensor, target=report.target)
+            rapl_report.groups['rapl'] = report.groups['rapl']
+            extracted_reports.append(((rapl_report.sensor,), rapl_report))
+            del report.groups['rapl']
+
+        extracted_reports += _extract(report, self.depth)
+
+        return extracted_reports
 
 
 def _extract(report, depth):
     def extract_aux(report, current_depth):
         if current_depth == depth:
+            if report.get_child_reports() == []:
+                return []
             return [((report.hw_id,), report)]
 
         extracted_reports = []
         for packed_report in report.get_child_reports():
-
             extracted_reports += extract_aux(packed_report,
                                              current_depth - 1)
 
