@@ -30,7 +30,8 @@ class HWPCGroupBy(AbstractGroupBy):
         """
         AbstractGroupBy.__init__(self, primary)
         self.depth = depth
-        self.fields = ['sensor', 'socket', 'core'][:(4 - depth)]
+        self.fields = ['sensor', 'socket', 'core'][:((HWPCDepthLevel.ROOT+1)
+                                                     - depth)]
 
     def extract(self, report):
 
