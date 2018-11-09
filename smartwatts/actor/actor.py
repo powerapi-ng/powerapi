@@ -7,7 +7,7 @@ import multiprocessing
 import pickle
 import zmq
 
-from smartwatts.actor.basic_messages import PoisonPill
+from smartwatts.message import PoisonPillMessage
 
 
 class Actor(multiprocessing.Process):
@@ -77,7 +77,7 @@ class Actor(multiprocessing.Process):
             if msg is None:
                 self.behaviour()
             # Kill msg
-            elif isinstance(msg, PoisonPill):
+            elif isinstance(msg, PoisonPillMessage):
                 self.alive = False
             else:
                 self.receive(msg)
@@ -135,7 +135,8 @@ class Actor(multiprocessing.Process):
         return msg
 
     def connect(self, context):
-        """connect to the pull socket of this actor
+        """
+        Connect to the pull socket of this actor
 
         open a push socket on the process that want to communicate with this
         actor
@@ -159,6 +160,6 @@ class Actor(multiprocessing.Process):
 
     def kill(self):
         """
-        kill this actor by sending a PoisonPill message
+        kill this actor by sending a PoisonPillMessage message
         """
-        self.send(PoisonPill())
+        self.send(PoisonPillMessage())
