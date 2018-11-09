@@ -2,6 +2,7 @@
 Module class ActorPusher
 """
 
+from smartwatts.message import UnknowMessageTypeException
 from smartwatts.actor import Actor
 
 
@@ -23,8 +24,10 @@ class ActorPusher(Actor):
         """
         Override
         """
-        # TODO: Check if msg is report type
-        self.database.save(msg)
+        if isinstance(msg, self.report_type):
+            self.database.save(msg)
+        else:
+            raise UnknowMessageTypeException
 
     def behaviour(self):
         """
