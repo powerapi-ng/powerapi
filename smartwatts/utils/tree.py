@@ -38,6 +38,8 @@ class Tree:
 
         Return (list): list of leafs value
         """
+        if self.root is None:
+            return []
         return self.root.retrieve_leaf_values(path)
 
 
