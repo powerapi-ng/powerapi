@@ -1,14 +1,14 @@
 """
-Module csv which allow to handle CSV db
+Module csvdb
 """
 
 import csv
 
-from smartwatts.database.base_db import BaseDB
-from smartwatts.report.hwpc_report import HWPCReport
-import smartwatts.utils as utils
 from sortedcontainers import SortedDict
+from smartwatts.database.base_db import BaseDB
+from smartwatts.utils import utils
 
+# Array of field that will not be considered as a group
 COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
 
 
@@ -16,9 +16,6 @@ class CsvDB(BaseDB):
     """
     CsvDB class
     !!! BAD PERFORMANCE (load in memory) !!!
-
-    basic parameters:
-      files_name: ['file1.csv', 'file2.csv']
     """
 
     def __init__(self, files_name):
@@ -85,9 +82,13 @@ class CsvDB(BaseDB):
                                 row['socket']][row['cpu']][k] = int(val)
 
     def get_next(self):
-        """ Return the next report on the db or none if nothing """
+        """ Override """
         try:
             _, report = self.database.popitem(0)
         except KeyError:
             return None
         return report
+
+    def save(self, json):
+        """ Override """
+        raise NotImplementedError
