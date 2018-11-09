@@ -8,7 +8,8 @@ from smartwatts.report import HWPCReport
 
 
 class HWPCDepthLevel(IntEnum):
-    """Enumeration that specify which report level use to group by the reports
+    """
+    Enumeration that specify which report level use to group by the reports
     """
 
     ROOT = 3
@@ -30,7 +31,8 @@ class HWPCGroupBy(AbstractGroupBy):
         """
         AbstractGroupBy.__init__(self, primary)
         self.depth = depth
-        self.fields = ['sensor', 'socket', 'core'][:(4 - depth)]
+        self.fields = ['sensor', 'socket', 'core'][:((HWPCDepthLevel.ROOT+1)
+                                                     - depth)]
 
     def extract(self, report):
 
