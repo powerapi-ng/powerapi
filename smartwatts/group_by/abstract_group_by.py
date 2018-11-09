@@ -12,7 +12,8 @@ class AbstractGroupBy:
         self.fields = None
 
     def extract(self, report):
-        """divide a report into multiple report given a group_by rule
+        """
+        divide a report into multiple report given a group_by rule
 
         Return: ([(tuple, Report)]) a list all report with their
                 identifier

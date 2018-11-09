@@ -1,6 +1,5 @@
 """
 HWPC group by rules utilities
-
 """
 
 from enum import IntEnum
@@ -8,7 +7,8 @@ from smartwatts.group_by import AbstractGroupBy
 
 
 class HWPCDepthLevel(IntEnum):
-    """Enumeration that specify which report level use to group by the reports
+    """
+    Enumeration that specify which report level use to group by the reports
     """
 
     ROOT = 3
