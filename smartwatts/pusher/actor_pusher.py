@@ -23,7 +23,8 @@ class ActorPusher(Actor):
         """
         Override
         """
-        self.log(msg.__class__)
+        # TODO: Check if msg is report type
+        self.database.save(msg)
 
     def behaviour(self):
         """
