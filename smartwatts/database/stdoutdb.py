@@ -18,11 +18,11 @@ class StdoutDB(BaseDB):
 
     def load(self):
         """ Override """
-        return
+        pass
 
     def get_next(self):
         """ Override """
-        return
+        pass
 
     def save(self, json):
         """ Override """
