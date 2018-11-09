@@ -44,4 +44,4 @@ class ActorTestFormula(Actor):
 
     def behaviour(self):
         """ Override """
-        return
+        pass
