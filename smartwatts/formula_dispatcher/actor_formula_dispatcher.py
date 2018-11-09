@@ -22,7 +22,6 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
     pass
 
 
-
 class ActorFormulaDispatcher(Actor):
     """
     receive interface:
@@ -31,19 +30,15 @@ class ActorFormulaDispatcher(Actor):
                      this message
     """
 
-    def __init__(self, name, reporter, formula_init_function, verbose=False):
+    def __init__(self, name, formula_init_function, verbose=False):
 
         """
         Parameters:
-            reporter(smartwatts.reporter.Reporter): reporter used to store
-                                                    Formula reports in
-                                                    databases
             formula_init_function(fun () -> smartwatts.formula.Formula):
         """
         Actor.__init__(self, name, verbose)
 
         # self.pull_socket_name = pull_socket_name
-        self.reporter = reporter
         self.formula_dict = {}
         self.formula_tree = Tree()
         self.route_table = []
@@ -108,7 +103,7 @@ class ActorFormulaDispatcher(Actor):
         if the formula id identify an unique formula and the formula doesn't
         exist, create it
         """
-        if len(formula_id) == len(self.primary_group_by_rule):
+        if len(formula_id) == len(self.primary_group_by_rule.fields):
             if formula_id not in self.formula_dict:
                 self._create_formula(formula_id)
             self.formula_dict[formula_id].send(report)
@@ -120,12 +115,12 @@ class ActorFormulaDispatcher(Actor):
         """
         create formula from router
         """
-        formula = self.formula_init_function(formula_id, self.reporter,
-                                             self.verbose)
+        formula = self.formula_init_function(str(formula_id), self.verbose)
 
         formula.connect(self.context)
         self.formula_dict[formula_id] = formula
         self.formula_tree.add(list(formula_id), formula)
+        self.formula_dict[formula_id].start()
 
     def group_by(self, report_class, group_by_rule):
         """Add a group_by rule to the formula dispatcher
