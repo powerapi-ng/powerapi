@@ -9,7 +9,7 @@ from smartwatts.database.base_db import BaseDB
 class StdoutDB(BaseDB):
     """ StdoutDB class """
     def __init__(self):
-        raise NotImplementedError
+        pass
 
     def load(self):
         """ Override """
