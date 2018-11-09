@@ -3,43 +3,53 @@ smartwatts utilisation example
 """
 
 import os
-from smartwatts.reporter import ActorReporter
-from smartwatts.database import Stdout, Stdin
+from smartwatts.pusher import ActorPusher
+from smartwatts.database import StdoutDB, MongoDB
 from smartwatts.formula import ActorTestFormula
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, TestGroupBy
-from smartwatts.report import TestReport, HWPCReport, PowerReport
+from smartwatts.filter import HWPCFilter
 from smartwatts.puller import ActorPuller
+from smartwatts.report import HWPCReport
 from smartwatts.formula_dispatcher import ActorFormulaDispatcher
 
 
 def log(msg):
+    """ log """
     print('[' + str(os.getpid()) + '] ' + msg)
 
 
-log('i\'m main')
+log('I\'m main')
 
 
 def main():
-    out1 = Stdout()
-    reporter = ActorReporter()
-    reporter.store(TestReport, out1)
-    reporter.store(PowerReport, out1)
+    """ main """
 
-    dispatcher = ActorFormulaDispatcher('dispatcher', reporter, lambda name,
-                                        reporter, arch_data, verbose:
-                                        ActorTestFormula(name, reporter,
-                                                         arch_data,
-                                                         verbose=verbose))
-    dispatcher.group_by(TestReport, TestGroupBy())
+    # Pusher
+    stdoutdb = StdoutDB()
+    pusher = ActorPusher("pusher_stdout", HWPCReport, stdoutdb, verbose=True)
+
+    # Dispatcher
+    dispatcher = ActorFormulaDispatcher('dispatcher',
+                                        lambda name, verbose:
+                                        ActorTestFormula(name, pusher,
+                                                         verbose=verbose),
+                                        verbose=True)
     dispatcher.group_by(HWPCReport, HWPCGroupBy(HWPCDepthLevel.CORE,
                                                 primary=True))
 
-    in1 = Stdin()
-    puller = ActorPuller(in1, test_filter)
+    # Puller
+    mongodb = MongoDB('localhost', 27017, 'smartwatts', 'sensor')
+    hwpc_filter = HWPCFilter()
+    hwpc_filter.filter(lambda msg: True, dispatcher)
+    puller = ActorPuller("puller_mongo", mongodb,
+                         hwpc_filter, 10, verbose=True)
 
+    pusher.start()
     dispatcher.start()
     puller.start()
     dispatcher.join()
+    pusher.join()
     puller.kill()
+
 
 main()

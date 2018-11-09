@@ -45,7 +45,11 @@ class ActorPuller(Actor):
         in his filter, then send it (or not) to the dispatcher.
         """
         # Read one input
-        report = self.database.get_next()
+        json = self.database.get_next()
+
+        # Deserialization
+        report = self.filter.get_type()()
+        report.deserialize(json)
 
         # Filter the report
         dispatcher = self.filter.route(report)

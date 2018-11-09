@@ -39,3 +39,9 @@ class BaseDB:
         Return the next report on the db
         """
         raise NotImplementedError
+
+    def save(self, json):
+        """
+        Allow to save a json input in the db
+        """
+        raise NotImplementedError
