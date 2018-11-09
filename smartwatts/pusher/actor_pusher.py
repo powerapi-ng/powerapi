@@ -17,7 +17,7 @@ class ActorPusher(Actor):
         """
         Override
         """
-        return
+        pass
 
     def initial_receive(self, msg):
         """
@@ -30,4 +30,4 @@ class ActorPusher(Actor):
         """
         Override
         """
-        return
+        pass
