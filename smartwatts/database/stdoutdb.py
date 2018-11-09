@@ -7,7 +7,12 @@ from smartwatts.database.base_db import BaseDB
 
 
 class StdoutDB(BaseDB):
-    """ StdoutDB class """
+    """
+    StdoutDB class
+
+    This class is mostly use for testing some actor behaviour but
+    not very useful.
+    """
     def __init__(self):
         pass
 
