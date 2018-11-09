@@ -35,7 +35,7 @@ class ActorPuller(Actor):
         """
         Override
         """
-        return
+        pass
 
     def behaviour(self):
         """
