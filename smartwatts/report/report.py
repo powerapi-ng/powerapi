@@ -17,22 +17,6 @@ class Report:
         SOCKET = 2
         CPU = 3
 
-    def get_child_reports(self):
-        """ Return all the reports containing in this report"""
-        raise NotImplementedError
-
-    def set_child_report(self, key, val):
-        """
-        set the child report, corresponding to the given key to the given value
-        """
-        raise NotImplementedError
-
-    def cut_child(self):
-        """
-        return a copy of the current report without its childs reports
-        """
-        raise NotImplementedError
-
     def serialize(self):
         """
         return the JSON format of the report
