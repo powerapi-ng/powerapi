@@ -2,7 +2,7 @@
 Module hwpc_model
 """
 
-from smartwatts.report_model import ReportModel, CSV_COMMON
+from smartwatts.report_model import ReportModel, KEYS_CSV_COMMON, KEYS_COMMON
 
 
 class HWPCModel(ReportModel):
@@ -12,9 +12,17 @@ class HWPCModel(ReportModel):
     any kind of database.
     """
 
-    def from_mongodb(self):
+    def from_mongodb(self, json):
         """ Override """
-        pass
+        final_dict = {}
+        final_dict['groups'] = {}
+
+        for key, val in json.items():
+            if key in KEYS_COMMON:
+                final_dict[key] = val
+            else:
+                final_dict['groups'][key] = val
+        return final_dict
 
     def from_csvdb(self, file_name, row):
         """ Override """
@@ -34,7 +42,7 @@ class HWPCModel(ReportModel):
 
         # Add events
         for key, value in row.items():
-            if key not in CSV_COMMON:
+            if key not in KEYS_CSV_COMMON:
                 final_dict['groups'][file_name][
                     row['socket']][row['cpu']][key] = int(value)
 

@@ -31,6 +31,12 @@ class BaseDB:
      }
     }
     """
+    def __init__(self, report_model):
+        """
+        @report_model: XXXModel Object.
+        """
+        self.report_model = report_model
+
     def load(self):
         """
         Allow to load the database

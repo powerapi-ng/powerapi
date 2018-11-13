@@ -18,7 +18,7 @@ class CsvDB(BaseDB):
     !!! BAD PERFORMANCE (load in memory) !!!
     """
 
-    def __init__(self, files_name, report_model):
+    def __init__(self, report_model, files_name):
         """
         Parameters:
           @files_name:   list of file name .csv, each one
@@ -30,9 +30,9 @@ class CsvDB(BaseDB):
               keys: (timestamp, sensor, target)
               values: HWPCReport
         """
+        BaseDB.__init__(self, report_model)
         self.database = SortedDict()
         self.files_name = files_name
-        self.report_model = report_model
 
     def load(self):
         """ Override """
