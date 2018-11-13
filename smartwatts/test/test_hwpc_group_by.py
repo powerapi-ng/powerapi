@@ -128,11 +128,13 @@ class TestHWPCGroupBy():
         report test if this list of tuple is equal to validation_list that
         contains the tuple that extract method must return
         """
+        assert len(reports) == len(validation_list)
         reports.sort(key=lambda x: x[0])
 
         validation_list.sort(key=lambda x: x[0])
         for ((key, report), (validation_key, validation_report)) in zip(
                 reports, validation_list):
+            print((key, validation_key))
             assert key == validation_key
             report_assert(report, validation_report)
 
@@ -300,8 +302,7 @@ class TestHWPCGroupBy():
         report = create_report_root(
             [create_group_report('rapl', [
                 create_socket_report('1', [create_core_report('1', 'e0', '0')])
-            ])
-        ])
+            ])])
 
         validation_list = [((report.sensor,), report)]
 
@@ -309,18 +310,54 @@ class TestHWPCGroupBy():
         extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(cp_report)
         self.validate_reports(extracted_reports, validation_list)
 
-        cp_report = deepcopy(report)
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(cp_report)
+        c_report = deepcopy(report)
+        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(c_report)
         self.validate_reports(extracted_reports, validation_list)
 
         cp_report = deepcopy(report)
         extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(cp_report)
         self.validate_reports(extracted_reports, validation_list)
 
-    def test_extract_rapl_hwpc_report(self):
+    # def test_extract_rapl_one_core(self):
+    #     """
+    #     test extract reports from a reports which contains rapl group and hwpc
+    #     group with one core
+    #     """
+
+    #     report = create_report_root(
+    #         [create_group_report('rapl', [
+    #             create_socket_report('1', [create_core_report('1', 'e0', '0')])
+    #         ]),
+    #          create_group_report('1', [
+    #              create_socket_report('1', [CPUA])
+    #          ])
+    #     ])
+
+    #     # ROOT test
+    #     cp_report = deepcopy(report)
+    #     validation_list = [((report.sensor,), cp_report)]
+    #     extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(cp_report)
+    #     self.validate_reports(extracted_reports, validation_list)
+
+    #     # SOCKET test
+    #     # validation_list = [((report.sensor,), rapl_validation_report),
+    #     #                    ((report.sensor, '1'), hwpc_validation_report)]
+    #     c_report = deepcopy(report)
+    #     validation_list = [((report.sensor, '1'), c_report)]
+    #     extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(c_report)
+    #     self.validate_reports(extracted_reports, validation_list)
+
+    #     # # CORE test
+    #     cp_report = deepcopy(report)
+    #     validation_list = [((report.sensor, '1', CPUA.core_id), cp_report)]
+    #     extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(cp_report)
+    #     self.validate_reports(extracted_reports, validation_list)
+
+
+    def test_extract_rapl_two_core(self):
         """
         test extract reports from a reports which contains rapl group and hwpc
-        group
+        group with two core
         """
 
         report = create_report_root(
@@ -328,37 +365,42 @@ class TestHWPCGroupBy():
                 create_socket_report('1', [create_core_report('1', 'e0', '0')])
             ]),
              create_group_report('1', [
-                 create_socket_report('1', [CPUA])
-             ])
-        ])
-
-        rapl_validation_report = create_report_root(
-            [create_group_report('rapl', [
-                create_socket_report('1', [create_core_report('1', 'e0', '0')])
-            ])])
-
-        hwpc_validation_report = create_report_root(
-            [create_group_report('1', [
-                create_socket_report('1', [CPUA])
-            ])])
+                 create_socket_report('1', [CPUA, CPUB])
+             ])])
 
         # ROOT test
-        validation_list = [((report.sensor,), rapl_validation_report),
-                           ((report.sensor,), hwpc_validation_report)]
         cp_report = deepcopy(report)
+        validation_list = [((report.sensor,), cp_report)]
         extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(cp_report)
         self.validate_reports(extracted_reports, validation_list)
 
         # SOCKET test
-        validation_list = [((report.sensor,), rapl_validation_report),
-                           ((report.sensor, '1'), hwpc_validation_report)]
+        # validation_list = [((report.sensor,), rapl_validation_report),
+        #                    ((report.sensor, '1'), hwpc_validation_report)]
         c_report = deepcopy(report)
+        validation_list = [((report.sensor, '1'), c_report)]
         extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(c_report)
         self.validate_reports(extracted_reports, validation_list)
 
-        # CORE test
-        validation_list = [((report.sensor,), rapl_validation_report),
-                           ((report.sensor, '1', '1'), hwpc_validation_report)]
+        # # CORE test
         cp_report = deepcopy(report)
+        report_a = create_report_root(
+            [create_group_report('rapl', [
+                create_socket_report('1', [create_core_report('1', 'e0', '0')])
+            ]),
+             create_group_report('1', [
+                 create_socket_report('1', [CPUA])
+             ])])
+
+        report_b = create_report_root(
+            [create_group_report('rapl', [
+                create_socket_report('1', [create_core_report('1', 'e0', '0')])
+            ]),
+             create_group_report('1', [
+                 create_socket_report('1', [CPUB])
+             ])])
+
+        validation_list = [((report.sensor, '1', CPUA.core_id), report_a),
+                           ((report.sensor, '1', CPUB.core_id), report_b)]
         extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(cp_report)
         self.validate_reports(extracted_reports, validation_list)
