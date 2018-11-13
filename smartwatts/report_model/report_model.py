@@ -2,7 +2,8 @@
 Module report_model
 """
 
-CSV_COMMON = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
+KEYS_COMMON = ['timestamp', 'sensor', 'target']
+KEYS_CSV_COMMON = KEYS_COMMON + ['socket', 'cpu']
 
 
 class ReportModel:
@@ -12,7 +13,7 @@ class ReportModel:
     to get a report from every kind of db.
     """
 
-    def from_mongodb(self):
+    def from_mongodb(self, json):
         """ get the mongodb report """
         raise NotImplementedError
 
