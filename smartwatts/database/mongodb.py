@@ -7,6 +7,21 @@ from smartwatts.database.base_db import BaseDB
 from smartwatts.report_model.report_model import KEYS_COMMON
 
 
+class MongoBadDBError(Exception):
+    """ MongDB error when hostname/port fail """
+    pass
+
+
+class MongoBadDBNameError(Exception):
+    """ MongoDB error when database doesn't exist """
+    pass
+
+
+class MongoBadCollectionNameError(Exception):
+    """ MongoDB error when collection doesn't exist """
+    pass
+
+
 class MongoDB(BaseDB):
     """
     MongoDB class
@@ -34,7 +49,24 @@ class MongoDB(BaseDB):
 
     def load(self):
         """ Override """
-        self.mongo_client = pymongo.MongoClient(self.host_name, self.port)
+        self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
+                                                serverSelectionTimeoutMS=1)
+
+        # Check if hostname:port work
+        try:
+            self.mongo_client.admin.command('ismaster')
+        except pymongo.errors.ConnectionFailure:
+            raise MongoBadDBError
+
+        # Check if database exist
+        if self.db_name not in self.mongo_client.list_database_names():
+            raise MongoBadDBNameError
+
+        # Check if collection exist
+        if self.collection_name not in self.mongo_client[
+                self.db_name].list_collection_names():
+            raise MongoBadCollectionNameError
+
         self.collection = self.mongo_client[self.db_name][self.collection_name]
         self.cursor = self.collection.find({})
 
