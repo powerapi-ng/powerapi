@@ -18,11 +18,12 @@ class CsvDB(BaseDB):
     !!! BAD PERFORMANCE (load in memory) !!!
     """
 
-    def __init__(self, files_name):
+    def __init__(self, files_name, report_model):
         """
         Parameters:
-          @files_name: list of file name .csv, each one
-                       is a different group.
+          @files_name:   list of file name .csv, each one
+                         is a different group.
+          @report_model: XXXModel object.
 
         Attributs:
           database:
@@ -31,6 +32,7 @@ class CsvDB(BaseDB):
         """
         self.database = SortedDict()
         self.files_name = files_name
+        self.report_model = report_model
 
     def load(self):
         """ Override """
@@ -56,30 +58,13 @@ class CsvDB(BaseDB):
                         self.database[key] = {
                             'timestamp': timestamp,
                             'sensor': row['sensor'],
-                            'target': row['target'],
-                            'groups': {}}
+                            'target': row['target']}
 
-                    # If group doesn't exist, create it
-                    if group_name not in self.database[key]['groups']:
-                        self.database[key]['groups'][group_name] = {}
-
-                    # If socket doesn't exist, create it
-                    if row['socket'] not in self.database[key]['groups'][
-                            group_name]:
-                        self.database[key]['groups'][group_name][
-                            row['socket']] = {}
-
-                    # If cpu doesn't exist, create it
-                    if row['cpu'] not in self.database[key]['groups'][
-                            group_name][row['socket']]:
-                        self.database[key]['groups'][group_name][
-                            row['socket']][row['cpu']] = {}
-
-                    # Add events
-                    for k, val in row.items():
-                        if k not in COMMON_ROW:
-                            self.database[key]['groups'][group_name][
-                                row['socket']][row['cpu']][k] = int(val)
+                    # Call the report_model and concat both dict
+                    specific_dict = self.report_model.from_csvdb(
+                        group_name,
+                        row)
+                    utils.dict_merge(self.database[key], specific_dict)
 
     def get_next(self):
         """ Override """
