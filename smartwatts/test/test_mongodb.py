@@ -2,30 +2,49 @@
 Module test db
 """
 
-import sys
 import os
 import pytest
 
-from smartwatts.database.db import Database
-from smartwatts.database.base_db import MissConfigParamError
+from smartwatts.report_model import HWPCModel
+from smartwatts.database import MongoDB, MongoBadDBError
+from smartwatts.database import MongoBadDBNameError
+from smartwatts.database import MongoBadCollectionNameError
 
 PATH_TO_TEST = "/smartwatts/test/"
 
 
-class TestDatabase():
-    """ Test class of Database class """
+class TestMongoDB():
+    """
+    Test class of MongoDB class
 
-    MISS_CONFIG_PARAM_FILES = [
-        "./data_test/conf_wo_collection.json",
-        "./data_test/conf_wo_db.json",
-        "./data_test/conf_wo_host.json",
-        "./data_test/conf_wo_port.json",
-        "./data_test/conf_wo_type.json"
-        ]
+    If you want to pass all test, you have to run a mongo server
+    with the following configuration:
+        @hostname:        localhost
+        @port:            27017
+        @db-name:         smartwatts
+    """
 
-    def test_mongodb_miss_config_param(self):
-        """ Test open config with missing param """
-        for filename in self.MISS_CONFIG_PARAM_FILES:
-            with pytest.raises(MissConfigParamError) as pytest_wrapped:
-                Database(os.getcwd() + PATH_TO_TEST + filename)
-            assert pytest_wrapped.type == MissConfigParamError
+    def test_mongodb_bad_db(self):
+        """
+        Test if the database doesn't exist (hostname/port error)
+        """
+        with pytest.raises(MongoBadDBError) as pytest_wrapped:
+            MongoDB(HWPCModel(), "localhost", 1, "error", "error").load()
+        assert pytest_wrapped.type == MongoBadDBError
+
+    def test_mongodb_bad_db_name(self):
+        """
+        Test if the database name exist in the Mongodb
+        """
+        with pytest.raises(MongoBadDBNameError) as pytest_wrapped:
+            MongoDB(HWPCModel(), "localhost", 27017, "error", "error").load()
+        assert pytest_wrapped.type == MongoBadDBNameError
+
+    def test_mongodb_bad_collection_name(self):
+        """
+        Test if the collection name exist in the Mongodb
+        """
+        with pytest.raises(MongoBadCollectionNameError) as pytest_wrapped:
+            MongoDB(HWPCModel(), "localhost", 27017, "smartwatts",
+                    "error").load()
+        assert pytest_wrapped.type == MongoBadCollectionNameError
