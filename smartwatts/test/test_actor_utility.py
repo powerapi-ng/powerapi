@@ -1,8 +1,8 @@
 """
 Class and function to test actors
 """
-import pickle
 
+import pickle
 import zmq
 
 
@@ -10,8 +10,8 @@ class MessageInterceptor:
     """
     class used to intercept message sent by tested actors
     """
-    def __init__(self):
-        self.context = zmq.Context()
+    def __init__(self, context):
+        self.context = context
         self.pull_socket_address = 'ipc://@msg_interceptor'
 
         self.pull_socket = self.context.socket(zmq.PULL)
@@ -34,7 +34,8 @@ class MessageInterceptor:
         self.push_socket.connect(self.pull_socket_address)
 
     def send(self, msg):
-        """Send a msg to the message interceptor
+        """
+        Send a msg to the message interceptor
 
         This function will not be used by the message interceptor but by process
         that want to send message to the message interceptor
