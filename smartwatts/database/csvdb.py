@@ -6,10 +6,21 @@ import csv
 
 from sortedcontainers import SortedDict
 from smartwatts.database.base_db import BaseDB
+from smartwatts.report_model.report_model import KEYS_COMMON
 from smartwatts.utils import utils
 
 # Array of field that will not be considered as a group
 COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
+
+
+class CsvBadFilePathError(Exception):
+    """ Error when a file is not found """
+    pass
+
+
+class CsvBadCommonKeys(Exception):
+    """ Error when a common keys is not found """
+    pass
 
 
 class CsvDB(BaseDB):
@@ -18,17 +29,19 @@ class CsvDB(BaseDB):
     !!! BAD PERFORMANCE (load in memory) !!!
     """
 
-    def __init__(self, files_name):
+    def __init__(self, report_model, files_name):
         """
         Parameters:
-          @files_name: list of file name .csv, each one
-                       is a different group.
+          @files_name:   list of file name .csv, each one
+                         is a different group.
+          @report_model: XXXModel object.
 
         Attributs:
           database:
               keys: (timestamp, sensor, target)
               values: HWPCReport
         """
+        BaseDB.__init__(self, report_model)
         self.database = SortedDict()
         self.files_name = files_name
 
@@ -37,49 +50,40 @@ class CsvDB(BaseDB):
 
         # Get all .csv filename
         for path_file in self.files_name:
-            with open(path_file) as csv_file:
-                csv_reader = csv.reader(csv_file)
-                group_name = path_file.split('/')[-1]
+            try:
+                with open(path_file) as csv_file:
+                    csv_reader = csv.reader(csv_file)
+                    group_name = path_file.split('/')[-1]
 
-                # First line is the fields names
-                fieldname = csv_reader.__next__()
+                    # First line is the fields names
+                    fieldname = csv_reader.__next__()
 
-                for csv_row in csv_reader:
-                    row = {fieldname[i]: csv_row[i] for i in range(
-                        len(fieldname))}
-                    timestamp = utils.timestamp_to_datetime(
-                        int(row['timestamp']))
-                    key = (timestamp, row['sensor'], row['target'])
+                    # Check common keys
+                    for key in KEYS_COMMON:
+                        if key not in fieldname:
+                            raise CsvBadCommonKeys
 
-                    # If Report doesn't exist, create it
-                    if key not in self.database:
-                        self.database[key] = {
-                            'timestamp': timestamp,
-                            'sensor': row['sensor'],
-                            'target': row['target'],
-                            'groups': {}}
+                    for csv_row in csv_reader:
+                        row = {fieldname[i]: csv_row[i] for i in range(
+                            len(fieldname))}
+                        timestamp = utils.timestamp_to_datetime(
+                            int(row['timestamp']))
+                        key = (timestamp, row['sensor'], row['target'])
 
-                    # If group doesn't exist, create it
-                    if group_name not in self.database[key]['groups']:
-                        self.database[key]['groups'][group_name] = {}
+                        # If Report doesn't exist, create it
+                        if key not in self.database:
+                            self.database[key] = {
+                                'timestamp': timestamp,
+                                'sensor': row['sensor'],
+                                'target': row['target']}
 
-                    # If socket doesn't exist, create it
-                    if row['socket'] not in self.database[key]['groups'][
-                            group_name]:
-                        self.database[key]['groups'][group_name][
-                            row['socket']] = {}
-
-                    # If cpu doesn't exist, create it
-                    if row['cpu'] not in self.database[key]['groups'][
-                            group_name][row['socket']]:
-                        self.database[key]['groups'][group_name][
-                            row['socket']][row['cpu']] = {}
-
-                    # Add events
-                    for k, val in row.items():
-                        if k not in COMMON_ROW:
-                            self.database[key]['groups'][group_name][
-                                row['socket']][row['cpu']][k] = int(val)
+                        # Call the report_model and concat both dict
+                        specific_dict = self.report_model.from_csvdb(
+                            group_name,
+                            row)
+                        utils.dict_merge(self.database[key], specific_dict)
+            except FileNotFoundError:
+                raise CsvBadFilePathError
 
     def get_next(self):
         """ Override """
