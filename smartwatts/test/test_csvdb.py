@@ -2,7 +2,6 @@
 Module test_csvdb
 """
 
-import os
 import pytest
 
 from smartwatts.report_model import HWPCModel
@@ -10,6 +9,9 @@ from smartwatts.database import CsvDB
 from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeys
 
 PATH_TO_TEST = "./smartwatts/test/"
+BAD_COMMON = [PATH_TO_TEST + "data_test/bad_common_miss_sensor.csv",
+              PATH_TO_TEST + "data_test/bad_common_miss_target.csv",
+              PATH_TO_TEST + "data_test/bad_common_miss_timestamp.csv"]
 
 
 class TestCsvDB():
@@ -29,7 +31,9 @@ class TestCsvDB():
         """
         Test when file miss some common column
         """
-        with pytest.raises(CsvBadCommonKeys) as pytest_wrapped:
-            CsvDB(HWPCModel(),
-                  [PATH_TO_TEST + "data_test/bad_common.csv"]).load()
-        assert pytest_wrapped.type == CsvBadCommonKeys
+        csv_files = BAD_COMMON
+        while csv_files:
+            with pytest.raises(CsvBadCommonKeys) as pytest_wrapped:
+                CsvDB(HWPCModel(), csv_files).load()
+            assert pytest_wrapped.type == CsvBadCommonKeys
+            csv_files = csv_files[1:]
