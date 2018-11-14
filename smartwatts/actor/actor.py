@@ -79,6 +79,7 @@ class Actor(multiprocessing.Process):
             # Kill msg
             elif isinstance(msg, PoisonPillMessage):
                 self.alive = False
+                self.pull_socket.close()
             else:
                 self.receive(msg)
 
@@ -163,3 +164,4 @@ class Actor(multiprocessing.Process):
         kill this actor by sending a PoisonPillMessage message
         """
         self.send(PoisonPillMessage())
+        self.push_socket.close()
