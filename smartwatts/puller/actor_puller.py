@@ -44,8 +44,11 @@ class ActorPuller(Actor):
         This actor read each report in db and simply filter it
         in his filter, then send it (or not) to the dispatcher.
         """
-        # Read one input
+        # Read one input, if it's None, it means there is not more
+        # report in the database, just pass
         json = self.database.get_next()
+        if json is None:
+            return
 
         # Deserialization
         report = self.filter.get_type()()
