@@ -6,11 +6,9 @@
 conn = new Mongo();
 db = conn.getDB("test_puller");
 
-// Recreate empty collection "test_puller1" "test_puller2"
+// Recreate empty collection "test_puller1"
 db.test_puller1.drop()
-db.test_puller2.drop()
 db.createCollection("test_puller1");
-db.createCollection("test_puller2");
 
 // Feed the collection "test_puller1"
 // with HWPCReport
