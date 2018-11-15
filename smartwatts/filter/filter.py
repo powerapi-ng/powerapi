@@ -3,6 +3,11 @@ Module filter
 """
 
 
+class FilterUselessError(Exception):
+    """ Raise when a filter route with 0 filters """
+    pass
+
+
 class Filter:
     """ Filter abstract class """
 
@@ -36,6 +41,10 @@ class Filter:
         Parameters:
             @msg: msg to send
         """
+        # Error if filters is empty
+        if not self.filters:
+            raise FilterUselessError
+
         for rule, dispatcher in self.filters:
             if rule(msg):
                 return dispatcher
