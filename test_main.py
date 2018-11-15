@@ -6,7 +6,7 @@ import os
 from smartwatts.pusher import ActorPusher
 from smartwatts.database import StdoutDB, MongoDB
 from smartwatts.formula import ActorTestFormula
-from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, TestGroupBy
+from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 from smartwatts.filter import HWPCFilter
 from smartwatts.puller import ActorPuller
 from smartwatts.report import HWPCReport
