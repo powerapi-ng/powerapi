@@ -5,7 +5,7 @@ sudo mkdir -p /data/db-test
 sudo chmod -R go+w /data/db-test
 
 # Stop mongod
-sudo mongod --shutdown
+sudo mongod --shutdown --dbpath /data/db-test
 
 # Start mongod
 sudo mongod --port 27017 --fork --logpath /var/log/mongodb.log --dbpath /data/db-test
