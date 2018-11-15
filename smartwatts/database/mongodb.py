@@ -72,7 +72,10 @@ class MongoDB(BaseDB):
 
     def get_next(self):
         """ Override """
-        json = self.cursor.next()
+        try:
+            json = self.cursor.next()
+        except StopIteration:
+            return None
 
         # Re arrange the json before return it by removing '_id' field
         json.pop('_id', None)
