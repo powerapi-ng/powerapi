@@ -43,6 +43,6 @@ class TestMongoDB():
         Test if the collection name exist in the Mongodb
         """
         with pytest.raises(MongoBadCollectionNameError) as pytest_wrapped:
-            MongoDB(HWPCModel(), "localhost", 27017, "smartwatts",
+            MongoDB(HWPCModel(), "localhost", 27017, "test_puller",
                     "error").load()
         assert pytest_wrapped.type == MongoBadCollectionNameError
