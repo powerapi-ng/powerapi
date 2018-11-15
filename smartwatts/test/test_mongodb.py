@@ -10,8 +10,6 @@ from smartwatts.database import MongoDB, MongoBadDBError
 from smartwatts.database import MongoBadDBNameError
 from smartwatts.database import MongoBadCollectionNameError
 
-PATH_TO_TEST = "/smartwatts/test/"
-
 
 class TestMongoDB():
     """

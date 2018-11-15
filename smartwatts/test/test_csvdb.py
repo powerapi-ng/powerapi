@@ -8,10 +8,10 @@ from smartwatts.report_model import HWPCModel
 from smartwatts.database import CsvDB
 from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeys
 
-PATH_TO_TEST = "./smartwatts/test/"
-BAD_COMMON = [PATH_TO_TEST + "data_test/bad_common_miss_sensor.csv",
-              PATH_TO_TEST + "data_test/bad_common_miss_target.csv",
-              PATH_TO_TEST + "data_test/bad_common_miss_timestamp.csv"]
+PATH_TO_TEST = "./smartwatts/test/environment/data/"
+BAD_COMMON = [PATH_TO_TEST + "bad_common_miss_sensor.csv",
+              PATH_TO_TEST + "bad_common_miss_target.csv",
+              PATH_TO_TEST + "bad_common_miss_timestamp.csv"]
 
 
 class TestCsvDB():
