@@ -15,11 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
+import time
 
-from smartwatts.formula_dispatcher import ActorFormulaDispatcher
+from smartwatts.formula_dispatcher import ActorFormulaDispatcher, NoPrimaryGroupByRuleException
 from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import Report
+from smartwatts.test.mocked_formula import MockedFormula
+from smartwatts.test.test_actor_utility import MessageInterceptor, SignedMessage, CreationMessage
+# from smartwatts.report import HWPCReport
+# from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 
+import zmq
 
 class Report1(Report):
     """Fake Report class using for testing"""
@@ -57,7 +63,7 @@ def create_formula_dispatcher():
     return formula_dispatcher
 
 
-class TestPrivateMethods:
+class TestGroupBy:
     """Test private method of ActorFormulaDispatcher"""
 
     def test_match_report_id_same_rule(self):
@@ -79,3 +85,62 @@ class TestPrivateMethods:
         initial_id = ('a', 'b', 'd')
         report_id = dispatcher._match_report_id(initial_id, FakeGroupBy2())
         assert report_id == initial_id[:2]
+
+
+@pytest.fixture(scope='module')
+def message_interceptor():
+    """ Initialize the message interceptor for all the test module"""
+    return MessageInterceptor()
+
+@pytest.fixture
+def formula_dispatcher(request, message_interceptor):
+    """Initialize the formula dispatcher
+
+    The formula dispatcher is reinitialized for each test function
+
+    It use the group_by rule contained in group_by_list attribute of the test
+    class used
+
+    """
+    dispatcher = ActorFormulaDispatcher('fd', lambda name, verbose:
+                                        MockedFormula(name, message_interceptor, verbose=verbose),
+                                        verbose=True)
+
+    group_by_list = getattr(request.instance, 'group_by_list', None)
+    for report_class, group_by_rule in group_by_list:
+        dispatcher.group_by(report_class, group_by_rule)
+
+    context = zmq.Context()
+    dispatcher.start()
+    dispatcher.connect(context)
+    yield dispatcher
+    dispatcher.kill()
+    message_interceptor.clear_message()
+    time.sleep(0.2)
+
+@pytest.fixture
+def create_formulas(message_interceptor, formula_dispatcher):
+    """Create formula and consume creation message received after their creation
+    """
+    formula_dispatcher.send(Report1())
+    msg = message_interceptor.receive(1000)
+    print(msg)
+    time.sleep(0.2)
+
+class TestGroupByROOT:
+    # ((report_class, group_by_rule, primary_bool)]
+    group_by_list = [(Report1, FakeGroupBy1(primary=True))]
+
+    def test_no_creation_for_random_msg(self, message_interceptor, formula_dispatcher):
+        formula_dispatcher.send("toto")
+        assert message_interceptor.receive(300) == None
+        assert False
+
+    def test_creation_after_send_one_report(self, message_interceptor, formula_dispatcher):
+        formula_dispatcher.send(Report1())
+        msg = message_interceptor.receive(300)
+        assert isinstance(msg, CreationMessage)
+
+    def test_send_random_msg(self, message_interceptor, formula_dispatcher, create_formulas):
+        formula_dispatcher.send("toto")
+        assert message_interceptor.receive(300) == None

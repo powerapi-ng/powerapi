@@ -199,6 +199,7 @@ class DispatcherActor(Actor):
         self.formula_dict[formula_id] = formula
         self.formula_tree.add(list(formula_id), formula)
         self.formula_dict[formula_id].start()
+        self.log('create formula ' + str(formula_id))
 
     def group_by(self, report_class, group_by_rule):
         """
