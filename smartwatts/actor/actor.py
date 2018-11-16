@@ -5,6 +5,7 @@ Module actors
 import os
 import multiprocessing
 import pickle
+import setproctitle
 import zmq
 
 from smartwatts.message import PoisonPillMessage
@@ -54,6 +55,9 @@ class Actor(multiprocessing.Process):
         """
         code executed by the actor
         """
+
+        # Name process
+        setproctitle.setproctitle(self.name)
 
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
