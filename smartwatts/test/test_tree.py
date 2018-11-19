@@ -19,6 +19,13 @@ class TestTree():
         assert tree.root.label == 'A'
         assert tree.root.childs[0] == Node('B', 1)
 
+    def test_get_from_root(self):
+        tree = Tree()
+        tree.add(['A', 'B'], 1)
+
+        assert tree.get([]) == [1]
+        assert tree.get(['A']) == [1]
+
 
 class TestNode():
     """
@@ -70,6 +77,7 @@ class TestNode():
         leaf_d = sorted_child[0]
         assert leaf_d == Node('C', 1)
 
+        
     def test_retrieve_leaf_value_depth1(self):
         """Test to retrieve the leaf added in test_add_child_depth1
         """
@@ -113,3 +121,30 @@ class TestNode():
 
         [leaf_d] = root.retrieve_leaf_values(['A', 'B', 'D'])
         assert leaf_d == 2
+
+
+    def test_get_childs_depth1(self):
+        """Test to retrieve all childs and their path on test_add_child_depth1
+        tree"""
+        root = Node('A')
+        root.add_leaf(['A', 'B'], 1)
+        assert root.get_childs() == [(['A', 'B'], 1)]
+
+    def test_get_childs_depth2(self):
+        """Test to retrieve all childs and their path on test_add_child_depth2
+        tree"""
+        root = Node('A')
+        root.add_leaf(['A', 'B', 'C'], 1)
+        assert root.get_childs() == [(['A', 'B', 'C'], 1)]
+
+    def get_childs_depth1(self):
+        """Test to retrieve all childs and their path on
+        test_add_child_depth2_node_already_exist tree
+        """
+        root = Node('A')
+        root.add_leaf(['A', 'B', 'C'], 1)
+        root.add_leaf(['A', 'B', 'D'], 2)
+
+        childs = root.get_childs()
+        childs.sort()
+        assert childs == [(['A', 'B', 'C'], 1), (['A', 'B', 'C'], 2)]
