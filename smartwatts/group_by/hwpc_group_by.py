@@ -1,8 +1,9 @@
 """HWPC group by rules utilities
-
 """
 
 from enum import IntEnum
+
+import smartwatts.utils as utils
 from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import HWPCReport, HWPCReportSocket
 
@@ -54,13 +55,25 @@ class HWPCGroupBy(AbstractGroupBy):
         # atomic reports from the same groups and for each merged report, append
         # values from shared groups
         atomic_reports = _split_reports(sensor_id, normal_groups, self.depth)
+        atomic_shared_reports = _split_reports(sensor_id, shared_groups,
+                                               self.depth)
         reports = _merge_groups(report, atomic_reports)
 
         # append values from shared groups
         final_reports = []
+        tree = utils.Tree()
         for base_report_id, base_report in reports:
-            for (group_id, group) in shared_groups:
-                base_report.groups[group_id] = group
+            tree.add(list(base_report_id), (base_report_id, base_report))
+
+        for shared_report_id, group_id, socket_report in atomic_shared_reports:
+            for base_report_id, base_report in tree.get(shared_report_id):
+                if group_id not in base_report.groups:
+                    base_report.groups[group_id] = {}
+
+                socket_id = socket_report.socket_id
+                base_report.groups[group_id][socket_id] = socket_report
+
+        for (base_report_id, base_report) in tree.get([]):
             final_reports.append((base_report_id, base_report))
         return final_reports
 
@@ -89,26 +102,50 @@ def _check_report_integrity(report):
     return True
 
 
+def _number_of_core_per_socket(group):
+    """compute the number of core per socket in this group
+
+    Parameter:
+        group({str:HWPCReportSocket}): group must be a valide group (composed
+                                       by socket, core, event)
+    Return:
+        (int): the number of core per socket in this group
+
+    """
+    first_socket_report = list(group.values())[0]
+    return len(first_socket_report.cores.values())
+
+
 def _extract_shared_groups(report):
     """separate shared groups (like RAPL, PCU, ...) from non shared groups
 
-    Return([(group_id, {str:HWPCReport})],
-           [(group_id, {str:HWPCReport})]): return the list of shared groups and
-                                            the list of non shared groups
+    Return([(group_id, {str:HWPCReportSocket})],
+           [(group_id, {str:HWPCReportSocket})]): return the list of shared
+                                                  groups and the list of non
+                                                  shared groups
+
     """
+    # tag each group with its number of core per socket and record the maximum
+    # number of core per socket
+    taged_groups = []
+    maximum_number_of_core = -1
+    for group_id, group in report.groups.items():
+        number_of_core = _number_of_core_per_socket(group)
+        if number_of_core > maximum_number_of_core:
+            maximum_number_of_core = number_of_core
+
+        taged_groups.append((number_of_core, group_id, group))
+
+    # each groups that doesn't have the maximum number of core per socket is a
+    # shared group
     shared_groups = []
     normal_groups = []
-    for group_id, group in report.groups.items():
-        if len(group) > 1:
-            # if the group have more than one socket report its a non shared
-            # group
-            normal_groups.append((group_id, group))
-        elif len(list(group.values())[0].cores) > 1:
-            # if the group have more than one core report its a non shared group
-            normal_groups.append((group_id, group))
-        else:
-            # otherwise its a shared group
+    for number_of_core, group_id, group in taged_groups:
+        if number_of_core != maximum_number_of_core:
             shared_groups.append((group_id, group))
+        else:
+            normal_groups.append((group_id, group))
+
     return shared_groups, normal_groups
 
 
