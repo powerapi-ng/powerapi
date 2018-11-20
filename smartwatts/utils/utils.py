@@ -3,7 +3,7 @@ Module utils
 Define some useful functions
 """
 
-import collections
+import collections.abc as collections
 import datetime
 
 
