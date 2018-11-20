@@ -27,8 +27,8 @@ class MongoDB(BaseDB):
     MongoDB class
     """
 
-    def __init__(self, report_model, host_name,
-                 port, db_name, collection_name):
+    def __init__(self, report_model,
+                 host_name, port, db_name, collection_name):
         """
         Parameters:
             @report_model:    XXXModel object.
@@ -47,8 +47,15 @@ class MongoDB(BaseDB):
         self.collection = None
         self.cursor = None
 
+        # Define if the mongodb
+        self.capped = None
+
     def load(self):
         """ Override """
+        # close connec if reload
+        if self.mongo_client is not None:
+            self.mongo_client.close()
+
         self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
                                                 serverSelectionTimeoutMS=1)
 
@@ -68,7 +75,18 @@ class MongoDB(BaseDB):
             raise MongoBadCollectionNameError
 
         self.collection = self.mongo_client[self.db_name][self.collection_name]
-        self.cursor = self.collection.find({})
+
+        # Check if collection is capped or not
+        options = self.collection.options()
+        self.capped = True if ('capped' in options and
+                               options['capped']) else False
+
+        # Depend if capped or not, create cursor
+        if self.capped:
+            self.cursor = self.collection.find(
+                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
+        else:
+            self.cursor = self.collection.find({})
 
     def get_next(self):
         """ Override """
