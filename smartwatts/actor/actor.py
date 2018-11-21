@@ -11,6 +11,7 @@ import zmq
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
 
+
 class Actor(multiprocessing.Process):
     """
     Abstract class of Actor.
@@ -45,13 +46,13 @@ class Actor(multiprocessing.Process):
 
         self.timeout_handler = None
         self.handlers = []
-        
+
     def log(self, message):
         """
         Print message if verbose mode is enable.
         """
         if self.verbose:
-            print('['+str(os.getpid())+']' + ' ' + message)
+            print('[' + str(os.getpid()) + ']' + ' ' + message)
 
     def run(self):
         """
