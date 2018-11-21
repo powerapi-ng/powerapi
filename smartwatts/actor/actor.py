@@ -8,7 +8,7 @@ import pickle
 import zmq
 
 from smartwatts.actor.basic_messages import PoisonPill
-
+from smartwatts.message import UnknowMessageTypeException
 
 class Actor(multiprocessing.Process):
     """
@@ -37,12 +37,14 @@ class Actor(multiprocessing.Process):
 
         self.verbose = verbose
         self.alive = True
-        self.receive = self.initial_receive
         self.context = None
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
         self.timeout = timeout
 
+        self.timeout_handler = None
+        self.handlers = []
+        
     def log(self, message):
         """
         Print message if verbose mode is enable.
@@ -67,7 +69,7 @@ class Actor(multiprocessing.Process):
         self.log("running on address " + self.pull_socket_address)
 
         # actors specific initialisation
-        self.init_actor()
+        self.setup()
 
         # Run loop
         while self.alive:
@@ -75,16 +77,20 @@ class Actor(multiprocessing.Process):
 
             # Timeout
             if msg is None:
-                self.behaviour()
+                self.timeout_handler.handle(None)
             # Kill msg
             elif isinstance(msg, PoisonPill):
                 self.alive = False
             else:
-                self.receive(msg)
+                for (msg_type, handler) in self.handlers:
+                    if isinstance(msg, msg_type):
+                        handler.handle(msg)
+                        continue
+                raise UnknowMessageTypeException
 
         self.terminated_behaviour()
 
-    def init_actor(self):
+    def setup(self):
         """
         Need to be overrided.
 
@@ -100,22 +106,6 @@ class Actor(multiprocessing.Process):
         function called before killing the actor
         """
         self.log("terminated")
-
-    def initial_receive(self, msg):
-        """
-        Need to be overrided.
-
-        Define how to process each msg type
-        """
-        raise NotImplementedError
-
-    def behaviour(self):
-        """
-        Need to be overrided.
-
-        Define the behaviour of the actor if he is define with a timeout
-        """
-        raise NotImplementedError
 
     def __send_serialized(self, socket, msg):
         """
