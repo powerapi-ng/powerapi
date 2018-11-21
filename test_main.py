@@ -6,10 +6,11 @@ import os
 from smartwatts.pusher import ActorPusher
 from smartwatts.database import StdoutDB, MongoDB
 from smartwatts.formula import ActorTestFormula
-from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, TestGroupBy
+from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 from smartwatts.filter import HWPCFilter
 from smartwatts.puller import ActorPuller
 from smartwatts.report import HWPCReport
+from smartwatts.report_model import HWPCModel
 from smartwatts.formula_dispatcher import ActorFormulaDispatcher
 
 
@@ -38,7 +39,7 @@ def main():
                                                 primary=True))
 
     # Puller
-    mongodb = MongoDB('localhost', 27017, 'smartwatts', 'sensor')
+    mongodb = MongoDB(HWPCModel(), 'localhost', 27017, 'smartwatts', 'sensor')
     hwpc_filter = HWPCFilter()
     hwpc_filter.filter(lambda msg: True, dispatcher)
     puller = ActorPuller("puller_mongo", mongodb,

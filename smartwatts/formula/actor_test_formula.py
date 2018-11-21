@@ -4,40 +4,44 @@ Module ActorTestFormula
 
 import time
 
-from smartwatts.actor.basic_messages import UnknowMessageTypeException
+from smartwatts.message import UnknowMessageTypeException
 from smartwatts.actor import Actor
 from smartwatts.report import HWPCReport, PowerReport
 
 
 class ActorTestFormula(Actor):
     """
+    ActorTestFormula class
+
     A test formula that simulate data processing by waiting 1s and send a
     power report containing 42
-
     """
-    def __init__(self, name, reporter, verbose=False):
+
+    def __init__(self, name, pusher, verbose=False):
         """
         Parameters:
-            reporter(smartwatts.reporter.Reporter): Reporter that this formula
+            @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
                                                     must send its reports
         """
         Actor.__init__(self, name, verbose)
 
-        self.reporter = reporter
+        self.pusher = pusher
 
     def init_actor(self):
-        """
-        connect to the reporter actor
-        """
-        self.reporter.connect(self.context)
+        """ Override """
+
+        # Connect to the pusher actor
+        self.pusher.connect(self.context)
 
     def initial_receive(self, msg):
+        """ Override """
         if isinstance(msg, HWPCReport):
             time.sleep(1)
             msg = PowerReport(42)
-            self.reporter.send(msg)
+            self.pusher.send(msg)
         else:
             raise UnknowMessageTypeException(type(msg))
 
     def behaviour(self):
-        return
+        """ Override """
+        pass

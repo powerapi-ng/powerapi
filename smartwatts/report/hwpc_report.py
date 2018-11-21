@@ -1,8 +1,7 @@
 """
-Module hwpc_sensor which define the HWPCReport class
+Modul hwpc_sensor which define the HWPCReport class
 """
 from smartwatts.report.report import Report
-import smartwatts.utils as utils
 
 
 class HWPCReportCore(Report):
@@ -22,9 +21,6 @@ class HWPCReportCore(Report):
                    '    ' + self.events.__str__() + "\n")
         return display
 
-    def get_child_reports(self):
-        return [event for event in self.events.values()]
-    
     def serialize(self):
         """
         Return the JSON format of the report
@@ -54,18 +50,6 @@ class HWPCReportSocket(Report):
         self.socket_id = socket_id
         self.cores = {}
         self.group_id = None
-
-    def get_child_reports(self):
-        return [report for report in self.cores.values()]
-
-    def set_child_report(self, key, val):
-        self.cores[key] = val
-
-    def cut_child(self):
-        socket_report = HWPCReportSocket(self.socket_id)
-        # socket_report.hw_id = self.hw_id
-        socket_report.group_id = self.group_id
-        return socket_report
 
     def __str__(self):
         display = (" \n" +
@@ -109,26 +93,6 @@ class HWPCReport(Report):
         self.sensor = sensor
         self.target = target
         self.groups = {}
-
-    def get_child_reports(self):
-
-        reports = []
-        for (group_id, sockets) in self.groups.items():
-            for (_, socket_report) in sockets.items():
-                socket_report.group_id = group_id
-                reports.append(socket_report)
-        return reports
-
-    def set_child_report(self, key, val):
-        socket_id = key
-        socket_report = val
-
-        if socket_report.group_id not in self.groups:
-            self.groups[socket_report.group_id] = {}
-        self.groups[socket_report.group_id][socket_id] = socket_report
-
-    def cut_child(self):
-        return HWPCReport(self.timestamp, self.sensor, self.target)
 
     def __str__(self):
         display = ("\n" +
