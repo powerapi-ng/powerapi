@@ -26,7 +26,6 @@ class CsvBadCommonKeys(Exception):
 class CsvDB(BaseDB):
     """
     CsvDB class
-    !!! BAD PERFORMANCE (load in memory) !!!
     """
 
     def __init__(self, report_model, files_name):
@@ -42,56 +41,88 @@ class CsvDB(BaseDB):
               values: HWPCReport
         """
         BaseDB.__init__(self, report_model)
-        self.database = SortedDict()
         self.files_name = files_name
+        self.tmp = {
+            path_file: {
+                'next_line': [],
+                'csv': None
+            }
+            for path_file in files_name
+        }
+        self.saved_timestamp = utils.timestamp_to_datetime(0)
+
+    def _next(self, path_file):
+        """ Get next row safely """
+        try:
+            return self.tmp[path_file]['csv'].__next__()
+        except StopIteration:
+            return None
 
     def load(self):
         """ Override """
 
-        # Get all .csv filename
+        # Open all files with csv and read first line
         for path_file in self.files_name:
             try:
-                with open(path_file) as csv_file:
-                    csv_reader = csv.reader(csv_file)
-                    group_name = path_file.split('/')[-1]
-
-                    # First line is the fields names
-                    fieldname = csv_reader.__next__()
-
-                    # Check common keys
-                    for key in KEYS_COMMON:
-                        if key not in fieldname:
-                            raise CsvBadCommonKeys
-
-                    for csv_row in csv_reader:
-                        row = {fieldname[i]: csv_row[i] for i in range(
-                            len(fieldname))}
-                        timestamp = utils.timestamp_to_datetime(
-                            int(row['timestamp']))
-                        key = (timestamp, row['sensor'], row['target'])
-
-                        # If Report doesn't exist, create it
-                        if key not in self.database:
-                            self.database[key] = {
-                                'timestamp': timestamp,
-                                'sensor': row['sensor'],
-                                'target': row['target']}
-
-                        # Call the report_model and concat both dict
-                        specific_dict = self.report_model.from_csvdb(
-                            group_name,
-                            row)
-                        utils.dict_merge(self.database[key], specific_dict)
+                self.tmp[path_file]['csv'] = csv.DictReader(open(path_file))
             except FileNotFoundError:
                 raise CsvBadFilePathError
+            self.tmp[path_file]['next_line'] = self._next(path_file)
+
+            # Check common key
+            for key in KEYS_COMMON:
+                if key not in self.tmp[path_file]['next_line']:
+                    raise CsvBadCommonKeys
+
+        # Save the first timestamp
+        self.saved_timestamp = utils.timestamp_to_datetime(
+            int(self.tmp[self.files_name[0]]['next_line']['timestamp']))
 
     def get_next(self):
         """ Override """
-        try:
-            _, report = self.database.popitem(0)
-        except KeyError:
+
+        # Dict to return
+        json = {}
+
+        # Get the current timestamp
+        current_timestamp = self.saved_timestamp
+
+        # For all files
+        for path_file in self.files_name:
+
+            # While timestamp is lower or equal
+            while True:
+
+                # Get the next line
+                row = self.tmp[path_file]['next_line']
+
+                # If nothing more, break
+                if row is None:
+                    break
+
+                # Get the timestamp as datetime
+                row_timestamp = utils.timestamp_to_datetime(
+                    int(row['timestamp']))
+
+                # If timestamp is higher, we stop here
+                if row_timestamp > current_timestamp:
+                    if path_file == self.files_name[0]:
+                        self.saved_timestamp = row_timestamp
+                    break
+
+                # Else if it's the same, we merge
+                elif row_timestamp == current_timestamp:
+                    utils.dict_merge(
+                        json,
+                        self.report_model.from_csvdb(path_file.split('/')[-1],
+                                                     row))
+
+                # Next line
+                self.tmp[path_file]['next_line'] = self._next(path_file)
+
+        if not json:
             return None
-        return report
+        return json
 
     def save(self, json):
         """ Override """

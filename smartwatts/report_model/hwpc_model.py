@@ -26,7 +26,8 @@ class HWPCModel(ReportModel):
 
     def from_csvdb(self, file_name, row):
         """ Override """
-        final_dict = {'groups': {}}
+        final_dict = {key: row[key] for key in KEYS_COMMON}
+        final_dict['groups'] = {}
 
         # If group doesn't exist, create it
         if file_name not in final_dict:
