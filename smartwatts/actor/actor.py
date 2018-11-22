@@ -86,15 +86,22 @@ class Actor(multiprocessing.Process):
             # Kill msg
             elif isinstance(msg, PoisonPillMessage):
                 self.alive = False
-                self.pull_socket.close()
             else:
+                handler_found = False
                 for (msg_type, handler) in self.handlers:
                     if isinstance(msg, msg_type):
-                        handler.handle(msg)
-                        continue
-                raise UnknowMessageTypeException
+                        result = handler.handle(msg)
+                        self._post_handle(result)
+                        handler_found = True
+                        break
+                if not handler_found:
+                    raise UnknowMessageTypeException
 
-        self.terminated_behaviour()
+        self._kill_process()
+
+    def _post_handle(self, result):
+        """ post handle behaviour on the handler return value """
+        raise NotImplementedError
 
     def setup(self):
         """
@@ -105,13 +112,18 @@ class Actor(multiprocessing.Process):
         """
         raise NotImplementedError
 
-    def terminated_behaviour(self):
-        """
-        Can be overrided.
-
-        function called before killing the actor
-        """
+    def _kill_process(self):
+        """ Kill the actor (close the pull socket)"""
+        self.terminated_behaviour()
+        self.pull_socket.close()
         self.log("terminated")
+
+    def terminated_behaviour(self):
+        """ function called before closing the pull socket
+
+        Can be overiden to use personal actor termination behaviour
+        """
+        pass
 
     def __send_serialized(self, socket, msg):
         """

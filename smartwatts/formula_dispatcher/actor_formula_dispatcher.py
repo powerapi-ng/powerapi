@@ -2,7 +2,8 @@
 Module class Router
 """
 
-from smartwatts.actor import Actor
+from smartwatts.actor import Actor, Handler
+from smartwatts.report import Report
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.utils.tree import Tree
 
@@ -23,63 +24,41 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
     pass
 
 
-class ActorFormulaDispatcher(Actor):
+class FormulaDispatcherReportHandler(Handler):
     """
-    ActorFormulaDispatcher class.
-
-    receive interface:
-        report_data: route this message to the corresponding Formula Actor,
-                     create a new one if no Formula exist to handle
-                     this message
+    Split the received report into sub-reports (if needed) and return the sub
+    reports and formulas ids to send theses report
     """
 
-    def __init__(self, name, formula_init_function, verbose=False):
+    def __init__(self, route_table, primary_group_by_rule):
         """
         Parameters:
             @formula_init_function(fun () -> smartwatts.formula.Formula):
                 Formula Factory.
         """
-        Actor.__init__(self, name, verbose)
-
-        # Formula containers
-        self.formula_dict = {}
-        self.formula_tree = Tree()
-
         # Array of tuple (report_class, group_by_rule)
-        self.route_table = []
+        self.route_table = route_table
 
-        # Formula factory
-        self.formula_init_function = formula_init_function
+        # Primary GroupBy
+        self.primary_group_by_rule = primary_group_by_rule
 
-        # Primary XXXGroupBy
-        self.primary_group_by_rule = None
-
-    def init_actor(self):
-        """ Override """
-        pass
-
-    def terminated_behaviour(self):
+    def handle(self, msg):
         """
-        Kill each formula before terminate
-        """
-        for name, formula in self.formula_dict.items():
-            self.log('kill ' + name)
-            formula.kill()
+        Split the received report into sub-reports (if needed) and return the
+        sub reports and formulas ids to send theses report
 
-    def initial_receive(self, msg):
-        """
-        Override
+        Parameters:
+            msg(smartwatts.report.Report)
 
-        Loop since we find a route for this type of message
-        Else it raise an error
+        Return:
+            [(tuple, smartwatts.report.Report)]: list of *(formula_id, report)*.
+                                                 The formula_id is a tuple that
+                                                 identify the formula_actor
         """
-
         for (report_class, group_by_rule) in self.route_table:
             if isinstance(msg, report_class):
-                for formula_id, report in self._extract_reports(msg,
-                                                                group_by_rule):
-                    self._send_to_formula(report, formula_id)
-                return
+                return self._extract_reports(msg, group_by_rule)
+
         raise UnknowMessageTypeException(type(msg))
 
     def _extract_reports(self, report, group_by_rule):
@@ -126,13 +105,58 @@ class ActorFormulaDispatcher(Actor):
                 return new_report_id
         return new_report_id
 
-    def _get_primary_group_by_rule(self):
+
+class ActorFormulaDispatcher(Actor):
+    """
+    ActorFormulaDispatcher class.
+
+    receive interface:
+        report_data: route this message to the corresponding Formula Actor,
+                     create a new one if no Formula exist to handle
+                     this message
+    """
+
+    def __init__(self, name, formula_init_function, verbose=False):
         """
-        Return the primary group_by rule
+        Parameters:
+            @formula_init_function(fun () -> smartwatts.formula.Formula):
+                Formula Factory.
         """
-        if self.primary_group_by_rule is not None:
-            return self.primary_group_by_rule
-        raise NoPrimaryGroupByRuleException
+        Actor.__init__(self, name, verbose)
+
+        # Informations tranmsitted to FormulaDispatcherReportHandler
+        self.route_table = []
+        self.primary_group_by_rule = None
+
+        # Formula containers
+        self.formula_dict = {}
+        self.formula_tree = Tree()
+
+        # Formula factory
+        self.formula_init_function = formula_init_function
+
+    def setup(self):
+        """ Append FormulaDispatcherReportHandler Handler"""
+        if self.primary_group_by_rule is None:
+            raise NoPrimaryGroupByRuleException
+
+        self.handlers.append(
+            (Report, FormulaDispatcherReportHandler(self.route_table,
+                                                    self.primary_group_by_rule))
+        )
+
+    def _post_handle(self, result):
+        """ Send the report to each formulas """
+        for formula_id, report in result:
+            self._send_to_formula(report, formula_id)
+
+    def terminated_behaviour(self):
+        """
+        Kill each formula before terminate
+        """
+        for name, formula in self.formula_dict.items():
+            self.log('kill ' + name)
+            formula.kill()
 
     def _send_to_formula(self, report, formula_id):
         """
@@ -175,7 +199,3 @@ class ActorFormulaDispatcher(Actor):
             self.primary_group_by_rule = group_by_rule
 
         self.route_table.append((report_class, group_by_rule))
-
-    def behaviour(self):
-        """ Override """
-        pass
