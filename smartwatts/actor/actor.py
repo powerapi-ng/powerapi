@@ -125,7 +125,6 @@ class Actor(multiprocessing.Process):
         """
         pass
 
-
     def __send_serialized(self, socket, msg):
         """
         Allow to send a serialized msg with pickle
