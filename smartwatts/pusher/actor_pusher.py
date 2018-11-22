@@ -2,8 +2,26 @@
 Module class ActorPusher
 """
 
-from smartwatts.message import UnknowMessageTypeException
-from smartwatts.actor import Actor
+from smartwatts.actor import Actor, Handler
+from smartwatts.report import PowerReport
+
+
+class _PowerHandler(Handler):
+    """
+    HWPCHandler class
+    """
+
+    def __init__(self, database):
+        self.database = database
+        self.database.load()
+
+    def handle(self, msg):
+        """
+        Override
+
+        Save the msg in the database
+        """
+        self.database.save(msg)
 
 
 class ActorPusher(Actor):
@@ -14,22 +32,15 @@ class ActorPusher(Actor):
         self.report_type = report_type
         self.database = database
 
-    def init_actor(self):
+    def setup(self):
         """
         Override
-        """
-        pass
 
-    def initial_receive(self, msg):
+        Specify for each kind of report the associate handler
         """
-        Override
-        """
-        if isinstance(msg, self.report_type):
-            self.database.save(msg)
-        else:
-            raise UnknowMessageTypeException
+        self.handlers.append((PowerReport, _PowerHandler(self.database)))
 
-    def behaviour(self):
+    def post_handle(self):
         """
         Override
         """
