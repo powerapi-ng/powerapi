@@ -14,6 +14,21 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-class PowerReport:
-    def __init__(self, val):
-        self.val = val
+from smartwatts.report import Report
+
+
+class PowerReport(Report):
+    """ PowerReport class """
+
+    def __init__(self, timestamp, sensor, target, power, metadata):
+        self.timestamp = timestamp
+        self.sensor = sensor
+        self.target = target
+        self.metadata = metadata
+        self.power = power
+
+    def serialize(self):
+        pass
+
+    def deserialize(self, json):
+        pass

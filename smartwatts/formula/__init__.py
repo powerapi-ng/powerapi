@@ -1,2 +1,2 @@
-from smartwatts.formula.abstract_actor_formula import AbstractActorFormula
-from smartwatts.formula.test_formula.actor_test_formula import ActorTestFormula
+from smartwatts.formula.formula_actor import FormulaActor
+from smartwatts.formula.test_formula.test_formula_actor import TestFormulaActor

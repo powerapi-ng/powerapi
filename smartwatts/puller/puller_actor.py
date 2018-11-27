@@ -53,8 +53,8 @@ class _TimeoutHandler(Handler):
         return (report, dispatcher)
 
 
-class ActorPuller(Actor):
-    """ ActorPuller class """
+class PullerActor(Actor):
+    """ PullerActor class """
 
     def __init__(self, name, database, filt, timeout, verbose=False):
         """
@@ -82,19 +82,19 @@ class ActorPuller(Actor):
         # Create handler
         self.timeout_handler = _TimeoutHandler(self.database, self.filter)
 
-    def post_handle(self, msg):
+    def _post_handle(self, result):
         """
         Override
 
         Handle the send of the report to the good dispatcher
         """
-        # Test if msg is None
-        if msg is None:
+        # Test if result is None
+        if result is None:
             return
 
         # Extract report & dispatcher
-        report = msg[0]
-        dispatcher = msg[1]
+        report = result[0]
+        dispatcher = result[1]
 
         # Send to the dispatcher if it's not None
         if dispatcher is not None:

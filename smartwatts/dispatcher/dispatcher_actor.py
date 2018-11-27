@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module class Router
+Module class DispatcherActor
 """
 
 from smartwatts.actor import Actor, Handler
@@ -122,9 +122,9 @@ class FormulaDispatcherReportHandler(Handler):
         return new_report_id
 
 
-class ActorFormulaDispatcher(Actor):
+class DispatcherActor(Actor):
     """
-    ActorFormulaDispatcher class.
+    DispatcherActor class.
 
     receive interface:
         report_data: route this message to the corresponding Formula Actor,
