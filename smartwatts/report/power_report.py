@@ -28,7 +28,17 @@ class PowerReport(Report):
         self.power = power
 
     def serialize(self):
-        pass
+        json = {}
+        json['timestamp'] = self.timestamp
+        json['sensor'] = self.sensor
+        json['target'] = self.target
+        json['power'] = self.power
+        json['metadata'] = self.metadata
+        return json
 
     def deserialize(self, json):
-        pass
+        self.timestamp = json['timestamp']
+        self.sensor = json['sensor']
+        self.target = json['target']
+        self.power = json['power']
+        self.metadata = json['metadata']

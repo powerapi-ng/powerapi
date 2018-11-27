@@ -37,7 +37,7 @@ class _PowerHandler(Handler):
 
         Save the msg in the database
         """
-        self.database.save(msg)
+        self.database.save(msg.serialize())
 
 
 class PusherActor(Actor):
