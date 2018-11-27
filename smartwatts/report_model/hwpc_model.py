@@ -30,15 +30,7 @@ class HWPCModel(ReportModel):
 
     def from_mongodb(self, json):
         """ Override """
-        final_dict = {}
-        final_dict['groups'] = {}
-
-        for key, val in json.items():
-            if key in KEYS_COMMON:
-                final_dict[key] = val
-            else:
-                final_dict['groups'][key] = val
-        return final_dict
+        return json
 
     def from_csvdb(self, file_name, row):
         """ Override """

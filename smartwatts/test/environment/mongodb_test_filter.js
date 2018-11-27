@@ -18,14 +18,17 @@ for (var n = 0 ; n < sensors_name.length ; n++)
  for (var i = 0 ; i < 2 ; i++)
  {
   db.test_filter1.insert({
+   _id: i,
    timestamp: Date.now(),
    sensor: sensors_name[n],
    target: 'system',
-   megagroup: {
-    0 : {
+   groups: {
+    megagroup: {
      0 : {
-      'event1': 100,
-      'event2': 200
+      0 : {
+       'event1': 100,
+       'event2': 200
+      }
      }
     }
    }
