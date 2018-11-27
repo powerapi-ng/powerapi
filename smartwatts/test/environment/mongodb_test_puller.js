@@ -15,14 +15,17 @@ db.createCollection("test_puller1");
 for (var i = 0 ; i < 10 ; i++)
 {
  db.test_puller1.insert({
+  _id: i,
   timestamp: Date.now(),
   sensor: 'sensor_test',
   target: 'system',
-  megagroup: {
-   0 : {
+  groups: {
+   megagroup: {
     0 : {
-     'event1': 100,
-     'event2': 200
+     0 : {
+      'event1': 100,
+      'event2': 200
+     }
     }
    }
   }
