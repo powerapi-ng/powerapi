@@ -54,8 +54,11 @@ class Tree:
 
         Return (list): list of leafs value
         """
+        if self.root is None:
+            return []
         if path == []:
             return self.root.retrieve_leaf_values([self.root.label])
+
         return self.root.retrieve_leaf_values(path)
 
     def leafs(self):

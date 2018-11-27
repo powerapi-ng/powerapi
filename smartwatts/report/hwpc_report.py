@@ -37,6 +37,9 @@ class HWPCReportCore(Report):
                    '    ' + self.events.__str__() + "\n")
         return display
 
+    def get_child_reports(self):
+        return [event for event in self.events.values()]
+    
     def serialize(self):
         """
         Return the JSON format of the report

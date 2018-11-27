@@ -26,6 +26,12 @@ class TestTree():
     test smartwatts.tree.Tree class
     """
 
+    def get_child_to_emtpy_tree(self):
+        tree = Tree()
+
+        assert tree.get(['A', 'B']) == []
+
+
     def test_add_child_to_empty_tree(self):
         tree = Tree()
         tree.add(['A', 'B'], 1)
