@@ -20,7 +20,6 @@ HWPC group by rules utilities
 
 from enum import IntEnum
 
-import smartwatts.utils as utils
 from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import HWPCReport, HWPCReportSocket
 
@@ -30,9 +29,9 @@ class HWPCDepthLevel(IntEnum):
     Enumeration that specify which report level use to group by the reports
     """
 
-    ROOT = 3
-    SOCKET = 2
-    CORE = 1
+    ROOT = 0
+    SOCKET = 1
+    CORE = 2
 
 
 class HWPCGroupBy(AbstractGroupBy):
@@ -46,8 +45,7 @@ class HWPCGroupBy(AbstractGroupBy):
         """
         AbstractGroupBy.__init__(self, primary)
         self.depth = depth
-        self.fields = ['sensor', 'socket', 'core'][:((HWPCDepthLevel.ROOT+1)
-                                                     - depth)]
+        self.fields = ['sensor', 'socket', 'core'][:(depth + 1)]
 
     def extract(self, report):
         """ See AbstractGroupBy.extract """
@@ -77,26 +75,31 @@ class HWPCGroupBy(AbstractGroupBy):
         reports = _merge_groups(report, atomic_reports)
 
         # append values from shared groups
-        final_reports = []
-        tree = utils.Tree()
-        for base_report_id, base_report in reports:
-            tree.add(list(base_report_id), (base_report_id, base_report))
+        return _append_shared_groups(atomic_shared_reports, reports, self.depth)
 
-        for shared_report_id, group_id, socket_report in atomic_shared_reports:
-            #print((shared_report_id, tree.get(shared_report_id)))
-            spliten_id = ()
-            for i in range(len(shared_report_id) - 1):
-                spliten_id += (shared_report_id[i],)
-            for base_report_id, base_report in tree.get(spliten_id):
+
+def _append_shared_groups(atomic_shared_reports, reports_list, depth):
+    """ Append shared groups to reports
+
+    Parameters:
+        shared_groups([(tuple, str, HWPCReportSocket)]): list of
+                                              (id_report, group_id, report)
+        reports_list([(tuple, HWPCReport)]): list of (id_report, report)
+
+    Return([(tuple, HWPCReport)]): list of (id_report, report)
+
+    """
+    for shared_report_id, group_id, socket_report in atomic_shared_reports:
+        for base_report_id, base_report in reports_list:
+            i = min(HWPCDepthLevel.SOCKET, depth)
+            if shared_report_id[i] == base_report_id[i]:
                 if group_id not in base_report.groups:
                     base_report.groups[group_id] = {}
 
                 socket_id = socket_report.socket_id
                 base_report.groups[group_id][socket_id] = socket_report
 
-        for (base_report_id, base_report) in tree.get([]):
-            final_reports.append((base_report_id, base_report))
-        return final_reports
+    return reports_list
 
 
 def _check_report_integrity(report):
