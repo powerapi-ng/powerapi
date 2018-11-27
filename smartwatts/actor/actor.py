@@ -98,7 +98,8 @@ class Actor(multiprocessing.Process):
 
             # Timeout
             if msg is None:
-                self.timeout_handler.handle(None)
+                result = self.timeout_handler.handle(None)
+                self._post_handle(result)
             # Kill msg
             elif isinstance(msg, PoisonPillMessage):
                 self.alive = False
