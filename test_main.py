@@ -3,15 +3,15 @@ smartwatts utilisation example
 """
 
 import os
-from smartwatts.pusher import ActorPusher
-from smartwatts.database import StdoutDB, MongoDB
-from smartwatts.formula import ActorTestFormula
+from smartwatts.pusher import PusherActor
+from smartwatts.database import StdoutDB, CsvDB
+from smartwatts.formula import TestFormulaActor
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 from smartwatts.filter import HWPCFilter
-from smartwatts.puller import ActorPuller
+from smartwatts.puller import PullerActor
 from smartwatts.report import HWPCReport
 from smartwatts.report_model import HWPCModel
-from smartwatts.formula_dispatcher import ActorFormulaDispatcher
+from smartwatts.dispatcher import DispatcherActor
 
 
 def log(msg):
@@ -27,23 +27,26 @@ def main():
 
     # Pusher
     stdoutdb = StdoutDB()
-    pusher = ActorPusher("pusher_stdout", HWPCReport, stdoutdb, verbose=True)
+    pusher = PusherActor("pusher_stdout", HWPCReport, stdoutdb, verbose=True)
 
     # Dispatcher
-    dispatcher = ActorFormulaDispatcher('dispatcher',
-                                        lambda name, verbose:
-                                        ActorTestFormula(name, pusher,
-                                                         verbose=verbose),
-                                        verbose=True)
+    dispatcher = DispatcherActor('dispatcher',
+                                 lambda name, verbose:
+                                 TestFormulaActor(name, pusher,
+                                                  verbose=verbose),
+                                 verbose=True)
     dispatcher.group_by(HWPCReport, HWPCGroupBy(HWPCDepthLevel.CORE,
                                                 primary=True))
 
     # Puller
-    mongodb = MongoDB(HWPCModel(), 'localhost', 27017, 'smartwatts', 'sensor')
+    #mongodb = MongoDB(HWPCModel(), 'localhost', 27017, 'smartwatts', 'hwrep')
+    csvdb = CsvDB(HWPCModel(), ['/home/jordan/git/smartwatts/data/core',
+                                '/home/jordan/git/smartwatts/data/pcu',
+                                '/home/jordan/git/smartwatts/data/rapl'])
     hwpc_filter = HWPCFilter()
     hwpc_filter.filter(lambda msg: True, dispatcher)
-    puller = ActorPuller("puller_mongo", mongodb,
-                         hwpc_filter, 10, verbose=True)
+    puller = PullerActor("puller_mongo", csvdb,
+                         hwpc_filter, 2000, verbose=True)
 
     pusher.start()
     dispatcher.start()

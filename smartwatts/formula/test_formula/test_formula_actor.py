@@ -18,7 +18,7 @@
 Module ActorTestFormula
 """
 import time
-from smartwatts.formula import AbstractActorFormula
+from smartwatts.formula import FormulaActor
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.report import Report, PowerReport
 from smartwatts.actor import Handler
@@ -28,6 +28,9 @@ class TestFormulaReportHandler(Handler):
     """
     A test formula that simulate data processing
     """
+
+    def __init__(self, name):
+        self.name = name
 
     def handle(self, msg):
         """ Wait 1 seconde and return a power report containg 42
@@ -40,13 +43,14 @@ class TestFormulaReportHandler(Handler):
         """
         if isinstance(msg, Report):
             time.sleep(1)
-            result_msg = PowerReport(42)
+            result_msg = PowerReport(msg.timestamp, msg.sensor, msg.target,
+                                     42, {})
             return result_msg
 
         raise UnknowMessageTypeException(type(msg))
 
 
-class ActorTestFormula(AbstractActorFormula):
+class TestFormulaActor(FormulaActor):
     """
     ActorTestFormula class
 
@@ -54,7 +58,16 @@ class ActorTestFormula(AbstractActorFormula):
     power report containing 42
     """
 
+    def __init__(self, name, pusher, verbose=False):
+        FormulaActor.__init__(self, name, verbose)
+        self.pusher = pusher
+
     def setup(self):
         """ Initialize Handler """
-        AbstractActorFormula.setup(self)
-        self.handlers.append(Report, TestFormulaReportHandler)
+        self.pusher.connect(self.context)
+        self.handlers.append((Report, TestFormulaReportHandler(self.name)))
+
+    def _post_handle(self, result):
+        """ """
+        if result is not None:
+            self.pusher.send(result)

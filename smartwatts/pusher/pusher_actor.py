@@ -14,38 +14,50 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" Class that generalize formula behaviour """
+"""
+Module class PusherActor
+"""
 
-from smartwatts.actor import Actor
+from smartwatts.actor import Actor, Handler
 from smartwatts.report import PowerReport
 
 
-class AbstractActorFormula(Actor):
+class _PowerHandler(Handler):
     """
-    Generalize formula behaviour
+    HWPCHandler class
     """
 
-    def __init__(self, name, actor_pusher, verbose=False, timeout=None):
+    def __init__(self, database):
+        self.database = database
+        self.database.load()
+
+    def handle(self, msg):
         """
-        Parameters:
-            @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
-                                                    must send its reports
+        Override
+
+        Save the msg in the database
         """
+        self.database.save(msg)
+
+
+class PusherActor(Actor):
+    """ PusherActor class """
+
+    def __init__(self, name, report_type, database, verbose=False):
         Actor.__init__(self, name, verbose)
-        self.actor_pusher = actor_pusher
+        self.report_type = report_type
+        self.database = database
 
     def setup(self):
-        """ Connect to actor pusher """
-        self.actor_pusher.connect(self.context)
+        """
+        Override
+
+        Specify for each kind of report the associate handler
+        """
+        self.handlers.append((PowerReport, _PowerHandler(self.database)))
 
     def _post_handle(self, result):
-        """ send computed estimation to the pusher
-
-        Parameters:
-            result(smartwatts.report.PowerReport)
         """
-        if result is not None and isinstance(result, PowerReport):
-
-            self.actor_pusher.send(result)
-        else:
-            return
+        Override
+        """
+        pass
