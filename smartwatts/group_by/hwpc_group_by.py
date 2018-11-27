@@ -83,7 +83,11 @@ class HWPCGroupBy(AbstractGroupBy):
             tree.add(list(base_report_id), (base_report_id, base_report))
 
         for shared_report_id, group_id, socket_report in atomic_shared_reports:
-            for base_report_id, base_report in tree.get(shared_report_id):
+            #print((shared_report_id, tree.get(shared_report_id)))
+            spliten_id = ()
+            for i in range(len(shared_report_id) - 1):
+                spliten_id += (shared_report_id[i],)
+            for base_report_id, base_report in tree.get(spliten_id):
                 if group_id not in base_report.groups:
                     base_report.groups[group_id] = {}
 
