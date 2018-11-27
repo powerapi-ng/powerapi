@@ -44,7 +44,8 @@ class MongoDB(BaseDB):
     """
 
     def __init__(self, report_model,
-                 host_name, port, db_name, collection_name):
+                 host_name, port, db_name, collection_name,
+                 save_mode=False):
         """
         Parameters:
             @report_model:    XXXModel object.
@@ -52,19 +53,22 @@ class MongoDB(BaseDB):
             @port:            port of the mongodb (ex: 27017)
             @db_name:         database name in the mongodb (ex: "smartwatts")
             @collection_name: collection name in the mongodb (ex: "sensor")
+            @save_mode:       put save_mode to True if you want to use it
+                              with a Pusher
         """
         BaseDB.__init__(self, report_model)
         self.host_name = host_name
         self.port = port
         self.db_name = db_name
         self.collection_name = collection_name
+        self.save_mode = save_mode
 
         self.mongo_client = None
         self.collection = None
         self.cursor = None
 
-        # Define if the mongodb
-        self.capped = None
+        # Define if the mongodb is capped or not
+        self.capped = False
 
     def load(self):
         """ Override """
@@ -75,34 +79,37 @@ class MongoDB(BaseDB):
         self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
                                                 serverSelectionTimeoutMS=1)
 
+        self.collection = self.mongo_client[self.db_name][
+            self.collection_name]
+
         # Check if hostname:port work
         try:
             self.mongo_client.admin.command('ismaster')
         except pymongo.errors.ConnectionFailure:
             raise MongoBadDBError
 
-        # Check if database exist
-        if self.db_name not in self.mongo_client.list_database_names():
-            raise MongoBadDBNameError
+        if not self.save_mode:
+            # Check if database exist
+            if self.db_name not in self.mongo_client.list_database_names():
+                raise MongoBadDBNameError
 
-        # Check if collection exist
-        if self.collection_name not in self.mongo_client[
-                self.db_name].list_collection_names():
-            raise MongoBadCollectionNameError
+            # Check if collection exist
+            if self.collection_name not in self.mongo_client[
+                    self.db_name].list_collection_names():
+                raise MongoBadCollectionNameError
 
-        self.collection = self.mongo_client[self.db_name][self.collection_name]
+            # Check if collection is capped or not
+            options = self.collection.options()
+            self.capped = True if ('capped' in options and
+                                   options['capped']) else False
 
-        # Check if collection is capped or not
-        options = self.collection.options()
-        self.capped = True if ('capped' in options and
-                               options['capped']) else False
+            # Depend if capped or not, create cursor
+            if self.capped:
+                self.cursor = self.collection.find(
+                    cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
+            else:
+                self.cursor = self.collection.find({})
 
-        # Depend if capped or not, create cursor
-        if self.capped:
-            self.cursor = self.collection.find(
-                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
-        else:
-            self.cursor = self.collection.find({})
 
     def get_next(self):
         """ Override """
@@ -118,4 +125,4 @@ class MongoDB(BaseDB):
 
     def save(self, json):
         """ Override """
-        raise NotImplementedError
+        self.collection.insert_one(json)
