@@ -1,2 +1,3 @@
 from smartwatts.formula.formula_actor import FormulaActor
+from smartwatts.formula.rapl.actor_rapl_formula import RAPLFormula
 from smartwatts.formula.test_formula.test_formula_actor import TestFormulaActor
