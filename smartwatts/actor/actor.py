@@ -43,7 +43,7 @@ class Actor(multiprocessing.Process):
                         communication socket
             @verbose(bool): allow to display log
             @timeout(int): if define, do something if no msg is recv every
-                           timeout
+                           timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
 
@@ -188,4 +188,5 @@ class Actor(multiprocessing.Process):
         kill this actor by sending a PoisonPillMessage message
         """
         self.send(PoisonPillMessage())
+        self.log('send kill msg to ' + str(self.name))
         self.push_socket.close()
