@@ -15,36 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module powerspy_report which define the PowerSpyReport class
+Module report_model
 """
 
-from smartwatts.report import Report
-from enum import Enum
+KEYS_COMMON = ['timestamp', 'sensor', 'target']
+KEYS_CSV_COMMON = KEYS_COMMON + ['socket', 'cpu']
 
 
-def powerspy_extract_sensor(report):
-    return [(str(report.sensor), report)]
+class ReportModel:
+    """
+    ReportModel class.
+    It define all the function that need to be override if we want
+    to get a report from every kind of db.
+    """
 
-class PowerSpyReport(Report):
-    """ PowerSpyReport class """
+    def from_mongodb(self, json):
+        """ get the mongodb report """
+        raise NotImplementedError
 
-    def __init__(self, val1=0, val2=0):
-        self.val1 = val1
-        self.val2 = val2
-
-    def operation(self):
-        """ op """
-        return self.val1 + self.val2
-
-    def from_json(self, json):
-        """
-        Get PowerSpyReport from mongodb
-
-        Format:
-        {
-            val1: first value
-            val2: second value
-        }
-        """
-        self.val1 = json['val1']
-        self.val2 = json['val2']
+    def from_csvdb(self, file_name, row):
+        """ get the csvdb report """
+        raise NotImplementedError

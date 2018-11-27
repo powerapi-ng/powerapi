@@ -1,31 +1,119 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Module test db
 """
 
-import sys
 import os
 import pytest
 
-from smartwatts.database.db import Database
-from smartwatts.database.base_db import MissConfigParamError
+from smartwatts.report_model import HWPCModel
+from smartwatts.report import HWPCReport
+from smartwatts.database import MongoDB, MongoBadDBError
+from smartwatts.database import MongoBadDBNameError
+from smartwatts.database import MongoBadCollectionNameError
 
-PATH_TO_TEST = "/smartwatts/test/"
+
+HOSTNAME = "localhost"
+PORT = 27017
 
 
-class TestDatabase():
-    """ Test class of Database class """
+class TestMongoDB():
+    """
+    Test class of MongoDB class
 
-    MISS_CONFIG_PARAM_FILES = [
-        "./data_test/conf_wo_collection.json",
-        "./data_test/conf_wo_db.json",
-        "./data_test/conf_wo_host.json",
-        "./data_test/conf_wo_port.json",
-        "./data_test/conf_wo_type.json"
-        ]
+    If you want to pass all test, you have to run a mongo server
+    with the following configuration:
+        @hostname: HOSTNAME
+        @port:     PORT
+    """
 
-    def test_mongodb_miss_config_param(self):
-        """ Test open config with missing param """
-        for filename in self.MISS_CONFIG_PARAM_FILES:
-            with pytest.raises(MissConfigParamError) as pytest_wrapped:
-                Database(os.getcwd() + PATH_TO_TEST + filename)
-            assert pytest_wrapped.type == MissConfigParamError
+    def test_mongodb_bad_db(self):
+        """
+        Test if the database doesn't exist (hostname/port error)
+        """
+        with pytest.raises(MongoBadDBError) as pytest_wrapped:
+            MongoDB(HWPCModel(), HOSTNAME, 1, "error", "error").load()
+        assert pytest_wrapped.type == MongoBadDBError
+
+    def test_mongodb_bad_db_name(self):
+        """
+        Test if the database name exist in the Mongodb
+        """
+        with pytest.raises(MongoBadDBNameError) as pytest_wrapped:
+            MongoDB(HWPCModel(), HOSTNAME, PORT, "error", "error").load()
+        assert pytest_wrapped.type == MongoBadDBNameError
+
+    def test_mongodb_bad_collection_name(self):
+        """
+        Test if the collection name exist in the Mongodb
+        """
+        with pytest.raises(MongoBadCollectionNameError) as pytest_wrapped:
+            MongoDB(HWPCModel(), HOSTNAME, PORT, "test_mongodb",
+                    "error").load()
+        assert pytest_wrapped.type == MongoBadCollectionNameError
+
+    def test_mongodb_read_basic_db(self):
+        """
+        Test read mongodb collection without unstack the db and
+        without reload data
+        """
+        # Load DB
+        mongodb = MongoDB(HWPCModel(), HOSTNAME, PORT, "test_mongodb",
+                          "test_mongodb1")
+
+        # Check if we can reload after reading
+        for _ in range(2):
+            mongodb.load()
+
+            for _ in range(10):
+                assert mongodb.get_next() is not None
+
+        # Check if there is nothing after
+        assert mongodb.get_next() is None
+
+    def test_mongodb_read_capped_db(self):
+        """
+        Test read mongodb collection and unstack each data
+        without reload data
+        """
+        # Load DB
+        mongodb = MongoDB(HWPCModel(), HOSTNAME, PORT, "test_mongodb",
+                          "test_mongodb2")
+
+        # Check if we can read one time
+        mongodb.load()
+
+        for _ in range(mongodb.collection.count_documents({})):
+            report = mongodb.get_next()
+            assert report is not None
+
+        # Check if there is nothing after
+        assert mongodb.get_next() is None
+
+        # Add data in the collection
+        for _ in range(2):
+            report.pop('_id', None)
+            mongodb.collection.insert_one(report)
+
+        # Check if we can read it
+        for _ in range(2):
+            report = mongodb.get_next()
+            assert report is not None
+
+        # Check if there is nothing after
+        assert mongodb.get_next() is None

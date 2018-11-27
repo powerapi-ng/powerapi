@@ -1,3 +1,19 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import pytest
 
 from copy import deepcopy
@@ -24,6 +40,13 @@ class TestTree():
         assert len(tree.root.childs) == 1
         assert tree.root.label == 'A'
         assert tree.root.childs[0] == Node('B', 1)
+
+    def test_get_from_root(self):
+        tree = Tree()
+        tree.add(['A', 'B'], 1)
+
+        assert tree.get([]) == [1]
+        assert tree.get(['A']) == [1]
 
 
 class TestNode():
@@ -76,6 +99,7 @@ class TestNode():
         leaf_d = sorted_child[0]
         assert leaf_d == Node('C', 1)
 
+        
     def test_retrieve_leaf_value_depth1(self):
         """Test to retrieve the leaf added in test_add_child_depth1
         """
@@ -119,3 +143,30 @@ class TestNode():
 
         [leaf_d] = root.retrieve_leaf_values(['A', 'B', 'D'])
         assert leaf_d == 2
+
+
+    def test_get_childs_depth1(self):
+        """Test to retrieve all childs and their path on test_add_child_depth1
+        tree"""
+        root = Node('A')
+        root.add_leaf(['A', 'B'], 1)
+        assert root.get_childs() == [(['A', 'B'], 1)]
+
+    def test_get_childs_depth2(self):
+        """Test to retrieve all childs and their path on test_add_child_depth2
+        tree"""
+        root = Node('A')
+        root.add_leaf(['A', 'B', 'C'], 1)
+        assert root.get_childs() == [(['A', 'B', 'C'], 1)]
+
+    def get_childs_depth1(self):
+        """Test to retrieve all childs and their path on
+        test_add_child_depth2_node_already_exist tree
+        """
+        root = Node('A')
+        root.add_leaf(['A', 'B', 'C'], 1)
+        root.add_leaf(['A', 'B', 'D'], 2)
+
+        childs = root.get_childs()
+        childs.sort()
+        assert childs == [(['A', 'B', 'C'], 1), (['A', 'B', 'C'], 2)]

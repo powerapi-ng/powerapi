@@ -1,1 +1,1 @@
-from smartwatts.puller.actor_puller import ActorPuller
+from smartwatts.puller.puller_actor import PullerActor

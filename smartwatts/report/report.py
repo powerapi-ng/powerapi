@@ -1,3 +1,19 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Module report
 """
@@ -10,28 +26,12 @@ class Report:
 
     def __init__(self, hw_id):
         self.hw_id = hw_id
-    
+
     class GroupBy(Enum):
         """ Enum for GroupBy """
         SENSOR = 1
         SOCKET = 2
         CPU = 3
-
-    def get_child_reports(self):
-        """ Return all the reports containing in this report"""
-        raise NotImplementedError
-
-    def set_child_report(self, key, val):
-        """
-        set the child report, corresponding to the given key to the given value
-        """
-        raise NotImplementedError
-
-    def cut_child(self):
-        """
-        return a copy of the current report without its childs reports
-        """
-        raise NotImplementedError
 
     def serialize(self):
         """

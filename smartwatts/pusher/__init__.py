@@ -1,1 +1,1 @@
-from smartwatts.pusher.actor_pusher import ActorPusher
+from smartwatts.pusher.pusher_actor import PusherActor

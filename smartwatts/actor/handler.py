@@ -15,36 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module powerspy_report which define the PowerSpyReport class
+Handler interface
 """
 
-from smartwatts.report import Report
-from enum import Enum
 
+class Handler:
+    """ Handler interface """
+    def handle(self, msg):
+        """ Handle a message and return a value
 
-def powerspy_extract_sensor(report):
-    return [(str(report.sensor), report)]
+        Parameters:
+            msg(Object): the message received by the actor
 
-class PowerSpyReport(Report):
-    """ PowerSpyReport class """
-
-    def __init__(self, val1=0, val2=0):
-        self.val1 = val1
-        self.val2 = val2
-
-    def operation(self):
-        """ op """
-        return self.val1 + self.val2
-
-    def from_json(self, json):
+        Return:
+            (Object): computation on the message result
         """
-        Get PowerSpyReport from mongodb
-
-        Format:
-        {
-            val1: first value
-            val2: second value
-        }
-        """
-        self.val1 = json['val1']
-        self.val2 = json['val2']
+        raise NotImplementedError

@@ -1,3 +1,19 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 module for using labeled tree data structure
 """
@@ -40,7 +56,14 @@ class Tree:
         """
         if self.root is None:
             return []
+        if path == []:
+            return self.root.retrieve_leaf_values([self.root.label])
+
         return self.root.retrieve_leaf_values(path)
+
+    def leafs(self):
+        """Return a list of all (path, leaf) """
+        return self.root.get_childs()
 
 
 class Node:
@@ -77,6 +100,17 @@ class Node:
         self.childs = []
         self.val = val
 
+    def get_childs(self):
+        """Return all (path, value) under this node"""
+        if self.is_leaf:
+            return [([self.label], self.val)]
+        
+        result = []
+        for node in self.childs:
+            for path, val in node.get_childs():
+                result.append(([self.label] + path, val))
+        return result
+        
     def add_leaf(self, path, val):
         """add a leaf to the tree
 

@@ -1,3 +1,19 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Module actors
 """
@@ -5,9 +21,11 @@ Module actors
 import os
 import multiprocessing
 import pickle
+import setproctitle
 import zmq
 
-from smartwatts.actor.basic_messages import PoisonPill
+from smartwatts.message import PoisonPillMessage
+from smartwatts.message import UnknowMessageTypeException
 
 
 class Actor(multiprocessing.Process):
@@ -37,23 +55,28 @@ class Actor(multiprocessing.Process):
 
         self.verbose = verbose
         self.alive = True
-        self.receive = self.initial_receive
         self.context = None
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
         self.timeout = timeout
+
+        self.timeout_handler = None
+        self.handlers = []
 
     def log(self, message):
         """
         Print message if verbose mode is enable.
         """
         if self.verbose:
-            print('['+str(os.getpid())+']' + ' ' + message)
+            print('[' + str(os.getpid()) + ']' + ' ' + message)
 
     def run(self):
         """
         code executed by the actor
         """
+
+        # Name process
+        setproctitle.setproctitle(self.name)
 
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
@@ -67,7 +90,7 @@ class Actor(multiprocessing.Process):
         self.log("running on address " + self.pull_socket_address)
 
         # actors specific initialisation
-        self.init_actor()
+        self.setup()
 
         # Run loop
         while self.alive:
@@ -75,16 +98,29 @@ class Actor(multiprocessing.Process):
 
             # Timeout
             if msg is None:
-                self.behaviour()
+                result = self.timeout_handler.handle(None)
+                self._post_handle(result)
             # Kill msg
-            elif isinstance(msg, PoisonPill):
+            elif isinstance(msg, PoisonPillMessage):
                 self.alive = False
             else:
-                self.receive(msg)
+                handler_found = False
+                for (msg_type, handler) in self.handlers:
+                    if isinstance(msg, msg_type):
+                        result = handler.handle(msg)
+                        self._post_handle(result)
+                        handler_found = True
+                        break
+                if not handler_found:
+                    raise UnknowMessageTypeException
 
-        self.terminated_behaviour()
+        self._kill_process()
 
-    def init_actor(self):
+    def _post_handle(self, result):
+        """ post handle behaviour on the handler return value """
+        raise NotImplementedError
+
+    def setup(self):
         """
         Need to be overrided.
 
@@ -93,29 +129,18 @@ class Actor(multiprocessing.Process):
         """
         raise NotImplementedError
 
-    def terminated_behaviour(self):
-        """
-        Can be overrided.
-
-        function called before killing the actor
-        """
+    def _kill_process(self):
+        """ Kill the actor (close the pull socket)"""
+        self.terminated_behaviour()
+        self.pull_socket.close()
         self.log("terminated")
 
-    def initial_receive(self, msg):
-        """
-        Need to be overrided.
+    def terminated_behaviour(self):
+        """ function called before closing the pull socket
 
-        Define how to process each msg type
+        Can be overiden to use personal actor termination behaviour
         """
-        raise NotImplementedError
-
-    def behaviour(self):
-        """
-        Need to be overrided.
-
-        Define the behaviour of the actor if he is define with a timeout
-        """
-        raise NotImplementedError
+        pass
 
     def __send_serialized(self, socket, msg):
         """
@@ -135,7 +160,8 @@ class Actor(multiprocessing.Process):
         return msg
 
     def connect(self, context):
-        """connect to the pull socket of this actor
+        """
+        Connect to the pull socket of this actor
 
         open a push socket on the process that want to communicate with this
         actor
@@ -159,6 +185,7 @@ class Actor(multiprocessing.Process):
 
     def kill(self):
         """
-        kill this actor by sending a PoisonPill message
+        kill this actor by sending a PoisonPillMessage message
         """
-        self.send(PoisonPill())
+        self.send(PoisonPillMessage())
+        self.push_socket.close()

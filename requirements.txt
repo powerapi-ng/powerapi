@@ -3,3 +3,5 @@ pyzmq>=17.1.2
 pytest>=3.9.2
 pymongo>=3.7.2
 sortedcontainers>=2.0.5
+setproctitle>=1.1.10
+sphinx>=1.8.1
