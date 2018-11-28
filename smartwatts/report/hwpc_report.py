@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Modul hwpc_sensor which define the HWPCReport class
+Module hwpc_sensor which define the HWPCReport class
 """
 from smartwatts.report.report import Report
 
@@ -37,9 +37,6 @@ class HWPCReportCore(Report):
                    '    ' + self.events.__str__() + "\n")
         return display
 
-    def get_child_reports(self):
-        return [event for event in self.events.values()]
-    
     def serialize(self):
         """
         Return the JSON format of the report
@@ -156,3 +153,37 @@ class HWPCReport(Report):
                 hwpc_sock = HWPCReportSocket(int(socket_key))
                 hwpc_sock.deserialize(socket_value)
                 self.groups[group_key][socket_key] = hwpc_sock
+
+
+#############################
+# REPORT CREATION FUNCTIONS #
+#############################
+
+def create_core_report(core_id, event_id, event_value, events=None):
+    core = HWPCReportCore(core_id)
+    if events is not None:
+        core.events = events
+        return core
+    core.events = {event_id: event_value}
+    return core
+
+
+def create_socket_report(socket_id, core_list):
+    socket = HWPCReportSocket(socket_id)
+    for core in core_list:
+        socket.cores[core.core_id] = core
+    return socket
+
+
+def create_group_report(group_id, socket_list):
+    group = {}
+    for socket in socket_list:
+        group[socket.socket_id] = socket
+    return (group_id, group)
+
+
+def create_report_root(group_list):
+    sensor = HWPCReport(timestamp='time0', sensor='toto', target='system')
+    for (group_id, group) in group_list:
+        sensor.groups[group_id] = group
+    return sensor
