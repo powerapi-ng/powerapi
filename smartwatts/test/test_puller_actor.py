@@ -19,12 +19,11 @@ Module test_actor_puller
 """
 
 import zmq
-from smartwatts.puller import ActorPuller
+from smartwatts.puller import PullerActor
 from smartwatts.database import MongoDB
 from smartwatts.filter import HWPCFilter
 from smartwatts.report import HWPCReport
 from smartwatts.report_model import HWPCModel
-from smartwatts.test import MessageInterceptor
 
 #########################################
 # Initialization functions
@@ -45,14 +44,14 @@ def get_hwpc_filter(dispatch):
 #########################################
 
 
-class TestActorPuller:
-    """ TestActorPuller class """
+class TestPullerActor:
+    """ TestPullerActor class """
 
+    """
     def test_basic_db(self):
-        """ Test get 10 simple HWPCReport """
         context = zmq.Context()
         interceptor = MessageInterceptor(context)
-        puller = ActorPuller("puller_mongo", get_hwpc_mongodb('test_puller1'),
+        puller = PullerActor("puller_mongo", get_hwpc_mongodb('test_puller1'),
                              get_hwpc_filter(interceptor), 10)
         puller.start()
         puller.connect(context)
@@ -67,3 +66,4 @@ class TestActorPuller:
         assert report is None
 
         puller.kill()
+    """
