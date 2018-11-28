@@ -59,6 +59,7 @@ class Actor(multiprocessing.Process):
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
         self.timeout = timeout
+        self.behaviour = self._behaviour
 
         self.timeout_handler = None
         self.handlers = []
@@ -75,6 +76,17 @@ class Actor(multiprocessing.Process):
         code executed by the actor
         """
 
+        self._communication_setup()
+
+        # actors specific initialisation
+        self.setup()
+
+        self.behaviour()
+
+        self._kill_process()
+
+    def _communication_setup(self):
+        """ Initialize zmq context and sockets """
         # Name process
         setproctitle.setproctitle(self.name)
 
@@ -89,32 +101,44 @@ class Actor(multiprocessing.Process):
         self.log('I\'m ' + self.name)
         self.log("running on address " + self.pull_socket_address)
 
-        # actors specific initialisation
-        self.setup()
+    def _behaviour(self):
+        """initial behaviour of an actor
 
-        # Run loop
+        loop on reveiving message on the pull_socket. If a message put the self.
+        alive boolean to False, stop the loop
+
+        """
         while self.alive:
             msg = self.__recv_serialized(self.pull_socket)
+            self._handle_message(msg)
 
-            # Timeout
-            if msg is None:
-                result = self.timeout_handler.handle(None)
-                self._post_handle(result)
-            # Kill msg
-            elif isinstance(msg, PoisonPillMessage):
-                self.alive = False
-            else:
-                handler_found = False
-                for (msg_type, handler) in self.handlers:
-                    if isinstance(msg, msg_type):
-                        result = handler.handle(msg)
-                        self._post_handle(result)
-                        handler_found = True
-                        break
-                if not handler_found:
-                    raise UnknowMessageTypeException
+    def _handle_message(self, msg):
+        """handle the message with the correct handler
 
-        self._kill_process()
+        if the message is None, call the timout_handler otherwise find the
+        handler correponding to the message type and call it on the message.
+
+        if the message is a PoisonPillMessage, kill the process
+
+        if no handler was found for this message, raise an
+        UnknowMessageTypeException
+
+        """
+        # Timeout
+        if msg is None:
+            result = self.timeout_handler.handle(None)
+            self._post_handle(result)
+            print('toto')
+
+        elif isinstance(msg, PoisonPillMessage):
+            self.alive = False
+        else:
+            for (msg_type, handler) in self.handlers:
+                if isinstance(msg, msg_type):
+                    result = handler.handle(msg)
+                    self._post_handle(result)
+                    return
+            raise UnknowMessageTypeException
 
     def _post_handle(self, result):
         """ post handle behaviour on the handler return value """
