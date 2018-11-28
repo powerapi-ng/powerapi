@@ -46,7 +46,7 @@ class DummyHWPCReportHandler(Handler):
         raise UnknowMessageTypeException(type(msg))
 
 
-class DummyFormula(FormulaActor):
+class DummyFormulaActor(FormulaActor):
     """
     ActorTestFormula class
 
