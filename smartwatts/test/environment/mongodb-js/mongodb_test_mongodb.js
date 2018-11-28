@@ -2,6 +2,8 @@
 // !! You don't have to run this script manually, it's done
 // !! in "mongodb.sh" bash script
 
+load('./mongodb-js/report_generator.js');
+
 // Create "test_mongodb" database
 conn = new Mongo();
 db = conn.getDB("test_mongodb");
@@ -17,42 +19,12 @@ db.createCollection("test_mongodb2", {capped: true, size: 256*40});
 // with HWPCReport
 for (var i = 0 ; i < 10 ; i++)
 {
- db.test_mongodb1.insert({
-  _id: i,
-  timestamp: Date.now(),
-  sensor: 'sensor_test',
-  target: 'system',
-  groups: {
-   megagroup: {
-    0 : {
-     0 : {
-      'event1': 100,
-      'event2': 200
-     }
-    }
-   }
-  }
- })
+ db.test_mongodb1.insert(generate_hwpc(i, 'sensor_test', 'system'));
 }
 
 // Feed the collection "test_mongodb2"
 // with HWPCReport
 for (var i = 0 ; i < 10 ; i++)
 {
- db.test_mongodb2.insert({
-  _id: i,
-  timestamp: Date.now(),
-  sensor: 'sensor_test',
-  target: 'system',
-  groups: {
-   megagroup: {
-    0 : {
-     0 : {
-      'event1': 100,
-      'event2': 200
-     }
-    }
-   }
-  }
- })
+ db.test_mongodb2.insert(generate_hwpc(i, 'sensor_test', 'system'));
 }
