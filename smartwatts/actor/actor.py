@@ -147,7 +147,7 @@ class Actor(multiprocessing.Process):
         Allow to send a serialized msg with pickle
         """
         socket.send(pickle.dumps(msg))
-        self.log('sent ' + str(msg) + ' to ' + self.name)
+        #self.log('sent ' + str(msg) + ' to ' + self.name)
 
     def __recv_serialized(self, socket):
         """
@@ -156,7 +156,7 @@ class Actor(multiprocessing.Process):
         if not socket.poll(self.timeout):
             return None
         msg = pickle.loads(socket.recv())
-        self.log('received : ' + str(msg))
+        #self.log('received : ' + str(msg))
         return msg
 
     def connect(self, context):

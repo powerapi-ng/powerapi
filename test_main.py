@@ -5,7 +5,7 @@ smartwatts utilisation example
 import os
 from smartwatts.pusher import PusherActor
 from smartwatts.database import StdoutDB, CsvDB, MongoDB
-from smartwatts.formula import TestFormulaActor
+from smartwatts.formula import RAPLFormulaActor
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 from smartwatts.filter import HWPCFilter
 from smartwatts.puller import PullerActor
@@ -26,13 +26,14 @@ def main():
     """ main """
 
     # Pusher
-    mongodb = MongoDB(PowerReport, 'localhost', 27017, 'smartwatts', 'save', save_mode=True)
+    mongodb = MongoDB(PowerReport, 'localhost', 27017, 'smartwatts', 'save',
+                      save_mode=True)
     pusher = PusherActor("pusher_stdout", HWPCReport, mongodb, verbose=True)
 
     # Dispatcher
     dispatcher = DispatcherActor('dispatcher',
                                  lambda name, verbose:
-                                 TestFormulaActor(name, pusher,
+                                 RAPLFormulaActor(name, pusher,
                                                   verbose=verbose),
                                  verbose=True)
     dispatcher.group_by(HWPCReport, HWPCGroupBy(HWPCDepthLevel.SOCKET,
