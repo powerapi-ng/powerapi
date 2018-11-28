@@ -18,7 +18,7 @@ for (var n = 0 ; n < sensors_name.length ; n++)
  for (var i = 0 ; i < 2 ; i++)
  {
   db.test_filter1.insert({
-   _id: i,
+   _id: n*2+i,
    timestamp: Date.now(),
    sensor: sensors_name[n],
    target: 'system',
