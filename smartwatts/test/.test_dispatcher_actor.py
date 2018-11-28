@@ -14,26 +14,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
 import time
+import pytest
+import zmq
 
-from smartwatts.formula_dispatcher import ActorFormulaDispatcher, NoPrimaryGroupByRuleException
+from smartwatts.dispatcher import DispatcherActor
 from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import Report
 from smartwatts.test.mocked_formula import MockedFormula
-from smartwatts.test.test_actor_utility import MessageInterceptor, SignedMessage, CreationMessage
 # from smartwatts.report import HWPCReport
 # from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 
-import zmq
 
 class Report1(Report):
     """Fake Report class using for testing"""
     pass
 
+
 class Report2(Report):
     """Fake Report class using for testing"""
     pass
+
 
 class FakeGroupBy1(AbstractGroupBy):
     """Fake groupBy class using for testing"""
@@ -57,7 +58,7 @@ class FakeGroupBy2(AbstractGroupBy):
 
 def create_formula_dispatcher():
     """Create the formula dispatcher and initialize its group_by rules"""
-    formula_dispatcher = ActorFormulaDispatcher('fd', None, None)
+    formula_dispatcher = DispatcherActor('fd', None, None)
     formula_dispatcher.group_by(Report1, FakeGroupBy1(primary=True))
     formula_dispatcher.group_by(Report2, FakeGroupBy2())
     return formula_dispatcher
@@ -102,9 +103,9 @@ def formula_dispatcher(request, message_interceptor):
     class used
 
     """
-    dispatcher = ActorFormulaDispatcher('fd', lambda name, verbose:
-                                        MockedFormula(name, message_interceptor, verbose=verbose),
-                                        verbose=True)
+    dispatcher = DispatcherActor('fd', lambda name, verbose:
+                                 MockedFormula(name, message_interceptor, verbose=verbose),
+                                 verbose=True)
 
     group_by_list = getattr(request.instance, 'group_by_list', None)
     for report_class, group_by_rule in group_by_list:
