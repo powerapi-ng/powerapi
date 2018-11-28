@@ -82,7 +82,7 @@ class RAPLFormulaActor(FormulaActor):
     def setup(self):
         """ Initialize Handler """
         self.actor_pusher.connect(self.context)
-        self.handlers.append(HWPCReport, RAPLFormulaHWPCReportHandler)
+        self.handlers.append((HWPCReport, RAPLFormulaHWPCReportHandler()))
 
     def _post_handle(self, result):
         """ send computed estimation to the pusher
