@@ -16,7 +16,7 @@
 from copy import deepcopy
 
 import pytest
-from smartwatts.report import HWPCReportCore, HWPCReportSocket, HWPCReport
+from smartwatts.report import *
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
 
 
@@ -38,35 +38,31 @@ report :
 """
 
 
-############################
-# REPORT CREATION FUNCTION #
-############################
-
-def create_core_report(core_id, event_id, event_value):
-    core = HWPCReportCore(core_id)
-    core.events = {event_id: event_value}
-    return core
 
 
-def create_socket_report(socket_id, core_list):
-    socket = HWPCReportSocket(socket_id)
-    for core in core_list:
-        socket.cores[core.core_id] = core
-    return socket
 
+CPUA = create_core_report('1', 'e0', '0')
+CPUB = create_core_report('2', 'e0', '1')
+CPUC = create_core_report('1', 'e0', '2')
+CPUD = create_core_report('2', 'e0', '3')
+CPUE = create_core_report('1', 'e1', '0')
+CPUF = create_core_report('2', 'e1', '1')
+CPUG = create_core_report('1', 'e1', '2')
+CPUH = create_core_report('2', 'e1', '3')
 
-def create_group_report(group_id, socket_list):
-    group = {}
-    for socket in socket_list:
-        group[socket.socket_id] = socket
-    return (group_id, group)
+SOCKETA = create_socket_report('1', [CPUA, CPUB])
+SOCKETB = create_socket_report('2', [CPUC, CPUD])
+SOCKETC = create_socket_report('1', [CPUE, CPUF])
+SOCKETD = create_socket_report('2', [CPUG, CPUH])
 
+GROUPA = create_group_report('1', [SOCKETA, SOCKETB])
+GROUPB = create_group_report('2', [SOCKETC, SOCKETD])
 
-def create_report_root(group_list):
-    sensor = HWPCReport(timestamp='time0', sensor='toto', target='system')
-    for (group_id, group) in group_list:
-        sensor.groups[group_id] = group
-    return sensor
+REPORT = create_report_root([GROUPA, GROUPB])
+
+#####################################
+# ASSERTION ON HWPC REPORT FUNCTION #
+#####################################
 
 
 def core_report_assert(r1, r2):
@@ -101,26 +97,6 @@ def report_assert(r_1, r_2):
 
     for group_id in r_2.groups:
         assert group_id in r_2.groups
-
-
-CPUA = create_core_report('1', 'e0', '0')
-CPUB = create_core_report('2', 'e0', '1')
-CPUC = create_core_report('1', 'e0', '2')
-CPUD = create_core_report('2', 'e0', '3')
-CPUE = create_core_report('1', 'e1', '0')
-CPUF = create_core_report('2', 'e1', '1')
-CPUG = create_core_report('1', 'e1', '2')
-CPUH = create_core_report('2', 'e1', '3')
-
-SOCKETA = create_socket_report('1', [CPUA, CPUB])
-SOCKETB = create_socket_report('2', [CPUC, CPUD])
-SOCKETC = create_socket_report('1', [CPUE, CPUF])
-SOCKETD = create_socket_report('2', [CPUG, CPUH])
-
-GROUPA = create_group_report('1', [SOCKETA, SOCKETB])
-GROUPB = create_group_report('2', [SOCKETC, SOCKETD])
-
-REPORT = create_report_root([GROUPA, GROUPB])
 
 
 class TestHWPCGroupBy():

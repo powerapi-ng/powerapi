@@ -42,3 +42,13 @@ class PowerReport(Report):
         self.target = json['target']
         self.power = json['power']
         self.metadata = json['metadata']
+
+    def __eq__(self, other):
+        if not isinstance(other, PowerReport):
+            return False
+
+        return (self.timestamp == other.timestamp or
+                self.sensor == other.sensor or
+                self.target == other.target or
+                self.metadata == other.metadata or
+                self.power == other.power)
