@@ -113,8 +113,10 @@ class FormulaDispatcherReportHandler(Handler):
             @group_by_rule: XXXGroupBy instance
         """
         new_report_id = ()
-        primary_rule = self._get_primary_group_by_rule()
+        primary_rule = self.primary_group_by_rule
         for i in range(len(report_id)):
+            if i >= len(primary_rule.fields):
+                return new_report_id
             if group_by_rule.fields[i] == primary_rule.fields[i]:
                 new_report_id += (report_id[i],)
             else:
