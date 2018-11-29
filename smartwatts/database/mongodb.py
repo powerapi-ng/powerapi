@@ -45,7 +45,7 @@ class MongoDB(BaseDB):
 
     def __init__(self, report_model,
                  host_name, port, db_name, collection_name,
-                 save_mode=False):
+                 save_mode=False, erase=False):
         """
         Parameters:
             @report_model:    XXXModel object.
@@ -55,6 +55,8 @@ class MongoDB(BaseDB):
             @collection_name: collection name in the mongodb (ex: "sensor")
             @save_mode:       put save_mode to True if you want to use it
                               with a Pusher
+            @erase:           If save_mode is False, erase too. It allow to
+                              erase the collection on setup.
         """
         BaseDB.__init__(self, report_model)
         self.host_name = host_name
@@ -62,6 +64,11 @@ class MongoDB(BaseDB):
         self.db_name = db_name
         self.collection_name = collection_name
         self.save_mode = save_mode
+
+        if self.save_mode:
+            self.erase = erase
+        else:
+            self.erase = False
 
         self.mongo_client = None
         self.collection = None
@@ -109,6 +116,12 @@ class MongoDB(BaseDB):
                     cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
             else:
                 self.cursor = self.collection.find({})
+        # Else if collection exist and erase is True
+        elif (self.erase and
+              self.db_name in self.mongo_client.list_database_names() and
+              self.collection_name in self.mongo_client[
+                  self.db_name].list_collection_names()):
+            self.collection.drop()
 
 
     def get_next(self):
@@ -125,4 +138,5 @@ class MongoDB(BaseDB):
 
     def save(self, json):
         """ Override """
+        # TODO: Check if json is valid with the report_model
         self.collection.insert_one(json)
