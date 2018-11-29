@@ -18,11 +18,9 @@
 Module test db
 """
 
-import os
 import pytest
 
 from smartwatts.report_model import HWPCModel
-from smartwatts.report import HWPCReport
 from smartwatts.database import MongoDB, MongoBadDBError
 from smartwatts.database import MongoBadDBNameError
 from smartwatts.database import MongoBadCollectionNameError
@@ -69,8 +67,7 @@ class TestMongoDB():
 
     def test_mongodb_read_basic_db(self):
         """
-        Test read mongodb collection without unstack the db and
-        without reload data
+        Test read mongodb collection
         """
         # Load DB
         mongodb = MongoDB(HWPCModel(), HOSTNAME, PORT, "test_mongodb",
@@ -88,8 +85,7 @@ class TestMongoDB():
 
     def test_mongodb_read_capped_db(self):
         """
-        Test read mongodb collection and unstack each data
-        without reload data
+        Test read mongodb capped collection
         """
         # Load DB
         mongodb = MongoDB(HWPCModel(), HOSTNAME, PORT, "test_mongodb",
@@ -117,3 +113,18 @@ class TestMongoDB():
 
         # Check if there is nothing after
         assert mongodb.get_next() is None
+
+    def test_mongodb_save_basic_db(self):
+        """
+        Test save mongodb collection
+        """
+        # Load DB
+        mongodb = MongoDB(None, HOSTNAME, PORT, "test_mongodb",
+                          "testmongodbsave", save_mode=True)
+
+        mongodb.load()
+
+        # Check if save work
+        basic_count = mongodb.collection.count_documents({})
+        mongodb.save({'test': 'json'})
+        assert mongodb.collection.count_documents({}) == basic_count + 1

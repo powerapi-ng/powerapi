@@ -47,7 +47,7 @@ class RAPLFormulaHWPCReportHandler(Handler):
             UnknowMessageTypeException: if the *msg* is not a HWPCReport
         """
         if not isinstance(msg, HWPCReport):
-            raise UnknowMessageTypeException
+            raise UnknowMessageTypeException()
 
         if 'rapl' not in msg.groups:
             return []

@@ -31,8 +31,8 @@ class ReportModel:
 
     def from_mongodb(self, json):
         """ get the mongodb report """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def from_csvdb(self, file_name, row):
         """ get the csvdb report """
-        raise NotImplementedError
+        raise NotImplementedError()

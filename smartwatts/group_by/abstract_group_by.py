@@ -34,4 +34,4 @@ class AbstractGroupBy:
         Return: ([(tuple, Report)]) a list all report with their
                 identifier
         """
-        raise NotImplementedError
+        raise NotImplementedError()

@@ -26,7 +26,7 @@ def main():
     """ main """
 
     # Pusher
-    mongodb = MongoDB(PowerReport, 'localhost', 27017, 'smartwatts', 'save',
+    mongodb = MongoDB(None, 'localhost', 27017, 'smartwatts', 'save',
                       save_mode=True)
     pusher = PusherActor("pusher_stdout", HWPCReport, mongodb, verbose=True)
 
