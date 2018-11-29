@@ -18,11 +18,10 @@
 Module test_actor_puller
 """
 
-import zmq
-from smartwatts.puller import PullerActor
+import mock
+from smartwatts.puller.puller_actor import _TimeoutHandler
 from smartwatts.database import MongoDB
-from smartwatts.filter import HWPCFilter
-from smartwatts.report import HWPCReport
+from smartwatts.filter import Filter, HWPCFilter
 from smartwatts.report_model import HWPCModel
 
 #########################################
@@ -67,3 +66,18 @@ class TestPullerActor:
 
         puller.kill()
     """
+
+
+class TestHandlerPuller:
+    """ TestHandlerPuller class """
+
+    def test_read_none(self):
+        """
+        Test if database return None
+        """
+        database = mock.Mock(spec_set=MongoDB)
+        database.get_next = mock.Mock(return_value=None)
+        filt = mock.Mock(spec_set=Filter)
+        handler = _TimeoutHandler(database, filt)
+        assert handler.handle(None) is None
+
