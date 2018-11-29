@@ -1,0 +1,35 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+[tool.poetry]
+name = "smartwatts"
+version = "0.1"
+description = "SmartWatts is a self-adaptive software-defined power meter for containerized environments."
+authors = ["Guillaume Fieni <guillaume.fieni@inria.fr>", "Jordan Bouchoucha <jordan.bouchoucha@inria.fr>", "Arthur d'Azémar <arthur.d-azemar@inria.fr"]
+
+[tool.poetry.dependencies]
+python = ">=3.5"
+pyzmq = "^17.1"
+pymongo = ">=3.7.2"
+sortedcontainers = ">=2.0.5"
+setproctitle = ">=1.1.10"
+
+[tool.poetry.dev-dependencies]
+pytest = ">=3.9.2"
+sphinx = ">=1.8.1"
+mock = "^2.0"
+
+[tool.poetry.scripts]
+main = "smartwatts-cli:main"

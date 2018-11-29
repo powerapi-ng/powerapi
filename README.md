@@ -2,6 +2,16 @@
 
 SmartWatts is a self-adaptive software-defined power meter for containerized environments.
 
+# Usage
+
+## Without docker
+
+requirement : [`poetry`](https://github.com/sdispater/poetry)
+
+- run unit tests : `poetry run pytest smartwatts/test/`
+- install dependency : `poetry install`
+- run smartwatts as command line interface : `poetry run main`
+
 # Contribution guideline
 
 ## Naming convention
@@ -21,3 +31,5 @@ When an actor is defined (class herited by the Actor main abstract class), try t
 - refactor
 - test (when adding missing tests)
 - chore (maintain)
+
+
