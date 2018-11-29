@@ -67,6 +67,14 @@ class PullerActor(Actor):
         Actor.__init__(self, name, verbose, timeout=timeout)
         self.database = database
         self.filter = filt
+        if timeout == 0:
+            self.behaviour = self._behaviour_timeout_null
+
+    def _behaviour_timeout_null(self):
+        """
+        Allow to ignore __recv_message
+        """
+        self._handle_message(None)
 
     def setup(self):
         """
