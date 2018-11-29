@@ -28,10 +28,10 @@ class Report:
         """
         return the JSON format of the report
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def deserialize(self, json):
         """
         feed the report with the JSON input
         """
-        raise NotImplementedError
+        raise NotImplementedError()

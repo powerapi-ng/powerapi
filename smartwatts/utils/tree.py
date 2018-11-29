@@ -39,7 +39,7 @@ class Tree:
             val: the value that will be stored in the leaf
         """
         if len(path) == 0:
-            raise ValueError
+            raise ValueError()
 
         if self.root is None:
             self.root = Node(path[0])

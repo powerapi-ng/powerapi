@@ -82,13 +82,13 @@ class CsvDB(BaseDB):
             try:
                 self.tmp[path_file]['csv'] = csv.DictReader(open(path_file))
             except FileNotFoundError:
-                raise CsvBadFilePathError
+                raise CsvBadFilePathError()
             self.tmp[path_file]['next_line'] = self._next(path_file)
 
             # Check common key
             for key in KEYS_COMMON:
                 if key not in self.tmp[path_file]['next_line']:
-                    raise CsvBadCommonKeys
+                    raise CsvBadCommonKeys()
 
         # Save the first timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(
@@ -142,4 +142,4 @@ class CsvDB(BaseDB):
 
     def save(self, json):
         """ Override """
-        raise NotImplementedError
+        raise NotImplementedError()

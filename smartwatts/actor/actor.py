@@ -138,11 +138,11 @@ class Actor(multiprocessing.Process):
                     result = handler.handle(msg)
                     self._post_handle(result)
                     return
-            raise UnknowMessageTypeException
+            raise UnknowMessageTypeException()
 
     def _post_handle(self, result):
         """ post handle behaviour on the handler return value """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def setup(self):
         """
@@ -151,7 +151,7 @@ class Actor(multiprocessing.Process):
         Define actor specific processing that is run before entering the Run
         Loop
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""
