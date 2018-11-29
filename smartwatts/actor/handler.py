@@ -30,4 +30,4 @@ class Handler:
         Return:
             (Object): computation on the message result
         """
-        raise NotImplementedError
+        raise NotImplementedError()

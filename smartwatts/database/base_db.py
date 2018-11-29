@@ -57,16 +57,16 @@ class BaseDB:
         """
         Allow to load the database
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_next(self):
         """
         Return the next report on the db or none if there is none
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def save(self, json):
         """
         Allow to save a json input in the db
         """
-        raise NotImplementedError
+        raise NotImplementedError()

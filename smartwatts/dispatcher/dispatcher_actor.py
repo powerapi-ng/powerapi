@@ -156,7 +156,7 @@ class DispatcherActor(Actor):
     def setup(self):
         """ Append FormulaDispatcherReportHandler Handler"""
         if self.primary_group_by_rule is None:
-            raise NoPrimaryGroupByRuleException
+            raise NoPrimaryGroupByRuleException()
 
         self.handlers.append(
             (Report, FormulaDispatcherReportHandler(self.route_table,
@@ -214,7 +214,7 @@ class DispatcherActor(Actor):
         """
         if group_by_rule.is_primary:
             if self.primary_group_by_rule is not None:
-                raise PrimaryGroupByRuleAlreadyDefinedException
+                raise PrimaryGroupByRuleAlreadyDefinedException()
             self.primary_group_by_rule = group_by_rule
 
         self.route_table.append((report_class, group_by_rule))

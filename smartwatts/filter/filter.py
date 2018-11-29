@@ -36,7 +36,7 @@ class Filter:
 
         Return the report type for a filter.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def filter(self, rule, dispatcher):
         """
@@ -59,7 +59,7 @@ class Filter:
         """
         # Error if filters is empty
         if not self.filters:
-            raise FilterUselessError
+            raise FilterUselessError()
 
         for rule, dispatcher in self.filters:
             if rule(msg):

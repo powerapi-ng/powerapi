@@ -24,7 +24,7 @@ from smartwatts.report_model import HWPCModel, KEYS_COMMON
 from smartwatts.database import CsvDB
 from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeys
 
-PATH_TO_TEST = "./smartwatts/test/environment/data/"
+PATH_TO_TEST = "./smartwatts/test/environment/csv/"
 
 # All this file raise error
 BAD_COMMON = [PATH_TO_TEST + "bad_common_miss_sensor.csv",
@@ -55,6 +55,7 @@ FIRST_RAPL_MISSING = [PATH_TO_TEST + "core2.csv",
 SECOND_RAPL_MISSING = [PATH_TO_TEST + "core2.csv",
                        PATH_TO_TEST + "rapl1_miss_second.csv",
                        PATH_TO_TEST + "pcu2.csv"]
+
 
 class TestCsvDB():
     """
