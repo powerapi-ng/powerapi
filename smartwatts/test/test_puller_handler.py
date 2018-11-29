@@ -37,17 +37,4 @@ class TestHandlerPuller:
         database.get_next = mock.Mock(return_value=None)
         filt = mock.Mock(spec_set=Filter)
         handler = _TimeoutHandler(database, filt)
-        #assert handler.handle(None) is None
-
-    def test_read_correct_json(self):
-        """
-        Test if database return a report
-        """
-        database = mock.Mock(spec_set=MongoDB)
-        database.get_next = mock.Mock(return_value={
-            "fake_report": "fake_value"})
-        filt = mock.Mock(spec_set=Filter)
-        filt.get_type = mock.Mock(return_value=mock.Mock(spec_set=Report))
-        handler = _TimeoutHandler(database, filt)
-        report, dispatcher = handler.handle(None)
-        #assert handler.handle(None) is None
+        assert handler.handle(None) is None

@@ -5,3 +5,4 @@ pymongo>=3.7.2
 sortedcontainers>=2.0.5
 setproctitle>=1.1.10
 sphinx>=1.8.1
+mock>=2.0.0
