@@ -42,8 +42,8 @@ class TestFilter:
         - 2 next report return second dispatcher
         - 2 next report return None
         """
-        mongodb = MongoDB(HWPCModel(), "localhost", 27017,
-                          "test_filter", "test_filter1")
+        mongodb = MongoDB("localhost", 27017, "test_filter",
+                          "test_filter1", report_model=HWPCModel())
         mongodb.load()
         hwpc_filter = HWPCFilter()
         hwpc_filter.filter(lambda msg:

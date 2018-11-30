@@ -31,7 +31,8 @@ from smartwatts.report_model import HWPCModel
 
 def get_hwpc_mongodb(collection):
     """ Return a MongoDB object for hwpc report """
-    return MongoDB(HWPCModel(), 'localhost', 27017, 'test_puller', collection)
+    return MongoDB('localhost', 27017, 'test_puller',
+                   collection, report_model=HWPCModel())
 
 
 def get_hwpc_filter(dispatch):

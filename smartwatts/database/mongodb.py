@@ -20,7 +20,6 @@ Module MongoDB
 
 import pymongo
 from smartwatts.database.base_db import BaseDB
-from smartwatts.report_model.report_model import KEYS_COMMON
 
 
 class MongoBadDBError(Exception):
@@ -38,21 +37,37 @@ class MongoBadCollectionNameError(Exception):
     pass
 
 
+class MongoNeedReportModelError(Exception):
+    """ MongoDB error when MongoDB is define without report model """
+    pass
+
+
+class MongoSaveInReadModeError(Exception):
+    """ MongoDB error when save() is called in read mode """
+    pass
+
+
+class MongoGetNextInSaveModeError(Exception):
+    """ MongoDB error when get_next() is called in save_mode """
+    pass
+
+
 class MongoDB(BaseDB):
     """
     MongoDB class
     """
 
-    def __init__(self, report_model,
+    def __init__(self,
                  host_name, port, db_name, collection_name,
-                 save_mode=False, erase=False):
+                 report_model=None, save_mode=False, erase=False):
         """
         Parameters:
-            @report_model:    XXXModel object.
             @host_name:       hostname of the mongodb (ex: "localhost")
             @port:            port of the mongodb (ex: 27017)
             @db_name:         database name in the mongodb (ex: "smartwatts")
             @collection_name: collection name in the mongodb (ex: "sensor")
+            @report_model:    XXXModel object. Allow to read specific report
+                              with a specific format in a database.
             @save_mode:       put save_mode to True if you want to use it
                               with a Pusher
             @erase:           If save_mode is False, erase too. It allow to
@@ -64,11 +79,13 @@ class MongoDB(BaseDB):
         self.db_name = db_name
         self.collection_name = collection_name
         self.save_mode = save_mode
+        self.erase = erase
 
-        if self.save_mode:
-            self.erase = erase
-        else:
+        # If save_mode is False, erase too.
+        if not self.save_mode:
             self.erase = False
+            if report_model is None:
+                raise MongoNeedReportModelError()
 
         self.mongo_client = None
         self.collection = None
@@ -123,9 +140,11 @@ class MongoDB(BaseDB):
                   self.db_name].list_collection_names()):
             self.collection.drop()
 
-
     def get_next(self):
         """ Override """
+        if self.save_mode:
+            raise MongoGetNextInSaveModeError()
+
         try:
             json = self.cursor.next()
         except StopIteration:
@@ -138,5 +157,8 @@ class MongoDB(BaseDB):
 
     def save(self, json):
         """ Override """
+        if not self.save_mode:
+            raise MongoSaveInReadModeError()
+
         # TODO: Check if json is valid with the report_model
         self.collection.insert_one(json)

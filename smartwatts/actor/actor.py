@@ -95,8 +95,8 @@ class Actor(multiprocessing.Process):
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
 
-        # create the pull socket (to comunicate with this actor, others process
-        # have to connect a push socket to this socket)
+        ## create the pull socket (to communicate with this actor, others
+        ## process have to connect a push socket to this socket)
         self.pull_socket = self.context.socket(zmq.PULL)
         self.pull_socket.bind(self.pull_socket_address)
 
