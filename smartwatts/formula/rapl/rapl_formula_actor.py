@@ -26,7 +26,7 @@ from smartwatts.actor import Handler
 
 
 def _gen_power_report(base_report, socket_id, rapl_event_id, power):
-    metadata = {'socket_id': socket_id, 'rapl_event_id': rapl_event_id}
+    metadata = {'socket': socket_id, 'event': rapl_event_id}
     return PowerReport(base_report.timestamp, base_report.sensor,
                        base_report.target, power, metadata)
 

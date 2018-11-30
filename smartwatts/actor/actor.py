@@ -19,6 +19,7 @@ Module actors
 """
 
 import os
+import signal
 import multiprocessing
 import pickle
 import setproctitle
@@ -78,6 +79,7 @@ class Actor(multiprocessing.Process):
 
         self._communication_setup()
 
+        self._signal_handler_setup()
         # actors specific initialisation
         self.setup()
 
@@ -100,6 +102,14 @@ class Actor(multiprocessing.Process):
 
         self.log('I\'m ' + self.name)
         self.log("running on address " + self.pull_socket_address)
+
+    def _signal_handler_setup(self):
+        def term_handler(_, __):
+            self._kill_process()
+            exit(0)
+
+        signal.signal(signal.SIGTERM, term_handler)
+        signal.signal(signal.SIGINT, term_handler)
 
     def _behaviour(self):
         """initial behaviour of an actor
@@ -128,7 +138,6 @@ class Actor(multiprocessing.Process):
         if msg is None:
             result = self.timeout_handler.handle(None)
             self._post_handle(result)
-            print('toto')
 
         elif isinstance(msg, PoisonPillMessage):
             self.alive = False
