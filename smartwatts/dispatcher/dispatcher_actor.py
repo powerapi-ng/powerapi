@@ -172,9 +172,11 @@ class DispatcherActor(Actor):
         """
         Kill each formula before terminate
         """
+        print('-----------------')
         for name, formula in self.formula_dict.items():
-            self.log('kill ' + name)
+            self.log('kill ' + str(name))
             formula.kill()
+            formula.join()
 
     def _send_to_formula(self, report, formula_id):
         """
