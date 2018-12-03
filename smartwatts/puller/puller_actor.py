@@ -18,10 +18,11 @@
 Module actor_puller
 """
 
-from smartwatts.actor import Actor, Handler
+from smartwatts.actor import Actor
+from smartwatts.handler import AbstractHandler
 
 
-class _TimeoutHandler(Handler):
+class _TimeoutHandler(AbstractHandler):
     """
     TimeoutHandler class
     """

@@ -21,10 +21,10 @@ import time
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.report import Report, PowerReport
-from smartwatts.actor import Handler
+from smartwatts.handler import AbstractHandler
 
 
-class DummyHWPCReportHandler(Handler):
+class DummyHWPCReportHandler(AbstractHandler):
     """
     A test formula that simulate data processing
     """

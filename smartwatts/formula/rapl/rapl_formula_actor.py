@@ -22,7 +22,7 @@ import math
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.report import HWPCReport, PowerReport
-from smartwatts.actor import Handler
+from smartwatts.handler import AbstractHandler
 
 
 def _gen_power_report(base_report, socket_id, rapl_event_id, power):
@@ -31,7 +31,7 @@ def _gen_power_report(base_report, socket_id, rapl_event_id, power):
                        base_report.target, power, metadata)
 
 
-class RAPLFormulaHWPCReportHandler(Handler):
+class RAPLFormulaHWPCReportHandler(AbstractHandler):
     """
     A test formula that simulate data processing
     """
