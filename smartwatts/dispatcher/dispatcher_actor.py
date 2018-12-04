@@ -18,9 +18,10 @@
 Module class DispatcherActor
 """
 
-from smartwatts.actor import Actor, Handler
+from smartwatts.actor import Actor, BasicState
+from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 from smartwatts.report import Report
-from smartwatts.message import UnknowMessageTypeException
+from smartwatts.message import PoisonPillMessage, UnknowMessageTypeException
 from smartwatts.utils.tree import Tree
 
 
@@ -40,7 +41,60 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
     pass
 
 
-class FormulaDispatcherReportHandler(Handler):
+class DispatcherState(BasicState):
+    """ State tat encapsulate formula's dicionary and tree
+    """
+    def __init__(self, initial_behaviour, formula_factory):
+
+        BasicState.__init__(self, initial_behaviour)
+        """
+        Parameters:
+            @formula_factory(fun (formula_id) -> smartwatts.formula.Formula):
+                    initialize a formula
+        """
+        # Formula containers
+        self.formula_dict = {}
+        self.formula_tree = Tree()
+        self.formula_factory = formula_factory
+
+    def add_formula(self, formula_id):
+        """Create a formula corresponding to the given formula id
+        and add it to the state
+
+        """
+
+        formula = self.formula_factory(formula_id)
+        self.formula_dict[formula_id] = formula
+        self.formula_tree.add(list(formula_id), formula)
+        self.formula_dict[formula_id].start()
+
+    def get_direct_formula(self, formula_id):
+        """ Return the formula corresponding to the given formula id
+            Return None if no formula correspond to this id
+        """
+        if formula_id not in self.formula_dict:
+            return None
+        return self.formula_dict[formula_id]
+
+    def get_corresponding_formula(self, formula_id):
+        """ return the formulas wich their id math the given formula id
+
+        Parameter:
+            formula_id(list)
+        """
+        return self.formula_tree.get(formula_id)
+
+    def get_all_formula(self):
+        """ return all the formula in the actor state
+
+        Return:
+            ([(tuple, Formula)]): list of (formula_id, Formula)
+
+        """
+        return self.formula_dict.items()
+
+
+class FormulaDispatcherReportHandler(AbstractHandler):
     """
     Split the received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses report
@@ -49,8 +103,10 @@ class FormulaDispatcherReportHandler(Handler):
     def __init__(self, route_table, primary_group_by_rule):
         """
         Parameters:
-            @formula_init_function(fun () -> smartwatts.formula.Formula):
-                Formula Factory.
+            @route_table([(Message, AbstractGroupBy)]: list all group by rule
+                                                       with their associated
+                                                       message type
+
         """
         # Array of tuple (report_class, group_by_rule)
         self.route_table = route_table
@@ -58,10 +114,13 @@ class FormulaDispatcherReportHandler(Handler):
         # Primary GroupBy
         self.primary_group_by_rule = primary_group_by_rule
 
-    def handle(self, msg):
+    def handle(self, msg, state):
         """
-        Split the received report into sub-reports (if needed) and return the
-        sub reports and formulas ids to send theses report
+        Split the received report into sub-reports (if needed) and send them to
+        their corresponding formula
+
+        if the corresponfing formula does not exist, create and return the
+        actor state, containing the new formula
 
         Parameters:
             msg(smartwatts.report.Report)
@@ -73,7 +132,21 @@ class FormulaDispatcherReportHandler(Handler):
         """
         for (report_class, group_by_rule) in self.route_table:
             if isinstance(msg, report_class):
-                return self._extract_reports(msg, group_by_rule)
+                for formula_id, report in self._extract_reports(msg,
+                                                                group_by_rule):
+                    primary_rule_fields = self.primary_group_by_rule.fields
+                    if len(formula_id) == len(primary_rule_fields):
+                        formula = state.get_direct_formula(formula_id)
+                        if formula is None:
+                            state.add_formula(formula_id)
+                        else:
+                            formula.send(report)
+                    else:
+                        for formula in state.get_corresponding_formula(
+                                list(formula_id)):
+                            formula.send(report)
+
+                return state
 
         raise UnknowMessageTypeException(type(msg))
 
@@ -90,6 +163,9 @@ class FormulaDispatcherReportHandler(Handler):
         Parameters:
             @report:        XXXReport instance
             @group_by_rule: XXXGroupBy instance
+
+        Return:
+            ([(tuple, Report]): list of (formula_id, Report)
         """
 
         # List of tuple (id_report, report)
@@ -146,10 +222,6 @@ class DispatcherActor(Actor):
         self.route_table = []
         self.primary_group_by_rule = None
 
-        # Formula containers
-        self.formula_dict = {}
-        self.formula_tree = Tree()
-
         # Formula factory
         self.formula_init_function = formula_init_function
 
@@ -158,52 +230,37 @@ class DispatcherActor(Actor):
         if self.primary_group_by_rule is None:
             raise NoPrimaryGroupByRuleException()
 
+        self.state = DispatcherState(self._initial_behaviour,
+                                     self._create_factory())
+
         self.handlers.append(
             (Report, FormulaDispatcherReportHandler(self.route_table,
                                                     self.primary_group_by_rule))
         )
-
-    def _post_handle(self, result):
-        """ Send the report to each formulas """
-        for formula_id, report in result:
-            self._send_to_formula(report, formula_id)
+        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler))
 
     def terminated_behaviour(self):
         """
         Kill each formula before terminate
         """
-        print('-----------------')
-        for name, formula in self.formula_dict.items():
+        for name, formula in self.state.get_all_formula():
             self.log('kill ' + str(name))
             formula.kill()
             formula.join()
 
-    def _send_to_formula(self, report, formula_id):
-        """
-        Send the report to all the formula that match the formula_id
-
-        if the formula id identify an unique formula and the formula doesn't
-        exist, create it
-        """
-        if len(formula_id) == len(self.primary_group_by_rule.fields):
-            if formula_id not in self.formula_dict:
-                self._create_formula(formula_id)
-            self.formula_dict[formula_id].send(report)
-        else:
-            for formula in self.formula_tree.get(list(formula_id)):
-                formula.send(report)
-
-    def _create_formula(self, formula_id):
+    def _create_factory(self):
         """
         Create formula from router
         """
-        formula = self.formula_init_function(str(formula_id), self.verbose)
+        context = self.context
+        formula_init_function = self.formula_init_function
+        verbose = self.verbose
 
-        formula.connect(self.context)
-        self.formula_dict[formula_id] = formula
-        self.formula_tree.add(list(formula_id), formula)
-        self.formula_dict[formula_id].start()
-        self.log('create formula ' + str(formula_id))
+        def factory(formula_id):
+            formula = formula_init_function(str(formula_id), verbose)
+            formula.connect(context)
+
+        return factory
 
     def group_by(self, report_class, group_by_rule):
         """
