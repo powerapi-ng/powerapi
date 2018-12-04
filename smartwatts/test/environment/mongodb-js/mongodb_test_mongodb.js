@@ -12,8 +12,10 @@ db = conn.getDB("test_mongodb");
 // and "test_mongodb2"
 db.test_mongodb1.drop()
 db.test_mongodb2.drop()
+db.test_mongodb3.drop()
 db.createCollection("test_mongodb1");
 db.createCollection("test_mongodb2", {capped: true, size: 256*40});
+db.createCollection("test_mongodb3");
 
 // Feed the collection "test_mongodb1"
 // with HWPCReport
@@ -27,4 +29,11 @@ for (var i = 0 ; i < 10 ; i++)
 for (var i = 0 ; i < 10 ; i++)
 {
  db.test_mongodb2.insert(generate_hwpc(i, 'sensor_test', 'system'));
+}
+
+// Feed the collection "test_mongodb3"
+// with random data
+for (var i = 0 ; i < 2 ; i++)
+{
+ db.test_mongodb3.insert({'key': 'value'});
 }

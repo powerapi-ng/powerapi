@@ -56,17 +56,34 @@ class _TimeoutHandler(Handler):
 class PullerActor(Actor):
     """ PullerActor class """
 
-    def __init__(self, name, database, filt, timeout, verbose=False):
+    def __init__(self, name, database, filt, timeout,
+                 verbose=False, autokill=False):
         """
         Initialization
 
         Parameters:
             @database: BaseDB object
-            @filter: Filter object
+            @filter:   Filter object
+            @timeout:  define the time to wait for a msg, else it
+                       run timeout_handler
+            @autokill: if True, kill himself if timeout_handler
+                       return None (it means that all the db has been read)
         """
         Actor.__init__(self, name, verbose, timeout=timeout)
         self.database = database
         self.filter = filt
+        self.autokill = autokill
+
+        # If timeout is 0, define new behaviour and doesn't recv message
+        if timeout == 0:
+            self.behaviour = self._behaviour_timeout_null
+
+    def _behaviour_timeout_null(self):
+        """
+        Never read socket message, just run the timeout_handler
+        """
+        while self.alive:
+            self._handle_message(None)
 
     def setup(self):
         """
@@ -90,9 +107,12 @@ class PullerActor(Actor):
         """
         # Test if result is None
         if result is None:
+            if self.autokill:
+                self.alive = False
             return
 
         # Extract report & dispatcher
+        # TODO: ugly, and unsafe
         report = result[0]
         dispatcher = result[1]
 
