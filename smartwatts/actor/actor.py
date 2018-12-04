@@ -138,7 +138,7 @@ class Actor(multiprocessing.Process):
         if msg is None:
             result = self.timeout_handler.handle(None)
             self._post_handle(result)
-
+        # Kill msg
         elif isinstance(msg, PoisonPillMessage):
             self.alive = False
         else:
@@ -165,7 +165,8 @@ class Actor(multiprocessing.Process):
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""
         self.terminated_behaviour()
-        self.pull_socket.close()
+        if self.pull_socket is not None:
+            self.pull_socket.close()
         self.log("terminated")
 
     def terminated_behaviour(self):
@@ -180,7 +181,7 @@ class Actor(multiprocessing.Process):
         Allow to send a serialized msg with pickle
         """
         socket.send(pickle.dumps(msg))
-        #self.log('sent ' + str(msg) + ' to ' + self.name)
+        self.log('sent ' + str(msg) + ' to ' + self.name)
 
     def __recv_serialized(self, socket):
         """
@@ -189,7 +190,7 @@ class Actor(multiprocessing.Process):
         if not socket.poll(self.timeout):
             return None
         msg = pickle.loads(socket.recv())
-        #self.log('received : ' + str(msg))
+        self.log('received : ' + str(msg))
         return msg
 
     def connect(self, context):
