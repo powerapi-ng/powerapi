@@ -28,7 +28,8 @@ def powerspy_extract_sensor(report):
 class PowerSpyReport(Report):
     """ PowerSpyReport class """
 
-    def __init__(self, val1=0, val2=0):
+    def __init__(self, timestamp, sensor, target, val1=0, val2=0):
+        Report.__init__(self, timestamp, sensor, target)
         self.val1 = val1
         self.val2 = val2
 

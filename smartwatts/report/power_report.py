@@ -21,9 +21,7 @@ class PowerReport(Report):
     """ PowerReport class """
 
     def __init__(self, timestamp, sensor, target, power, metadata):
-        self.timestamp = timestamp
-        self.sensor = sensor
-        self.target = target
+        Report.__init__(self, timestamp, sensor, target)
         self.metadata = metadata
         self.power = power
 
