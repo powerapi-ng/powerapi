@@ -27,7 +27,7 @@ class HWPCReportCore(Report):
     """
 
     def __init__(self, core_id=None):
-        Report.__init__(self)
+        # Report.__init__(self)
         self.core_id = core_id
         self.events = {}
 
@@ -62,7 +62,7 @@ class HWPCReportSocket(Report):
         socket:            socket id (int)
         cores:             dict of cores
         """
-        Report.__init__(self)
+        # Report.__init__(self)
         self.socket_id = socket_id
         self.cores = {}
         self.group_id = None

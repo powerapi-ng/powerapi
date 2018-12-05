@@ -8,14 +8,13 @@ from mock import Mock, patch
 
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.actor import Actor
+from smartwatts.handler import PoisonPillMessageHandler
 
 
 class DummyActor(Actor):
-    def _post_handle(self, result):
-        pass
 
     def setup(self):
-        pass
+        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
 
 
 ACTOR_NAME = 'dummy_actor'
@@ -30,9 +29,15 @@ def dummy_actor():
     return actor
 
 
+@pytest.fixture()
+def initialized_dummy_actor(dummy_actor):
+    dummy_actor.setup()
+    return dummy_actor
+
+
 def test_actor_initialisation(dummy_actor):
     """ test actor attributes initialization"""
-    assert dummy_actor.alive is True
+    assert dummy_actor.state.alive is True
     assert dummy_actor.pull_socket_address == PULL_SOCKET_ADDRESS
     assert dummy_actor.name == ACTOR_NAME
 
@@ -58,21 +63,23 @@ def test_communication_setup(dummy_actor):
 ## HANDLE MESSAGE TEST #
 ########################
 
-def test_handle_unknow_message_type(dummy_actor):
+
+def test_handle_unknow_message_type(initialized_dummy_actor):
     """test to handle a message with no handle bind to its type
 
     must raise an UnknowMessageTypeException
 
     """
     with pytest.raises(UnknowMessageTypeException):
-        dummy_actor._handle_message("toto")
+        initialized_dummy_actor._handle_message("toto")
 
 
-def test_handle_poison_pill_message(dummy_actor):
+def test_handle_poison_pill_message(initialized_dummy_actor):
     """test to handle a PoisonPillMessage
 
     after handle this message, the self.alive boolean must be set to False
 
     """
-    dummy_actor._handle_message(PoisonPillMessage())
-    assert dummy_actor.alive is False
+    assert initialized_dummy_actor.state.alive is True
+    initialized_dummy_actor._handle_message(PoisonPillMessage())
+    assert initialized_dummy_actor.state.alive is False

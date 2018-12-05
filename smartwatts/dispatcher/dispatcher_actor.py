@@ -237,7 +237,7 @@ class DispatcherActor(Actor):
             (Report, FormulaDispatcherReportHandler(self.route_table,
                                                     self.primary_group_by_rule))
         )
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler))
+        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
 
     def terminated_behaviour(self):
         """

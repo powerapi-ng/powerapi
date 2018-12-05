@@ -61,4 +61,4 @@ class PusherActor(Actor):
         Specify for each kind of report the associate handler
         """
         self.handlers.append((self.report_type, _PowerHandler(self.database)))
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler))
+        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))

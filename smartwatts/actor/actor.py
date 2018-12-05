@@ -56,7 +56,7 @@ class Actor(multiprocessing.Process):
         self.push_socket = None
 
         self.verbose = verbose
-        self.state = None
+        self.state = BasicState(self._initial_behaviour)
         self.context = None
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
@@ -116,7 +116,7 @@ class Actor(multiprocessing.Process):
         Define actor specific processing that is run before entering the Run
         Loop
         """
-        self.state = BasicState(self._initial_behaviour)
+        raise NotImplementedError
 
     def _initial_behaviour(self):
         """initial behaviour of an actor
