@@ -27,6 +27,7 @@ import zmq
 
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
+from smartwatts.actor import BasicState
 
 
 class Actor(multiprocessing.Process):
@@ -55,12 +56,11 @@ class Actor(multiprocessing.Process):
         self.push_socket = None
 
         self.verbose = verbose
-        self.alive = True
+        self.state = None
         self.context = None
         self.pull_socket_address = 'ipc://@' + self.name
         self.pull_socket = None
         self.timeout = timeout
-        self.behaviour = self._behaviour
 
         self.timeout_handler = None
         self.handlers = []
@@ -83,7 +83,7 @@ class Actor(multiprocessing.Process):
         # actors specific initialisation
         self.setup()
 
-        self.behaviour()
+        self.state.behaviour(self)
 
         self._kill_process()
 
@@ -111,14 +111,21 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def _behaviour(self):
+    def setup(self):
+        """
+        Define actor specific processing that is run before entering the Run
+        Loop
+        """
+        self.state = BasicState(self._initial_behaviour)
+
+    def _initial_behaviour(self):
         """initial behaviour of an actor
 
         loop on reveiving message on the pull_socket. If a message put the self.
         alive boolean to False, stop the loop
 
         """
-        while self.alive:
+        while self.state.alive:
             msg = self.__recv_serialized(self.pull_socket)
             self._handle_message(msg)
 
@@ -136,31 +143,13 @@ class Actor(multiprocessing.Process):
         """
         # Timeout
         if msg is None:
-            result = self.timeout_handler.handle(None)
-            self._post_handle(result)
-        # Kill msg
-        elif isinstance(msg, PoisonPillMessage):
-            self.alive = False
+            self.state = self.timeout_handler.handle(None, self.state)
         else:
             for (msg_type, handler) in self.handlers:
                 if isinstance(msg, msg_type):
-                    result = handler.handle(msg)
-                    self._post_handle(result)
+                    self.state = handler.handle(msg, self.state)
                     return
             raise UnknowMessageTypeException()
-
-    def _post_handle(self, result):
-        """ post handle behaviour on the handler return value """
-        raise NotImplementedError()
-
-    def setup(self):
-        """
-        Need to be overrided.
-
-        Define actor specific processing that is run before entering the Run
-        Loop
-        """
-        raise NotImplementedError()
 
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""

@@ -19,15 +19,16 @@ Handler interface
 """
 
 
-class Handler:
+class AbstractHandler:
     """ Handler interface """
-    def handle(self, msg):
-        """ Handle a message and return a value
+    def handle(self, msg, state):
+        """ Handle a message and return a the new state value of the actor
 
         Parameters:
             msg(Object): the message received by the actor
+            state(BasicState): The current actor's state
 
         Return:
-            (Object): computation on the message result
+            (BasicState): The new actor's state
         """
         raise NotImplementedError()
