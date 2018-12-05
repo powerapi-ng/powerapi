@@ -25,6 +25,7 @@ from smartwatts.database import MongoDB
 from smartwatts.filter import Filter
 from smartwatts.report import Report
 from smartwatts.puller import PullerActor
+from smartwatts.actor import BasicState
 
 #########################################
 # Initialization functions
@@ -35,7 +36,7 @@ class FakeReport(Report):
     """ FakeReport for testing """
 
     def __init__(self):
-        Report.__init__(self)
+        Report.__init__(self, None, None, None)
         self.value = None
 
     def serialize(self):
@@ -104,13 +105,15 @@ class TestHandlerPuller:
 
     def test_read_none(self):
         """
-        Test if database return None
+        Test if handle return a state with alive=False when database can't
+        return report
         """
         database = mock.Mock(spec_set=MongoDB)
         database.get_next = mock.Mock(return_value=None)
         filt = mock.Mock(spec_set=Filter)
-        handler = _TimeoutHandler(database, filt)
-        assert handler.handle(None) is None
+        handler = _TimeoutHandler(database, filt, autokill=True)
+        state = BasicState(mock.Mock())
+        assert not handler.handle(None, state).alive
 
     def test_basic_handler(self):
         """
@@ -119,4 +122,4 @@ class TestHandlerPuller:
         database = get_fake_mongodb()
         filt = get_fake_filter()
         handler = _TimeoutHandler(database, filt)
-        assert handler.handle(None)[0].value is 3
+        assert handler._get_report_dispatcher()[0].value == 3
