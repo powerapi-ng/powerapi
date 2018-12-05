@@ -18,11 +18,13 @@
 Module class PusherActor
 """
 
-from smartwatts.actor import Actor, Handler
+from smartwatts.actor import Actor
+from smartwatts.handler import AbstractHandler
 from smartwatts.report import PowerReport
+from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
+from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 
-
-class _PowerHandler(Handler):
+class _PowerHandler(AbstractHandler):
     """
     HWPCHandler class
     """
@@ -31,13 +33,17 @@ class _PowerHandler(Handler):
         self.database = database
         self.database.load()
 
-    def handle(self, msg):
+    def handle(self, msg, state):
         """
         Override
 
         Save the msg in the database
         """
+        if not isinstance(msg, PowerReport):
+            raise UnknowMessageTypeException
+
         self.database.save(msg.serialize())
+        return state
 
 
 class PusherActor(Actor):
@@ -55,9 +61,4 @@ class PusherActor(Actor):
         Specify for each kind of report the associate handler
         """
         self.handlers.append((self.report_type, _PowerHandler(self.database)))
-
-    def _post_handle(self, result):
-        """
-        Override
-        """
-        pass
+        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler))

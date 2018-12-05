@@ -36,30 +36,55 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
     A test formula that simulate data processing
     """
 
-    def handle(self, msg):
+    def __init__(self, actor_pusher):
+        self.actor_pusher = actor_pusher
+
+    def _process_report(self, report):
         """ Extract RAPL reports from a HWPC report and convert their values in
         Joules
 
+        Parameters:
+            (smartwatts.report.HWPCReport): received hwpc report
+
         Return:
-            ([smartwatts.report.PowerReport]): a power report per RAPL report
+            ([smartwatts.report.PowerReport]): a power report per RAPL reports
+                                               in the hwpc report
 
-        Raise:
-            UnknowMessageTypeException: if the *msg* is not a HWPCReport
         """
-        if not isinstance(msg, HWPCReport):
-            raise UnknowMessageTypeException()
 
-        if 'rapl' not in msg.groups:
+        if 'rapl' not in report.groups:
             return []
 
         reports = []
-        for socket_id, socket_report in msg.groups['rapl'].items():
+        for socket_id, socket_report in report.groups['rapl'].items():
             core_report = list(socket_report.cores.values())[0]
             for event_id, raw_power in core_report.events.items():
                 power = math.ldexp(raw_power, -32)
-                reports.append(_gen_power_report(msg, socket_id, event_id,
+                reports.append(_gen_power_report(report, socket_id, event_id,
                                                  power))
         return reports
+
+    def handle(self, msg, state):
+        """ process a report and send the result to the pusher actor
+
+        Parameters:
+            msg(smartwatts.report.HWPCReport) : received message
+            state(smartwatts.actor.BasicState) : current actor state
+
+        Return:
+            state(smartwatts.actor.BasicState): new actor state
+
+        Raise:
+            UnknowMessageTypeException: if the *msg* is not a Report
+        """
+        if not isinstance(msg, HWPCReport):
+            raise UnknowMessageTypeException(type(msg))
+
+        result = self._process_report(msg)
+        for report in result:
+            self.actor_pusher.send(report)
+
+        return state
 
 
 class RAPLFormulaActor(FormulaActor):
@@ -76,19 +101,10 @@ class RAPLFormulaActor(FormulaActor):
             @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
                                                     must send its reports
         """
-        FormulaActor.__init__(self, name, verbose)
-        self.actor_pusher = actor_pusher
+        FormulaActor.__init__(self, name, actor_pusher, verbose)
 
     def setup(self):
         """ Initialize Handler """
-        self.actor_pusher.connect(self.context)
-        self.handlers.append((HWPCReport, RAPLFormulaHWPCReportHandler()))
-
-    def _post_handle(self, result):
-        """ send computed estimation to the pusher
-
-        Parameters:
-            result([smartwatts.report.PowerReport])
-        """
-        for report in result:
-            self.actor_pusher.send(report)
+        FormulaActor.setup(self)
+        self.handlers.append((HWPCReport,
+                              RAPLFormulaHWPCReportHandler(self.actor_pusher)))

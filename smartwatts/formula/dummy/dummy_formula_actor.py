@@ -29,21 +29,45 @@ class DummyHWPCReportHandler(AbstractHandler):
     A test formula that simulate data processing
     """
 
-    def handle(self, msg):
+    def __init__(self, actor_pusher):
+        self.actor_pusher = actor_pusher
+
+    def _process_report(self, report):
         """ Wait 1 seconde and return a power report containg 42
+
+        Parameters:
+            (smartwatts.report.Report): received report
 
         Return:
             (smartwatts.report.PowerReport): a power report containing
                                              comsumption estimation
+
+        """
+
+        time.sleep(1)
+        result_msg = PowerReport(report.timestamp, report.sensor,
+                                 report.target, {}, 42)
+        return result_msg
+
+    def handle(self, msg, state):
+        """ process a report and send the result to the pusher actor
+
+        Parameters:
+            msg(smartwatts.report.Report) : received message
+            state(smartwatts.actor.BasicState) : current actor state
+
+        Return:
+            state(smartwatts.actor.BasicState): new actor state
+
         Raise:
             UnknowMessageTypeException: if the *msg* is not a Report
         """
-        if isinstance(msg, Report):
-            time.sleep(1)
-            result_msg = PowerReport(42)
-            return result_msg
+        if not isinstance(msg, Report):
+            raise UnknowMessageTypeException(type(msg))
 
-        raise UnknowMessageTypeException(type(msg))
+        result = self._process_report(msg)
+        self.actor_pusher.send(result)
+        return state
 
 
 class DummyFormulaActor(FormulaActor):
@@ -60,22 +84,10 @@ class DummyFormulaActor(FormulaActor):
             @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
                                                     must send its reports
         """
-        FormulaActor.__init__(self, name, verbose)
-        self.actor_pusher = actor_pusher
+        FormulaActor.__init__(self, name, actor_pusher, verbose)
 
     def setup(self):
         """ Initialize Handler """
-        self.actor_pusher.connect(self.context)
-        self.handlers.append(Report, DummyHWPCReportHandler)
-
-    def _post_handle(self, result):
-        """ send computed estimation to the pusher
-
-        Parameters:
-            result(smartwatts.report.PowerReport)
-        """
-        if result is not None and isinstance(result, PowerReport):
-
-            self.actor_pusher.send(result)
-        else:
-            return
+        FormulaActor.setup(self)
+        self.handlers.append((Report,
+                              DummyHWPCReportHandler(self.actor_pusher)))

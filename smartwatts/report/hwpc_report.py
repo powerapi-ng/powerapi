@@ -104,10 +104,7 @@ class HWPCReport(Report):
         target:    target name
         groups:    dict of group, a group is a dict of socket
         """
-        Report.__init__(self)
-        self.timestamp = timestamp
-        self.sensor = sensor
-        self.target = target
+        Report.__init__(self, timestamp, sensor, target)
         self.groups = {}
 
     def __str__(self):

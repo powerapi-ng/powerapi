@@ -24,6 +24,11 @@ from enum import Enum
 class Report:
     """ Model base class """
 
+    def __init__(self, timestamp, sensor, target):
+        self.timestamp = timestamp
+        self.sensor = sensor
+        self.target = target
+    
     def serialize(self):
         """
         return the JSON format of the report

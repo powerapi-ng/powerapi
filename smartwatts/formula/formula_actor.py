@@ -25,8 +25,12 @@ class FormulaActor(Actor):
     Generalize formula behaviour
     """
 
-    def __init__(self, name, verbose=False, timeout=None):
+    def __init__(self, name, actor_pusher, verbose=False, timeout=None):
         """
         Parameters:
         """
         Actor.__init__(self, name, verbose)
+        self.actor_pusher = actor_pusher
+
+    def setup(self):
+        self.actor_pusher.connect(self.context)
