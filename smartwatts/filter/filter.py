@@ -61,8 +61,9 @@ class Filter:
         if not self.filters:
             raise FilterUselessError()
 
+        dispatchers = []
         for rule, dispatcher in self.filters:
             if rule(msg):
-                return dispatcher
+                dispatchers.append(dispatcher)
 
-        return None
+        return dispatchers

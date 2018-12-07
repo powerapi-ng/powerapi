@@ -67,15 +67,15 @@ class _TimeoutHandler(AbstractHandler):
         report.deserialize(json)
 
         # Filter the report
-        dispatcher = self.filter.route(report)
-        return (report, dispatcher)
+        dispatchers = self.filter.route(report)
+        return (report, dispatchers)
 
     def handle(self, msg, state):
         """
         Handle the send of the report to the good dispatcher
         """
         try:
-            (report, dispatcher) = self._get_report_dispatcher()
+            (report, dispatchers) = self._get_report_dispatcher()
 
         except NoReportExtractedException:
             if self.autokill:
@@ -83,7 +83,7 @@ class _TimeoutHandler(AbstractHandler):
             return state
 
         # Send to the dispatcher if it's not None
-        if dispatcher is not None:
+        for dispatcher in dispatchers:
             dispatcher.send(report)
 
         return state
