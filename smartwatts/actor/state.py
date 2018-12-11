@@ -14,5 +14,6 @@ class BasicState:
         behaviour the actor
         """
 
+        self.initialized = False
         self.alive = True
         self.behaviour = behaviour
