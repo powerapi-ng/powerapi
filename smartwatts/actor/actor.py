@@ -185,7 +185,7 @@ class Actor(multiprocessing.Process):
         else:
             for msg in msg_list:
                 handler = self.get_corresponding_handler(msg)
-                self.state = handler.handle(msg, self.state)
+                self.state = handler.handle_message(msg, self.state)
 
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""
