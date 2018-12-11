@@ -14,7 +14,7 @@ from smartwatts.handler import PoisonPillMessageHandler
 class DummyActor(Actor):
 
     def setup(self):
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
 
 
 ACTOR_NAME = 'dummy_actor'
@@ -59,27 +59,42 @@ def test_communication_setup(dummy_actor):
     assert setproctitle.getproctitle() == ACTOR_NAME
     dummy_actor._kill_process()
 
-########################
-## HANDLE MESSAGE TEST #
-########################
 
-
-def test_handle_unknow_message_type(initialized_dummy_actor):
+def test_get_handler_unknow_message_type(initialized_dummy_actor):
     """test to handle a message with no handle bind to its type
 
     must raise an UnknowMessageTypeException
 
     """
     with pytest.raises(UnknowMessageTypeException):
-        initialized_dummy_actor._handle_message("toto")
+        initialized_dummy_actor.get_corresponding_handler('toto')
 
 
-def test_handle_poison_pill_message(initialized_dummy_actor):
-    """test to handle a PoisonPillMessage
-
-    after handle this message, the self.alive boolean must be set to False
-
+def test_get_handler(initialized_dummy_actor):
+    """ Test to get the predefined handler for PoisonPillMessage type
     """
-    assert initialized_dummy_actor.state.alive is True
-    initialized_dummy_actor._handle_message(PoisonPillMessage())
-    assert initialized_dummy_actor.state.alive is False
+    print(initialized_dummy_actor.handlers)
+    handler = initialized_dummy_actor.get_corresponding_handler(
+        PoisonPillMessage())
+    assert isinstance(handler, PoisonPillMessageHandler)
+
+def test_behaviour_change(initialized_dummy_actor):
+    """ Test if the actor behaviour could be change during the current
+    behaviour function execution
+    """
+
+    buzzer = Mock()
+
+    def next_behaviour(actor):
+        """ call the buzzer and set the alive flag to False"""
+        buzzer.buzz()
+        actor.state.alive = False
+
+    def init_behaviour(actor):
+        actor.state.behaviour = next_behaviour
+
+    initialized_dummy_actor.state.behaviour = init_behaviour
+
+    initialized_dummy_actor.run()
+
+    assert len(buzzer.mock_calls) == 1

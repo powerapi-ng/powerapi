@@ -83,7 +83,8 @@ class Actor(multiprocessing.Process):
         # actors specific initialisation
         self.setup()
 
-        self.state.behaviour(self)
+        while self.state.alive:
+            self.state.behaviour(self)
 
         self._kill_process()
 
@@ -95,8 +96,8 @@ class Actor(multiprocessing.Process):
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
 
-        ## create the pull socket (to communicate with this actor, others
-        ## process have to connect a push socket to this socket)
+        # create the pull socket (to communicate with this actor, others
+        # process have to connect a push socket to this socket)
         self.pull_socket = self.context.socket(zmq.PULL)
         self.pull_socket.bind(self.pull_socket_address)
 
@@ -118,38 +119,45 @@ class Actor(multiprocessing.Process):
         """
         raise NotImplementedError
 
+    def get_corresponding_handler(self, msg):
+        """ Return the handler corresponding to the given message type
+        Raise UnknowMessageTypeException if no handler could be find
+        """
+        for (msg_type, handler) in self.handlers:
+            if isinstance(msg, msg_type):
+                return handler
+
+        raise UnknowMessageTypeException()
+
+    def add_handler(self, message_type, handler):
+        """ map a handler to a message type
+        """
+        self.handlers.append((message_type, handler))
+
+    def receive(self):
+        """ Wait for a message and return it
+
+        Return: the message or None if timeout
+        """
+        return self.__recv_serialized(self.pull_socket)
+
     def _initial_behaviour(self):
         """initial behaviour of an actor
 
-        loop on reveiving message on the pull_socket. If a message put the self.
-        alive boolean to False, stop the loop
-
-        """
-        while self.state.alive:
-            msg = self.__recv_serialized(self.pull_socket)
-            self._handle_message(msg)
-
-    def _handle_message(self, msg):
-        """handle the message with the correct handler
+        wait for a message, and handle it with the correct handler
 
         if the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
 
-        if the message is a PoisonPillMessage, kill the process
-
-        if no handler was found for this message, raise an
-        UnknowMessageTypeException
-
         """
+        msg = self.receive()
+
         # Timeout
         if msg is None:
             self.state = self.timeout_handler.handle(None, self.state)
         else:
-            for (msg_type, handler) in self.handlers:
-                if isinstance(msg, msg_type):
-                    self.state = handler.handle(msg, self.state)
-                    return
-            raise UnknowMessageTypeException()
+            handler = self.get_corresponding_handler(msg)
+            self.state = handler.handle(msg, self.state)
 
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""

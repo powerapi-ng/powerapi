@@ -19,9 +19,9 @@ Module ActorTestFormula
 """
 import time
 from smartwatts.formula.formula_actor import FormulaActor
-from smartwatts.message import UnknowMessageTypeException
+from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.report import Report, PowerReport
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 
 
 class DummyHWPCReportHandler(AbstractHandler):
@@ -89,5 +89,6 @@ class DummyFormulaActor(FormulaActor):
     def setup(self):
         """ Initialize Handler """
         FormulaActor.setup(self)
-        self.handlers.append((Report,
-                              DummyHWPCReportHandler(self.actor_pusher)))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        handler = DummyHWPCReportHandler(self.actor_pusher)
+        self.add_handler(Report, handler)

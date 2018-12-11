@@ -20,9 +20,9 @@ Module ActorTestFormula
 import math
 
 from smartwatts.formula.formula_actor import FormulaActor
-from smartwatts.message import UnknowMessageTypeException
+from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.report import HWPCReport, PowerReport
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 
 
 def _gen_power_report(base_report, socket_id, rapl_event_id, power):
@@ -106,5 +106,6 @@ class RAPLFormulaActor(FormulaActor):
     def setup(self):
         """ Initialize Handler """
         FormulaActor.setup(self)
-        self.handlers.append((HWPCReport,
-                              RAPLFormulaHWPCReportHandler(self.actor_pusher)))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        handler = RAPLFormulaHWPCReportHandler(self.actor_pusher)
+        self.add_handler(HWPCReport, handler)

@@ -135,4 +135,4 @@ class PullerActor(Actor):
         # Create handler
         self.timeout_handler = _TimeoutHandler(self.database, self.filter,
                                                self.autokill)
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())

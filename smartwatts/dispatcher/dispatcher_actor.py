@@ -233,11 +233,11 @@ class DispatcherActor(Actor):
         self.state = DispatcherState(self._initial_behaviour,
                                      self._create_factory())
 
-        self.handlers.append(
-            (Report, FormulaDispatcherReportHandler(self.route_table,
-                                                    self.primary_group_by_rule))
-        )
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
+        handler = FormulaDispatcherReportHandler(self.route_table,
+                                                 self.primary_group_by_rule)
+        self.add_handler(Report, handler)
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+
 
     def terminated_behaviour(self):
         """
