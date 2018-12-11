@@ -19,6 +19,7 @@ Module test_actor_puller
 """
 
 import mock
+import time
 import zmq
 from smartwatts.puller.puller_actor import _TimeoutHandler
 from smartwatts.database import MongoDB
@@ -82,14 +83,16 @@ def get_fake_filter():
 class TestPullerActor:
     """ TestPullerActor class """
 
-    def test_basic_puller(self):
-        """ Test basic behaviour of puller """
-        puller = PullerActor("puller_mongo", get_fake_mongodb(),
-                             get_fake_filter(), 1)
-        puller.start()
-        context = zmq.Context()
-        puller.connect(context)
-        puller.kill()
+    #def test_basic_puller(self):
+    #    """ Test basic behaviour of puller """
+    #    puller = PullerActor("puller_mongo", get_fake_mongodb(),
+    #                         get_fake_filter(), 1)
+    #    puller.start()
+    #    context = zmq.Context()
+    #    puller.connect(context)
+    #    puller.kill()
+    #    puller.join()
+    #    assert puller.is_alive() is False
 
     def test_autokill(self):
         """ Test if the actor kill himself after reading db """

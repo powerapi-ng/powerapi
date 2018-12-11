@@ -39,7 +39,7 @@ class TestFilter:
         """
         Test filter with two filter
         - 2 first report return first dispatcher
-        - 2 next report return second dispatcher
+        - 2 next report return first and second dispatcher
         - 2 next report return None
         """
         mongodb = MongoDB("localhost", 27017, "test_filter",
@@ -47,22 +47,25 @@ class TestFilter:
         mongodb.load()
         hwpc_filter = HWPCFilter()
         hwpc_filter.filter(lambda msg:
-                           True if msg.sensor == "sensor_test1" else False,
+                           True if "sensor" in msg.sensor else False,
                            1)
         hwpc_filter.filter(lambda msg:
-                           True if msg.sensor == "sensor_test2" else False,
+                           True if "test1" in msg.sensor else False,
                            2)
+        hwpc_filter.filter(lambda msg:
+                           True if msg.sensor == "sensor_test2" else False,
+                           3)
         for _ in range(2):
             hwpc_report = HWPCReport()
             hwpc_report.deserialize(mongodb.get_next())
-            assert hwpc_filter.route(hwpc_report) == 1
+            assert hwpc_filter.route(hwpc_report) == [1, 2]
 
         for _ in range(2):
             hwpc_report = HWPCReport()
             hwpc_report.deserialize(mongodb.get_next())
-            assert hwpc_filter.route(hwpc_report) == 2
+            assert hwpc_filter.route(hwpc_report) == [1, 3]
 
         for _ in range(2):
             hwpc_report = HWPCReport()
             hwpc_report.deserialize(mongodb.get_next())
-            assert hwpc_filter.route(hwpc_report) is None
+            assert hwpc_filter.route(hwpc_report) == [1]
