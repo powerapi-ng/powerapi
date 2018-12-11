@@ -57,10 +57,15 @@ class Actor(multiprocessing.Process):
 
         self.verbose = verbose
         self.state = BasicState(self._initial_behaviour)
-        self.context = None
-        self.pull_socket_address = 'ipc://@' + self.name
-        self.pull_socket = None
         self.timeout = timeout
+
+        self.pull_socket_address = 'ipc://@' + self.name
+        self.monitor_socket_address = 'ipc://@monitor_' + self.name
+
+        self.context = None
+        self.pull_socket = None
+        self.monitor_socket = None
+        self.poller = None
 
         self.timeout_handler = None
         self.handlers = []
@@ -88,6 +93,18 @@ class Actor(multiprocessing.Process):
 
         self._kill_process()
 
+    def __create_socket(self, socket_type, socket_addr):
+        """create a socket of the given type, bind it to the given address and
+        register it to the poller
+
+        Return:
+            (zmq.Socket): the initialized socket
+        """
+        socket = self.context.socket(socket_type)
+        socket.bind(socket_addr)
+        self.poller.register(socket, zmq.POLLIN)
+        return socket
+
     def _communication_setup(self):
         """ Initialize zmq context and sockets """
         # Name process
@@ -95,11 +112,17 @@ class Actor(multiprocessing.Process):
 
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
+        self.poller = zmq.Poller()
 
         # create the pull socket (to communicate with this actor, others
         # process have to connect a push socket to this socket)
-        self.pull_socket = self.context.socket(zmq.PULL)
-        self.pull_socket.bind(self.pull_socket_address)
+        self.pull_socket = self.__create_socket(zmq.PULL,
+                                                self.pull_socket_address)
+
+        # create the monitor socket (to monitor this actor, a process have to
+        # connect a pair socket to this socket with the `monitor` method)
+        self.monitor_socket = self.__create_socket(zmq.PAIR,
+                                                   self.monitor_socket_address)
 
         self.log('I\'m ' + self.name)
         self.log("running on address " + self.pull_socket_address)
@@ -135,11 +158,15 @@ class Actor(multiprocessing.Process):
         self.handlers.append((message_type, handler))
 
     def receive(self):
-        """ Wait for a message and return it
+        """ Wait for messages and return them
 
-        Return: the message or None if timeout
+        Return: a list of received messages since the last receive call
+                or [] if timeout
         """
-        return self.__recv_serialized(self.pull_socket)
+        events = self.poller.poll(self.timeout)
+
+        return [self._recv_serialized(socket) for socket, event in events
+                if event == zmq.POLLIN]
 
     def _initial_behaviour(self):
         """initial behaviour of an actor
@@ -150,20 +177,25 @@ class Actor(multiprocessing.Process):
         handler correponding to the message type and call it on the message.
 
         """
-        msg = self.receive()
+        msg_list = self.receive()
 
         # Timeout
-        if msg is None:
+        if msg_list == []:
             self.state = self.timeout_handler.handle(None, self.state)
         else:
-            handler = self.get_corresponding_handler(msg)
-            self.state = handler.handle(msg, self.state)
+            for msg in msg_list:
+                handler = self.get_corresponding_handler(msg)
+                self.state = handler.handle(msg, self.state)
 
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""
         self.terminated_behaviour()
         if self.pull_socket is not None:
             self.pull_socket.close()
+
+        if self.monitor_socket is not None:
+            self.monitor_socket.close()
+
         self.log("terminated")
 
     def terminated_behaviour(self):
@@ -173,19 +205,17 @@ class Actor(multiprocessing.Process):
         """
         pass
 
-    def __send_serialized(self, socket, msg):
+    def _send_serialized(self, socket, msg):
         """
         Allow to send a serialized msg with pickle
         """
         socket.send(pickle.dumps(msg))
         self.log('sent ' + str(msg) + ' to ' + self.name)
 
-    def __recv_serialized(self, socket):
+    def _recv_serialized(self, socket):
         """
         Allow to recv a serialized msg with pickle
         """
-        if not socket.poll(self.timeout):
-            return None
         msg = pickle.loads(socket.recv())
         self.log('received : ' + str(msg))
         return msg
@@ -206,13 +236,32 @@ class Actor(multiprocessing.Process):
         self.push_socket.connect(self.pull_socket_address)
         self.log('connected to ' + self.pull_socket_address)
 
+    def monitor(self, context):
+        """
+        Connect to the monitor socket of this actor
+
+        open a pair socket on the process that want to monitor this actor
+
+        parameters:
+            context(zmq.Context): ZMQ context of the process that want to
+                                  monitor this actor
+
+        """
+        self.monitor_socket = context.socket(zmq.PAIR)
+        self.monitor_socket.connect(self.monitor_socket_address)
+        self.log('monitor' + self.name)
+
+    def send_monitor(self, msg):
+        """ Send a msg to using monitor communication"""
+        self._send_serialized(self.monitor_socket, msg)
+
     def send(self, msg):
-        """Send a msg to this actor
+        """(PROCESS_SIDE) Send a msg to this actor
 
         This function will not be used by this actor but by process that
         want to send message to this actor
         """
-        self.__send_serialized(self.push_socket, msg)
+        self._send_serialized(self.push_socket, msg)
 
     def kill(self):
         """
