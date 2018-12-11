@@ -21,7 +21,7 @@ Module test_actor_puller
 import mock
 import time
 import zmq
-from smartwatts.puller.puller_actor import _TimeoutHandler
+from smartwatts.puller.puller_actor import TimeoutHandler
 from smartwatts.database import MongoDB
 from smartwatts.filter import Filter
 from smartwatts.report import Report
@@ -114,7 +114,7 @@ class TestHandlerPuller:
         database = mock.Mock(spec_set=MongoDB)
         database.get_next = mock.Mock(return_value=None)
         filt = mock.Mock(spec_set=Filter)
-        handler = _TimeoutHandler(database, filt, autokill=True)
+        handler = TimeoutHandler(database, filt, autokill=True)
         state = BasicState(mock.Mock())
         assert not handler.handle(None, state).alive
 
@@ -124,5 +124,5 @@ class TestHandlerPuller:
         """
         database = get_fake_mongodb()
         filt = get_fake_filter()
-        handler = _TimeoutHandler(database, filt)
+        handler = TimeoutHandler(database, filt)
         assert handler._get_report_dispatcher()[0].value == 3
