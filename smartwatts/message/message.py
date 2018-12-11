@@ -23,11 +23,31 @@ class UnknowMessageTypeException(Exception):
     """
     Exception happen when we don't know the message type
     """
-    pass
 
 
 class PoisonPillMessage:
     """
     Class of message which allow to kill an actor
     """
-    pass
+
+
+class StartMessage:
+    """ Message that ask the actor to launch its initialisation process
+    """
+
+
+class OKMessage:
+    """ Message used in synchrone communication to answer that the actor
+    completed the task previously asked
+    """
+
+
+class ErrorMessage:
+    """ Message used to indicate that an error as occuried
+
+    encapsulated error code :
+        -
+    """
+
+    def __init__(self, error_code):
+        self.error_code = error_code
