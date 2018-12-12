@@ -18,9 +18,7 @@
 Module actor_puller
 """
 
-
-
-from smartwatts.actor import Actor, BasicState
+from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.puller import TimeoutHandler, StartHandler
@@ -64,7 +62,8 @@ class PullerActor(Actor):
                                                                 actor.state))
                                   if timeout == 0 else Actor._initial_behaviour)
 
-        self.state = PullerState(self, timeout_null_behaviour, database,
+        self.state = PullerState(timeout_null_behaviour,
+                                 SocketInterface(name, timeout), database,
                                  report_filter)
         self.autokill = autokill
 

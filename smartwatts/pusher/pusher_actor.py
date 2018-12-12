@@ -18,7 +18,7 @@
 Module class PusherActor
 """
 
-from smartwatts.actor import Actor, BasicState
+from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.pusher import PowerHandler, StartHandler
 
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -40,10 +40,12 @@ class PusherState(BasicState):
 class PusherActor(Actor):
     """ PusherActor class """
 
-    def __init__(self, name, report_type, database, verbose=False):
+    def __init__(self, name, report_type, database, verbose=False,
+                 timeout=None):
         Actor.__init__(self, name, verbose)
         self.report_type = report_type
-        self.state = PusherState(self, Actor._initial_behaviour, database)
+        self.state = PusherState(Actor._initial_behaviour,
+                                 SocketInterface(name, timeout), database)
 
     def setup(self):
         """

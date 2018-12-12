@@ -50,7 +50,6 @@ class Actor(multiprocessing.Process):
         multiprocessing.Process.__init__(self, name=name)
 
         self.verbose = verbose
-        self.state = BasicState(self._initial_behaviour, SocketInterface(name, timeout))
         self.timeout = timeout
 
         self.timeout_handler = None
@@ -72,7 +71,6 @@ class Actor(multiprocessing.Process):
         self.socket_interface.setup()
 
         self.log('I\'m ' + self.name)
-        self.log("running on address " + self.pull_socket_address)
 
         self._signal_handler_setup()
         # actors specific initialisation
