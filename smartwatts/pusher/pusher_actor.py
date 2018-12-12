@@ -18,11 +18,23 @@
 Module class PusherActor
 """
 
-from smartwatts.actor import Actor
-from smartwatts.pusher import PowerHandler
+from smartwatts.actor import Actor, BasicState
+from smartwatts.pusher import PowerHandler, StartHandler
 
-from smartwatts.message import PoisonPillMessage
+from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
+
+
+class PusherState(BasicState):
+    """ Pusher Actor State
+
+    Contains in addition to BasicState values :
+      - the database interface
+    """
+    def __init__(self, behaviour, socket_interface, database):
+        BasicState.__init__(self, behaviour, socket_interface)
+
+        self.database = database
 
 
 class PusherActor(Actor):
@@ -31,7 +43,7 @@ class PusherActor(Actor):
     def __init__(self, name, report_type, database, verbose=False):
         Actor.__init__(self, name, verbose)
         self.report_type = report_type
-        self.database = database
+        self.state = PusherState(self, Actor._initial_behaviour, database)
 
     def setup(self):
         """
@@ -40,4 +52,5 @@ class PusherActor(Actor):
         Specify for each kind of report the associate handler
         """
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(self.report_type, PowerHandler(self.database))
+        self.add_handler(self.report_type, PowerHandler())
+        self.add_handler(StartMessage, StartHandler())
