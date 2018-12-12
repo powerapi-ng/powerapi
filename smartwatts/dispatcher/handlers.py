@@ -1,8 +1,22 @@
 """
 Handlers used by the DispatcherActor
 """
-from smartwatts.handler import AbstractInitHandler
+from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.message import UnknowMessageTypeException
+from smartwatts.message import OKMessage
+
+
+class StartHandler(AbstractHandler):
+    """ Initialize the receved state
+    """
+    def handle(self, msg, state):
+        if state.initialized:
+            return state
+
+        state.initialized = True
+        state.socket_interface.send_monitor(OKMessage())
+
+        return state
 
 
 class FormulaDispatcherReportHandler(AbstractInitHandler):
