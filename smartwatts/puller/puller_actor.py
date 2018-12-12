@@ -18,16 +18,32 @@
 Module actor_puller
 """
 
-from smartwatts.actor import Actor
-from smartwatts.message import PoisonPillMessage
+
+
+from smartwatts.actor import Actor, BasicState
+from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
-from smartwatts.puller import TimeoutHandler
+from smartwatts.puller import TimeoutHandler, StartHandler
+
+
+class PullerState(BasicState):
+    """ Puller Actor State
+
+    Contains in addition to BasicState values :
+      - the database interface
+      - the Filter class
+    """
+    def __init__(self, behaviour, socket_interface, database, report_filter):
+        BasicState.__init__(self, behaviour, socket_interface)
+
+        self.database = database
+        self.report_filter = report_filter
 
 
 class PullerActor(Actor):
     """ PullerActor class """
 
-    def __init__(self, name, database, filt, timeout,
+    def __init__(self, name, database, report_filter, timeout,
                  verbose=False, autokill=False):
         """
         Initialization
@@ -41,20 +57,16 @@ class PullerActor(Actor):
                        return None (it means that all the db has been read)
         """
         Actor.__init__(self, name, verbose, timeout=timeout)
-        self.database = database
-        self.filter = filt
+        self.timeout_handler = TimeoutHandler(self.autokill)
+
+        timeout_null_behaviour = ((lambda actor:
+                                   actor.timeout_handler.handle(None,
+                                                                actor.state))
+                                  if timeout == 0 else Actor._initial_behaviour)
+
+        self.state = PullerState(self, timeout_null_behaviour, database,
+                                 report_filter)
         self.autokill = autokill
-
-        # If timeout is 0, define new behaviour and doesn't recv message
-        if timeout == 0:
-            self.behaviour = self._behaviour_timeout_null
-
-    def _behaviour_timeout_null(self):
-        """
-        Never read socket message, just run the timeout_handler
-        """
-        while self.state.alive:
-            self.handle_message(None)
 
     def setup(self):
         """
@@ -62,12 +74,5 @@ class PullerActor(Actor):
 
         Connect to all dispatcher in filter and define timeout_handler
         """
-
-        # Connect to all dispatcher
-        for _, dispatcher in self.filter.filters:
-            dispatcher.connect(self.context)
-
-        # Create handler
-        self.timeout_handler = TimeoutHandler(self.database, self.filter,
-                                              self.autokill)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        self.add_handler(StartMessage, StartHandler())
