@@ -19,22 +19,29 @@ Module MongoDB
 """
 
 import pymongo
-from smartwatts.database.base_db import BaseDB
+from smartwatts.database.base_db import BaseDB, DBErrorException
 
 
-class MongoBadDBError(Exception):
+class MongoBadDBError(DBErrorException):
     """ MongDB error when hostname/port fail """
-    pass
+
+    def __init__(self, hostname):
+        DBErrorException.__init__(self, 'Mongo DB error : can\'t connect to ' +
+                                  hostname)
 
 
-class MongoBadDBNameError(Exception):
+class MongoBadDBNameError(DBErrorException):
     """ MongoDB error when database doesn't exist """
-    pass
+    def __init__(self, db_name):
+        DBErrorException.__init__(self, 'Mongo DB error : DB ' + db_name +
+                                  ' doesn\'t exist')
 
 
-class MongoBadCollectionNameError(Exception):
+class MongoBadCollectionNameError(DBErrorException):
     """ MongoDB error when collection doesn't exist """
-    pass
+    def __init__(self, collection_name):
+        DBErrorException.__init__(self, 'Mongo DB error : collection ' +
+                                  collection_name + ' doesn\'t exist')
 
 
 class MongoNeedReportModelError(Exception):
