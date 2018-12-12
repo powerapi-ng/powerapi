@@ -1,11 +1,11 @@
 """
 Handlers used by the DispatcherActor
 """
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractInitHandler
 from smartwatts.message import UnknowMessageTypeException
 
 
-class FormulaDispatcherReportHandler(AbstractHandler):
+class FormulaDispatcherReportHandler(AbstractInitHandler):
     """
     Split the received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses report

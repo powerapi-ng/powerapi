@@ -25,6 +25,33 @@ class AbstractHandler:
     def handle_message(self, msg, state):
         """ Handle a message and return a the new state value of the actor
 
+        Parameters:
+            msg(Object): the message received by the actor
+            state(BasicState): The current actor's state
+
+        Return:
+            (BasicState): The new actor's state
+        """
+        return self.handle(msg, state)
+
+    def handle(self, msg, state):
+        """ Handle a message and return a the new state value of the actor
+
+        Parameters:
+            msg(Object): the message received by the actor
+            state(BasicState): The current actor's state
+
+        Return:
+            (BasicState): The new actor's state
+        """
+        raise NotImplementedError()
+
+
+class AbstractInitHandler(AbstractHandler):
+
+    def handle_message(self, msg, state):
+        """ Handle a message and return a the new state value of the actor
+
         if the given state is not initialized, return the given state without
         side effect. Otherwise, use the handle method to handle the message
 
@@ -39,15 +66,3 @@ class AbstractHandler:
             return state
 
         return self.handle(msg, state)
-
-    def handle(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
-
-        Parameters:
-            msg(Object): the message received by the actor
-            state(BasicState): The current actor's state
-
-        Return:
-            (BasicState): The new actor's state
-        """
-        raise NotImplementedError()

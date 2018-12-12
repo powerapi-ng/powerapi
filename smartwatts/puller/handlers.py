@@ -1,7 +1,7 @@
 """
 Handlers used by PullerActor
 """
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractInitHandler
 
 
 class NoReportExtractedException(Exception):
@@ -12,7 +12,7 @@ class NoReportExtractedException(Exception):
     pass
 
 
-class TimeoutHandler(AbstractHandler):
+class TimeoutHandler(AbstractInitHandler):
     """
     TimeoutHandler class
     """

@@ -1,12 +1,12 @@
 """
 Handlers used by PusherActor
 """
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractInitHandler
 from smartwatts.report import PowerReport
 from smartwatts.message import UnknowMessageTypeException
 
 
-class PowerHandler(AbstractHandler):
+class PowerHandler(AbstractInitHandler):
     """
     HWPCHandler class
     """
