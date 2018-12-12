@@ -1,1 +1,2 @@
-from smartwatts.dispatcher.dispatcher_actor import DispatcherActor, FormulaDispatcherReportHandler, DispatcherState
+from smartwatts.dispatcher.handler import FormulaDispatcherReportHandler
+from smartwatts.dispatcher.dispatcher_actor import DispatcherActor, DispatcherState

@@ -19,74 +19,9 @@ Module actor_puller
 """
 
 from smartwatts.actor import Actor
-from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 from smartwatts.message import PoisonPillMessage
-
-
-class NoReportExtractedException(Exception):
-    """ Exception raised when the handler can't extract a report from the given
-    database
-
-    """
-    pass
-
-
-class _TimeoutHandler(AbstractHandler):
-    """
-    TimeoutHandler class
-    """
-
-    def __init__(self, database, filt, autokill=False):
-        self.database = database
-        self.filter = filt
-        self.database.load()
-        self.autokill = autokill
-
-    def _get_report_dispatcher(self):
-        """
-        read one report of the database and filter it,
-        then return the tuple (report, dispatcher).
-
-        Return:
-            (Report, DispatcherActor): (extracted_report, dispatcher to sent
-                                        this report)
-
-        Raise:
-            NoReportExtractedException : if the database doesn't contains
-                                         report anymore
-
-        """
-        # Read one input, if it's None, it means there is not more
-        # report in the database, just pass
-        json = self.database.get_next()
-        if json is None:
-            raise NoReportExtractedException()
-
-        # Deserialization
-        report = self.filter.get_type()()
-        report.deserialize(json)
-
-        # Filter the report
-        dispatchers = self.filter.route(report)
-        return (report, dispatchers)
-
-    def handle(self, msg, state):
-        """
-        Handle the send of the report to the good dispatcher
-        """
-        try:
-            (report, dispatchers) = self._get_report_dispatcher()
-
-        except NoReportExtractedException:
-            if self.autokill:
-                state.alive = False
-            return state
-
-        # Send to the dispatcher if it's not None
-        for dispatcher in dispatchers:
-            dispatcher.send(report)
-
-        return state
+from smartwatts.handler import PoisonPillMessageHandler
+from smartwatts.puller import TimeoutHandler
 
 
 class PullerActor(Actor):
@@ -119,7 +54,7 @@ class PullerActor(Actor):
         Never read socket message, just run the timeout_handler
         """
         while self.state.alive:
-            self._handle_message(None)
+            self.handle_message(None)
 
     def setup(self):
         """
@@ -133,6 +68,6 @@ class PullerActor(Actor):
             dispatcher.connect(self.context)
 
         # Create handler
-        self.timeout_handler = _TimeoutHandler(self.database, self.filter,
-                                               self.autokill)
-        self.handlers.append((PoisonPillMessage, PoisonPillMessageHandler()))
+        self.timeout_handler = TimeoutHandler(self.database, self.filter,
+                                              self.autokill)
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
