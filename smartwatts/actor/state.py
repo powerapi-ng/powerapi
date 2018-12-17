@@ -7,7 +7,7 @@ class BasicState:
     the actor
     """
 
-    def __init__(self, behaviour):
+    def __init__(self, behaviour, socket_interface):
         """
         Parameters:
             behaviour(fun (actor) -> unit): function that implement the basic
@@ -15,5 +15,6 @@ class BasicState:
         """
 
         self.initialized = False
+        self.socket_interface = socket_interface
         self.alive = True
         self.behaviour = behaviour

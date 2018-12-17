@@ -23,6 +23,18 @@ For example, Mongodb, influxdb, csv are different kind of BDD.
 """
 
 
+class DBErrorException(Exception):
+
+    """ Exception raised when an error occuried when using a database
+    """
+    def __init__(self, msg):
+        """
+        Parameters:
+            @msg(str): error message
+        """
+        self.msg = msg
+
+
 class BaseDB:
     """
     BaseDB class.

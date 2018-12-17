@@ -18,10 +18,11 @@
 Module class DispatcherActor
 """
 
-from smartwatts.actor import Actor, BasicState
+from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.report import Report
-from smartwatts.message import PoisonPillMessage
+from smartwatts.message import PoisonPillMessage, StartMessage
+from smartwatts.dispatcher import StartHandler
 from smartwatts.utils.tree import Tree
 from smartwatts.dispatcher import FormulaDispatcherReportHandler
 
@@ -45,9 +46,9 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
 class DispatcherState(BasicState):
     """ State tat encapsulate formula's dicionary and tree
     """
-    def __init__(self, initial_behaviour, formula_factory):
+    def __init__(self, initial_behaviour, socket_interface, formula_factory):
 
-        BasicState.__init__(self, initial_behaviour)
+        BasicState.__init__(self, initial_behaviour, socket_interface)
         """
         Parameters:
             @formula_factory(fun (formula_id) -> smartwatts.formula.Formula):
@@ -105,7 +106,8 @@ class DispatcherActor(Actor):
                      this message
     """
 
-    def __init__(self, name, formula_init_function, verbose=False):
+    def __init__(self, name, formula_init_function, verbose=False,
+                 timeout=None):
         """
         Parameters:
             @formula_init_function(fun () -> smartwatts.formula.Formula):
@@ -120,18 +122,20 @@ class DispatcherActor(Actor):
         # Formula factory
         self.formula_init_function = formula_init_function
 
+        self.state = DispatcherState(Actor._initial_behaviour,
+                                     SocketInterface(name, timeout),
+                                     self._create_factory())
+
     def setup(self):
         """ Append FormulaDispatcherReportHandler Handler"""
         if self.primary_group_by_rule is None:
             raise NoPrimaryGroupByRuleException()
 
-        self.state = DispatcherState(self._initial_behaviour,
-                                     self._create_factory())
-
         handler = FormulaDispatcherReportHandler(self.route_table,
                                                  self.primary_group_by_rule)
         self.add_handler(Report, handler)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        self.add_handler(StartMessage, StartHandler())
 
     def terminated_behaviour(self):
         """
@@ -146,7 +150,7 @@ class DispatcherActor(Actor):
         """
         Create formula from router
         """
-        context = self.context
+        context = self.state.socket_interface.context
         formula_init_function = self.formula_init_function
         verbose = self.verbose
 

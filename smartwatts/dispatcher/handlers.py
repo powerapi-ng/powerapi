@@ -1,11 +1,25 @@
 """
 Handlers used by the DispatcherActor
 """
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.message import UnknowMessageTypeException
+from smartwatts.message import OKMessage
 
 
-class FormulaDispatcherReportHandler(AbstractHandler):
+class StartHandler(AbstractHandler):
+    """ Initialize the receved state
+    """
+    def handle(self, msg, state):
+        if state.initialized:
+            return state
+
+        state.initialized = True
+        state.socket_interface.send_monitor(OKMessage())
+
+        return state
+
+
+class FormulaDispatcherReportHandler(AbstractInitHandler):
     """
     Split the received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses report
