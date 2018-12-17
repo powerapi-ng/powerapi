@@ -55,17 +55,17 @@ class PullerActor(Actor):
                        return None (it means that all the db has been read)
         """
         Actor.__init__(self, name, verbose, timeout=timeout)
-        self.timeout_handler = TimeoutHandler(self.autokill)
+        self.timeout_handler = TimeoutHandler(autokill)
 
-        timeout_null_behaviour = ((lambda actor:
-                                   actor.timeout_handler.handle(None,
-                                                                actor.state))
-                                  if timeout == 0 else Actor._initial_behaviour)
+        def gen_timeout_null_behaviour():
+            if timeout == 0:
+                return (lambda actor: actor.timeout_handler.handle(None,
+                                                                   actor.state))
+            return Actor._initial_behaviour
 
-        self.state = PullerState(timeout_null_behaviour,
+        self.state = PullerState(gen_timeout_null_behaviour(),
                                  SocketInterface(name, timeout), database,
                                  report_filter)
-        self.autokill = autokill
 
     def setup(self):
         """
@@ -73,5 +73,6 @@ class PullerActor(Actor):
 
         Connect to all dispatcher in filter and define timeout_handler
         """
+        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(StartMessage, StartHandler())

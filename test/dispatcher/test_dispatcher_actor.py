@@ -248,7 +248,7 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, lambda formula_id: Mock())
+    return DispatcherState(None, Mock(), lambda formula_id: Mock())
 
 
 class TestHandleFunction:

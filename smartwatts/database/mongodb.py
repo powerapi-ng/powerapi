@@ -117,17 +117,17 @@ class MongoDB(BaseDB):
         try:
             self.mongo_client.admin.command('ismaster')
         except pymongo.errors.ConnectionFailure:
-            raise MongoBadDBError()
+            raise MongoBadDBError(self.host_name + ':' + str(self.port))
 
         if not self.save_mode:
             # Check if database exist
             if self.db_name not in self.mongo_client.list_database_names():
-                raise MongoBadDBNameError()
+                raise MongoBadDBNameError(self.db_name)
 
             # Check if collection exist
             if self.collection_name not in self.mongo_client[
                     self.db_name].list_collection_names():
-                raise MongoBadCollectionNameError()
+                raise MongoBadCollectionNameError(self.collection_name)
 
             # Check if collection is capped or not
             options = self.collection.options()
