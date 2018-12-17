@@ -15,67 +15,62 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module ActorTestFormula
+RAPL Formula
 """
 import math
 
 from smartwatts.formula.formula_actor import FormulaActor
+from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.report import HWPCReport, PowerReport
-from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
-
-
-def _gen_power_report(base_report, socket_id, rapl_event_id, power):
-    metadata = {'socket': socket_id, 'event': rapl_event_id}
-    return PowerReport(base_report.timestamp, base_report.sensor,
-                       base_report.target, power, metadata)
 
 
 class RAPLFormulaHWPCReportHandler(AbstractHandler):
     """
-    A test formula that simulate data processing
+    This formula convert RAPL events counter value contained in a HWPC report to power reports.
     """
 
     def __init__(self, actor_pusher):
         self.actor_pusher = actor_pusher
 
+    @staticmethod
+    def _gen_power_report(report, socket, event, counter):
+        """
+        Generate a power report for a RAPL event.
+        :param report: HWPC report
+        :param socket: Socket ID
+        :param event: RAPL event name
+        :param counter: RAPL event counter
+        """
+        power = math.ldexp(counter, -32)
+        metadata = {'socket': socket, 'event': event}
+        return PowerReport(report.timestamp, report.sensor, report.target, power, metadata)
+
     def _process_report(self, report):
-        """ Extract RAPL reports from a HWPC report and convert their values in
-        Joules
-
-        Parameters:
-            (smartwatts.report.HWPCReport): received hwpc report
-
-        Return:
-            ([smartwatts.report.PowerReport]): a power report per RAPL reports
-                                               in the hwpc report
-
+        """
+        Handle the RAPL events counter contained in a HWPC report.
+        :param report: HWPC report to process
+        :return: List of power report for each socket and RAPL event
         """
 
         if 'rapl' not in report.groups:
             return []
 
         reports = []
-        for socket_id, socket_report in report.groups['rapl'].items():
-            core_report = list(socket_report.cores.values())[0]
-            for event_id, raw_power in core_report.events.items():
-                power = math.ldexp(raw_power, -32)
-                reports.append(_gen_power_report(report, socket_id, event_id,
-                                                 power))
+        for socket, socket_report in report.groups['rapl'].items():
+            events_counter = next(socket_report.cores.values(), {}).items()
+            for event, counter in events_counter:
+                if event.startwith('RAPL_'):
+                    reports.append(self._gen_power_report(report, socket, event, counter))
         return reports
 
     def handle(self, msg, state):
-        """ process a report and send the result to the pusher actor
-
-        Parameters:
-            msg(smartwatts.report.HWPCReport) : received message
-            state(smartwatts.actor.BasicState) : current actor state
-
-        Return:
-            state(smartwatts.actor.BasicState): new actor state
-
-        Raise:
-            UnknowMessageTypeException: if the *msg* is not a Report
+        """
+        Process a report and send the result(s) to a pusher actor.
+        :param msg: Received message
+        :param state: Current actor state
+        :raises UnknowMessageTypeException if the given message is not an HWPCReport
+        :return: New actor state
         """
         if not isinstance(msg, HWPCReport):
             raise UnknowMessageTypeException(type(msg))
@@ -89,22 +84,22 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
 
 class RAPLFormulaActor(FormulaActor):
     """
-    ActorTestFormula class
-
-    A test formula that simulate data processing by waiting 1s and send a
-    power report containing 42
+    A formula to handle RAPL events.
     """
 
     def __init__(self, name, actor_pusher, verbose=False):
         """
-        Parameters:
-            @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
-                                                    must send its reports
+        Initialize an RAPL formula.
+        :param name: Name of the formula
+        :param actor_pusher: Pusher to whom the formula must send its reports
+        :param verbose: Verbose flag
         """
         FormulaActor.__init__(self, name, actor_pusher, verbose)
 
     def setup(self):
-        """ Initialize Handler """
+        """
+        Setup the RAPL formula.
+        """
         FormulaActor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         handler = RAPLFormulaHWPCReportHandler(self.actor_pusher)
