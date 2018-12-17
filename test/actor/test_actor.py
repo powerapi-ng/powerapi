@@ -3,30 +3,36 @@ import multiprocessing
 
 import setproctitle
 import pytest
-import zmq
+
 from mock import Mock, patch
 
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
-from smartwatts.actor import Actor
+from smartwatts.actor import Actor, BasicState
 from smartwatts.handler import PoisonPillMessageHandler
 
 
 class DummyActor(Actor):
 
+    def __init__(self, name='dummy_actor', verbose=False):
+        Actor.__init__(self, name, verbose=verbose)
+        self.state = BasicState(None, None)
+
     def setup(self):
+        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
 
 
 ACTOR_NAME = 'dummy_actor'
 VERBOSE_MODE = False
-PULL_SOCKET_ADDRESS = 'ipc://@' + ACTOR_NAME
-MONITOR_SOCKET_ADDRESS = 'ipc://@' + 'monitor_' + ACTOR_NAME
 
 
+# @patch('smartwatts.actor.SocketInterface')
 @pytest.fixture()
 def dummy_actor():
     """ Return a dummy actor"""
     actor = DummyActor(name=ACTOR_NAME, verbose=VERBOSE_MODE)
+    actor.socket_interface = Mock()
+    actor._signal_handler_setup = Mock()
     return actor
 
 
@@ -40,47 +46,27 @@ def initialized_dummy_actor(dummy_actor):
 def test_actor_initialisation(dummy_actor):
     """ test actor attributes initialization"""
     assert dummy_actor.state.alive is True
-    assert dummy_actor.pull_socket_address == PULL_SOCKET_ADDRESS
-    assert dummy_actor.monitor_socket_address == MONITOR_SOCKET_ADDRESS
-    assert dummy_actor.name == ACTOR_NAME
 
 
-def _kill_process(dummy_actor):
-    """ check if the kill_process close all sockets
+def test_setup(dummy_actor):
     """
-    dummy_actor._communication_setup()
-    assert dummy_actor.pull_socket.closed is True
-    assert dummy_actor.monitor_socket.closed is True
-
-    dummy_actor._kill_process()
-
-    assert dummy_actor.pull_socket.closed is False
-    assert dummy_actor.monitor_socket.closed is False
-
-def test_communication_setup(dummy_actor):
-    """
-    test if zmq context and sockets are correctly initialized and if the proc
+    test if the socket interface are correctly initialized and if the proc
     title is correctly set after the run function was call
     """
-    dummy_actor._communication_setup()
+    dummy_actor.setup()
 
     assert setproctitle.getproctitle() == ACTOR_NAME
+    assert len(dummy_actor.socket_interface.setup.mock_calls) == 1
+    dummy_actor._kill_process()
 
-    assert isinstance(dummy_actor.context, zmq.Context)
-    assert isinstance(dummy_actor.poller, zmq.Poller)
 
-    def check_socket(socket, socket_type, bind_address):
-        assert isinstance(socket, zmq.Socket)
-        assert socket.closed is False
-        assert socket.get(zmq.TYPE) == socket_type
-
-        socket_address = socket.get(zmq.LAST_ENDPOINT).decode("utf-8")
-        assert socket_address == bind_address
-
-    check_socket(dummy_actor.pull_socket, zmq.PULL, PULL_SOCKET_ADDRESS)
-    check_socket(dummy_actor.monitor_socket, zmq.PAIR, MONITOR_SOCKET_ADDRESS)
+def test_kill_process(dummy_actor):
+    """ check if the kill_process close the socket_interface
+    """
+    dummy_actor.setup()
 
     dummy_actor._kill_process()
+    assert len(dummy_actor.socket_interface.close.mock_calls) == 1
 
 
 def test_get_handler_unknow_message_type(initialized_dummy_actor):
