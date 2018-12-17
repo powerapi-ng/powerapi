@@ -37,7 +37,7 @@ def connected_interface(initialized_socket_interface):
     context = zmq.Context()
     initialized_socket_interface.connect(context)
     yield initialized_socket_interface
-    initialized_socket_interface.disconect()
+    initialized_socket_interface.disconnect()
 
 
 @pytest.fixture()
@@ -45,7 +45,7 @@ def monitored_interface(initialized_socket_interface):
     context = zmq.Context()
     initialized_socket_interface.monitor(context)
     yield initialized_socket_interface
-    initialized_socket_interface.disconect()
+    initialized_socket_interface.disconnect()
 
 
 @pytest.fixture()
@@ -54,7 +54,7 @@ def fully_connected_interface(initialized_socket_interface):
     initialized_socket_interface.connect(context)
     initialized_socket_interface.monitor(context)
     yield initialized_socket_interface
-    initialized_socket_interface.disconect()
+    initialized_socket_interface.disconnect()
 
 
 def test_socket_initialisation(socket_interface):
@@ -88,9 +88,9 @@ def test_push_connection(connected_interface):
     check_socket(connected_interface.push_socket, zmq.PUSH, PULL_SOCKET_ADDRESS)
 
 
-def test_push_disconection(connected_interface):
+def test_push_disconnection(connected_interface):
     assert connected_interface.push_socket.closed is False
-    connected_interface.disconect()
+    connected_interface.disconnect()
     assert connected_interface.push_socket.closed is True
 
 
@@ -105,9 +105,9 @@ def test_monitor_connection(monitored_interface):
                  MONITOR_SOCKET_ADDRESS)
 
 
-def test_monitor_disconection(monitored_interface):
+def test_monitor_disconnection(monitored_interface):
     assert monitored_interface.monitor_socket.closed is False
-    monitored_interface.disconect()
+    monitored_interface.disconnect()
     assert monitored_interface.monitor_socket.closed is True
 
 
