@@ -3,7 +3,7 @@ Handlers used by the DispatcherActor
 """
 from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.message import UnknowMessageTypeException
-from smartwatts.message import OKMessage
+from smartwatts.message import OKMessage, StartMessage
 
 
 class StartHandler(AbstractHandler):
@@ -11,6 +11,9 @@ class StartHandler(AbstractHandler):
     """
     def handle(self, msg, state):
         if state.initialized:
+            return state
+
+        if not isinstance(msg, StartMessage):
             return state
 
         state.initialized = True
