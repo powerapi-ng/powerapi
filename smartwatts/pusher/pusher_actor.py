@@ -53,6 +53,7 @@ class PusherActor(Actor):
 
         Specify for each kind of report the associate handler
         """
+        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(self.report_type, PowerHandler())
         self.add_handler(StartMessage, StartHandler())

@@ -49,9 +49,10 @@ class Actor(multiprocessing.Process):
         """
         multiprocessing.Process.__init__(self, name=name)
 
+        self.socket_interface = SocketInterface(name, timeout)
         self.verbose = verbose
         self.timeout = timeout
-
+        self.state = None
         self.timeout_handler = None
         self.handlers = []
 
@@ -66,13 +67,6 @@ class Actor(multiprocessing.Process):
         """
         code executed by the actor
         """
-        # Name process
-        setproctitle.setproctitle(self.name)
-        self.socket_interface.setup()
-
-        self.log('I\'m ' + self.name)
-
-        self._signal_handler_setup()
         # actors specific initialisation
         self.setup()
 
@@ -94,7 +88,13 @@ class Actor(multiprocessing.Process):
         Define actor specific processing that is run before entering the Run
         Loop
         """
-        raise NotImplementedError
+        # Name process
+        setproctitle.setproctitle(self.name)
+        self.socket_interface.setup()
+
+        self.log('I\'m ' + self.name)
+
+        self._signal_handler_setup()
 
     def get_corresponding_handler(self, msg):
         """ Return the handler corresponding to the given message type

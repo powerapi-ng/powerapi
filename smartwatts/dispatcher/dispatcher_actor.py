@@ -128,6 +128,7 @@ class DispatcherActor(Actor):
 
     def setup(self):
         """ Append FormulaDispatcherReportHandler Handler"""
+        Actor.setup(self)
         if self.primary_group_by_rule is None:
             raise NoPrimaryGroupByRuleException()
 

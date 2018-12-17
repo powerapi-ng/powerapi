@@ -33,4 +33,5 @@ class FormulaActor(Actor):
         self.actor_pusher = actor_pusher
 
     def setup(self):
+        Actor.setup(self)
         self.actor_pusher.connect(self.context)
