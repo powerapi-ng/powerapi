@@ -105,7 +105,7 @@ class SocketInterface:
         self.push_socket = context.socket(zmq.PUSH)
         self.push_socket.connect(self.pull_socket_address)
 
-    def disconect(self):
+    def disconnect(self):
         """
         close connection to the pull socket and monitor socket of this actor
         """
@@ -113,7 +113,7 @@ class SocketInterface:
             self.push_socket.close()
 
         if self.monitor_socket is not None:
-            self.push_socket.close()
+            self.monitor_socket.close()
 
     def monitor(self, context):
         """

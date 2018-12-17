@@ -3,7 +3,7 @@ Handlers used by PullerActor
 """
 from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.database import DBErrorException
-from smartwatts.message import ErrorMessage, OKMessage
+from smartwatts.message import ErrorMessage, OKMessage, StartMessage
 
 
 class NoReportExtractedException(Exception):
@@ -26,6 +26,9 @@ class StartHandler(AbstractHandler):
         socket_interface
         """
         if state.initialized:
+            return state
+
+        if not isinstance(msg, StartMessage):
             return state
 
         try:

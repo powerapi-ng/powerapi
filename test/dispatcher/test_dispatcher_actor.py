@@ -1,10 +1,44 @@
+"""
+Module dispatcher_test
+"""
+
 import pytest
 from mock import Mock
+import mock
 
 from smartwatts.dispatcher import FormulaDispatcherReportHandler, DispatcherState
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.group_by import AbstractGroupBy
-from smartwatts.report import Report
+from smartwatts.report import Report, HWPCReport
+from smartwatts.database import MongoDB
+from smartwatts.actor import Actor, SocketInterface
+from smartwatts.dispatcher import StartHandler
+from smartwatts.message import OKMessage, StartMessage, ErrorMessage
+
+
+##############################################################################
+
+
+def get_fake_mongodb():
+    """ Return a fake MongoDB """
+    fake_mongo = mock.Mock(spec_set=MongoDB)
+    values = [2, 3]
+
+    def fake_get_next():
+        if not values:
+            return None
+        return values.pop()
+
+    fake_mongo.get_next = fake_get_next
+    return fake_mongo
+
+
+def get_fake_socket_interface():
+    """ Return a fake SockerInterface """
+    return mock.Mock(spec_set=SocketInterface)
+
+
+##############################################################################
 
 class Report1(Report):
     """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
@@ -251,7 +285,7 @@ def init_state():
     return DispatcherState(None, Mock(), lambda formula_id: Mock())
 
 
-class TestHandleFunction:
+class TestHandlerFunction:
     """ Test Handle function of the dispatcher Handler """
 
     def test_empty_no_associated_group_by_rule(self):
@@ -346,3 +380,31 @@ class TestHandleFunction:
 
         self.gen_test_handle(REPORT_2, init_formula_id_list,
                              init_formula_id_list, init_state())
+
+    def test_dispatcher_start_handler(self):
+        """
+        Test the StartHandler of DispatcherActor
+        """
+
+        # Define DispatcherState
+        fake_socket_interface = get_fake_socket_interface()
+        dispatcher_state = DispatcherState(Actor._initial_behaviour,
+                                           fake_socket_interface,
+                                           None)
+        assert dispatcher_state.initialized is False
+
+        # Define StartHandler
+        start_handler = StartHandler()
+
+        # Test Random message when state is not initialized
+        to_send = [OKMessage(), ErrorMessage("Error"),
+                   HWPCReport("test", "test", "test")]
+        for msg in to_send:
+            start_handler.handle(msg, dispatcher_state)
+            assert fake_socket_interface.method_calls == []
+            assert dispatcher_state.initialized is False
+
+        # Try to initialize the state
+        start_handler.handle(StartMessage(), dispatcher_state)
+        assert dispatcher_state.initialized is True
+
