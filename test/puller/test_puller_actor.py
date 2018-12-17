@@ -19,14 +19,14 @@ Module test_actor_puller
 """
 
 import mock
-import time
-import zmq
 from smartwatts.puller.puller_actor import TimeoutHandler, PullerState
 from smartwatts.database import MongoDB
 from smartwatts.filter import Filter
-from smartwatts.report import Report
-from smartwatts.puller import PullerActor
-from smartwatts.actor import BasicState
+from smartwatts.report import Report, HWPCReport
+from smartwatts.puller import PullerActor, PullerState
+from smartwatts.puller import StartHandler
+from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.message import OKMessage, ErrorMessage, StartMessage
 
 #########################################
 # Initialization functions
@@ -77,22 +77,17 @@ def get_fake_filter():
     fake_filter.get_type = mock.Mock(return_value=FakeReport)
     return fake_filter
 
+
+def get_fake_socket_interface():
+    """ Return a fake SockerInterface """
+    return mock.Mock(spec_set=SocketInterface)
+
+
 #########################################
 
 
 class TestPullerActor:
     """ TestPullerActor class """
-
-    #def test_basic_puller(self):
-    #    """ Test basic behaviour of puller """
-    #    puller = PullerActor("puller_mongo", get_fake_mongodb(),
-    #                         get_fake_filter(), 1)
-    #    puller.start()
-    #    context = zmq.Context()
-    #    puller.connect(context)
-    #    puller.kill()
-    #    puller.join()
-    #    assert puller.is_alive() is False
 
     def test_autokill(self):
         """ Test if the actor kill himself after reading db """
@@ -116,7 +111,6 @@ class TestHandlerPuller:
         filt = mock.Mock(spec_set=Filter)
         handler = TimeoutHandler(autokill=True)
         state = PullerState(mock.Mock(), mock.Mock(), database, filt)
-
         assert not handler.handle(None, state).alive
 
     def test_basic_handler(self):
@@ -128,3 +122,36 @@ class TestHandlerPuller:
         handler = TimeoutHandler()
         state = PullerState(mock.Mock(), mock.Mock(), database, filt)
         assert handler._get_report_dispatcher(state)[0].value == 3
+
+
+    def test_puller_start_handler(self):
+        """
+        Test the StartHandler of PullerActor
+        """
+
+        # Define PullerState
+        fake_database = get_fake_mongodb()
+        fake_socket_interface = get_fake_socket_interface()
+        fake_filter = get_fake_filter()
+        puller_state = PullerState(Actor._initial_behaviour,
+                                   fake_socket_interface,
+                                   fake_database,
+                                   fake_filter)
+        assert puller_state.initialized is False
+
+        # Define StartHandler
+        start_handler = StartHandler()
+
+        # Test Random message when state is not initialized
+        to_send = [OKMessage(), ErrorMessage("Error"),
+                   HWPCReport("test", "test", "test")]
+        for msg in to_send:
+            start_handler.handle(msg, puller_state)
+            assert fake_database.method_calls == []
+            assert fake_socket_interface.method_calls == []
+            assert fake_filter.method_calls == []
+            assert puller_state.initialized is False
+
+        # Try to initialize the state
+        start_handler.handle(StartMessage(), puller_state)
+        assert puller_state.initialized is True
