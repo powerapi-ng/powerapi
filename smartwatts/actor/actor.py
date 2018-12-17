@@ -192,6 +192,6 @@ class Actor(multiprocessing.Process):
         """
         (PROCESS_SIDE) kill this actor by sending a PoisonPillMessage message
         """
-        self.send(PoisonPillMessage())
+        self.send_monitor(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
-        self.socket_interface.disconect()
+        self.socket_interface.disconnect()
