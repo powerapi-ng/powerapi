@@ -49,14 +49,16 @@ def test_actor_initialisation(dummy_actor):
 
 
 def test_setup(dummy_actor):
-    """
-    test if the socket interface are correctly initialized and if the proc
-    title is correctly set after the run function was call
+    """test if the socket interface and the signal handler are correctly
+    initialized and if the proc title is correctly set after the run function
+    was call
+
     """
     dummy_actor.setup()
 
     assert setproctitle.getproctitle() == ACTOR_NAME
     assert len(dummy_actor.socket_interface.setup.mock_calls) == 1
+    assert len(dummy_actor._signal_handler_setup.mock_calls) == 1
     dummy_actor._kill_process()
 
 
@@ -82,7 +84,6 @@ def test_get_handler_unknow_message_type(initialized_dummy_actor):
 def test_get_handler(initialized_dummy_actor):
     """ Test to get the predefined handler for PoisonPillMessage type
     """
-    print(initialized_dummy_actor.handlers)
     handler = initialized_dummy_actor.get_corresponding_handler(
         PoisonPillMessage())
     assert isinstance(handler, PoisonPillMessageHandler)
