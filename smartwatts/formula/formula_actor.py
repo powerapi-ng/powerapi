@@ -34,5 +34,7 @@ class FormulaActor(Actor):
                                 SocketInterface(name, timeout))
 
     def setup(self):
+        """ Connect the formula to the pusher
+        """
         Actor.setup(self)
         self.actor_pusher.connect(self.state.socket_interface.context)

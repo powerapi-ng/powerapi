@@ -72,10 +72,8 @@ class PullerActor(Actor):
                                  report_filter, frequency, autokill)
 
     def setup(self):
-        """
-        Override
+        """define StartMessage handler and PoisonPillMessage handler
 
-        Connect to all dispatcher in filter and define timeout_handler
         """
         Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())

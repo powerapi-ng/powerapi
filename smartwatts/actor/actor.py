@@ -83,9 +83,13 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGINT, term_handler)
 
     def setup(self):
-        """
-        Define actor specific processing that is run before entering the Run
-        Loop
+        """This method is called before entering on the behaviour loop
+
+        Set actor specific configuration :
+          - set the processus name
+          - setup the socket interface
+          - setup the signal handler
+
         """
         # Name process
         setproctitle.setproctitle(self.name)
