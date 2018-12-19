@@ -48,10 +48,9 @@ class PusherActor(Actor):
                                  SocketInterface(name, timeout), database)
 
     def setup(self):
-        """
-        Override
+        """define StartMessage, PoisonPillMessage handlers and a handler for
+        each report type
 
-        Specify for each kind of report the associate handler
         """
         Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())

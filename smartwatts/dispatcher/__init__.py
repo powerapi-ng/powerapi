@@ -1,2 +1,2 @@
 from smartwatts.dispatcher.handlers import FormulaDispatcherReportHandler, StartHandler
-from smartwatts.dispatcher.dispatcher_actor import DispatcherActor, DispatcherState
+from smartwatts.dispatcher.dispatcher_actor import DispatcherActor, DispatcherState, NoPrimaryGroupByRuleException

@@ -65,7 +65,7 @@ def test_handle_hwpc_report_with_one_rapl_event():
     """
     raw_power = 10
     socket_id = '1'
-    rapl_event_id = 'rapl1'
+    rapl_event_id = 'RAPL_1'
 
     hwpc_report = create_report_root(
         [create_group_report('rapl', [
@@ -97,7 +97,7 @@ def test_handle_hwpc_report_with_one_rapl_event_and_other_groups():
     """
     raw_power = 10
     socket_id = '1'
-    rapl_event_id = 'rapl1'
+    rapl_event_id = 'RAPL_1'
 
     hwpc_report = create_report_root(
         [create_group_report('rapl', [
@@ -132,9 +132,9 @@ def test_handle_hwpc_report_with_two_rapl_event():
     """
     socket_id = '1'
     raw_power_1 = 10
-    rapl_event_id_1 = 'rapl1'
+    rapl_event_id_1 = 'RAPL_1'
     raw_power_2 = 20
-    rapl_event_id_2 = 'rapl2'
+    rapl_event_id_2 = 'RAPL_2'
 
     events = {rapl_event_id_1: raw_power_1, rapl_event_id_2: raw_power_2}
 
@@ -180,9 +180,9 @@ def test_handle_hwpc_report_with_two_rapl_event_and_other_groups():
     """
     socket_id = '1'
     raw_power_1 = 10
-    rapl_event_id_1 = 'rapl1'
+    rapl_event_id_1 = 'RAPL_1'
     raw_power_2 = 20
-    rapl_event_id_2 = 'rapl2'
+    rapl_event_id_2 = 'RAPL_2'
 
     events = {rapl_event_id_1: raw_power_1, rapl_event_id_2: raw_power_2}
 

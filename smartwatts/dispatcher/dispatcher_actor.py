@@ -128,7 +128,10 @@ class DispatcherActor(Actor):
                                      self._create_factory())
 
     def setup(self):
-        """ Append FormulaDispatcherReportHandler Handler"""
+        """Check if the primary group by rule is correctly. Set define
+        StartMessage, PoisonPillMessage and Report handlers
+
+        """
         Actor.setup(self)
         if self.primary_group_by_rule is None:
             raise NoPrimaryGroupByRuleException()

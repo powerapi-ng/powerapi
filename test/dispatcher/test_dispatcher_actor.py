@@ -3,42 +3,28 @@ Module dispatcher_test
 """
 
 import pytest
-from mock import Mock
+from mock import Mock, patch
 import mock
 
-from smartwatts.dispatcher import FormulaDispatcherReportHandler, DispatcherState
+from smartwatts.dispatcher import FormulaDispatcherReportHandler
+from smartwatts.dispatcher import DispatcherState, DispatcherActor
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import Report, HWPCReport
 from smartwatts.database import MongoDB
 from smartwatts.actor import Actor, SocketInterface
-from smartwatts.dispatcher import StartHandler
+from smartwatts.dispatcher import StartHandler, NoPrimaryGroupByRuleException
 from smartwatts.message import OKMessage, StartMessage, ErrorMessage
 
 
 ##############################################################################
-
-
-def get_fake_mongodb():
-    """ Return a fake MongoDB """
-    fake_mongo = mock.Mock(spec_set=MongoDB)
-    values = [2, 3]
-
-    def fake_get_next():
-        if not values:
-            return None
-        return values.pop()
-
-    fake_mongo.get_next = fake_get_next
-    return fake_mongo
-
 
 def get_fake_socket_interface():
     """ Return a fake SockerInterface """
     return mock.Mock(spec_set=SocketInterface)
 
 
-##############################################################################
+################################################################################
 
 class Report1(Report):
     """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
@@ -282,7 +268,7 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), lambda formula_id: Mock())
+    return DispatcherState(None, Mock(), lambda formula_id, context: Mock())
 
 
 class TestHandlerFunction:
@@ -408,3 +394,37 @@ class TestHandlerFunction:
         start_handler.handle(StartMessage(), dispatcher_state)
         assert dispatcher_state.initialized is True
 
+
+##############################################################################
+
+ACTOR_NAME = 'dispatcher_actor'
+
+@patch('smartwatts.actor.SocketInterface')
+@pytest.fixture()
+def dispatcher_actor():
+    """ return an uninitialized actor """
+    dispatcher = DispatcherActor(ACTOR_NAME, Mock())
+    dispatcher.state.socket_interface = Mock()
+    return dispatcher
+
+
+@pytest.fixture()
+def initialized_dispatcher_actor(dispatcher_actor):
+    """ return an uninitialized actor """
+    dispatcher_actor.group_by(Report1, GroupBy1A(primary=True))
+    dispatcher_actor.setup()
+    return dispatcher_actor
+
+
+def test_actor_initialisation(dispatcher_actor):
+    assert dispatcher_actor.state.alive is True
+
+
+def test_actor_setup_without_group_by(dispatcher_actor):
+    """ test to setup the dispatcher without seting a primary group by rule"""
+    with pytest.raises(NoPrimaryGroupByRuleException):
+        dispatcher_actor.setup()
+
+
+def test_actor_setup(initialized_dispatcher_actor):
+    assert initialized_dispatcher_actor.primary_group_by_rule is not None
