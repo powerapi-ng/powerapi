@@ -3,7 +3,7 @@ Module dispatcher_test
 """
 
 import pytest
-from mock import Mock
+from mock import Mock, patch
 import mock
 
 from smartwatts.dispatcher import FormulaDispatcherReportHandler
@@ -13,7 +13,7 @@ from smartwatts.group_by import AbstractGroupBy
 from smartwatts.report import Report, HWPCReport
 from smartwatts.database import MongoDB
 from smartwatts.actor import Actor, SocketInterface
-from smartwatts.dispatcher import StartHandler
+from smartwatts.dispatcher import StartHandler, NoPrimaryGroupByRuleException
 from smartwatts.message import OKMessage, StartMessage, ErrorMessage
 
 
@@ -268,7 +268,7 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), lambda formula_id: Mock())
+    return DispatcherState(None, Mock(), lambda formula_id, context: Mock())
 
 
 class TestHandlerFunction:
@@ -399,11 +399,13 @@ class TestHandlerFunction:
 
 ACTOR_NAME = 'dispatcher_actor'
 
-
+@patch('smartwatts.actor.SocketInterface')
 @pytest.fixture()
 def dispatcher_actor():
     """ return an uninitialized actor """
-    return DispatcherActor(ACTOR_NAME, Mock())
+    dispatcher = DispatcherActor(ACTOR_NAME, Mock())
+    dispatcher.state.socket_interface = Mock()
+    return dispatcher
 
 
 @pytest.fixture()

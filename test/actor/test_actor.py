@@ -15,7 +15,7 @@ class DummyActor(Actor):
 
     def __init__(self, name='dummy_actor', verbose=False):
         Actor.__init__(self, name, verbose=verbose)
-        self.state = BasicState(None, None)
+        self.state = BasicState(Mock(), Mock())
 
     def setup(self):
         Actor.setup(self)
@@ -26,12 +26,11 @@ ACTOR_NAME = 'dummy_actor'
 VERBOSE_MODE = False
 
 
-# @patch('smartwatts.actor.SocketInterface')
+
 @pytest.fixture()
 def dummy_actor():
     """ Return a dummy actor"""
     actor = DummyActor(name=ACTOR_NAME, verbose=VERBOSE_MODE)
-    actor.socket_interface = Mock()
     actor._signal_handler_setup = Mock()
     return actor
 
@@ -57,7 +56,7 @@ def test_setup(dummy_actor):
     dummy_actor.setup()
 
     assert setproctitle.getproctitle() == ACTOR_NAME
-    assert len(dummy_actor.socket_interface.setup.mock_calls) == 1
+    assert len(dummy_actor.state.socket_interface.setup.mock_calls) == 1
     assert len(dummy_actor._signal_handler_setup.mock_calls) == 1
     dummy_actor._kill_process()
 
@@ -68,7 +67,7 @@ def test_kill_process(dummy_actor):
     dummy_actor.setup()
 
     dummy_actor._kill_process()
-    assert len(dummy_actor.socket_interface.close.mock_calls) == 1
+    assert len(dummy_actor.state.socket_interface.close.mock_calls) == 1
 
 
 def test_get_handler_unknow_message_type(initialized_dummy_actor):
