@@ -27,7 +27,8 @@ from smartwatts.report import HWPCReport, PowerReport
 
 class RAPLFormulaHWPCReportHandler(AbstractHandler):
     """
-    This formula convert RAPL events counter value contained in a HWPC report to power reports.
+    This formula convert RAPL events counter value contained in a HWPC report
+    to power reports.
     """
 
     def __init__(self, actor_pusher):
@@ -44,7 +45,8 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
         """
         power = math.ldexp(counter, -32)
         metadata = {'socket': socket, 'event': event}
-        return PowerReport(report.timestamp, report.sensor, report.target, power, metadata)
+        return PowerReport(report.timestamp, report.sensor, report.target,
+                           power, metadata)
 
     def _process_report(self, report):
         """
@@ -58,10 +60,12 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
 
         reports = []
         for socket, socket_report in report.groups['rapl'].items():
-            events_counter = next(socket_report.cores.values(), {}).items()
-            for event, counter in events_counter:
-                if event.startwith('RAPL_'):
-                    reports.append(self._gen_power_report(report, socket, event, counter))
+            cores = list(socket_report.cores.values())
+            for events_counter in cores:
+                for event, counter in events_counter.events.items():
+                    if event.startswith('RAPL_'):
+                        reports.append(self._gen_power_report(report, socket,
+                                                              event, counter))
         return reports
 
     def handle(self, msg, state):
@@ -69,7 +73,8 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
         Process a report and send the result(s) to a pusher actor.
         :param msg: Received message
         :param state: Current actor state
-        :raises UnknowMessageTypeException if the given message is not an HWPCReport
+        :raises UnknowMessageTypeException if the given message is
+                not an HWPCReport
         :return: New actor state
         """
         if not isinstance(msg, HWPCReport):
