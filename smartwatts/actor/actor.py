@@ -49,7 +49,6 @@ class Actor(multiprocessing.Process):
         """
         multiprocessing.Process.__init__(self, name=name)
 
-        self.socket_interface = SocketInterface(name, timeout)
         self.verbose = verbose
         self.timeout = timeout
         self.state = None
@@ -90,7 +89,7 @@ class Actor(multiprocessing.Process):
         """
         # Name process
         setproctitle.setproctitle(self.name)
-        self.socket_interface.setup()
+        self.state.socket_interface.setup()
 
         self.log('I\'m ' + self.name)
 
@@ -120,7 +119,7 @@ class Actor(multiprocessing.Process):
         handler correponding to the message type and call it on the message.
 
         """
-        msg_list = self.socket_interface.receive()
+        msg_list = self.state.socket_interface.receive()
         self.log('received : ' + str(msg_list))
 
         # Timeout
@@ -134,7 +133,7 @@ class Actor(multiprocessing.Process):
     def _kill_process(self):
         """ Kill the actor (close the pull socket)"""
         self.terminated_behaviour()
-        self.socket_interface.close()
+        self.state.socket_interface.close()
 
         self.log("terminated")
 
@@ -155,7 +154,7 @@ class Actor(multiprocessing.Process):
                                   communicate with this actor
 
         """
-        self.socket_interface.connect(context)
+        self.state.socket_interface.connect(context)
         self.log('connected to ' + self.name)
 
     def monitor(self, context):
@@ -172,12 +171,12 @@ class Actor(multiprocessing.Process):
                                   monitor this actor
 
         """
-        self.socket_interface.monitor(context)
+        self.state.socket_interface.monitor(context)
         self.log('monitor' + self.name)
 
     def send_monitor(self, msg):
         """ (PROCESS_SIDE) Send a message to this actor using monitor canal"""
-        self.socket_interface.send_monitor(msg)
+        self.state.socket_interface.send_monitor(msg)
 
     def send(self, msg):
         """(PROCESS_SIDE) Send a msg to this actor
@@ -185,7 +184,7 @@ class Actor(multiprocessing.Process):
         This function will not be used by this actor but by process that
         want to send message to this actor
         """
-        self.socket_interface.send(msg)
+        self.state.socket_interface.send(msg)
         self.log('sent ' + str(msg) + ' to ' + self.name)
 
     def kill(self):
@@ -194,4 +193,4 @@ class Actor(multiprocessing.Process):
         """
         self.send_monitor(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
-        self.socket_interface.disconnect()
+        self.state.socket_interface.disconnect()

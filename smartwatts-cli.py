@@ -19,6 +19,7 @@ Module smartwatts-cli
 """
 
 import argparse
+import pickle
 import signal
 import zmq
 from smartwatts.database import MongoDB
@@ -30,10 +31,11 @@ from smartwatts.puller import PullerActor
 from smartwatts.report import HWPCReport, PowerReport
 from smartwatts.report_model import HWPCModel
 from smartwatts.dispatcher import DispatcherActor
+from smartwatts.message import OKMessage, StartMessage
 
 
-class UnknowFormulaError(Exception):
-    """ Error if formula doesn't exist """
+class BadActorInitializationError(Exception):
+    """ Error if actor doesn't answer with "OKMessage" """
     pass
 
 
@@ -54,18 +56,10 @@ def arg_parser_init():
     parser.add_argument("output_db", help="MongoDB output database")
     parser.add_argument("output_collection", help="MongoDB output collection")
 
-    # Formula choice
-    parser.add_argument("--formula", help="Formula you want to use,"
-                        "Can be rapl_formula")
-
     # GroupBy
-    parser.add_argument("--hwpc_group_by", help="Define the group_by rule,"
-                        "Can be CORE, SOCKET or ROOT")
-
-    # Timeout
-    parser.add_argument("--timeout", help="Define the timeout in ms for the "
-                        "puller actor",
-                        type=int)
+    parser.add_argument("hwpc_group_by", help="Define the group_by rule, "
+                        "Can be CORE, SOCKET or ROOT",
+                        choices=['CORE', 'SOCKET', 'ROOT'])
 
     # Verbosity
     parser.add_argument("-v", "--verbose", help="Enable verbosity",
@@ -76,45 +70,43 @@ def arg_parser_init():
 def main():
     """ Main function """
 
+    ##########################################################################
+    # Actor initialization step
+
     args = arg_parser_init().parse_args()
 
     # Pusher
-    output_pusher = MongoDB(None, args.output_hostname, args.output_port,
-                            args.output_db, args.output_collection,
-                            save_mode=True)
-    pusher = PusherActor("pusher", PowerReport, output_pusher,
+    output_mongodb = MongoDB(args.output_hostname, args.output_port,
+                             args.output_db, args.output_collection,
+                             save_mode=True)
+    pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
                          verbose=args.verbose)
 
     # Formula
-    def gen_factory(formula):
-        """ return a factory for the choosing formula """
-        if formula == "rapl_formula":
-            return (lambda name, verbose:
-                    RAPLFormulaActor(name, pusher,
-                                     verbose=verbose))
-
-        raise UnknowFormulaError()
-
-    # GroupBy
+    formula_factory = (lambda name, verbose:
+                       RAPLFormulaActor(name, pusher, verbose=verbose))
 
     # Dispatcher
-    dispatcher = DispatcherActor('dispatcher', gen_factory(args.formula),
+    dispatcher = DispatcherActor('dispatcher', formula_factory,
                                  verbose=args.verbose)
     dispatcher.group_by(HWPCReport, HWPCGroupBy(getattr(HWPCDepthLevel,
                                                         args.hwpc_group_by),
                                                 primary=True))
 
     # Puller
-    input_puller = MongoDB(HWPCModel(), args.input_hostname, args.input_port,
-                           args.input_db, args.input_collection)
+    input_mongodb = MongoDB(args.input_hostname, args.input_port,
+                            args.input_db, args.input_collection,
+                            report_model=HWPCModel())
     hwpc_filter = HWPCFilter()
     hwpc_filter.filter(lambda msg: True, dispatcher)
-    puller = PullerActor("puller_mongodb", input_puller,
-                         hwpc_filter, args.timeout, verbose=args.verbose)
+    puller = PullerActor("puller_mongodb", input_mongodb,
+                         hwpc_filter, 0, verbose=args.verbose)
+
+    ##########################################################################
+    # Actor start step
 
     # Setup signal handler
     def term_handler(_, __):
-
         puller.join()
         dispatcher.join()
         pusher.join()
@@ -126,12 +118,45 @@ def main():
     # start actors
     context = zmq.Context()
 
-    pusher.connect(context)
+    pusher.monitor(context)
     pusher.start()
-    dispatcher.connect(context)
+    dispatcher.monitor(context)
     dispatcher.start()
-    dispatcher.connect(context)
+    puller.monitor(context)
     puller.start()
+
+    # Send StartMessage
+    pusher.send_monitor(StartMessage())
+    dispatcher.send_monitor(StartMessage())
+    puller.send_monitor(StartMessage())
+
+    # Wait for OKMessage
+    poller = zmq.Poller()
+    poller.register(pusher.state.socket_interface.monitor_socket, zmq.POLLIN)
+    poller.register(dispatcher.state.socket_interface.monitor_socket,
+                    zmq.POLLIN)
+    poller.register(puller.state.socket_interface.monitor_socket, zmq.POLLIN)
+
+    cpt_ok = 0
+    while cpt_ok < 3:
+        events = poller.poll(100)
+        msgs = [pickle.loads(sock.recv()) for sock, event in events
+                if event == zmq.POLLIN]
+        for msg in msgs:
+            if isinstance(msg, OKMessage):
+                cpt_ok += 1
+            else:
+                print("Error message")
+                puller.kill()
+                puller.join()
+                dispatcher.kill()
+                dispatcher.join()
+                pusher.kill()
+                pusher.join()
+                exit(0)
+
+    ##########################################################################
+    # Actor run step
 
     # wait
     puller.join()
@@ -139,6 +164,7 @@ def main():
     dispatcher.join()
     pusher.kill()
     pusher.join()
+
     ##########################################################################
 
 

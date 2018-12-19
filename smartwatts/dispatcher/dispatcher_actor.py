@@ -65,7 +65,8 @@ class DispatcherState(BasicState):
 
         """
 
-        formula = self.formula_factory(formula_id)
+        formula = self.formula_factory(formula_id,
+                                       self.socket_interface.context)
         self.formula_dict[formula_id] = formula
         self.formula_tree.add(list(formula_id), formula)
         self.formula_dict[formula_id].start()
@@ -151,13 +152,15 @@ class DispatcherActor(Actor):
         """
         Create formula from router
         """
-        context = self.state.socket_interface.context
+        # context = self.state.socket_interface.context
         formula_init_function = self.formula_init_function
         verbose = self.verbose
 
-        def factory(formula_id):
+        def factory(formula_id, context):
             formula = formula_init_function(str(formula_id), verbose)
             formula.connect(context)
+            formula.monitor(context)
+            return formula
 
         return factory
 

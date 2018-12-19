@@ -16,8 +16,7 @@
 
 """ Class that generalize formula behaviour """
 
-from smartwatts.actor import Actor
-from smartwatts.report import PowerReport
+from smartwatts.actor import Actor, BasicState, SocketInterface
 
 
 class FormulaActor(Actor):
@@ -31,7 +30,9 @@ class FormulaActor(Actor):
         """
         Actor.__init__(self, name, verbose)
         self.actor_pusher = actor_pusher
+        self.state = BasicState(Actor._initial_behaviour,
+                                SocketInterface(name, timeout))
 
     def setup(self):
         Actor.setup(self)
-        self.actor_pusher.connect(self.context)
+        self.actor_pusher.connect(self.state.socket_interface.context)
