@@ -100,7 +100,7 @@ def main():
     hwpc_filter = HWPCFilter()
     hwpc_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         hwpc_filter, 0, verbose=args.verbose)
+                         hwpc_filter, 0, verbose=args.verbose, autokill=True)
 
     ##########################################################################
     # Actor start step
@@ -121,6 +121,7 @@ def main():
     pusher.monitor(context)
     pusher.start()
     dispatcher.monitor(context)
+    dispatcher.connect(context)
     dispatcher.start()
     puller.monitor(context)
     puller.start()
@@ -160,9 +161,7 @@ def main():
 
     # wait
     puller.join()
-    dispatcher.kill()
     dispatcher.join()
-    pusher.kill()
     pusher.join()
 
     ##########################################################################
