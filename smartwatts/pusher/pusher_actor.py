@@ -20,7 +20,6 @@ Module class PusherActor
 
 from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.pusher import PowerHandler, StartHandler
-
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 
@@ -33,26 +32,45 @@ class PusherState(BasicState):
     """
     def __init__(self, behaviour, socket_interface, database):
         BasicState.__init__(self, behaviour, socket_interface)
-
         self.database = database
 
 
 class PusherActor(Actor):
     """ PusherActor class """
 
-    def __init__(self, name, report_type, database, verbose=False,
-                 timeout=None):
+    def __init__(self, name, report_type, database, verbose=False):
         Actor.__init__(self, name, verbose)
         self.report_type = report_type
-        self.state = PusherState(Actor._initial_behaviour,
-                                 SocketInterface(name, timeout), database)
+        self.state = PusherState(PusherActor._initial_behaviour,
+                                 SocketInterface(name, 3000), database)
 
     def setup(self):
-        """define StartMessage, PoisonPillMessage handlers and a handler for
+        """
+        Define StartMessage, PoisonPillMessage handlers and a handler for
         each report type
-
         """
         Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(self.report_type, PowerHandler())
         self.add_handler(StartMessage, StartHandler())
+
+    def _initial_behaviour(self):
+        """
+        Override
+
+        Initial behaviour of Pusher actor
+
+        wait for a message, and handle it with the correct handler
+        if the message is None, call the timout_handler otherwise find the
+        handler correponding to the message type and call it on the message.
+        """
+        msg_list = self.state.socket_interface.receive()
+        self.log('received : ' + str(msg_list))
+
+        # Timeout
+        if msg_list == []:
+            self.state.alive = False
+        else:
+            for msg in msg_list:
+                handler = self.get_corresponding_handler(msg)
+                self.state = handler.handle_message(msg, self.state)
