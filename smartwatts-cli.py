@@ -147,7 +147,7 @@ def main():
             if isinstance(msg, OKMessage):
                 cpt_ok += 1
             else:
-                print("Error message")
+                print(msg.error_code)
                 puller.kill()
                 puller.join()
                 dispatcher.kill()
