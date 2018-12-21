@@ -119,8 +119,9 @@ class PullerActor(Actor):
         while True:
             try:
                 (report, dispatchers) = get_report_dispatcher(self.state)
-
             except NoReportExtractedException:
+                for _, dispatcher in self.state.report_filter.filters:
+                    dispatcher.kill_push()
                 if self.state.autokill:
                     self.state.alive = False
                 break
