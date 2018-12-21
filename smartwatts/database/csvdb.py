@@ -20,7 +20,6 @@ Module csvdb
 
 import csv
 
-from sortedcontainers import SortedDict
 from smartwatts.database.base_db import BaseDB
 from smartwatts.report_model.report_model import KEYS_COMMON
 from smartwatts.utils import utils

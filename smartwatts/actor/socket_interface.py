@@ -1,7 +1,7 @@
 """ class SocketInterface """
 
-import zmq
 import pickle
+import zmq
 
 
 class SocketInterface:
