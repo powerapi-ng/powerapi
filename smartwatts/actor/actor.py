@@ -21,13 +21,10 @@ Module actors
 import os
 import signal
 import multiprocessing
-import pickle
 import setproctitle
-import zmq
 
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
-from smartwatts.actor import BasicState, SocketInterface
 
 
 class Actor(multiprocessing.Process):
@@ -76,6 +73,7 @@ class Actor(multiprocessing.Process):
 
     def _signal_handler_setup(self):
         def term_handler(_, __):
+            # TODO: exec PyZMQ kill handler
             self._kill_process()
             exit(0)
 
@@ -138,7 +136,6 @@ class Actor(multiprocessing.Process):
         """ Kill the actor (close the pull socket)"""
         self.terminated_behaviour()
         self.state.socket_interface.close()
-
         self.log("terminated")
 
     def terminated_behaviour(self):
@@ -181,6 +178,7 @@ class Actor(multiprocessing.Process):
     def send_monitor(self, msg):
         """ (PROCESS_SIDE) Send a message to this actor using monitor canal"""
         self.state.socket_interface.send_monitor(msg)
+        self.log('send monitor ' + str([msg]) + ' to ' + self.name)
 
     def send(self, msg):
         """(PROCESS_SIDE) Send a msg to this actor
@@ -189,12 +187,21 @@ class Actor(multiprocessing.Process):
         want to send message to this actor
         """
         self.state.socket_interface.send(msg)
-        self.log('sent ' + str(msg) + ' to ' + self.name)
+        self.log('send ' + str([msg]) + ' to ' + self.name)
 
     def kill(self):
         """
         (PROCESS_SIDE) kill this actor by sending a PoisonPillMessage message
         """
         self.send_monitor(PoisonPillMessage())
+        self.log('send kill msg to ' + str(self.name))
+        self.state.socket_interface.disconnect()
+
+    def kill_push(self):
+        """
+        (PROCESS_SIDE) kill this actor by sendir a PoisonPillMessage message
+                       in the push socket
+        """
+        self.send(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
         self.state.socket_interface.disconnect()
