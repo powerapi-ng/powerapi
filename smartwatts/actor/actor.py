@@ -21,28 +21,78 @@ Module actors
 import os
 import signal
 import multiprocessing
+import pickle
 import setproctitle
+import zmq
 
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
+from smartwatts.actor import BasicState, SocketInterface
 
 
 class Actor(multiprocessing.Process):
-    """
-    Abstract class of Actor.
-    An actor is a process.
+    """Abstract class that exposes an interface to create actor
+
+
+    methods
+    =========
+
+    general methods :
+    ------------------
+
+    - :meth:~smartwatts.actor.actor.Actor.log
+
+    client interface methods :
+    -----------------------------
+
+    - :meth:~smartwatts.actor.actor.Actor.connect
+    - :meth:~smartwatts.actor.actor.Actor.monitor
+    - :meth:~smartwatts.actor.actor.Actor.send_monitor
+    - :meth:~smartwatts.actor.actor.Actor.send
+    - :meth:~smartwatts.actor.actor.Actor.kill
+
+    server interface methods :
+    ----------------------------
+
+    - :meth:~smartwatts.actor.actor.Actor.setup
+    - :meth:~smartwatts.actor.actor.Actor.get_corresponding_handler
+    - :meth:~smartwatts.actor.actor.Actor.add_handler
+    - :meth:~smartwatts.actor.actor.Actor.terminated_behaviour
+    - :meth:~smartwatts.actor.actor.Actor.send_monitor
+
+    attributes
+    ============
+
+    general attributes :
+    -------------------
+
+    - :attr:~smartwatts.actor.actor.Actor.verbose
+
+    server interface attributes :
+    ----------------------------
+
+    - :attribute int timeout: time in millisecond to wait for a message before
+                              activate the `timeout_behaviour`
+    - :attribute state: actor's permanent values
+    - :type state: smartwatts.actor.state.BasicState
+    - :attribute timeout_ha ndler: function activated when no message was
+                                   received since `timeout` milliseconds
+    - :type timeout_handler:function
+    - :attribute handlers: list of mapings between handler and message type that
+                           the maped handler must handle
+    - :type handlers: list of tuple (type, smartwatts.actor.state.BasicState)
+
     """
 
     def __init__(self, name, verbose=False, timeout=None):
         """
         Initialization and start of the process.
 
-        Parameters:
-            @name(str): unique name that will be used to indentify the actor
-                        communication socket
-            @verbose(bool): allow to display log
-            @timeout(int): if define, do something if no msg is recv every
-                           timeout (in ms)
+        :param str name: unique name that will be used to indentify the actor
+                         communication socket
+        :param bool verbose: allow to display log
+        :param int timeout: if define, do something if no msg is recv every
+                            timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
 
@@ -55,6 +105,9 @@ class Actor(multiprocessing.Process):
     def log(self, message):
         """
         Print message if verbose mode is enable.
+
+        :param str message: message to print
+
         """
         if self.verbose:
             print('[' + str(os.getpid()) + ']' + ' ' + message)
@@ -73,7 +126,6 @@ class Actor(multiprocessing.Process):
 
     def _signal_handler_setup(self):
         def term_handler(_, __):
-            # TODO: exec PyZMQ kill handler
             self._kill_process()
             exit(0)
 
@@ -81,12 +133,13 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGINT, term_handler)
 
     def setup(self):
-        """This method is called before entering on the behaviour loop
+        """Set actor specific configuration :
 
-        Set actor specific configuration :
-          - set the processus name
-          - setup the socket interface
-          - setup the signal handler
+         - set the processus name
+         - setup the socket interface
+         - setup the signal handler
+
+        This method is called before entering on the behaviour loop
 
         """
         # Name process
@@ -99,7 +152,12 @@ class Actor(multiprocessing.Process):
 
     def get_corresponding_handler(self, msg):
         """ Return the handler corresponding to the given message type
-        Raise UnknowMessageTypeException if no handler could be find
+        :raises UnknowMessageTypeException: if no handler could be find
+
+        :param Object msg: the received message
+        :return: the handler corresponding to the given message type
+        :rtype: smartwatts.handler.AbstractHandler
+
         """
         for (msg_type, handler) in self.handlers:
             if isinstance(msg, msg_type):
@@ -109,6 +167,11 @@ class Actor(multiprocessing.Process):
 
     def add_handler(self, message_type, handler):
         """ map a handler to a message type
+
+        :param type message_type: type of the message that the handler can
+                                  handle
+        :param handler: handler that will handle all messages of the given type
+        :type handler: smartwatts.handler.AbstractHandler
         """
         self.handlers.append((message_type, handler))
 
@@ -136,6 +199,7 @@ class Actor(multiprocessing.Process):
         """ Kill the actor (close the pull socket)"""
         self.terminated_behaviour()
         self.state.socket_interface.close()
+
         self.log("terminated")
 
     def terminated_behaviour(self):
@@ -150,10 +214,9 @@ class Actor(multiprocessing.Process):
         open a canal that can be use for unidirectional communication to this
         actor
 
-        Parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  communicate with this actor
-
+        :param context: ZMQ context of the process that want to
+                        communicate with this actor
+        :type context: zmq.Context
         """
         self.state.socket_interface.connect(context)
         self.log('connected to ' + self.name)
@@ -167,41 +230,35 @@ class Actor(multiprocessing.Process):
 
         open a pair socket on the process that want to monitor this actor
 
-        parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  monitor this actor
+        :param context: ZMQ context of the process that want to
+                        communicate with this actor
+        :type context: zmq.Context
 
         """
         self.state.socket_interface.monitor(context)
         self.log('monitor' + self.name)
 
     def send_monitor(self, msg):
-        """ (PROCESS_SIDE) Send a message to this actor using monitor canal"""
+        """ Send a message on the monitor canal"""
         self.state.socket_interface.send_monitor(msg)
-        self.log('send monitor ' + str([msg]) + ' to ' + self.name)
 
     def send(self, msg):
-        """(PROCESS_SIDE) Send a msg to this actor
+        """Send a msg to this actor using the data canal
 
         This function will not be used by this actor but by process that
         want to send message to this actor
+
+        :param Object msg: the message to send to this actor
+
         """
         self.state.socket_interface.send(msg)
-        self.log('send ' + str([msg]) + ' to ' + self.name)
+        self.log('sent ' + str(msg) + ' to ' + self.name)
 
     def kill(self):
-        """
-        (PROCESS_SIDE) kill this actor by sending a PoisonPillMessage message
+        """kill this actor by sending a
+        :class:~smartwatts.message.message.PoisonPillMessage
+
         """
         self.send_monitor(PoisonPillMessage())
-        self.log('send kill msg to ' + str(self.name))
-        self.state.socket_interface.disconnect()
-
-    def kill_push(self):
-        """
-        (PROCESS_SIDE) kill this actor by sendir a PoisonPillMessage message
-                       in the push socket
-        """
-        self.send(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
         self.state.socket_interface.disconnect()

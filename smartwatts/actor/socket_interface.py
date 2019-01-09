@@ -1,16 +1,43 @@
 """ class SocketInterface """
 
-import pickle
 import zmq
+import pickle
 
 
 class SocketInterface:
-    """ Class that group all method that handle sockets """
+    """ Interface to handle comunication to/from the actor
+
+    methods
+    =========
+
+    general methods :
+    ------------------
+
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.send_monitor
+
+    client interface methods :
+    -----------------------------
+
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.connect
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.disconnect
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.monitor
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.send
+
+
+    server interface methods :
+    ----------------------------
+
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.setup
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.receive
+    - :meth:~smartwatts.actor.socket_interface.SocketInterface.close
+
+    """
 
     def __init__(self, name, timeout):
         """
-        Parameters:
-            name(str): name of the actor using this interface
+        :param str name: name of the actor using this interface
+        :param int timeout: time in millisecond to wait for a message
+
         """
         self.timeout = timeout
         self.pull_socket_address = 'ipc://@' + name
@@ -47,8 +74,10 @@ class SocketInterface:
         """create a socket of the given type, bind it to the given address and
         register it to the poller
 
-        Return:
-            (zmq.Socket): the initialized socket
+        :param int socket_type: type of the socket to open
+        :param str socket_addr: address of the socket to open
+        :return zmq.Socket: the initialized socket
+
         """
         socket = self.context.socket(socket_type)
         socket.bind(socket_addr)
@@ -56,10 +85,12 @@ class SocketInterface:
         return socket
 
     def receive(self):
-        """ Wait for messages and return them
+        """ Bock until a message was received (or until timeout) an return the
+        received messages
 
-        Return: a list of received messages since the last receive call
-                or [] if timeout
+        :return: the list of received messages or an empty list if timeout
+        :rtype: a list of Object
+
         """
         events = self.poller.poll(self.timeout)
 
@@ -79,13 +110,20 @@ class SocketInterface:
 
     def _send_serialized(self, socket, msg):
         """
-        Allow to send a serialized msg with pickle
+        send a serialized msg with pickle to the given socket
+
+        :param zmq.Socket socket: socket used to send the message
+        :param Object msg: message to send
         """
         socket.send(pickle.dumps(msg))
 
     def _recv_serialized(self, socket):
         """
-        Allow to recv a serialized msg with pickle
+        wait for a message from the given socket and return its deserialized
+        value (using pickle)
+
+        :param zmq.Socket socket: socket to wait for a reception
+        :return Object: the received message
         """
         msg = pickle.loads(socket.recv())
         return msg
@@ -97,9 +135,8 @@ class SocketInterface:
         open a push socket on the process that want to communicate with this
         actor
 
-        parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  communicate with this actor
+        :param zmq.Context context: ZMQ context of the process that want to
+                                    communicate with this actor
 
         """
         self.push_socket = context.socket(zmq.PUSH)
@@ -121,18 +158,25 @@ class SocketInterface:
 
         open a pair socket on the process that want to monitor this actor
 
-        parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  monitor this actor
+        :param zmq.Context context: ZMQ context of the process that want to
+                                    monitor this actor
 
         """
         self.monitor_socket = context.socket(zmq.PAIR)
         self.monitor_socket.connect(self.monitor_socket_address)
 
     def send_monitor(self, msg):
-        """ Send a message to this actor the monitor socket"""
+        """ Send a message on the monitor canal
+
+        :param Object msg: message to send
+
+        """
         self._send_serialized(self.monitor_socket, msg)
 
     def send(self, msg):
-        """ Send a message on the push socket"""
+        """ Send a message on data canal
+
+        :param Object msg: message to send
+
+        """
         self._send_serialized(self.push_socket, msg)
