@@ -3,14 +3,14 @@
 SmartWatts - Guide développeur
 ******************************
 
-Smartwatts est implémenté autour d'un cadriciel d'acteur, les acteurs communiquent grâce à la bibliotèque ``pyzmq`` qui est une implémentation python de la librairie ZeroMQ. Ce guide défini les principaux concepts dont la compréhension est nécessaire pour utiliser ces acteurs.
+Smartwatts est implémenté autour d'un cadriciel d'acteur, les acteurs communiquent grâce à la bibliothèque `pyzmq <https://pyzmq.readthedocs.io/en/latest/>`_ qui est une implémentation python de la librairie `ZeroMQ <http://zeromq.org/>`_. Ce guide défini les principaux concepts dont la compréhension est nécessaire pour utiliser ces acteurs.
 
 Définition d'un acteur
 ======================
 
-Les acteurs utilisés dans smartwatts reposent tous sur la même classe abstraite ``Actor`` qui hérite elle même de la classe ``multiprocessing.Process``. Cette classe définie un acteur comme une entité autonome adaptant son comportement en fonction des messages qu'elle reçoit.
+Les acteurs utilisés dans smartwatts reposent tous sur la même classe abstraite :class:`smartwatts.Actor <smartwatts.actor.actor.Actor>` qui hérite elle même de la classe `multiprocessing.Process <https://docs.python.org/3/library/multiprocessing.html>`_. Cette classe définie un acteur comme une entité autonome adaptant son comportement en fonction des messages qu'elle reçoit.
 
-Concrètement, un acteur est un processus système. Ce processus possède un comportement prédéfinis (son comportement métier), un état (un ensemble de valeur stocké par l'acteur tout au long de son exécution) et une interface de communication avec les autres acteurs. Il est capable d'envoyer/recevoir des messages à/depuis d'autres processus. En fonction des messages reçus, l'acteur peut :
+Concrètement, un acteur est un processus système. Ce processus possède un comportement prédéfini (son comportement métier), un état (un ensemble de valeur stocké par l'acteur tout au long de son exécution) et une interface de communication avec les autres acteurs. Il est capable d'envoyer/recevoir des messages à/depuis d'autres processus. En fonction des messages reçus, l'acteur peut :
 
 - modifier son état
 - produire des effets de bord (contacter/créer d'autres acteurs, intéragir avec le système, ...)
@@ -25,18 +25,18 @@ l'interface serveur regroupe l'ensemble des fonctions internes à l'acteur (comm
 
 l'interface client regroupe l'ensemble des fonctions permettant de lancer et configurer un acteur ainsi que les fonctions permettant à un autre processus de communiquer avec l'acteur. Elles sont exécutées dans les processus souhaitant communiquer avec l'acteur. Ces fonctions servent à initialiser/configurer les variables de communication avec l'acteur et lui envoyer des messages.
 
-- le code de la classe ``Actor`` regroupe à la fois les fonctions de l'interface client comme celle de l'interface serveur. La méthode ``start`` de l'acteur va dupliquer (fork) le code de la classe acteur et créer le processus système. Les variables permettant d'utiliser l'interface serveur seront alors initialisées dans le nouveau processus. Ainsi, les fonctions de l'interface serveur ne peuvent être utilisées dans le processus client.
-- La méthode ``connect`` permet d'initialiser les variables permettant d'utiliser l'interface client dans un processus souhaitant communiquer avec le serveur.
+- le code de la classe :class:`smartwatts.Actor <smartwatts.actor.actor.Actor>` regroupe à la fois les fonctions de l'interface client comme celle de l'interface serveur. La méthode :func:`Actor.start` de l'acteur va dupliquer (fork) le code de la classe acteur et créer le processus système. Les variables permettant d'utiliser l'interface serveur seront alors initialisées dans le nouveau processus. Ainsi, les fonctions de l'interface serveur ne peuvent être utilisées dans le processus client.
+- La méthode :func:`Actor.connect() <smartwatts.actor.actor.Actor.connect>` permet d'initialiser les variables permettant d'utiliser l'interface client dans un processus souhaitant communiquer avec le serveur.
 
 Composantes d'un acteur
 =======================
 
-La classe ``Actor`` encapsule plusieurs composants. Chacun pouvant être enrichie pour personnaliser le comportement de l'acteur.
+La classe :class:`smartwatts.Actor <smartwatts.actor.actor.Actor>` encapsule plusieurs composants. Chacun pouvant être enrichie pour personnaliser le comportement de l'acteur.
 
 État
 -----
 
-L'état de l'acteur est un ensemble de valeurs utilisées par l'acteur lorsqu'il traite un message. Cet état est implémenté par la classe ``BasicState``.
+L'état de l'acteur est un ensemble de valeurs utilisées par l'acteur lorsqu'il traite un message. Cet état est implémenté par la classe :class:`smartwatts.BasicState <smartwatts.actor.state.BasicState>`.
 
 Cette classe contient les valeurs suivantes :
 
@@ -49,7 +49,7 @@ Les valeurs de l'état peuvent être modifiées par l'acteur lors de la récepti
 Socket Interface
 ----------------
 
-Afin de communiquer avec les autres acteurs/processus, chaque acteur possède une interface de communication reposant sur des sockets zmq. Cette interface est implémentée par la classe `SocketInterface`
+Afin de communiquer avec les autres acteurs/processus, chaque acteur possède une interface de communication reposant sur des sockets zmq. Cette interface est implémentée par la classe :class:`smartwatts.SocketInterface <smartwatts.actor.socket_interface.SocketInterface>`
 
 L'acteur possède deux canaux de communication, un **canal de données** et un **canal de monitoring**.
 
@@ -62,58 +62,63 @@ La classe de l'acteur encapsule un unique socket interface. Cette interface sera
 Comportement d'un acteur
 ------------------------
 
-Tous les acteurs se comportent selon le même schéma. Après sa création, il est nécessaire d'appeler la fonction ``start`` à partir de l'interface client de l'acteur. Une fois cette méthode appelée, l'acteur va exécuter, dans le processus serveur, trois comportements, les uns à la suite des autres puis s'arrêter :
+Tous les acteurs se comportent selon le même schéma. Après sa création, il est nécessaire d'appeler la fonction :func:`Actor.start` à partir de l'interface client de l'acteur. Une fois cette méthode appelée, l'acteur va exécuter, dans le processus serveur, trois comportements, les uns à la suite des autres puis s'arrêter :
 
-- la configuration des variables de base (socket, variables métiers, ...) grâce à la fonction ``setup``
-- l'exécution du comportement métier tant que l'acteur est en vie. Tant que l'état de l'acteur indique que l'acteur est en vie, l'acteur va exécuter la fonction ``behaviour`` pointé par l'état de l'acteur. Cette fonction peut accéder à toute l'interface serveur de l'acteur.
-- Lorsque l'état de l'acteur indique que l'acteur est mort, l'acteur s'arrête après la dernière exécution de la fonction ``behaviour`` Une fonction ``terminated_behaviour`` est alors appelée pour terminer correctement l'acteur (fermeture des sockets, des interfaces de communication avec l'extérieur, ...)
+- la configuration des variables de base (socket, variables métiers, ...) grâce à la fonction :func:`Actor.setup() <smartwatts.actor.actor.Actor.setup>`
+- l'exécution du comportement métier tant que l'acteur est en vie. Tant que l'état de l'acteur indique que l'acteur est en vie, l'acteur va exécuter la fonction pointé par l'attribut :attr:`smartwatts.BasicState.behaviour` dans l'état de l'acteur. Cette fonction peut accéder à toute l'interface serveur de l'acteur.
+- Lorsque l'état de l'acteur indique que l'acteur est mort, l'acteur s'arrête après la dernière exécution de la fonction pointé par :attr:`smartwatts.BasicState.behaviour`. Une fonction :func:`Actor.terminated_behaviour() <smartwatts.actor.actor.Actor.terminated_behaviour>` est alors appelée pour terminer correctement l'acteur (fermeture des sockets, des interfaces de communication avec l'extérieur, ...)
 
 Changement de comportement
 --------------------------
 
 Chacune de ces fonctions peut être modifiée comme suit:
 
-- la fonction ``setup`` peut être enrichie pour exécuter des actions de configuration avant de lancer le comportement métier. Pour cela, la fonction ``setup`` doit être réécrite dans une classe héritant de ``Actor``. La méthode ``Actor.setup`` exécute déjà une configuration de base de l'acteur, pour conserver cette configuration, cette méthode doit être rappelée lors de la réécriture de la méthode.
+- la fonction :func:`Actor.setup() <smartwatts.actor.actor.Actor.setup>` peut être enrichie pour exécuter des actions de configuration avant de lancer le comportement métier. Pour cela, la fonction :func:`Actor.setup() <smartwatts.actor.actor.Actor.setup>` doit être réécrite dans une classe héritant de :class:`smartwatts.Actor <smartwatts.actor.actor.Actor>`. La méthode :func:`Actor.setup() <smartwatts.actor.actor.Actor.setup>` exécute déjà une configuration de base de l'acteur, pour conserver cette configuration, cette méthode doit être rappelée lors de la réécriture de la méthode.
 
-- la fonction ``behaviour`` peut être modifiée en changeant le pointeur de fonction du ``State`` vers une nouvelle fonction ``behaviour``. Le pointeur peut être modifié pendant l'exécution de la précédente fonction ``behaviour``, le changement de comportement sera alors effectif lorsque la fonction précédente aura terminée son exécution.
+- la fonction :attr:`smartwatts.BasicState.behaviour` peut être modifiée en changeant le pointeur de fonction de l'état vers une nouvelle fonction. Le pointeur peut être modifié pendant l'exécution de la précédente fonction :attr:`smartwatts.BasicState.behaviour`, le changement de comportement sera alors effectif lorsque la fonction précédente aura terminée son exécution.
 
-- la fonction ``terminated_behaviour`` peut être implémentée pour exécuter un comportement spécifique avant de terminer un acteur.
+- la fonction :func:`Actor.terminated_behaviour() <smartwatts.actor.actor.Actor.terminated_behaviour>` peut être implémentée pour exécuter un comportement spécifique avant de terminer un acteur.
 
 Comportement métier par défaut
 ==============================
 
-Par défaut la fonction ``behaviour``, pointé par l'état de l'acteur, attend un message et exécute un comportement spécifique en fonction du type de message reçus. Un comportement est implémenté par une classe ``Handler`` pour chaque type de message auquel l'acteur peut répondre. Lorsque l'acteur reçoit un message, il cherche le ``Handler`` correspondant au type de message reçu puis traite ce message grâce au Handler. Si aucun handler n'est trouvé, l'acteur crash en levant l'exception ``UnknowMessageTypeException``.
+Par défaut la fonction :attr:`smartwatts.BasicState.behaviour`, pointé par l'état de l'acteur, attend un message et exécute un comportement spécifique en fonction du type de message reçus. Un comportement est implémenté par une classe :class:`smartwatts.AbstractHandler <smartwatts.handler.abstract_handler.AbstractHandler>` pour chaque type de message auquel l'acteur peut répondre. Lorsque l'acteur reçoit un message, il cherche le :class:`smartwatts.AbstractHandler <smartwatts.handler.abstract_handler.AbstractHandler>` correspondant au type de message reçu puis traite ce message grâce au Handler. Si aucun handler n'est trouvé, l'acteur crash en levant l'exception ``UnknowMessageTypeException``.
 
-Par défaut, un acteur ne possède aucun handler. Il est possible d'ajouter un handler en le liant à un type de message grâce à la méthode ``Actor.add_handler``
+Par défaut, un acteur ne possède aucun handler. Il est possible d'ajouter un handler en le liant à un type de message grâce à la méthode :func:`Actor.add_handler() <smartwatts.actor.actor.Actor.add_handler>`
 
 AbstractHandler
 ---------------
 
-Un handler est une classe héritant de ``AbstractHandler``. Cette classe possède une méthode ``handle_message`` qui prend en argument le message reçu et l'état courant de l'acteur. En fonction de la valeur du message reçus, cette fonction va modifier et renvoyer le nouvel état de l'acteur.
+Un handler est une classe héritant de :class:`smartwatts.AbstractHandler <smartwatts.handler.abstract_handler.AbstractHandler>`. Cette classe possède une méthode :func:`AbstractHandler.handle() <smartwatts.handler.abstract_handler.AbstractHandler.handle>` qui prend en argument le message reçu et l'état courant de l'acteur. En fonction de la valeur du message reçu, cette fonction va modifier et renvoyer le nouvel état de l'acteur.
 
 AbstractInitHandler
 -------------------
 
-La plupart des acteurs présents dans SmartWatts ont besoin d'initialiser leurs interfaces de communication avec d'autres acteurs ou avec le système (pour utiliser une base de données par exemple). Certains handler ne peuvent fonctionner sans cette initialisation. La classe abstraite ``AbstractInitHandler`` implémente la méthode ``handle_message`` pour qu'elle ignore les messages reçus tant que l'acteur n'a pas été initialisé.
+La plupart des acteurs présents dans SmartWatts ont besoin d'initialiser leurs interfaces de communication avec d'autres acteurs ou avec le système (pour utiliser une base de données par exemple). Certains handler ne peuvent fonctionner sans cette initialisation. La classe abstraite :class:`smartwatts.AbstractInitHandler <smartwatts.handler.abstract_handler.AbstractInitHandler>` ignore les messages reçus tant que l'acteur n'a pas été initialisé.
 
 TimeoutHandler
 --------------
 
-Le comportement par défaut peut être configuré pour activer un handler particulier dans le cas ou l'acteur n'a pas reçu de message depuis un certain temps. Cette fonction peut être modifiée en faisant pointer l'attribut ``Actor.timeout_handler`` sur la fonction à exécuter dans ce cas.
+Le comportement par défaut peut être configuré pour activer un handler particulier dans le cas ou l'acteur n'a pas reçu de message depuis un certain temps. Cette fonction peut être modifiée en faisant pointer l'attribut :func:`Actor.timeout_handler <smartwatts.actor.actor.Actor.timeout_handler` sur la fonction à exécuter dans ce cas.
 
+Report
+======
 
-Message
-=======
+Report
+------
 
-Les échanges entre les différents acteurs sont effectués par l’envoie de message par leur sockets, et sont divisibles en deux catégories distinctes, les messages de données et les messages de contrôle.
+Un :class:`smartwatts.Report <smartwatts.report.report.Report>` correspond à une donnée récupérée dans une base de donnée. La classe permet de simplifier la sérialisation / désérialisation de la donnée. Pour être plus précis, lorsque l’on récupère une donnée dans la BDD, celle-ci nous est retourné brute et pas forcément formaté de la manière dont on le souhaiterait, la plupart du temps sous un format JSON (qui est un format basique en python). La classe :class:`smartwatts.ReportModel <smartwatts.report_model.report_model.ReportModel>` va redéfinir le format de la donnée pour qu’elle soit désérialisable pour la classe :class:`smartwatts.Report <smartwatts.report.report.Report>`
 
-Un message de donnée est en fait un ``Report`` sérialisé à l’aide de la bibliotèque ``pickle``. Ce message est toujours un objet héritant de la classe abstraite ``Report``.
-Un message de contrôle permet de demander à un acteur d’effectuer une action, qui peuvent dépendre du contexte et du moment ou il reçoit ce message. On peut trouver les messages suivants :
+.. image:: _static/schema_report.png
 
-* ``PoisonPillMessage`` : Demande à un acteur de s’arrêter.
-* ``StartMessage`` : Demande à un acteur de procéder à son initialisation.
-* ``OkMessage`` : Après l’envoie d’un ``StartMessage``, le processus étant en charge de l’initialisation doit attendre une réponse, ``OKMessage`` est la réponse dans le cas ou l’initialisation s’est bien passé.
-* ``ErrorMessage`` : Après l’envoie d’un ``StartMessage``, le processus étant en charge de l’initialisation doit attendre une réponse, ``ErrorMessage`` est la réponse dans le cas ou l’initialisation a échoué.
+ReportModel
+-----------
+
+Le :class:`smartwatts.ReportModel <smartwatts.report_model.report_model.ReportModel>` est une classe qui définit la façon de formater les données selon le type de base de donnée lue. Il est nécessaire de définir un XXXModel, pour chaque XXXReport, et de redéfinir une méthode pour chaque type de base de donnée que l’on souhaite utiliser.
+
+Schéma explicatif :
+
+BDD => Json XXX brut => XXXModel => Json XXX format => XXXReport
 
 Database
 ========
@@ -124,23 +129,17 @@ A ce jour, il est possible d’utiliser les types de base de donnée suivantes 
 * MongoDB
 * Csv
 
-Les bases de données implémenté dans SmartWatts héritent toutes de la classe ``BaseDB`` qui permet de définir une liste de méthode utilisable de façon transparente indépendamment du type de base.
+Les bases de données implémentées dans SmartWatts héritent toutes de la classe :class:`smartwatts.BaseDB <smartwatts.database.base_db.BaseDB>` qui permet de définir une liste de méthode utilisable de façon transparente indépendamment du type de base. Une base est définit par deux choses, d'abord le type de BDD (MongoDB, csv...), et aussi le type de donnée à récupérer. Le second paramètre est donné à la création d'un :class:`smartwatts.BaseDB <smartwatts.database.base_db.BaseDB>`.  
 
-Report
-======
+Message
+=======
 
-Report
-------
+Les échanges entre les différents acteurs sont effectués par l’envoie de message par leur sockets, et sont divisibles en deux catégories distinctes, les messages de données et les messages de contrôle.
 
-Un ``Report`` correspond à une donnée récupérée dans une base de donnée. La classe permet de simplifier la sérialisation / désérialisation de la donnée. Pour être plus précis, lorsque l’on récupère une donnée dans la BDD, celle-ci nous est retourné brute et pas forcément formaté de la manière dont on le souhaiterait, la plupart du temps sous un format JSON (qui est un format basique en python). La classe ``ReportModel`` va redéfinir le format de la donnée pour qu’elle soit désérialisable pour la classe ``Report``
+Un message de donnée est en fait un :class:`smartwatts.Report <smartwatts.report.report.Report>` sérialisé à l’aide de la bibliotèque `pickle <https://docs.python.org/3/library/pickle.html>`_. Ce message est toujours un objet héritant de la classe abstraite :class:`smartwatts.Report <smartwatts.report.report.Report>`.
+Un message de contrôle permet de demander à un acteur d’effectuer une action, qui peuvent dépendre du contexte et du moment ou il reçoit ce message. On peut trouver les messages suivants :
 
-.. image:: _static/schema_report.png
-
-ReportModel
------------
-
-Le ``ReportModel`` est une classe qui définit la façon de formater les données selon le type de base de donnée lue. Il est nécessaire de définir un XXXModel, pour chaque XXXReport, et de redéfinir une méthode pour chaque type de base de donnée que l’on souhaite utiliser.
-
-Schéma explicatif :
-
-BDD => Json XXX brut => XXXModel => Json XXX format => XXXReport
+* :class:`smartwatts.PoisonPillMessage <smartwatts.message.message.PoisonPillMessage>`: Demande à un acteur de s’arrêter.
+* :class:`smartwatts.StartMessage <smartwatts.message.message.StartMessage>`: Demande à un acteur de procéder à son initialisation.
+* :class:`smartwatts.OKMessage <smartwatts.message.message.OKMessage>`: Après l’envoie d’un :class:`smartwatts.StartMessage <smartwatts.message.message.StartMessage>`, le processus étant en charge de l’initialisation doit attendre une réponse, :class:`smartwatts.OKMessage <smartwatts.message.message.OKMessage>` est la réponse dans le cas ou l’initialisation s’est bien passé.
+* :class:`smartwatts.ErrorMessage <smartwatts.message.message.ErrorMessage>`: Après l’envoie d’un :class:`smartwatts.StartMessage <smartwatts.message.message.StartMessage>`, le processus étant en charge de l’initialisation doit attendre une réponse, :class:`smartwatts.ErrorMessage <smartwatts.message.message.ErrorMessage>` est la réponse dans le cas ou l’initialisation a échoué.

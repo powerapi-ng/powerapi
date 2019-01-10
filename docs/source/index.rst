@@ -21,6 +21,10 @@ Welcome to SmartWatts's documentation!
 
    user
 
+.. toctree::
+   :maxdepth: 2
+
+   _howto/howto
 
 .. toctree::
    :maxdepth: 3
