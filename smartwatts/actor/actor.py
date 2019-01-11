@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module actors
-"""
-
 import os
 import signal
 import multiprocessing
@@ -31,56 +27,56 @@ from smartwatts.actor import BasicState, SocketInterface
 
 
 class Actor(multiprocessing.Process):
-    """Abstract class that exposes an interface to create actor
+    """Abstract class that exposes an interface to create, setup and handle actors
+
+    :Method Interface:
+    
+    This table list from wich interface each methods are accessible
+
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    |  Interface type                 |                                   method name                                              |
+    +=================================+============================================================================================+
+    | Accessible from Client/Server   | :meth:`log <smartwatts.actor.actor.Actor.log>`                                             |
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    | Client interface                | :meth:`connect <smartwatts.actor.actor.Actor.connect>`                                     |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`monitor <smartwatts.actor.actor.Actor.monitor>`                                     |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`send <smartwatts.actor.actor.Actor.send>`                                           |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`kill <smartwatts.actor.actor.Actor.kill>`                                           |
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    | Server interface                | :meth:`setup <smartwatts.actor.actor.Actor.setup>`                                         |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`get_corresponding_handler <smartwatts.actor.actor.Actor.get_corresponding_handler>` |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`add_handler <smartwatts.actor.actor.Actor.add_handler>`                             |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`terminated_behaviour <smartwatts.actor.actor.Actor.terminated_behaviour>`           |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    +---------------------------------+--------------------------------------------------------------------------------------------+ 
 
 
-    methods
-    =========
+    :Attributes Interface:
+    
+    This table list from wich interface each attributes are accessible
 
-    general methods :
-    ------------------
-
-    - :meth:~smartwatts.actor.actor.Actor.log
-
-    client interface methods :
-    -----------------------------
-
-    - :meth:~smartwatts.actor.actor.Actor.connect
-    - :meth:~smartwatts.actor.actor.Actor.monitor
-    - :meth:~smartwatts.actor.actor.Actor.send_monitor
-    - :meth:~smartwatts.actor.actor.Actor.send
-    - :meth:~smartwatts.actor.actor.Actor.kill
-
-    server interface methods :
-    ----------------------------
-
-    - :meth:~smartwatts.actor.actor.Actor.setup
-    - :meth:~smartwatts.actor.actor.Actor.get_corresponding_handler
-    - :meth:~smartwatts.actor.actor.Actor.add_handler
-    - :meth:~smartwatts.actor.actor.Actor.terminated_behaviour
-    - :meth:~smartwatts.actor.actor.Actor.send_monitor
-
-    attributes
-    ============
-
-    general attributes :
-    -------------------
-
-    - :attr:~smartwatts.actor.actor.Actor.verbose
-
-    server interface attributes :
-    ----------------------------
-
-    - :attribute int timeout: time in millisecond to wait for a message before
-                              activate the `timeout_behaviour`
-    - :attribute state: actor's permanent values
-    - :type state: smartwatts.actor.state.BasicState
-    - :attribute timeout_ha ndler: function activated when no message was
-                                   received since `timeout` milliseconds
-    - :type timeout_handler:function
-    - :attribute handlers: list of mapings between handler and message type that
-                           the maped handler must handle
-    - :type handlers: list of tuple (type, smartwatts.actor.state.BasicState)
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    |  Interface type                 |                                   method name                                              |
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    | Accessible from Client/Server   | :attr:`verbose <smartwatts.actor.actor.Actor.verbose>`                                     |
+    +---------------------------------+--------------------------------------------------------------------------------------------+
+    | Server interface                | :meth:`timeout <smartwatts.actor.actor.Actor.timeout>`                                     |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`state <smartwatts.actor.actor.Actor.state>`                                         |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`handlers <smartwatts.actor.actor.Actor.handlers>`                                   |
+    |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`timeout_handler <smartwatts.actor.actor.Actor.timeout_handler>`                     |
+    +---------------------------------+--------------------------------------------------------------------------------------------+
 
     """
 
@@ -96,10 +92,20 @@ class Actor(multiprocessing.Process):
         """
         multiprocessing.Process.__init__(self, name=name)
 
+        #: (bool) : time in millisecond to wait for a message before
+        #: activate the `timeout_behaviour`
         self.verbose = verbose
+        #: (int) : time in millisecond to wait for a message before
+        #: activate the `timeout_behaviour`
         self.timeout = timeout
+        #: (smartwatts.actor.state.BasicState) : actor's permanent values
         self.state = None
+        #: (function) : function activated when no message was
+        #: received since `timeout` milliseconds
         self.timeout_handler = None
+        #: (list of tuple (type, smartwatts.actor.state.BasicState)) : list of
+        #: mapings between handler and message type that the maped handler must
+        #: handle
         self.handlers = []
 
     def log(self, message):
