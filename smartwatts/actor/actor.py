@@ -57,9 +57,8 @@ class Actor(multiprocessing.Process):
     |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
-
     :Attributes Interface:
-
+    
     This table list from wich interface each attributes are accessible
 
     +---------------------------------+--------------------------------------------------------------------------------------------+
