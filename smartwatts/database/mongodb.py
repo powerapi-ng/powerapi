@@ -14,78 +14,106 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module MongoDB
-"""
-
 import pymongo
 from smartwatts.database.base_db import BaseDB, DBErrorException
 
 
 class MongoBadDBError(DBErrorException):
-    """ MongDB error when hostname/port fail """
-
+    """
+    Exception raised when hostname/port fail
+    """
     def __init__(self, hostname):
         DBErrorException.__init__(self, 'Mongo DB error : can\'t connect to ' +
                                   hostname)
 
 
 class MongoBadDBNameError(DBErrorException):
-    """ MongoDB error when database doesn't exist """
+    """
+    Exception raised when database doesn't exist
+    """
     def __init__(self, db_name):
         DBErrorException.__init__(self, 'Mongo DB error : DB ' + db_name +
                                   ' doesn\'t exist')
 
 
 class MongoBadCollectionNameError(DBErrorException):
-    """ MongoDB error when collection doesn't exist """
+    """
+    Exception raised when collection doesn't exist
+    """
     def __init__(self, collection_name):
         DBErrorException.__init__(self, 'Mongo DB error : collection ' +
                                   collection_name + ' doesn\'t exist')
 
 
 class MongoNeedReportModelError(Exception):
-    """ MongoDB error when MongoDB is define without report model """
-    pass
+    """
+    Exception raised when MongoDB is define without report model
+    """
 
 
 class MongoSaveInReadModeError(Exception):
-    """ MongoDB error when save() is called in read mode """
-    pass
+    """
+    Exception raised when save() is called in read mode
+    """
 
 
 class MongoGetNextInSaveModeError(Exception):
-    """ MongoDB error when get_next() is called in save_mode """
-    pass
+    """
+    Exception raised when get_next() is called in save_mode
+    """
 
 
 class MongoDB(BaseDB):
     """
-    MongoDB class
+    MongoDB class herited from BaseDB
+
+    Allow to handle a MongoDB database in reading or writing.
     """
 
     def __init__(self,
                  host_name, port, db_name, collection_name,
                  report_model=None, save_mode=False, erase=False):
         """
-        Parameters:
-            @host_name:       hostname of the mongodb (ex: "localhost")
-            @port:            port of the mongodb (ex: 27017)
-            @db_name:         database name in the mongodb (ex: "smartwatts")
-            @collection_name: collection name in the mongodb (ex: "sensor")
-            @report_model:    XXXModel object. Allow to read specific report
-                              with a specific format in a database.
-            @save_mode:       put save_mode to True if you want to use it
-                              with a Pusher
-            @erase:           If save_mode is False, erase too. It allow to
-                              erase the collection on setup.
+        :param str host_name:       hostname of the mongodb (ex: "localhost")
+
+        :param int port:            port of the mongodb (ex: 27017)
+
+        :param str db_name:         database name in the mongodb
+                                    (ex: "smartwatts")
+
+        :param str collection_name: collection name in the mongodb
+                                    (ex: "sensor")
+
+        :param report_model:        XXXModel object. Allow to read specific
+                                    report with a specific format in a database
+        :type report_model:         smartwatts.ReportModel
+
+        :param bool save_mode:      put save_mode to True if you want to use it
+                                    with a Pusher
+
+        :param bool erase:          If save_mode is False, erase too. It allows
+                                    to erase the collection on setup.
         """
         BaseDB.__init__(self, report_model)
+
+        #: (str): Hostname of the mongodb server
         self.host_name = host_name
+
+        #: (int): Port of the mongodb server
         self.port = port
+
+        #: (str): Database name in the mongodb
         self.db_name = db_name
+
+        #: (str): Collection name in the mongodb
         self.collection_name = collection_name
+
+        #: (bool): True if you want to save data,
+        #: False if you want to read data
         self.save_mode = save_mode
+
+        #: (bool): If save_mode is False, erase has no effect.
+        #: It allows to erase the collection on setup.
         self.erase = erase
 
         # If save_mode is False, erase too.
@@ -94,16 +122,29 @@ class MongoDB(BaseDB):
             if report_model is None:
                 raise MongoNeedReportModelError()
 
+        #: (pymongo.MongoClient): MongoClient instance of the server
         self.mongo_client = None
+
+        #: (pymongo.MongoClient): MongoClient pointed to the
+        #: targeted collection
         self.collection = None
+
+        #: (pymongo.Cursor): Cursor which return data
         self.cursor = None
 
-        # Define if the mongodb is capped or not
+        # (bool): Define if the mongodb is capped or not
         self.capped = False
 
     def load(self):
-        """ Override """
-        # close connec if reload
+        """
+        Override from BaseDB.
+
+        It create the connection to the mongodb database with the current
+        configuration (hostname/port/db_name/collection_name), then check
+        if the connection has been created without failure.
+        """
+
+        # close connection if reload
         if self.mongo_client is not None:
             self.mongo_client.close()
 
@@ -131,8 +172,8 @@ class MongoDB(BaseDB):
 
             # Check if collection is capped or not
             options = self.collection.options()
-            self.capped = True if ('capped' in options and
-                                   options['capped']) else False
+            self.capped = bool(('capped' in options and
+                                options['capped']))
 
             # Depend if capped or not, create cursor
             if self.capped:
@@ -148,7 +189,15 @@ class MongoDB(BaseDB):
             self.collection.drop()
 
     def get_next(self):
-        """ Override """
+        """
+        Override from BaseDB.
+
+        Make one iteration on the cursor, remove the '_id' field and
+        return the data JSON.
+
+        :return: The next report
+        :rtype: formatted JSON
+        """
         if self.save_mode:
             raise MongoGetNextInSaveModeError()
 
@@ -163,7 +212,11 @@ class MongoDB(BaseDB):
         return self.report_model.from_mongodb(json)
 
     def save(self, json):
-        """ Override """
+        """
+        Override from BaseDB
+
+        :param dict json: data JSON to save
+        """
         if not self.save_mode:
             raise MongoSaveInReadModeError()
 

@@ -48,19 +48,33 @@ class SocketInterface:
         :param str name: name of the actor using this interface
         :param int timeout: time in millisecond to wait for a message
         """
+
+        #: (int): Time in millisecond to wait for a message before execute
+        #:        timeout_handler
         self.timeout = timeout
+
+        #: (str): Address of the pull socket
         self.pull_socket_address = 'ipc://@' + name
+
+        #: (str): Address of the monitor socket
         self.monitor_socket_address = 'ipc://@monitor_' + name
 
+        #: (zmq.Context): ZMQ Context of the process
         self.context = None
+
+        #: (zmq.Poller): ZMQ Poller for read many socket at same time
         self.poller = None
 
+        #: (zmq.Socket): ZMQ Pull socket for receiving data message
         self.pull_socket = None
+
+        #: (zmq.Socket): ZMQ Pair socket for receiving control message
         self.monitor_socket = None
 
         # This socket is used to connect to the pull socket of this actor. It
         # won't be created on the actor's process but on the process that want
         # to connect to the pull socket of this actor
+        #: (zmq.Socket): ZMQ Push socket for sending message to this actor
         self.push_socket = None
 
     def setup(self):
