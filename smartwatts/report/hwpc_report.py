@@ -95,27 +95,31 @@ class HWPCReportSocket(Report):
 
 
 class HWPCReport(Report):
-    """ HWPCReport class
+    """
+    HWPCReport class
 
-    JSON HWPC format:
-    {
-     'timestamp': $int,
-     'sensor': '$str',
-     'target': '$str',
-     'groups' : {
-        '$group_name': {
-           '$socket_id': {
-               '$core_id': {
-                   '$event_name': '$int',
+    JSON HWPC format
+
+    .. code-block:: json
+
+        {
+         'timestamp': $int,
+         'sensor': '$str',
+         'target': '$str',
+         'groups' : {
+            '$group_name': {
+               '$socket_id': {
+                   '$core_id': {
+                       '$event_name': '$int',
+                       ...
+                   }
                    ...
                }
                ...
-           }
-           ...
+            }
+            ...
+         }
         }
-        ...
-     }
-    }
     """
 
     def __init__(self, timestamp=None, sensor=None, target=None):

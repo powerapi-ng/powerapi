@@ -41,11 +41,14 @@ class PowerSpyReport(Report):
         """
         Get PowerSpyReport from mongodb
 
-        Format:
-        {
-            val1: first value
-            val2: second value
-        }
+        Format
+
+        .. code-block:: json
+
+            {
+                val1: first value
+                val2: second value
+            }
         """
         self.val1 = json['val1']
         self.val2 = json['val2']

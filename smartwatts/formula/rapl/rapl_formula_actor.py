@@ -73,9 +73,8 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
         Process a report and send the result(s) to a pusher actor.
         :param msg: Received message
         :param state: Current actor state
-        :raises UnknowMessageTypeException if the given message is
-                not an HWPCReport
         :return: New actor state
+        :raises UnknowMessageTypeException: if the given message is not an HWPCReport
         """
         if not isinstance(msg, HWPCReport):
             raise UnknowMessageTypeException(type(msg))

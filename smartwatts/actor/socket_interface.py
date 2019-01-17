@@ -22,9 +22,6 @@ class SocketInterface:
     """
     Interface to handle comunication to/from the actor
 
-    methods
-    =======
-
     general methods :
 
     - :meth:`send_monitor <smartwatts.actor.socket_interface.SocketInterface.send_monitor>`
