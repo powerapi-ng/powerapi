@@ -14,48 +14,52 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module filter
-"""
-
 
 class FilterUselessError(Exception):
-    """ Raise when a filter route with 0 filters """
-    pass
+    """
+    Exception raised when a filter route with 0 filters
+    """
 
 
 class Filter:
-    """ Filter abstract class """
+    """
+    Filter abstract class
+
+    A filter allow the Puller to route Report of the database to Dispatchers
+    by fixing some rules.
+    """
 
     def __init__(self):
         self.filters = []
 
     def get_type(self):
         """
-        Need to be overrided.
-
         Return the report type for a filter.
+
+        .. note::
+
+            Need to be overrided
         """
         raise NotImplementedError()
 
     def filter(self, rule, dispatcher):
         """
-        Define a rule for a new report, and send it to the dispatcher
+        Define a rule for a kind of report, and send it to the dispatcher
         if the rule accept it.
 
-        Parameters:
-            @rule: function which return true of false
-            @dispatcher: Actor we want to send the report
+        :param (func(report) -> bool) rule:      Function which return if
+                                                 the report has to be send to
+                                                 this dispatcher
+        :param smartwatts.Dispatcher dispatcher: Dispatcher we want to send the
+                                                 report
         """
         self.filters.append((rule, dispatcher))
 
-    def route(self, msg):
+    def route(self, report):
         """
-        Return the dispatcher to whom
-        send the msg, or None
+        Get the list of dispatchers to whom send the report, or None
 
-        Parameters:
-            @msg: msg to send
+        :param smartwatts.Report report: Message to send
         """
         # Error if filters is empty
         if not self.filters:
@@ -63,7 +67,7 @@ class Filter:
 
         dispatchers = []
         for rule, dispatcher in self.filters:
-            if rule(msg):
+            if rule(report):
                 dispatchers.append(dispatcher)
 
         return dispatchers

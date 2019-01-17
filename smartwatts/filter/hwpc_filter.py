@@ -14,16 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module hwpc_filter
-"""
-
 from smartwatts.filter import Filter
 from smartwatts.report import HWPCReport
 
 
 class HWPCFilter(Filter):
-    """ HWPCFilter class """
+    """
+    HWPCFilter class
+    """
 
     def __init__(self):
         Filter.__init__(self)
