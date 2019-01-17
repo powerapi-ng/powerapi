@@ -1,15 +1,37 @@
-"""
-Handlers used by the DispatcherActor
-"""
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.message import OKMessage, StartMessage
 
 
 class StartHandler(AbstractHandler):
-    """ Initialize the receved state
     """
+    Initialize the received state
+    """
+
     def handle(self, msg, state):
+        """
+        Allow to initialize the state of the actor, then reply to the monitor
+        socket.
+
+        :param smartwatts.StartMessage msg: Message that initialize the actor
+        :param smartwatts.BasicState state: State of the actor
+        """
         if state.initialized:
             return state
 
@@ -24,39 +46,40 @@ class StartHandler(AbstractHandler):
 
 class FormulaDispatcherReportHandler(AbstractInitHandler):
     """
-    Split the received report into sub-reports (if needed) and return the sub
-    reports and formulas ids to send theses report
+    Split received report into sub-reports (if needed) and return the sub
+    reports and formulas ids to send theses reports.
     """
 
     def __init__(self, route_table, primary_group_by_rule):
         """
-        Parameters:
-            @route_table([(Message, AbstractGroupBy)]: list all group by rule
-                                                       with their associated
-                                                       message type
+        :param route_table:           List all group by rule with their
+                                      associated message type
+        :type route_table:            array(tuple(Message, AbstractGroupBy))
 
+        :param primary_group_by_rule: Primary GroupBy rule
+        :type primary_group_by_rule:  AbstractGroupBy
         """
-        # Array of tuple (report_class, group_by_rule)
+        #: (array(tuple(Message, AbstractGroupBy))): List all group by rule
+        #: with their associated message type
         self.route_table = route_table
 
-        # Primary GroupBy
+        #: (AbstractGroupBy): Primary GroupBy rule
         self.primary_group_by_rule = primary_group_by_rule
 
     def handle(self, msg, state):
         """
         Split the received report into sub-reports (if needed) and send them to
-        their corresponding formula
+        their corresponding formula.
 
-        if the corresponfing formula does not exist, create and return the
-        actor state, containing the new formula
+        If the corresponding formula does not exist, create and return the
+        actor state, containing the new formula.
 
-        Parameters:
-            msg(smartwatts.report.Report)
+        :param smartwatts.Report msg:       Report message
+        :param smartwatts.BasicState state: Actor state
 
-        Return:
-            [(tuple, smartwatts.report.Report)]: list of *(formula_id, report)*.
-                                                 The formula_id is a tuple that
-                                                 identify the formula_actor
+        :return: List of the (formula_id, report) where formula_id is a tuple
+                 that identitfy the formula_actor
+        :rtype:  list(tuple(formula_id, report))
         """
         for (report_class, group_by_rule) in self.route_table:
             if isinstance(msg, report_class):
@@ -88,12 +111,11 @@ class FormulaDispatcherReportHandler(AbstractInitHandler):
             second  group_by (sensor)
         The second group_by need to match with the primary if sensor are equal.
 
-        Parameters:
-            @report:        XXXReport instance
-            @group_by_rule: XXXGroupBy instance
+        :param smartwatts.Report report:                 Report to split
+        :param smartwatts.AbstractGroupBy group_by_rule: GroupBy rule
 
-        Return:
-            ([(tuple, Report]): list of (formula_id, Report)
+        :return: List of formula_id associated to a sub-report of report
+        :rtype:  list(tuple(formula_id, smartwatts.Report))
         """
 
         # List of tuple (id_report, report)
@@ -112,9 +134,8 @@ class FormulaDispatcherReportHandler(AbstractInitHandler):
         Return the new_report_id with the report_id by removing
         every "useless" fields from it.
 
-        Parameters:
-            @report_id:     tuple of fields (id)
-            @group_by_rule: XXXGroupBy instance
+        :param tuple report_id:                          Original report id
+        :param smartwatts.AbstractGroupBy group_by_rule: GroupBy rule
         """
         new_report_id = ()
         primary_rule = self.primary_group_by_rule
