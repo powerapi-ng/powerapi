@@ -9,17 +9,12 @@ Welcome to SmartWatts's documentation!
 .. toctree::
    :maxdepth: 2
 
+   intro
+
+.. toctree::
+   :maxdepth: 2
+
    quickstart
-
-.. toctree::
-   :maxdepth: 2
-
-   dev
-
-.. toctree::
-   :maxdepth: 2
-
-   user
 
 .. toctree::
    :maxdepth: 2
