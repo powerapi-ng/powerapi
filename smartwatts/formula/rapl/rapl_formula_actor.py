@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-RAPL Formula
-"""
 import math
 
 from smartwatts.formula.formula_actor import FormulaActor
@@ -38,6 +35,7 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
     def _gen_power_report(report, socket, event, counter):
         """
         Generate a power report for a RAPL event.
+
         :param report: HWPC report
         :param socket: Socket ID
         :param event: RAPL event name
@@ -51,6 +49,7 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
     def _process_report(self, report):
         """
         Handle the RAPL events counter contained in a HWPC report.
+
         :param report: HWPC report to process
         :return: List of power report for each socket and RAPL event
         """
@@ -71,6 +70,7 @@ class RAPLFormulaHWPCReportHandler(AbstractHandler):
     def handle(self, msg, state):
         """
         Process a report and send the result(s) to a pusher actor.
+
         :param msg: Received message
         :param state: Current actor state
         :return: New actor state
