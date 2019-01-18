@@ -19,7 +19,7 @@ Welcome to SmartWatts's documentation!
 .. toctree::
    :maxdepth: 2
 
-   _howto/howto
+   sensors 
 
 .. toctree::
    :maxdepth: 3
