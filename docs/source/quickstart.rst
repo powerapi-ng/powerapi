@@ -3,7 +3,7 @@
 Démarrage rapide
 ****************
 
-Cette partie permet de voir comment utiliser **PowerAPI**. Il est considéré que vous possédez une base de donnée MongoDB contenant des données exploitables, obtenues à partir d'un des :doc:`Capteurs énergétiques <sensors>` supportés par **PowerAPI**. Il est préférable d'avoir lu la partie :doc:`Présentation PowerAPI <introduction>` avant.
+Cette partie permet de voir comment utiliser **PowerAPI**. Il est considéré que vous possédez une base de donnée MongoDB contenant des données exploitables, obtenues à partir d'un des :doc:`Capteurs énergétiques <sensors>` supportés par **PowerAPI**. Il est préférable d'avoir lu la partie :doc:`Présentation PowerAPI <intro>` avant.
 
 PowerAPI CLI sur Docker
 =========================

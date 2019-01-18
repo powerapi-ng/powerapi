@@ -1,3 +1,0 @@
-
-Présentation PowerAPI
-=====================

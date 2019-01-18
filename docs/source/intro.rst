@@ -1,17 +1,17 @@
-Présentation de Smartwatts
+Présentation de PowerAPI 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-PowerAPI est une suite d'outils utilisée pour mesurer la consommation énergétique logiciel d'une infrastructure. La consommation est mesurée à l'échelle d'un container Docker ou d'un pod Kubernetes (Cgroups). Elle est estimée à partir de données recueillies par des **CAPTEUR** (logiciel ou physique). Cette estimation peut être réalisée au fur et à mesure que les données sont recueillies, ou à partir d'un ensemble de mesure réalisées au préalable.
+**PowerAPI** est une suite d'outils utilisés pour mesurer la consommation énergétique logiciel d'une infrastructure informatique. La consommation est mesurée à l'échelle d'un conteneur Docker ou d'un pod Kubernetes (Cgroups). Elle est estimée à partir de données recueillies par des :doc:`Capteurs énergétiques <sensors>` (logiciel ou physique). Cette estimation peut être réalisée au fur et à mesure que les données sont recueillies, ou à partir d'un ensemble de mesure réalisées au préalable.
 
 Mesurer la consomation énergétique
 ==================================
 
-Mesurer la consommation énergétique d'un container se fait en deux phases :
+Mesurer la consommation énergétique d'un conteneur se fait en deux phases:
 
-- recueillir les données grâce à des capteurs (logiciels ou matériels). Chaque capteur recueille des données nécessaires à l'estimation de la consommation énergétique (consommation globale de la machine, compteur de performance processeur, ...). Ces données sont ensuite stockées dans une base de données Mongo DB.
+- Recueillir les données grâce à des **Capteurs** (logiciels ou matériels). Chaque capteur récolte des données nécessaires à l'estimation de la consommation énergétique (consommation globale de la machine, compteur de performance processeur, etc.). Ces données sont ensuite stockées dans une base de données MongoDB.
 
-- estimer la consommation énergétique grâce à des modèles de consommation. Un deuxième outils : le wattmetre, utilise des modèles de consommation prédéfinis pour estimer une mesure de consomation énergétique de container à partir des données recueillies par les capteurs. Ce wattmetre récupère les données depuis la base de donnée Mongo DB. Il peux effectuer ses estimations de consomation au fur et a mesure que les données sont écrites en bases ou en utilisant l'intégralitée des données présentes dans la base de données. Les estimations de consomations sont ensuite stocke en base.
+- Estimer la consommation énergétique grâce à des modèles de consommation. Un deuxième outil: le **Wattmetre** utilise des modèles de consommation prédéfinis pour estimer une mesure de consommation énergétique de conteneur à partir des données recueillies par les capteurs. Ce Wattmetre récupère les données depuis la base de donnée MongoDB. Il peut effectuer ses estimations de consommation au fur et a mesure que les données sont écrites en base ou en utilisant l'intégralité des données présentes dans la base de donnée. Les estimations de consommations sont ensuite stockées en base.
 
 .. figure:: _static/powerAPI_archi.png
 
-	    calcul de la consomation énergétique de la machine **HOST**
+	    calcul de la consommation énergétique de la machine **HOST**
