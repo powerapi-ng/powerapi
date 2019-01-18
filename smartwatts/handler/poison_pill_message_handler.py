@@ -10,7 +10,7 @@ class PoisonPillMessageHandler(AbstractHandler):
     """
 
     def handle(self, msg, state):
-        """ Set the :attr:~smartwatts.actor.state.BasicState.alive attribute of
+        """ Set the :attr:`BasicState.alive <smartwatts.actor.state.BasicState.alive>` attribute of
         the actor state to False
 
         :param Object msg: the message received by the actor

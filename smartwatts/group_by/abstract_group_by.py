@@ -31,7 +31,9 @@ class AbstractGroupBy:
         """
         divide a report into multiple report given a group_by rule
 
-        Return: ([(tuple, Report)]) a list all report with their
-                identifier
+        :param report:
+        :type report: smartwatts.report.report.Report
+        :rtype: ([(tuple, smartwatts.report.report.Report)]) a list all report
+                with their identifier
         """
         raise NotImplementedError()

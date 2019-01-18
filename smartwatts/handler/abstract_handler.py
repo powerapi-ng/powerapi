@@ -26,7 +26,7 @@ class AbstractHandler:
         """ Handle a message and return a the new state value of the actor
 
         This is the method that should be called to handle received message
-        this method call :meth:~smartwatts.handler.abstract_handler.handle
+        this method call :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
@@ -65,8 +65,8 @@ class AbstractInitHandler(AbstractHandler):
 
         if the given state is not initialized, return the given state without
         side effect. Otherwise, use the
-        :meth:~smartwatts.handler.abstract_handler.handle method to handle the
-        message
+        :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
+        method to handle the message
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state

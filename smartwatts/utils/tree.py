@@ -33,10 +33,11 @@ class Tree:
         """
         Add a leaf to the tree
 
-        :param list path: path to the node, its length must be equal to the depth
+        :param path: path to the node, its length must be equal to the depth
                           of the tree and the last label of the path will be the
                           label of the leaf
-        :param val:       The value that will be stored in the leaf
+        :type path: list
+        :param val: The value that will be stored in the leaf
         """
         if len(path) == 0:
             raise ValueError()
@@ -50,10 +51,9 @@ class Tree:
         """
         Retrieves all leafs value under the node designating by path
 
-        Parameters:
-            path(list)
-
-        Return (list): list of leafs value
+        :param path:
+        :type path: list
+        :rtype: list : list of leafs value
         """
         if self.root is None:
             return []
@@ -63,7 +63,11 @@ class Tree:
         return self.root.retrieve_leaf_values(path)
 
     def leafs(self):
-        """Return a list of all (path, leaf) """
+        """
+        Return a list of all (path, leaf)
+
+        :rtype: list
+        """
         return self.root.get_childs()
 
 
@@ -107,7 +111,11 @@ class Node:
         self.val = val
 
     def get_childs(self):
-        """Return all (path, value) under this node"""
+        """
+        Return all (path, value) under this node
+        
+        :rtype: list
+        """
         if self.is_leaf:
             return [([self.label], self.val)]
         
@@ -153,10 +161,9 @@ class Node:
     def retrieve_leaf_values(self, path):
         """retrieves all leafs value under the node designating by path
 
-        Parameters:
-            path(list)
-
-        Return (list): list of leafs value
+        :param path:
+        :type path: list
+        :rtype: list : list of leafs value
         """
         def aux(node, depth):
             label = path[depth]
@@ -173,7 +180,9 @@ class Node:
         return aux(self, 0)
 
     def _get_leafs(self):
-        """retrives all leafs under this node"""
+        """
+        Retrives all leafs under this node
+        """
         if self.is_leaf:
             return [self.val]
         # concat all leafs value of the node's childs
