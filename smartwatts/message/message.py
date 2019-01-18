@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module message
-"""
-
 
 class UnknowMessageTypeException(Exception):
     """
@@ -27,7 +23,7 @@ class UnknowMessageTypeException(Exception):
 
 class PoisonPillMessage:
     """
-    Class of message which allow to kill an actor
+    Message which allow to kill an actor
     """
 
 
@@ -39,7 +35,7 @@ class StartMessage:
 
 class OKMessage:
     """
-    Message used in synchrone communication to answer that the actor
+    Message used in synchron communication to answer that the actor
     completed the task previously asked
     """
 
@@ -50,4 +46,7 @@ class ErrorMessage:
     """
 
     def __init__(self, error_code):
+        """
+        :param error_code: Code of the error
+        """
         self.error_code = error_code
