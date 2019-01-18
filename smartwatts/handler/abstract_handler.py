@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Handler interface
-"""
-
 
 class AbstractHandler:
-    """ Class that handle a message of a given type"""
+    """
+    Class that handle a message of a given type
+    """
 
     def handle_message(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
 
         This is the method that should be called to handle received message
         this method call :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
@@ -34,12 +33,12 @@ class AbstractHandler:
 
         :return: The new actor's state
         :rtype: smartwatts.actor.state.BasicState
-
         """
         return self.handle(msg, state)
 
     def handle(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
 
         Override this method to implement the handler behaviour
 
@@ -49,17 +48,18 @@ class AbstractHandler:
 
         :return: The new actor's state
         :rtype: smartwatts.actor.state.BasicState
-
         """
         raise NotImplementedError()
 
 
 class AbstractInitHandler(AbstractHandler):
-    """ Class that handle a message of a given type if the actor is initialized
+    """
+    Class that handle a message of a given type if the actor is initialized
     """
 
     def handle_message(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
 
         This is the method that should be called to handle received message
 
@@ -74,7 +74,6 @@ class AbstractInitHandler(AbstractHandler):
 
         :return: The new actor's state
         :rtype: smartwatts.actor.state.BasicState
-
         """
         if not state.initialized:
             return state
