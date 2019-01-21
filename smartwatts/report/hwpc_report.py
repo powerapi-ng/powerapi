@@ -14,21 +14,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module hwpc_sensor which define the HWPCReport class
-"""
 from smartwatts.report.report import Report
 
 
 class HWPCReportCore(Report):
     """
     HWPCReportCore class
-    Encapuslation for core report
+    Encapuslation for Core report
     """
 
     def __init__(self, core_id=None):
-        # Report.__init__(self)
+        """
+        :param int core_id: Core id
+        """
+
+        #: (int): Core ID
         self.core_id = core_id
+
+        #: (dict): Events
         self.events = {}
 
     def __str__(self):
@@ -46,7 +49,7 @@ class HWPCReportCore(Report):
     def deserialize(self, json):
         """
         Feed the report with the JSON input
-          @json dict of events
+        :param dict json: JSON data.
         """
         for event_key, event_value in json.items():
             self.events[event_key] = int(event_value)
@@ -59,12 +62,16 @@ class HWPCReportSocket(Report):
     """
     def __init__(self, socket_id):
         """
-        socket:            socket id (int)
-        cores:             dict of cores
+        :param int socket_id: Socket id
         """
-        # Report.__init__(self)
+
+        #: (int): Socket ID
         self.socket_id = socket_id
+
+        #: (dict): Socket HWPCReportCore
         self.cores = {}
+
+        #: (str): Group ID
         self.group_id = None
 
     def __str__(self):
@@ -86,7 +93,7 @@ class HWPCReportSocket(Report):
     def deserialize(self, json):
         """
         Feed the report with the JSON input
-          @json: socket hwpc input
+        :param dict json: JSON data.
         """
         for core_key, core_value in json.items():
             hwpc_core = HWPCReportCore(int(core_key))
@@ -124,12 +131,13 @@ class HWPCReport(Report):
 
     def __init__(self, timestamp=None, sensor=None, target=None):
         """
-        timestamp: when the report is done
-        sensor:    sensor name
-        target:    target name
-        groups:    dict of group, a group is a dict of socket
+        :param time.Datetime timestamp: Timestamp when the report is done
+        :param str sensor: Sensor name
+        :param str target: Target name
         """
         Report.__init__(self, timestamp, sensor, target)
+
+        #: (dict): Dict of group, a group is a dict of Socket.
         self.groups = {}
 
     def __str__(self):
@@ -163,7 +171,7 @@ class HWPCReport(Report):
     def deserialize(self, json):
         """
         Feed the report with the JSON input
-          @json: full hwpc input
+        :param dict json: JSON data.
         """
         self.timestamp = json['timestamp']
         self.sensor = json['sensor']

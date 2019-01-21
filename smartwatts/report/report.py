@@ -14,29 +14,32 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module report
-"""
-
-from enum import Enum
-
 
 class Report:
-    """ Model base class """
+    """
+    Report abtract class.
+    """
 
     def __init__(self, timestamp, sensor, target):
+        """
+        :param time.Datetime timestamp: Timestamp of the report.
+        :param str sensor: Report sensor name.
+        :param str target: Report target name.
+        """
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
-    
+
     def serialize(self):
         """
-        return the JSON format of the report
+        Return the JSON format of the report
         """
         raise NotImplementedError()
 
     def deserialize(self, json):
         """
-        feed the report with the JSON input
+        Feed the report with the JSON input
+
+        :param dict json: JSON report.
         """
         raise NotImplementedError()

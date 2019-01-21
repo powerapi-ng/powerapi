@@ -18,14 +18,32 @@ from smartwatts.report import Report
 
 
 class PowerReport(Report):
-    """ PowerReport class """
+    """
+    PowerReport class
+    """
 
     def __init__(self, timestamp, sensor, target, power, metadata):
+        """
+        :param time.Datetime timestamp: Report timestamp.
+        :param str sensor: Sensor name.
+        :param str target: Target name.
+        :param float power: Power value.
+        :param dict metadata: Metadata values, can be anything that add
+                              useful informations.
+        """
         Report.__init__(self, timestamp, sensor, target)
+
+        #: (dict): Metadate values, can be anything that add useful
+        #: informations.
         self.metadata = metadata
+
+        #: (float): Power value.
         self.power = power
 
     def serialize(self):
+        """
+        Return the JSON format of the report
+        """
         json = {}
         json['timestamp'] = self.timestamp
         json['sensor'] = self.sensor
@@ -35,6 +53,10 @@ class PowerReport(Report):
         return json
 
     def deserialize(self, json):
+        """
+        Feed the report with the JSON input
+        :param dict json: JSON data.
+        """
         self.timestamp = json['timestamp']
         self.sensor = json['sensor']
         self.target = json['target']
