@@ -14,27 +14,40 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" Class that generalize formula behaviour """
-
 from smartwatts.actor import Actor, BasicState, SocketInterface
 
 
 class FormulaActor(Actor):
     """
-    Generalize formula behaviour
+    Formula abstract class. A Formula is an Actor which use data
+    for computing some new useful power estimation.
+
+    A Formula is design to be handle by a Dispatcher, and to send
+    result to a Pusher.
     """
 
     def __init__(self, name, actor_pusher, verbose=False, timeout=None):
         """
-        Parameters:
+        :param str name:                            Actor name
+        :param smartwatts.PusherActor actor_pusher: Pusher actor whom send
+                                                    results
+        :param bool verbose:                        Allow to display log
+        :param bool timeout:                        Time in millisecond to wait
+                                                    for a message before called
+                                                    timeout_handler.
         """
         Actor.__init__(self, name, verbose)
+
+        #: (smartwatts.PusherActor): Pusher actor whom send results.
         self.actor_pusher = actor_pusher
+
+        #: (smartwatts.BasicState): Basic state of the Formula.
         self.state = BasicState(Actor._initial_behaviour,
                                 SocketInterface(name, timeout))
 
     def setup(self):
-        """ Connect the formula to the pusher
+        """
+        Formula basic setup, Connect the formula to the pusher
         """
         Actor.setup(self)
         self.actor_pusher.connect(self.state.socket_interface.context)

@@ -8,13 +8,21 @@ Welcome to SmartWatts's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   intro
 
+.. toctree::
+   :maxdepth: 2
 
-Indices and tables
-==================
+   quickstart
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. toctree::
+   :maxdepth: 2
+
+   sensors 
+
+.. toctree::
+   :maxdepth: 3
+   :caption: API
+
+   _doc/smartwatts

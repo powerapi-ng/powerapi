@@ -14,53 +14,66 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Handler interface
-"""
-
 
 class AbstractHandler:
-    """ Handler interface """
+    """
+    Class that handle a message of a given type
+    """
 
     def handle_message(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
 
-        Parameters:
-            msg(Object): the message received by the actor
-            state(BasicState): The current actor's state
+        This is the method that should be called to handle received message
+        this method call :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
 
-        Return:
-            (BasicState): The new actor's state
+        :param Object msg: the message received by the actor
+        :param state: The current actor's state
+        :type state: smartwatts.actor.state.BasicState
+
+        :return: The new actor's state
+        :rtype: smartwatts.actor.state.BasicState
         """
         return self.handle(msg, state)
 
     def handle(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
 
-        Parameters:
-            msg(Object): the message received by the actor
-            state(BasicState): The current actor's state
+        Override this method to implement the handler behaviour
 
-        Return:
-            (BasicState): The new actor's state
+        :param Object msg: the message received by the actor
+        :param state: The current actor's state
+        :type state: smartwatts.actor.state.BasicState
+
+        :return: The new actor's state
+        :rtype: smartwatts.actor.state.BasicState
         """
         raise NotImplementedError()
 
 
 class AbstractInitHandler(AbstractHandler):
+    """
+    Class that handle a message of a given type if the actor is initialized
+    """
 
     def handle_message(self, msg, state):
-        """ Handle a message and return a the new state value of the actor
+        """
+        Handle a message and return a the new state value of the actor
+
+        This is the method that should be called to handle received message
 
         if the given state is not initialized, return the given state without
-        side effect. Otherwise, use the handle method to handle the message
+        side effect. Otherwise, use the
+        :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
+        method to handle the message
 
-        Parameters:
-            msg(Object): the message received by the actor
-            state(BasicState): The current actor's state
+        :param Object msg: the message received by the actor
+        :param state: The current actor's state
+        :type state: smartwatts.actor.state.BasicState
 
-        Return:
-            (BasicState): The new actor's state
+        :return: The new actor's state
+        :rtype: smartwatts.actor.state.BasicState
         """
         if not state.initialized:
             return state

@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module ActorTestFormula
-"""
 import time
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
@@ -26,22 +23,20 @@ from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
 
 class DummyHWPCReportHandler(AbstractHandler):
     """
-    A test formula that simulate data processing
+    A fake handler that simulate data processing
     """
 
     def __init__(self, actor_pusher):
         self.actor_pusher = actor_pusher
 
     def _process_report(self, report):
-        """ Wait 1 seconde and return a power report containg 42
+        """
+        Wait 1 second and return a power report containing 42
 
-        Parameters:
-            (smartwatts.report.Report): received report
+        :param smartwatts.Report report: Received report
 
-        Return:
-            (smartwatts.report.PowerReport): a power report containing
-                                             comsumption estimation
-
+        :return: A power report containing consumption estimation
+        :rtype:  smartwatts.PowerReport
         """
 
         time.sleep(1)
@@ -50,17 +45,16 @@ class DummyHWPCReportHandler(AbstractHandler):
         return result_msg
 
     def handle(self, msg, state):
-        """ process a report and send the result to the pusher actor
+        """
+        Process a report and send the result to the pusher actor
 
-        Parameters:
-            msg(smartwatts.report.Report) : received message
-            state(smartwatts.actor.BasicState) : current actor state
+        :param smartwatts.Report msg:       Received message
+        :param smartwatts.BasicState state: Actor state
 
-        Return:
-            state(smartwatts.actor.BasicState): new actor state
+        :return: New Actor state
+        :rtype:  smartwatts.BasicState
 
-        Raise:
-            UnknowMessageTypeException: if the *msg* is not a Report
+        :raises UnknowMessageTypeException: If the msg is not a Report
         """
         if not isinstance(msg, Report):
             raise UnknowMessageTypeException(type(msg))
@@ -72,22 +66,21 @@ class DummyHWPCReportHandler(AbstractHandler):
 
 class DummyFormulaActor(FormulaActor):
     """
-    ActorTestFormula class
-
-    A test formula that simulate data processing by waiting 1s and send a
+    A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
     """
 
     def __init__(self, name, actor_pusher, verbose=False):
         """
-        Parameters:
-            @pusher(smartwatts.pusher.ActorPusher): Pusher to whom this formula
-                                                    must send its reports
+        :param str name:                            Actor name
+        :param smartwatts.PusherActor actor_pusher: Pusher to send results.
         """
         FormulaActor.__init__(self, name, actor_pusher, verbose)
 
     def setup(self):
-        """ Initialize Handler """
+        """
+        Initialize Handler
+        """
         FormulaActor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         handler = DummyHWPCReportHandler(self.actor_pusher)

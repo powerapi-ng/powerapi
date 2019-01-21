@@ -40,15 +40,17 @@ class HWPCGroupBy(AbstractGroupBy):
     """
     def __init__(self, depth, primary=False):
         """
-        Parameters:
-            depth:(HWPCDepthLevel)
+        :param depth:
+        :type depth: HWPCDepthLevel
         """
         AbstractGroupBy.__init__(self, primary)
         self.depth = depth
         self.fields = ['sensor', 'socket', 'core'][:(depth + 1)]
 
     def extract(self, report):
-        """ See AbstractGroupBy.extract """
+        """
+        See :meth:`AbstractGroupBy.extract <smartwatts.group_by.abstract_group_by.AbstractGroupBy.extract>`
+        """
         if not _check_report_integrity(report):
             return []
 
@@ -79,14 +81,14 @@ class HWPCGroupBy(AbstractGroupBy):
 
 
 def _append_shared_groups(atomic_shared_reports, reports_list, depth):
-    """ Append shared groups to reports
+    """
+    Append shared groups to reports
 
-    Parameters:
-        shared_groups([(tuple, str, HWPCReportSocket)]): list of
-                                              (id_report, group_id, report)
-        reports_list([(tuple, HWPCReport)]): list of (id_report, report)
-
-    Return([(tuple, HWPCReport)]): list of (id_report, report)
+    :param shared_groups: list of (id_report, group_id, report)
+    :type shared_groups: [(tuple, str, HWPCReportSocket)]
+    :param reports_list: list of (id_report, report)
+    :type reports_list: [(tuple, HWPCReport)]
+    :rtype: [(tuple, HWPCReport)] list of (id_report, report)
 
     """
     for shared_report_id, group_id, socket_report in atomic_shared_reports:
@@ -103,9 +105,9 @@ def _append_shared_groups(atomic_shared_reports, reports_list, depth):
 
 
 def _check_report_integrity(report):
-    """ Check is report is valid
-
-    Return(boolean):
+    """
+    Check is report is valid
+    :rtype: boolean
     """
     if report.groups == {}:
         # check if the report contains at least one group
@@ -127,23 +129,22 @@ def _check_report_integrity(report):
 
 
 def _number_of_core_per_socket(group):
-    """compute the number of core per socket in this group
+    """
+    Compute the number of core per socket in this group
 
-    Parameter:
-        group({str:HWPCReportSocket}): group must be a valide group (composed
-                                       by socket, core, event)
-    Return:
-        (int): the number of core per socket in this group
-
+    :param group: group must be a valide group (composed by socket, core, event)
+    :type group: {str:HWPCReportSocket}
+    :rtype: int : the number of core per socket in this group
     """
     first_socket_report = list(group.values())[0]
     return len(first_socket_report.cores.values())
 
 
 def _extract_shared_groups(report):
-    """separate shared groups (like RAPL, PCU, ...) from non shared groups
+    """
+    Separate shared groups (like RAPL, PCU, ...) from non shared groups
 
-    Return([(group_id, {str:HWPCReportSocket})],
+    :rtype:([(group_id, {str:HWPCReportSocket})],
            [(group_id, {str:HWPCReportSocket})]): return the list of shared
                                                   groups and the list of non
                                                   shared groups
@@ -174,15 +175,18 @@ def _extract_shared_groups(report):
 
 
 def _split_reports(sensor_id, groups, depth):
-    """ split each report into atomic report depending of the needed depth
+    """
+    Split each report into atomic report depending of the needed depth
 
-    Parameters:
-        sensor_id(str): id of the report's sensor the groups were extracted from
-        groups((group_id, {HWPCReportSocket})): groups that contains report
-        depth(HWPCDepthLevel):
+    :param sensor_id: id of the report's sensor the groups were extracted from
+    :type sensor_id: str
+    :param groups: groups that contains report
+    :type groups:(group_id, {HWPCReportSocket})
+    :param depth:
+    :type depth: HWPCDepthLevel
 
-    Return([(tuple, str, HWPCReportSocket)]): list of
-                                              (id_report, group_id, report)
+    :rtype:[(tuple, str, HWPCReportSocket)]: list of
+                                             (id_report, group_id, report)    
     """
     # SOCKET level
     socket_reports = []
@@ -205,13 +209,13 @@ def _split_reports(sensor_id, groups, depth):
 
 
 def _merge_groups(root_report, atomic_reports):
-    """ merge groups of a same report in one report
+    """
+    Merge groups of a same report in one report
 
-    Parameters:
-        atomic_reports([(tuple, str, HWPCReportSocket)]):
-            list of (id_report, group_id, report)
+    :param atomic_reprots: list of (id_report, group_id, report)
+    :type  atomic_reprots:[(tuple, str, HWPCReportSocket)]
+    :rtype:[(tuple, HWPCReport)]
 
-    Return([(tuple, HWPCReport)]):
     """
     timestamp = root_report.timestamp
     sensor = root_report.sensor

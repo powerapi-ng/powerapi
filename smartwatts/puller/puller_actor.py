@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module actor_puller
-"""
-
 import time
 from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -30,11 +26,11 @@ class NoReportExtractedException(Exception):
     Exception raised when we can't extract a report from the given
     database
     """
-    pass
 
 
 class PullerState(BasicState):
-    """ Puller Actor State
+    """
+    Puller Actor State
 
     Contains in addition to BasicState values :
       - the database interface
@@ -42,29 +38,53 @@ class PullerState(BasicState):
     """
     def __init__(self, behaviour, socket_interface, database, report_filter,
                  frequency, autokill):
+        """
+        :param func behaviour: Function that define the initial_behaviour
+        :param SocketInterface socket_interface: Communication interface of the
+                                                 actor
+        :param BaseDB database: Allow to interact with a Database
+        :param Filter report_filter: Filter of the Puller
+        :param int frequency: Define (in ms) the sleep time between each
+                              read in the database.
+        :param bool autokill: Puller autokill himself when it finish to read
+                              all the database.
+        """
         BasicState.__init__(self, behaviour, socket_interface)
 
+        #: (BaseDB): Allow to interact with a Database
         self.database = database
+
+        #: (Filter): Filter of the puller
         self.report_filter = report_filter
+
+        #: (int): Define (in ms) the sleep time between each read in the
+        #: database.
         self.frequency = frequency
+
+        #: (bool): Puller autokill himself when it finish to read all the
+        #: database.
         self.autokill = autokill
 
 
 class PullerActor(Actor):
-    """ PullerActor class """
+    """
+    PullerActor class
+
+    A Puller allow to handle the reading of a database and to dispatch report
+    to many Dispatcher depending of some rules.
+    """
 
     def __init__(self, name, database, report_filter, frequency=0,
                  verbose=False, autokill=False):
         """
-        Initialization
-
-        Parameters:
-            @database:  BaseDB object
-            @filter:    Filter object
-            @frequency: define (in ms) the sleep time between each
-                        read in the database
-            @autokill:  if True, kill himself if timeout_handler
-                        return None (it means that all the db has been read)
+        :param str name: Actor name.
+        :param BaseDB database: Allow to interact with a Database.
+        :param Filter report_filter: Filter of the Puller.
+        :param int frequency: Define (in ms) the sleep time between each
+                              read in the database.
+        :param bool verbose: Allow to display log.
+        :param bool autokill: Puller autokill himself when it finish to read
+                              all the database.
         """
         Actor.__init__(self, name, verbose)
         self.state = PullerState(Actor._initial_behaviour,
@@ -72,8 +92,8 @@ class PullerActor(Actor):
                                  report_filter, frequency, autokill)
 
     def setup(self):
-        """define StartMessage handler and PoisonPillMessage handler
-
+        """
+        Define StartMessage handler and PoisonPillMessage handler
         """
         Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())

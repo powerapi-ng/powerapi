@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module stddb
-"""
-
 import os
 from smartwatts.database.base_db import BaseDB
 
@@ -33,13 +29,19 @@ class StdoutDB(BaseDB):
         pass
 
     def load(self):
-        """ Override """
+        """
+        Override from BaseDB
+        """
         pass
 
     def get_next(self):
-        """ Override """
+        """
+        Override from BaseDB
+        """
         pass
 
     def save(self, json):
-        """ Override """
+        """
+        Override from BaseDB
+        """
         print('['+str(os.getpid())+']' + ' new message save.')

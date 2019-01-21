@@ -24,12 +24,22 @@ import datetime
 
 
 def timestamp_to_datetime(timestamp):
-    """ Function which create datetime from a timestamp value """
+    """
+    Create datetime from a timestamp value
+
+    :param int timestamp:
+    :rtype: datetime.datetime
+    """
     return datetime.datetime.utcfromtimestamp(timestamp/1000)
 
 
 def datetime_to_timestamp(date):
-    """ Cast a datetime object to a simple timestamp """
+    """
+    Cast a datetime object to a simple timestamp
+
+    :param datetime.datetime date:
+    :rtype: int
+    """
     return int(datetime.datetime.timestamp(date)*1000)
 
 
@@ -37,6 +47,10 @@ def dict_merge(dict1, dict2):
     """
     Recursive dict merge, act like dict.update() but update
     all level and not only top-level.
+
+    :param dict dict1:
+    :param dict dict2:
+
     """
     for key, value in dict2.items():
         if (key in dict1 and isinstance(dict1[key], dict) and

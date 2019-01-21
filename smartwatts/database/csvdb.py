@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module csvdb
-"""
-
 import csv
 
 from smartwatts.database.base_db import BaseDB
@@ -29,34 +25,37 @@ COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
 
 
 class CsvBadFilePathError(Exception):
-    """ Error when a file is not found """
-    pass
+    """
+    Exception raised when file is not found
+    """
 
 
 class CsvBadCommonKeys(Exception):
-    """ Error when a common keys is not found """
-    pass
+    """
+    Exception raised when a common keys is not found
+    """
 
 
 class CsvDB(BaseDB):
     """
-    CsvDB class
+    CsvDB class herited from BaseDB
+
+    This class define the behaviour for reading some csv file.
     """
 
     def __init__(self, report_model, files_name):
         """
-        Parameters:
-          @files_name:   list of file name .csv, each one
-                         is a different group.
-          @report_model: XXXModel object.
-
-        Attributs:
-          database:
-              keys: (timestamp, sensor, target)
-              values: HWPCReport
+        :param list files_name: list of file name .csv
+        :param report_model: object that herit from ReportModel and define
+                             the type of Report
+        :type report_model: martwatts.ReportModel
         """
         BaseDB.__init__(self, report_model)
+
+        #: (list): list of file name .csv
         self.files_name = files_name
+
+        # intern memory
         self.tmp = {
             path_file: {
                 'next_line': [],
@@ -64,17 +63,28 @@ class CsvDB(BaseDB):
             }
             for path_file in files_name
         }
+
+        #: (int): allow to know if we read a new report, or the same
+        #: current timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(0)
 
     def _next(self, path_file):
-        """ Get next row safely """
+        """
+        Get next row, None otherwise
+
+        :param str path_file: file name we want to read
+        """
         try:
             return self.tmp[path_file]['csv'].__next__()
         except StopIteration:
             return None
 
     def load(self):
-        """ Override """
+        """
+        Override from BaseDB.
+
+        Read first line of all the .csv file and check if the pattern is good.
+        """
 
         # Open all files with csv and read first line
         for path_file in self.files_name:
@@ -94,7 +104,14 @@ class CsvDB(BaseDB):
             int(self.tmp[self.files_name[0]]['next_line']['timestamp']))
 
     def get_next(self):
-        """ Override """
+        """
+        Override from BaseDB.
+
+        Get the next report from csv files, or None is there is no more.
+
+        :return: The next report
+        :rtype: formated JSON from report_model
+        """
 
         # Dict to return
         json = {}
@@ -140,5 +157,7 @@ class CsvDB(BaseDB):
         return json
 
     def save(self, json):
-        """ Override """
+        """
+        Not implemented yet.
+        """
         raise NotImplementedError()

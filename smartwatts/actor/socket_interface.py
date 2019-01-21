@@ -1,34 +1,83 @@
-""" class SocketInterface """
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pickle
 import zmq
 
 
 class SocketInterface:
-    """ Class that group all method that handle sockets """
+    """
+    Interface to handle comunication to/from the actor
+
+    general methods :
+
+    - :meth:`send_monitor <smartwatts.actor.socket_interface.SocketInterface.send_monitor>`
+
+    client interface methods :
+
+    - :meth:`connect <smartwatts.actor.socket_interface.SocketInterface.connect>`
+    - :meth:`disconnect <smartwatts.actor.socket_interface.SocketInterface.disconnect>`
+    - :meth:`monitor <smartwatts.actor.socket_interface.SocketInterface.monitor>`
+    - :meth:`send <smartwatts.actor.socket_interface.SocketInterface.send>`
+
+    server interface methods :
+
+    - :meth:`setup <smartwatts.actor.socket_interface.SocketInterface.setup>`
+    - :meth:`receive <smartwatts.actor.socket_interface.SocketInterface.receive>`
+    - :meth:`close <smartwatts.actor.socket_interface.SocketInterface.close>`
+    """
 
     def __init__(self, name, timeout):
         """
-        Parameters:
-            name(str): name of the actor using this interface
+        :param str name: name of the actor using this interface
+        :param int timeout: time in millisecond to wait for a message
         """
+
+        #: (int): Time in millisecond to wait for a message before execute
+        #:        timeout_handler
         self.timeout = timeout
+
+        #: (str): Address of the pull socket
         self.pull_socket_address = 'ipc://@' + name
+
+        #: (str): Address of the monitor socket
         self.monitor_socket_address = 'ipc://@monitor_' + name
 
+        #: (zmq.Context): ZMQ Context of the process
         self.context = None
+
+        #: (zmq.Poller): ZMQ Poller for read many socket at same time
         self.poller = None
 
+        #: (zmq.Socket): ZMQ Pull socket for receiving data message
         self.pull_socket = None
+
+        #: (zmq.Socket): ZMQ Pair socket for receiving control message
         self.monitor_socket = None
 
         # This socket is used to connect to the pull socket of this actor. It
         # won't be created on the actor's process but on the process that want
         # to connect to the pull socket of this actor
+        #: (zmq.Socket): ZMQ Push socket for sending message to this actor
         self.push_socket = None
 
     def setup(self):
-        """ Initialize zmq context and sockets """
+        """
+        Initialize zmq context and sockets
+        """
         # Basic initialization for ZMQ.
         self.context = zmq.Context()
         self.poller = zmq.Poller()
@@ -44,11 +93,13 @@ class SocketInterface:
                                                   self.monitor_socket_address)
 
     def _create_socket(self, socket_type, socket_addr):
-        """create a socket of the given type, bind it to the given address and
+        """
+        Create a socket of the given type, bind it to the given address and
         register it to the poller
 
-        Return:
-            (zmq.Socket): the initialized socket
+        :param int socket_type: type of the socket to open
+        :param str socket_addr: address of the socket to open
+        :return zmq.Socket: the initialized socket
         """
         socket = self.context.socket(socket_type)
         socket.bind(socket_addr)
@@ -56,10 +107,12 @@ class SocketInterface:
         return socket
 
     def receive(self):
-        """ Wait for messages and return them
+        """
+        Block until a message was received (or until timeout) an return the
+        received messages
 
-        Return: a list of received messages since the last receive call
-                or [] if timeout
+        :return: the list of received messages or an empty list if timeout
+        :rtype: a list of Object
         """
         events = self.poller.poll(self.timeout)
 
@@ -67,9 +120,8 @@ class SocketInterface:
                 if event == zmq.POLLIN]
 
     def close(self):
-        """ close socket interface
-
-        close all socket handle by this interface
+        """
+        Close all socket handle by this interface
         """
         if self.pull_socket is not None:
             self.pull_socket.close()
@@ -79,13 +131,20 @@ class SocketInterface:
 
     def _send_serialized(self, socket, msg):
         """
-        Allow to send a serialized msg with pickle
+        Send a serialized msg with pickle to the given socket
+
+        :param zmq.Socket socket: socket used to send the message
+        :param Object msg: message to send
         """
         socket.send(pickle.dumps(msg))
 
     def _recv_serialized(self, socket):
         """
-        Allow to recv a serialized msg with pickle
+        Wait for a message from the given socket and return its deserialized
+        value (using pickle)
+
+        :param zmq.Socket socket: socket to wait for a reception
+        :return Object: the received message
         """
         msg = pickle.loads(socket.recv())
         return msg
@@ -94,20 +153,18 @@ class SocketInterface:
         """
         Connect to the pull socket of this actor
 
-        open a push socket on the process that want to communicate with this
+        Open a push socket on the process that want to communicate with this
         actor
 
-        parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  communicate with this actor
-
+        :param zmq.Context context: ZMQ context of the process that want to
+                                    communicate with this actor
         """
         self.push_socket = context.socket(zmq.PUSH)
         self.push_socket.connect(self.pull_socket_address)
 
     def disconnect(self):
         """
-        close connection to the pull socket and monitor socket of this actor
+        Close connection to the pull socket and monitor socket of this actor
         """
         if self.push_socket is not None:
             self.push_socket.close()
@@ -119,20 +176,26 @@ class SocketInterface:
         """
         Connect to the monitor socket of this actor
 
-        open a pair socket on the process that want to monitor this actor
+        Open a pair socket on the process that want to monitor this actor
 
-        parameters:
-            context(zmq.Context): ZMQ context of the process that want to
-                                  monitor this actor
-
+        :param zmq.Context context: ZMQ context of the process that want to
+                                    monitor this actor
         """
         self.monitor_socket = context.socket(zmq.PAIR)
         self.monitor_socket.connect(self.monitor_socket_address)
 
     def send_monitor(self, msg):
-        """ Send a message to this actor the monitor socket"""
+        """
+        Send a message on the monitor canal
+
+        :param Object msg: message to send
+        """
         self._send_serialized(self.monitor_socket, msg)
 
     def send(self, msg):
-        """ Send a message on the push socket"""
+        """
+        Send a message on data canal
+
+        :param Object msg: message to send
+        """
         self._send_serialized(self.push_socket, msg)

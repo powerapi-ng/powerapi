@@ -14,71 +14,66 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module base_db
-
-This module define every common function that need to be implemented
-by each DB module. A database module correspond to a kind of BDD.
-For example, Mongodb, influxdb, csv are different kind of BDD.
-"""
-
 
 class DBErrorException(Exception):
 
-    """ Exception raised when an error occuried when using a database
+    """
+    Exception raised when an error occuried when using a database
     """
     def __init__(self, msg):
         """
-        Parameters:
-            @msg(str): error message
+        :param str msg: Message of the error
         """
+        super().__init__(msg)
         self.msg = msg
 
 
 class BaseDB:
     """
-    BaseDB class.
+    Abstract class which define every common function for database uses.
 
-    JSON HWPC format:
-    {
-     'timestamp': $int,
-     'sensor': '$str',
-     'target': '$str',
-     'groups' : {
-        '$group_name': {
-           '$socket_id': {
-               '$core_id': {
-                   '$event_name': '$int',
-                   ...
-               }
-               ...
-           }
-           ...
-        }
-        ...
-     }
-    }
+    This class define every common function that need to be implemented
+    by each DB module. A database module correspond to a kind of BDD.
+    For example, Mongodb, influxdb, csv are different kind of BDD.
     """
+
     def __init__(self, report_model):
         """
-        @report_model: XXXModel Object.
+        :param report_model: object that herit from ReportModel and define
+                             the type of Report
+        :type report_model: smartwatts.ReportModel
         """
+        #: (smartwatts.ReportModel): Object that herit from ReportModel and
+        #: define the type of Report
         self.report_model = report_model
 
     def load(self):
         """
-        Allow to load the database
+        Function that allow to load the database. Depending of the type,
+        different process can happen.
+
+        .. note:: Need to be overrided
         """
         raise NotImplementedError()
 
     def get_next(self):
         """
-        Return the next report on the db or none if there is none
+        Get the next report on the database, or None if there is no more
+        data.
+
+        :return: The next report
+        :rtype: JSON formated and feedable for Report
+
+        .. note:: Need to be overrided
         """
         raise NotImplementedError()
 
     def save(self, json):
         """
         Allow to save a json input in the db
+
+        :param dict json: JSON from Report serialize function
+
+        .. note:: Need to be overrided
         """
         raise NotImplementedError()
