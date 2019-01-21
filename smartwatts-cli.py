@@ -140,7 +140,7 @@ def main():
 
     cpt_ok = 0
     while cpt_ok < 3:
-        events = poller.poll(100)
+        events = poller.poll(1000)
         msgs = [pickle.loads(sock.recv()) for sock, event in events
                 if event == zmq.POLLIN]
         for msg in msgs:
