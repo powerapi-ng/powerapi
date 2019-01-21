@@ -14,26 +14,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module hwpc_model
-"""
-
 from smartwatts.report_model import ReportModel, KEYS_CSV_COMMON, KEYS_COMMON
 
 
 class HWPCModel(ReportModel):
     """
     HWPCModel class.
+
     It define all the function for get the hwpc necessary field from
     any kind of database.
     """
 
     def from_mongodb(self, json):
-        """ Override """
+        """
+        Get HWPCReport from a MongoDB database.
+        """
         return json
 
     def from_csvdb(self, file_name, row):
-        """ Override """
+        """
+        Get HWPCReport from a few csv files.
+        """
         final_dict = {key: row[key] for key in KEYS_COMMON}
         final_dict['groups'] = {}
 
