@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Module class PusherActor
-"""
-
 from smartwatts.actor import Actor, BasicState, SocketInterface
 from smartwatts.pusher import PowerHandler, StartHandler
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -25,22 +21,46 @@ from smartwatts.handler import PoisonPillMessageHandler
 
 
 class PusherState(BasicState):
-    """ Pusher Actor State
+    """
+    Pusher Actor State
 
     Contains in addition to BasicState values :
-      - the database interface
+      - The database interface
     """
     def __init__(self, behaviour, socket_interface, database):
+        """
+        :param func behaviour: Function that define the initial_behaviour.
+        :param SocketInterface socket_interface: Communication interface of the
+                                                 actor.
+        :param BaseDB database: Database for saving data.
+        """
         BasicState.__init__(self, behaviour, socket_interface)
+
+        #: (BaseDB): Database for saving data.
         self.database = database
 
 
 class PusherActor(Actor):
-    """ PusherActor class """
+    """
+    PusherActor class
+
+    The Pusher allow to save Report sent by Formula.
+    """
 
     def __init__(self, name, report_type, database, verbose=False):
+        """
+        :param str name: Pusher name.
+        :param Report report_type: Type of the report that the pusher
+                                   handle.
+        :param BaseDB database: Database use for saving data.
+        :param bool verbose: Allow to display log.
+        """
         Actor.__init__(self, name, verbose)
+
+        #: (Report): Type of the report that the pusher handle.
         self.report_type = report_type
+
+        #: (State): State of the actor.
         self.state = PusherState(PusherActor._initial_behaviour,
                                  SocketInterface(name, 3000), database)
 
@@ -56,11 +76,9 @@ class PusherActor(Actor):
 
     def _initial_behaviour(self):
         """
-        Override
-
         Initial behaviour of Pusher actor
 
-        wait for a message, and handle it with the correct handler
+        Wait for a message, and handle it with the correct handler
         if the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """

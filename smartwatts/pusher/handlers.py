@@ -1,6 +1,19 @@
-"""
-Handlers used by PusherActor
-"""
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from smartwatts.handler import AbstractInitHandler, AbstractHandler
 from smartwatts.report import PowerReport
 from smartwatts.message import ErrorMessage
@@ -9,10 +22,16 @@ from smartwatts.database import DBErrorException
 
 
 class StartHandler(AbstractHandler):
-    """ Handle Start Message """
+    """
+    Handle Start Message
+    """
 
     def handle(self, msg, state):
-        """ Initialize the output database
+        """
+        Initialize the output database
+
+        :param smartwatts.StartMessage msg: Message that initialize the actor.
+        :param smartwatts.BasicState state: State of the actor.
         """
 
         # If it's already initialized, return state
@@ -38,14 +57,15 @@ class StartHandler(AbstractHandler):
 
 class PowerHandler(AbstractInitHandler):
     """
-    HWPCHandler class
+    Allow to save the PowerReport received.
     """
 
     def handle(self, msg, state):
         """
-        Override
-
         Save the msg in the database
+
+        :param smartwatts.PowerReport msg: PowerReport to save.
+        :param smartwatts.BasicState state: State of the actor.
         """
         if not isinstance(msg, PowerReport):
             return state
