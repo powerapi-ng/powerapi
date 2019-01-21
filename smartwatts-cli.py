@@ -26,7 +26,7 @@ from smartwatts.database import MongoDB
 from smartwatts.pusher import PusherActor
 from smartwatts.formula import RAPLFormulaActor
 from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
-from smartwatts.filter import HWPCFilter
+from smartwatts.filter import Filter
 from smartwatts.puller import PullerActor
 from smartwatts.report import HWPCReport, PowerReport
 from smartwatts.report_model import HWPCModel
@@ -97,10 +97,10 @@ def main():
     input_mongodb = MongoDB(args.input_hostname, args.input_port,
                             args.input_db, args.input_collection,
                             report_model=HWPCModel())
-    hwpc_filter = HWPCFilter()
-    hwpc_filter.filter(lambda msg: True, dispatcher)
+    report_filter = Filter()
+    report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         hwpc_filter, 0, verbose=args.verbose, autokill=True)
+                         report_filter, 0, verbose=args.verbose, autokill=True)
 
     ##########################################################################
     # Actor start step

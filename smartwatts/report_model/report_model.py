@@ -26,6 +26,12 @@ class ReportModel:
     to get a report from every kind of db.
     """
 
+    def get_type(self):
+        """
+        Return the type of report
+        """
+        raise NotImplementedError()
+
     def from_mongodb(self, json):
         """
         Get the mongodb report

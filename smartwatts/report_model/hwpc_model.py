@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from smartwatts.report_model import ReportModel, KEYS_CSV_COMMON, KEYS_COMMON
+from smartwatts.report import HWPCReport
 
 
 class HWPCModel(ReportModel):
@@ -24,6 +25,12 @@ class HWPCModel(ReportModel):
     It define all the function for get the hwpc necessary field from
     any kind of database.
     """
+
+    def get_type(self):
+        """
+        Return the type of report
+        """
+        return HWPCReport
 
     def from_mongodb(self, json):
         """
