@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import AbstractHandler
+from smartwatts.handler import Handler
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 
 
-class PoisonPillMessageHandler(AbstractHandler):
+class PoisonPillMessageHandler(Handler):
     """
     Generic handler for PoisonPillMessage
     """

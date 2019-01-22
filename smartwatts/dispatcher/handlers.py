@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import AbstractInitHandler, AbstractHandler
+from smartwatts.handler import InitHandler, Handler
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.message import OKMessage, StartMessage
 
 
-class StartHandler(AbstractHandler):
+class StartHandler(Handler):
     """
     Initialize the received state
     """
@@ -44,7 +44,7 @@ class StartHandler(AbstractHandler):
         return state
 
 
-class FormulaDispatcherReportHandler(AbstractInitHandler):
+class FormulaDispatcherReportHandler(InitHandler):
     """
     Split received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses reports.

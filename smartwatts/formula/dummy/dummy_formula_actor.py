@@ -18,10 +18,10 @@ import time
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.report import Report, PowerReport
-from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
+from smartwatts.handler import Handler, PoisonPillMessageHandler
 
 
-class DummyHWPCReportHandler(AbstractHandler):
+class DummyHWPCReportHandler(Handler):
     """
     A fake handler that simulate data processing
     """

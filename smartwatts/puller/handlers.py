@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import AbstractInitHandler, AbstractHandler
+from smartwatts.handler import Handler
 from smartwatts.database import DBErrorException
 from smartwatts.message import ErrorMessage, OKMessage, StartMessage
 
@@ -26,7 +26,7 @@ class NoReportExtractedException(Exception):
     """
 
 
-class StartHandler(AbstractHandler):
+class StartHandler(Handler):
     """
     Initialize the database interface
     """

@@ -17,12 +17,12 @@
 import math
 
 from smartwatts.formula.formula_actor import FormulaActor
-from smartwatts.handler import AbstractHandler, PoisonPillMessageHandler
+from smartwatts.handler import Handler, PoisonPillMessageHandler
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
 from smartwatts.report import HWPCReport, PowerReport
 
 
-class RAPLFormulaHWPCReportHandler(AbstractHandler):
+class RAPLFormulaHWPCReportHandler(Handler):
     """
     This formula convert RAPL events counter value contained in a HWPC report
     to power reports.

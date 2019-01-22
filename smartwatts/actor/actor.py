@@ -99,7 +99,7 @@ class Actor(multiprocessing.Process):
         #: (function): function activated when no message was
         #: received since `timeout` milliseconds
         self.timeout_handler = None
-        #: ([(type, smartwatts.handler.abstract_handler.AbstractHandler)]):
+        #: ([(type, smartwatts.handler.handler.Handler)]):
         #: mapping between message type and handler that the mapped handler
         #: must handle
         self.handlers = []
@@ -160,7 +160,7 @@ class Actor(multiprocessing.Process):
 
         :param Object msg: the received message
         :return: the handler corresponding to the given message type
-        :rtype: smartwatts.handler.AbstractHandler
+        :rtype: smartwatts.handler.Handler
 
         :raises UnknowMessageTypeException: if no handler could be find
         """
@@ -177,7 +177,7 @@ class Actor(multiprocessing.Process):
         :param type message_type: type of the message that the handler can
                                   handle
         :param handler: handler that will handle all messages of the given type
-        :type handler: smartwatts.handler.AbstractHandler
+        :type handler: smartwatts.handler.Handler
         """
         self.handlers.append((message_type, handler))
 
