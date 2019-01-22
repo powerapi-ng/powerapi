@@ -14,14 +14,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Abstract Group by rule
-"""
 
-
-class AbstractGroupBy:
+class GroupBy:
     """
-    Abstract Group by rule
+    Group by rule
     """
     def __init__(self, primary=False):
         self.is_primary = primary

@@ -206,7 +206,7 @@ class DispatcherActor(Actor):
         :param Type report_class: Type of the message that the
                                   group_by rule must handle
         :param group_by_rule: Group_by rule to add
-        :type group_by_rule:  smartwatts.group_by.AbstractGroupBy
+        :type group_by_rule:  smartwatts.group_by.GroupBy
         """
         if group_by_rule.is_primary:
             if self.primary_group_by_rule is not None:
