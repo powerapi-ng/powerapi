@@ -177,7 +177,7 @@ class DispatcherActor(Actor):
         """
         for name, formula in self.state.get_all_formula():
             self.log('kill ' + str(name))
-            formula.kill_push()
+            formula.send(PoisonPillMessage())
             formula.join()
 
     def _create_factory(self):
