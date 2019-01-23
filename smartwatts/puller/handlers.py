@@ -58,14 +58,14 @@ class StartHandler(Handler):
         try:
             state.database.load()
         except DBError as error:
-            state.socket_interface.send_monitor(ErrorMessage(error.msg))
+            state.socket_interface.send_control(ErrorMessage(error.msg))
             return state
 
         # Connect to all dispatcher
         for _, dispatcher in state.report_filter.filters:
-            dispatcher.connect(state.socket_interface.context)
+            dispatcher.connect_data(state.socket_interface.context)
 
         state.initialized = True
-        state.socket_interface.send_monitor(OKMessage())
+        state.socket_interface.send_control(OKMessage())
         state.behaviour = self.next_behaviour
         return state

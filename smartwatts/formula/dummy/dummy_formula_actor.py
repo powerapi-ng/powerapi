@@ -60,7 +60,7 @@ class DummyHWPCReportHandler(Handler):
             raise UnknowMessageTypeException(type(msg))
 
         result = self._process_report(msg)
-        self.actor_pusher.send(result)
+        self.actor_pusher.send_data(result)
         return state
 
 

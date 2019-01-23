@@ -46,12 +46,12 @@ class StartHandler(Handler):
         try:
             state.database.load()
         except DBError as error:
-            state.socket_interface.send_monitor(ErrorMessage(error.msg))
+            state.socket_interface.send_control(ErrorMessage(error.msg))
             return state
 
         # Else, we can initialize state
         state.initialized = True
-        state.socket_interface.send_monitor(OKMessage())
+        state.socket_interface.send_control(OKMessage())
         return state
 
 

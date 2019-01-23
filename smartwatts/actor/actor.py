@@ -37,13 +37,13 @@ class Actor(multiprocessing.Process):
     +=================================+============================================================================================+
     | Accessible from Client/Server   | :meth:`log <smartwatts.actor.actor.Actor.log>`                                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Client interface                | :meth:`connect <smartwatts.actor.actor.Actor.connect>`                                     |
+    | Client interface                | :meth:`connect_data <smartwatts.actor.actor.Actor.connect_data>`                           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`monitor <smartwatts.actor.actor.Actor.monitor>`                                     |
+    |                                 | :meth:`connect_control <smartwatts.actor.actor.Actor.connect_control>`                     |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    |                                 | :meth:`send_control <smartwatts.actor.actor.Actor.send_control>`                           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send <smartwatts.actor.actor.Actor.send>`                                           |
+    |                                 | :meth:`send_data <smartwatts.actor.actor.Actor.send_data>`                                 |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`kill <smartwatts.actor.actor.Actor.kill>`                                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
@@ -53,7 +53,7 @@ class Actor(multiprocessing.Process):
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`terminated_behaviour <smartwatts.actor.actor.Actor.terminated_behaviour>`           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    |                                 | :meth:`send_control <smartwatts.actor.actor.Actor.send_control>`                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -197,7 +197,7 @@ class Actor(multiprocessing.Process):
         """
         pass
 
-    def connect(self, context):
+    def connect_data(self, context):
         """
         Open a canal that can be use for unidirectional communication to this
         actor
@@ -206,37 +206,37 @@ class Actor(multiprocessing.Process):
                         communicate with this actor
         :type context: zmq.Context
         """
-        self.state.socket_interface.connect(context)
+        self.state.socket_interface.connect_data(context)
         self.log('connected to ' + self.name)
 
-    def monitor(self, context):
+    def connect_control(self, context):
         """
-        Open a monitor canal with this actor. An actor can have only one
-        monitor open at the same time. Open a pair socket on the process
-        that want to monitor this actor
+        Open a control canal with this actor. An actor can have only one
+        control open at the same time. Open a pair socket on the process
+        that want to control this actor
 
         :param context: ZMQ context of the process that want to
                         communicate with this actor
         :type context: zmq.Context
         """
-        self.state.socket_interface.monitor(context)
-        self.log('monitor' + self.name)
+        self.state.socket_interface.connect_control(context)
+        self.log('control' + self.name)
 
-    def send_monitor(self, msg):
+    def send_control(self, msg):
         """
-        Send a message to this actor on the monitor canal
+        Send a message to this actor on the control canal
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send_monitor(msg)
+        self.state.socket_interface.send_control(msg)
 
-    def send(self, msg):
+    def send_data(self, msg):
         """
         Send a msg to this actor using the data canal
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send(msg)
+        self.state.socket_interface.send_data(msg)
         self.log('sent ' + str(msg) + ' to ' + self.name)
 
     def kill(self):
@@ -245,6 +245,6 @@ class Actor(multiprocessing.Process):
         :class:`PoisonPillMessage
         <smartwatts.message.message.PoisonPillMessage>`
         """
-        self.send_monitor(PoisonPillMessage())
+        self.send_control(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
         self.state.socket_interface.disconnect()
