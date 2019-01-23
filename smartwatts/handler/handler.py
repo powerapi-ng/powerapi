@@ -15,6 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+class HandlerException(Exception):
+    """
+    Exception raised when a problem appear in a handler
+    """
+    def __init__(self, msg):
+        """
+        :param str msg: Message of the error
+        """
+        super().__init__(msg)
+
+
 class Handler:
     """
     Class that handle a message of a given type

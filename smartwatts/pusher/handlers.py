@@ -18,7 +18,7 @@ from smartwatts.handler import InitHandler, Handler
 from smartwatts.report import PowerReport
 from smartwatts.message import ErrorMessage
 from smartwatts.message import OKMessage, StartMessage
-from smartwatts.database import DBErrorException
+from smartwatts.database import DBError
 
 
 class StartHandler(Handler):
@@ -45,7 +45,7 @@ class StartHandler(Handler):
         # If load database fail, return state
         try:
             state.database.load()
-        except DBErrorException as error:
+        except DBError as error:
             state.socket_interface.send_monitor(ErrorMessage(error.msg))
             return state
 

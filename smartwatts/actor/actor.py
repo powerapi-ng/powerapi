@@ -21,6 +21,7 @@ import setproctitle
 
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
+from smartwatts.handler import HandlerException
 
 
 class Actor(multiprocessing.Process):
@@ -199,8 +200,13 @@ class Actor(multiprocessing.Process):
         # Message
         else:
             for msg in msg_list:
-                handler = self.get_corresponding_handler(msg)
-                self.state = handler.handle_message(msg, self.state)
+                try:
+                    handler = self.get_corresponding_handler(msg)
+                    self.state = handler.handle_message(msg, self.state)
+                except UnknowMessageTypeException:
+                    pass
+                except HandlerException as handler_except:
+                    self.log(handler_except)
 
     def _kill_process(self):
         """

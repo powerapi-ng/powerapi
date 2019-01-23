@@ -6,5 +6,5 @@ from smartwatts.database.mongodb import MongoNeedReportModelError
 from smartwatts.database.mongodb import MongoSaveInReadModeError
 from smartwatts.database.mongodb import MongoGetNextInSaveModeError
 from smartwatts.database.csvdb import CsvDB, CsvBadFilePathError
-from smartwatts.database.csvdb import CsvBadCommonKeys
-from smartwatts.database.base_db import DBErrorException
+from smartwatts.database.csvdb import CsvBadCommonKeysError
+from smartwatts.database.base_db import DBError

@@ -1,2 +1,2 @@
-from smartwatts.handler.handler import Handler, InitHandler
+from smartwatts.handler.handler import Handler, InitHandler, HandlerException
 from smartwatts.handler.poison_pill_message_handler import PoisonPillMessageHandler

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from smartwatts.handler import Handler
-from smartwatts.database import DBErrorException
+from smartwatts.database import DBError
 from smartwatts.message import ErrorMessage, OKMessage, StartMessage
 
 
@@ -57,7 +57,7 @@ class StartHandler(Handler):
 
         try:
             state.database.load()
-        except DBErrorException as error:
+        except DBError as error:
             state.socket_interface.send_monitor(ErrorMessage(error.msg))
             return state
 
