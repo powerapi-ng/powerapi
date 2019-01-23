@@ -19,7 +19,7 @@ Module test_filter
 """
 
 import pytest
-from smartwatts.filter import HWPCFilter, FilterUselessError
+from smartwatts.filter import Filter, FilterUselessError
 from smartwatts.report import HWPCReport
 from smartwatts.report_model import HWPCModel
 from smartwatts.database import MongoDB
@@ -29,7 +29,7 @@ class TestFilter:
 
     def test_without_filter(self):
         """ Test filter without any filter, raise an error """
-        hwpc_filter = HWPCFilter()
+        hwpc_filter = Filter()
         with pytest.raises(FilterUselessError) as pytest_wrapped:
             hwpc_filter.route(HWPCReport())
         assert pytest_wrapped.type == FilterUselessError
@@ -45,7 +45,7 @@ class TestFilter:
         mongodb = MongoDB("localhost", 27017, "test_filter",
                           "test_filter1", report_model=HWPCModel())
         mongodb.load()
-        hwpc_filter = HWPCFilter()
+        hwpc_filter = Filter()
         hwpc_filter.filter(lambda msg:
                            True if "sensor" in msg.sensor else False,
                            1)

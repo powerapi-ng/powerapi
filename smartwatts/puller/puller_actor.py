@@ -87,6 +87,8 @@ class PullerActor(Actor):
                               all the database.
         """
         Actor.__init__(self, name, verbose)
+
+        #: (State): Actor State.
         self.state = PullerState(Actor._initial_behaviour,
                                  SocketInterface(name, None), database,
                                  report_filter, frequency, autokill)
@@ -98,9 +100,9 @@ class PullerActor(Actor):
         Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(StartMessage,
-                         StartHandler(PullerActor.read_behaviour))
+                         StartHandler(PullerActor._read_behaviour))
 
-    def read_behaviour(self):
+    def _read_behaviour(self):
         """
         Puller behaviour which read all the database, then autokill or
         reconfigure behaviour with _initial_behaviour
@@ -128,7 +130,7 @@ class PullerActor(Actor):
                 raise NoReportExtractedException()
 
             # Deserialization
-            report = state.report_filter.get_type()()
+            report = state.database.report_model.get_type()()
             report.deserialize(json)
 
             # Filter the report
@@ -141,7 +143,7 @@ class PullerActor(Actor):
                 (report, dispatchers) = get_report_dispatcher(self.state)
             except NoReportExtractedException:
                 for _, dispatcher in self.state.report_filter.filters:
-                    dispatcher.kill_push()
+                    dispatcher.send(PoisonPillMessage())
                 if self.state.autokill:
                     self.state.alive = False
                 break

@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import AbstractInitHandler, AbstractHandler
+from smartwatts.handler import InitHandler, Handler
 from smartwatts.report import PowerReport
 from smartwatts.message import ErrorMessage
 from smartwatts.message import OKMessage, StartMessage
-from smartwatts.database import DBErrorException
+from smartwatts.database import DBError
 
 
-class StartHandler(AbstractHandler):
+class StartHandler(Handler):
     """
     Handle Start Message
     """
@@ -45,7 +45,7 @@ class StartHandler(AbstractHandler):
         # If load database fail, return state
         try:
             state.database.load()
-        except DBErrorException as error:
+        except DBError as error:
             state.socket_interface.send_monitor(ErrorMessage(error.msg))
             return state
 
@@ -55,7 +55,7 @@ class StartHandler(AbstractHandler):
         return state
 
 
-class PowerHandler(AbstractInitHandler):
+class PowerHandler(InitHandler):
     """
     Allow to save the PowerReport received.
     """

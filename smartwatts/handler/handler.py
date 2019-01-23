@@ -15,7 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class AbstractHandler:
+class HandlerException(Exception):
+    """
+    Exception raised when a problem appear in a handler
+    """
+    def __init__(self, msg):
+        """
+        :param str msg: Message of the error
+        """
+        super().__init__(msg)
+
+
+class Handler:
     """
     Class that handle a message of a given type
     """
@@ -25,7 +36,7 @@ class AbstractHandler:
         Handle a message and return a the new state value of the actor
 
         This is the method that should be called to handle received message
-        this method call :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
+        this method call :meth:`Handler.handle <smartwatts.handler.abstract_handler.Handler.handle>`
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
@@ -52,7 +63,7 @@ class AbstractHandler:
         raise NotImplementedError()
 
 
-class AbstractInitHandler(AbstractHandler):
+class InitHandler(Handler):
     """
     Class that handle a message of a given type if the actor is initialized
     """
@@ -65,7 +76,7 @@ class AbstractInitHandler(AbstractHandler):
 
         if the given state is not initialized, return the given state without
         side effect. Otherwise, use the
-        :meth:`AbstractHandler.handle <smartwatts.handler.abstract_handler.AbstractHandler.handle>`
+        :meth:`Handler.handle <smartwatts.handler.abstract_handler.Handler.handle>`
         method to handle the message
 
         :param Object msg: the message received by the actor

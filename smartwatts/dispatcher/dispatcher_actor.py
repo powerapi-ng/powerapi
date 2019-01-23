@@ -177,7 +177,7 @@ class DispatcherActor(Actor):
         """
         for name, formula in self.state.get_all_formula():
             self.log('kill ' + str(name))
-            formula.kill_push()
+            formula.send(PoisonPillMessage())
             formula.join()
 
     def _create_factory(self):
@@ -206,7 +206,7 @@ class DispatcherActor(Actor):
         :param Type report_class: Type of the message that the
                                   group_by rule must handle
         :param group_by_rule: Group_by rule to add
-        :type group_by_rule:  smartwatts.group_by.AbstractGroupBy
+        :type group_by_rule:  smartwatts.group_by.GroupBy
         """
         if group_by_rule.is_primary:
             if self.primary_group_by_rule is not None:

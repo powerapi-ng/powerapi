@@ -15,51 +15,52 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pymongo
-from smartwatts.database.base_db import BaseDB, DBErrorException
+from smartwatts.database.base_db import BaseDB, DBError
+from smartwatts.utils import Error
 
 
-class MongoBadDBError(DBErrorException):
+class MongoBadDBError(DBError):
     """
-    Exception raised when hostname/port fail
+    Error raised when hostname/port fail
     """
     def __init__(self, hostname):
-        DBErrorException.__init__(self, 'Mongo DB error : can\'t connect to ' +
-                                  hostname)
+        DBError.__init__(self, 'Mongo DB error : can\'t connect to ' +
+                         hostname)
 
 
-class MongoBadDBNameError(DBErrorException):
+class MongoBadDBNameError(DBError):
     """
-    Exception raised when database doesn't exist
+    Error raised when database doesn't exist
     """
     def __init__(self, db_name):
-        DBErrorException.__init__(self, 'Mongo DB error : DB ' + db_name +
-                                  ' doesn\'t exist')
+        DBError.__init__(self, 'Mongo DB error : DB ' + db_name +
+                         ' doesn\'t exist')
 
 
-class MongoBadCollectionNameError(DBErrorException):
+class MongoBadCollectionNameError(DBError):
     """
-    Exception raised when collection doesn't exist
+    Error raised when collection doesn't exist
     """
     def __init__(self, collection_name):
-        DBErrorException.__init__(self, 'Mongo DB error : collection ' +
-                                  collection_name + ' doesn\'t exist')
+        DBError.__init__(self, 'Mongo DB error : collection ' +
+                         collection_name + ' doesn\'t exist')
 
 
-class MongoNeedReportModelError(Exception):
+class MongoNeedReportModelError(Error):
     """
-    Exception raised when MongoDB is define without report model
-    """
-
-
-class MongoSaveInReadModeError(Exception):
-    """
-    Exception raised when save() is called in read mode
+    Error raised when MongoDB is define without report model
     """
 
 
-class MongoGetNextInSaveModeError(Exception):
+class MongoSaveInReadModeError(Error):
     """
-    Exception raised when get_next() is called in save_mode
+    Error raised when save() is called in read mode
+    """
+
+
+class MongoGetNextInSaveModeError(Error):
+    """
+    Error raised when get_next() is called in save_mode
     """
 
 
@@ -120,7 +121,7 @@ class MongoDB(BaseDB):
         if not self.save_mode:
             self.erase = False
             if report_model is None:
-                raise MongoNeedReportModelError()
+                raise MongoNeedReportModelError("Mongo need a report model.")
 
         #: (pymongo.MongoClient): MongoClient instance of the server
         self.mongo_client = None
@@ -199,7 +200,7 @@ class MongoDB(BaseDB):
         :rtype: formatted JSON
         """
         if self.save_mode:
-            raise MongoGetNextInSaveModeError()
+            raise MongoGetNextInSaveModeError("get_next can't be used.")
 
         try:
             json = self.cursor.next()
@@ -218,7 +219,7 @@ class MongoDB(BaseDB):
         :param dict json: data JSON to save
         """
         if not self.save_mode:
-            raise MongoSaveInReadModeError()
+            raise MongoSaveInReadModeError("save can't be used.")
 
         # TODO: Check if json is valid with the report_model
         self.collection.insert_one(json)

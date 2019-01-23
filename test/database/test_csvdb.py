@@ -22,7 +22,7 @@ import pytest
 
 from smartwatts.report_model import HWPCModel, KEYS_COMMON
 from smartwatts.database import CsvDB
-from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeys
+from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeysError
 
 PATH_TO_TEST = "./test/environment/csv/"
 
@@ -76,9 +76,9 @@ class TestCsvDB():
         """
         csv_files = BAD_COMMON
         while csv_files:
-            with pytest.raises(CsvBadCommonKeys) as pytest_wrapped:
+            with pytest.raises(CsvBadCommonKeysError) as pytest_wrapped:
                 CsvDB(HWPCModel(), csv_files).load()
-            assert pytest_wrapped.type == CsvBadCommonKeys
+            assert pytest_wrapped.type == CsvBadCommonKeysError
             csv_files = csv_files[1:]
 
     def test_csvdb_two_reports(self):

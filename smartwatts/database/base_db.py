@@ -15,10 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class DBErrorException(Exception):
+from smartwatts.utils import Error
+
+
+class DBError(Error):
 
     """
-    Exception raised when an error occuried when using a database
+    Error raised when an error occuried when using a database
     """
     def __init__(self, msg):
         """

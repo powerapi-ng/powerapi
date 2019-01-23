@@ -18,21 +18,21 @@ import csv
 
 from smartwatts.database.base_db import BaseDB
 from smartwatts.report_model.report_model import KEYS_COMMON
-from smartwatts.utils import utils
+from smartwatts.utils import utils, Error
 
 # Array of field that will not be considered as a group
 COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
 
 
-class CsvBadFilePathError(Exception):
+class CsvBadFilePathError(Error):
     """
-    Exception raised when file is not found
+    Error raised when file is not found
     """
 
 
-class CsvBadCommonKeys(Exception):
+class CsvBadCommonKeysError(Error):
     """
-    Exception raised when a common keys is not found
+    Error raised when a common keys is not found
     """
 
 
@@ -90,14 +90,14 @@ class CsvDB(BaseDB):
         for path_file in self.files_name:
             try:
                 self.tmp[path_file]['csv'] = csv.DictReader(open(path_file))
-            except FileNotFoundError:
-                raise CsvBadFilePathError()
+            except FileNotFoundError as error:
+                raise CsvBadFilePathError(error)
             self.tmp[path_file]['next_line'] = self._next(path_file)
 
             # Check common key
             for key in KEYS_COMMON:
                 if key not in self.tmp[path_file]['next_line']:
-                    raise CsvBadCommonKeys()
+                    raise CsvBadCommonKeysError("Wrong columns keys")
 
         # Save the first timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(

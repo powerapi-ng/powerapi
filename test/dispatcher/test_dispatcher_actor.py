@@ -9,7 +9,7 @@ import mock
 from smartwatts.dispatcher import FormulaDispatcherReportHandler
 from smartwatts.dispatcher import DispatcherState, DispatcherActor
 from smartwatts.message import UnknowMessageTypeException
-from smartwatts.group_by import AbstractGroupBy
+from smartwatts.group_by import GroupBy
 from smartwatts.report import Report, HWPCReport
 from smartwatts.database import MongoDB
 from smartwatts.actor import Actor, SocketInterface
@@ -45,21 +45,21 @@ class Report1(Report):
                                                 ')')) + ')'
 
 
-class GroupBy1A(AbstractGroupBy):
+class GroupBy1A(GroupBy):
     """ Group by rule that return the received report
 
     its id is the report *a* value
 
     """
     def __init__(self, primary=False):
-        AbstractGroupBy.__init__(self, primary)
+        GroupBy.__init__(self, primary)
         self.fields = ['A']
 
     def extract(self, report):
         return [((report.a,), report)]
 
 
-class GroupBy1AB(AbstractGroupBy):
+class GroupBy1AB(GroupBy):
     """Group by rule that split the report if it contains a *b2* value
 
     if the report contain a *b2* value, it is spliten in two report the first
@@ -71,7 +71,7 @@ class GroupBy1AB(AbstractGroupBy):
 
     """
     def __init__(self, primary=False):
-        AbstractGroupBy.__init__(self, primary)
+        GroupBy.__init__(self, primary)
         self.fields = ['A', 'B']
 
     def extract(self, report):
@@ -98,21 +98,21 @@ class Report2(Report):
                                           if self.c2 is None
                                           else ('(' + self.c + ',' + self.c2 +
                                                 ')')) + ')'
-class GroupBy2A(AbstractGroupBy):
+class GroupBy2A(GroupBy):
     """ Group by rule that return the received report
 
     its id is the report *a* value
 
     """
     def __init__(self, primary=False):
-        AbstractGroupBy.__init__(self, primary)
+        GroupBy.__init__(self, primary)
         self.fields = ['A']
 
     def extract(self, report):
         return [((report.a,), report)]
 
 
-class GroupBy2AC(AbstractGroupBy):
+class GroupBy2AC(GroupBy):
     """Group by rule that split the report if it contains a *c2* value
 
     if the report contain a *c2* value, it is spliten in two report the first
@@ -124,7 +124,7 @@ class GroupBy2AC(AbstractGroupBy):
 
     """
     def __init__(self, primary=False):
-        AbstractGroupBy.__init__(self, primary)
+        GroupBy.__init__(self, primary)
         self.fields = ['A', 'C']
 
     def extract(self, report):

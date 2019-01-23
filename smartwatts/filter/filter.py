@@ -23,7 +23,7 @@ class FilterUselessError(Exception):
 
 class Filter:
     """
-    Filter abstract class
+    Filter class
 
     A filter allow the Puller to route Report of the database to Dispatchers
     by fixing some rules.

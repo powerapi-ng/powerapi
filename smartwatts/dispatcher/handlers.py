@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import AbstractInitHandler, AbstractHandler
+from smartwatts.handler import InitHandler, Handler
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.message import OKMessage, StartMessage
 
 
-class StartHandler(AbstractHandler):
+class StartHandler(Handler):
     """
     Initialize the received state
     """
@@ -44,7 +44,7 @@ class StartHandler(AbstractHandler):
         return state
 
 
-class FormulaDispatcherReportHandler(AbstractInitHandler):
+class FormulaDispatcherReportHandler(InitHandler):
     """
     Split received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses reports.
@@ -54,16 +54,16 @@ class FormulaDispatcherReportHandler(AbstractInitHandler):
         """
         :param route_table:           List all group by rule with their
                                       associated message type
-        :type route_table:            array(tuple(Message, AbstractGroupBy))
+        :type route_table:            array(tuple(Message, GroupBy))
 
         :param primary_group_by_rule: Primary GroupBy rule
-        :type primary_group_by_rule:  AbstractGroupBy
+        :type primary_group_by_rule:  GroupBy
         """
-        #: (array(tuple(Message, AbstractGroupBy))): List all group by rule
+        #: (array(tuple(Message, GroupBy))): List all group by rule
         #: with their associated message type
         self.route_table = route_table
 
-        #: (AbstractGroupBy): Primary GroupBy rule
+        #: (GroupBy): Primary GroupBy rule
         self.primary_group_by_rule = primary_group_by_rule
 
     def handle(self, msg, state):
@@ -112,7 +112,7 @@ class FormulaDispatcherReportHandler(AbstractInitHandler):
         The second group_by need to match with the primary if sensor are equal.
 
         :param smartwatts.Report report:                 Report to split
-        :param smartwatts.AbstractGroupBy group_by_rule: GroupBy rule
+        :param smartwatts.GroupBy group_by_rule: GroupBy rule
 
         :return: List of formula_id associated to a sub-report of report
         :rtype:  list(tuple(formula_id, smartwatts.Report))
@@ -135,7 +135,7 @@ class FormulaDispatcherReportHandler(AbstractInitHandler):
         every "useless" fields from it.
 
         :param tuple report_id:                          Original report id
-        :param smartwatts.AbstractGroupBy group_by_rule: GroupBy rule
+        :param smartwatts.GroupBy group_by_rule: GroupBy rule
         """
         new_report_id = ()
         primary_rule = self.primary_group_by_rule

@@ -20,7 +20,7 @@ HWPC group by rules utilities
 
 from enum import IntEnum
 
-from smartwatts.group_by import AbstractGroupBy
+from smartwatts.group_by import GroupBy
 from smartwatts.report import HWPCReport, HWPCReportSocket
 
 
@@ -34,7 +34,7 @@ class HWPCDepthLevel(IntEnum):
     CORE = 2
 
 
-class HWPCGroupBy(AbstractGroupBy):
+class HWPCGroupBy(GroupBy):
     """
     Group by rule for HWPC report
     """
@@ -43,13 +43,13 @@ class HWPCGroupBy(AbstractGroupBy):
         :param depth:
         :type depth: HWPCDepthLevel
         """
-        AbstractGroupBy.__init__(self, primary)
+        GroupBy.__init__(self, primary)
         self.depth = depth
         self.fields = ['sensor', 'socket', 'core'][:(depth + 1)]
 
     def extract(self, report):
         """
-        See :meth:`AbstractGroupBy.extract <smartwatts.group_by.abstract_group_by.AbstractGroupBy.extract>`
+        See :meth:`GroupBy.extract <smartwatts.group_by.abstract_group_by.GroupBy.extract>`
         """
         if not _check_report_integrity(report):
             return []
