@@ -30,7 +30,7 @@ class StartHandler(Handler):
         socket.
 
         :param smartwatts.StartMessage msg: Message that initialize the actor
-        :param smartwatts.BasicState state: State of the actor
+        :param smartwatts.State state: State of the actor
         """
         if state.initialized:
             return state
@@ -75,7 +75,7 @@ class FormulaDispatcherReportHandler(InitHandler):
         actor state, containing the new formula.
 
         :param smartwatts.Report msg:       Report message
-        :param smartwatts.BasicState state: Actor state
+        :param smartwatts.State state: Actor state
 
         :return: List of the (formula_id, report) where formula_id is a tuple
                  that identitfy the formula_actor

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.puller import StartHandler
@@ -28,11 +28,11 @@ class NoReportExtractedException(Exception):
     """
 
 
-class PullerState(BasicState):
+class PullerState(State):
     """
     Puller Actor State
 
-    Contains in addition to BasicState values :
+    Contains in addition to State values :
       - the database interface
       - the Filter class
     """
@@ -49,7 +49,7 @@ class PullerState(BasicState):
         :param bool autokill: Puller autokill himself when it finish to read
                               all the database.
         """
-        BasicState.__init__(self, behaviour, socket_interface)
+        State.__init__(self, behaviour, socket_interface)
 
         #: (BaseDB): Allow to interact with a Database
         self.database = database

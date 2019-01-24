@@ -31,7 +31,7 @@ class StartHandler(Handler):
         Initialize the output database
 
         :param smartwatts.StartMessage msg: Message that initialize the actor.
-        :param smartwatts.BasicState state: State of the actor.
+        :param smartwatts.State state: State of the actor.
         """
 
         # If it's already initialized, return state
@@ -65,7 +65,7 @@ class PowerHandler(InitHandler):
         Save the msg in the database
 
         :param smartwatts.PowerReport msg: PowerReport to save.
-        :param smartwatts.BasicState state: State of the actor.
+        :param smartwatts.State state: State of the actor.
         """
         if not isinstance(msg, PowerReport):
             return state

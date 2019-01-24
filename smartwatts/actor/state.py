@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class BasicState:
+class State:
     """
     A basic state class that encapsulate basic actor values :
 
@@ -47,7 +47,7 @@ class BasicState:
         #: mapping between message type and handler that the mapped handler
         #: must handle
         self.handlers = []
-        
+
     def get_corresponding_handler(self, msg):
         """
         Return the handler corresponding to the given message type
@@ -61,7 +61,7 @@ class BasicState:
         for (msg_type, handler) in self.handlers:
             if isinstance(msg, msg_type):
                 return handler
-        
+
     def add_handler(self, message_type, handler):
         """
         Map a handler to a message type

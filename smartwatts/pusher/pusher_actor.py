@@ -14,17 +14,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.pusher import PowerHandler, StartHandler
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 
 
-class PusherState(BasicState):
+class PusherState(State):
     """
     Pusher Actor State
 
-    Contains in addition to BasicState values :
+    Contains in addition to State values :
       - The database interface
     """
     def __init__(self, behaviour, socket_interface, database):
@@ -34,7 +34,7 @@ class PusherState(BasicState):
                                                  actor.
         :param BaseDB database: Database for saving data.
         """
-        BasicState.__init__(self, behaviour, socket_interface)
+        State.__init__(self, behaviour, socket_interface)
 
         #: (BaseDB): Database for saving data.
         self.database = database
@@ -55,14 +55,15 @@ class PusherActor(Actor):
         :param BaseDB database: Database use for saving data.
         :param bool verbose: Allow to display log.
         """
-        Actor.__init__(self, name, verbose)
+        timeout = 3000
+        Actor.__init__(self, name, verbose, timeout)
 
         #: (Report): Type of the report that the pusher handle.
         self.report_type = report_type
 
         #: (State): State of the actor.
         self.state = PusherState(PusherActor._initial_behaviour,
-                                 SocketInterface(name, 3000), database)
+                                 SocketInterface(name, timeout), database)
 
     def setup(self):
         """

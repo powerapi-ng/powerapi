@@ -19,6 +19,7 @@ import signal
 import multiprocessing
 import setproctitle
 
+from smartwatts.actor import State, SocketInterface
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.handler import HandlerException
@@ -88,11 +89,9 @@ class Actor(multiprocessing.Process):
 
         #: (bool): allow to display log
         self.verbose = verbose
-        #: (int): time in millisecond to wait for a message before
-        #: activate the `timeout_behaviour`
-        self.timeout = timeout
-        #: (smartwatts.actor.state.BasicState): actor's state
-        self.state = None
+        #: (smartwatts.actor.state.State): actor's state
+        self.state = State(self._initial_behaviour,
+                           SocketInterface(name, timeout))
         #: (function): function activated when no message was
         #: received since `timeout` milliseconds
         self.timeout_handler = None
@@ -173,7 +172,7 @@ class Actor(multiprocessing.Process):
         self.log('received : ' + str(msg))
 
         # Timeout
-        if msg == []:
+        if msg is None:
             self.state = self.timeout_handler.handle(None, self.state)
         # Message
         else:

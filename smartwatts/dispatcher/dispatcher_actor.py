@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.report import Report
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -37,9 +37,9 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
     """
 
 
-class DispatcherState(BasicState):
+class DispatcherState(State):
     """
-    DispatcherState class herited from BasicState.
+    DispatcherState class herited from State.
 
     State that encapsulate formula's dicionary and tree
 
@@ -61,7 +61,7 @@ class DispatcherState(BasicState):
         :param formula_factory: Factory for Formula creation.
         :type formula_factory: func((formula_id) -> smartwatts.Formula)
         """
-        BasicState.__init__(self, initial_behaviour, socket_interface)
+        State.__init__(self, initial_behaviour, socket_interface)
 
         #: (dict): Store the formula by id
         self.formula_dict = {}
@@ -138,7 +138,7 @@ class DispatcherActor(Actor):
         :param bool timeout: Define the time in millisecond to wait for a
                              message before run timeout_handler
         """
-        Actor.__init__(self, name, verbose)
+        Actor.__init__(self, name, verbose, timeout)
 
         #: (array): Array of tuple that link a Report type to a GroupBy rule
         self.route_table = []

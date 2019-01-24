@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 
 
 class FormulaActor(Actor):
@@ -36,14 +36,14 @@ class FormulaActor(Actor):
                                                     for a message before called
                                                     timeout_handler.
         """
-        Actor.__init__(self, name, verbose)
+        Actor.__init__(self, name, verbose, timeout)
 
         #: (smartwatts.PusherActor): Pusher actor whom send results.
         self.actor_pusher = actor_pusher
 
-        #: (smartwatts.BasicState): Basic state of the Formula.
-        self.state = BasicState(Actor._initial_behaviour,
-                                SocketInterface(name, timeout))
+        #: (smartwatts.State): Basic state of the Formula.
+        self.state = State(Actor._initial_behaviour,
+                           SocketInterface(name, timeout))
 
     def setup(self):
         """

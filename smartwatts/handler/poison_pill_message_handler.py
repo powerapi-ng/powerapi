@@ -25,15 +25,15 @@ class PoisonPillMessageHandler(Handler):
 
     def handle(self, msg, state):
         """
-        Set the :attr:`alive <smartwatts.actor.state.BasicState.alive>`
+        Set the :attr:`alive <smartwatts.actor.state.State.alive>`
         attribute of the actor state to False
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
-        :type state: smartwatts.actor.state.BasicState
+        :type state: smartwatts.actor.state.State
 
         :return: The new actor's state
-        :rtype: smartwatts.actor.state.BasicState
+        :rtype: smartwatts.actor.state.State
         """
         if not isinstance(msg, PoisonPillMessage):
             raise UnknowMessageTypeException(type(msg))
