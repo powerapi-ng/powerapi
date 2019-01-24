@@ -29,6 +29,7 @@ class HWPCDepthLevel(IntEnum):
     Enumeration that specify which report level use to group by the reports
     """
 
+    TARGET = -1
     ROOT = 0
     SOCKET = 1
     CORE = 2
@@ -45,7 +46,13 @@ class HWPCGroupBy(GroupBy):
         """
         GroupBy.__init__(self, primary)
         self.depth = depth
-        self.fields = ['sensor', 'socket', 'core'][:(depth + 1)]
+        self.fields = self._set_field()
+
+    def _set_field(self):
+        if self.depth == HWPCDepthLevel.TARGET:
+            return ['target']
+
+        return ['sensor', 'socket', 'core'][:(self.depth + 1)]
 
     def extract(self, report):
         """
@@ -56,6 +63,9 @@ class HWPCGroupBy(GroupBy):
 
         if self.depth == HWPCDepthLevel.ROOT:
             return [((report.sensor,), report)]
+
+        if self.depth == HWPCDepthLevel.TARGET:
+            return [((report.target,), report)]
 
         sensor_id = report.sensor
         shared_groups, normal_groups = _extract_shared_groups(report)

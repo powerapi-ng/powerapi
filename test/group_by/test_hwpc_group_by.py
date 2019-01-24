@@ -107,6 +107,7 @@ class TestHWPCGroupBy():
         test if the field's names of the group_by identifier tuple are correctly
         initialized
         """
+        assert HWPCGroupBy(HWPCDepthLevel.TARGET).fields == ['target']
         assert HWPCGroupBy(HWPCDepthLevel.ROOT).fields == ['sensor']
         assert HWPCGroupBy(HWPCDepthLevel.SOCKET).fields == ['sensor', 'socket']
         assert HWPCGroupBy(HWPCDepthLevel.CORE).fields == ['sensor', 'socket',
@@ -190,6 +191,19 @@ class TestHWPCGroupBy():
         assert len(extracted_reports) == 1
         [(key, extracted_report)] = extracted_reports
         assert key == (REPORT.sensor,)
+        report_assert(REPORT, extracted_report)
+
+    def test_extract_target(self):
+        """ test to extract the root report from the fake HWPCReport
+
+        extract method must return the fake report with its id
+        """
+        extract = HWPCGroupBy(HWPCDepthLevel.TARGET).extract
+        extracted_reports = extract(REPORT)
+
+        assert len(extracted_reports) == 1
+        [(key, extracted_report)] = extracted_reports
+        assert key == (REPORT.target,)
         report_assert(REPORT, extracted_report)
 
     def test_extract_socket(self):
