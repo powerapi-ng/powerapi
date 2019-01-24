@@ -82,7 +82,7 @@ class PusherActor(Actor):
         if the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """
-        msg_list = self.state.socket_interface.receive()
+        msg_list = self.receive()
         self.log('received : ' + str(msg_list))
 
         # Timeout

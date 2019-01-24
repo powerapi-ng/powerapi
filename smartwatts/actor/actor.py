@@ -169,7 +169,7 @@ class Actor(multiprocessing.Process):
         If the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """
-        msg_list = self.state.socket_interface.receive()
+        msg_list = self.receive()
         self.log('received : ' + str(msg_list))
 
         # Timeout
@@ -238,6 +238,16 @@ class Actor(multiprocessing.Process):
         """
         self.state.socket_interface.send_data(msg)
         self.log('sent ' + str(msg) + ' to ' + self.name)
+
+    def receive(self):
+        """
+        Block until a message was received (or until timeout) an return the
+        received messages
+
+        :return: the list of received messages or an empty list if timeout
+        :rtype: a list of Object
+        """
+        return self.state.socket_interface.receive()
 
     def kill(self):
         """
