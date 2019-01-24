@@ -116,8 +116,12 @@ class SocketInterface:
         """
         events = self.poller.poll(self.timeout)
 
-        return [self._recv_serialized(socket) for socket, event in events
-                if event == zmq.POLLIN]
+        # If there is control socket, he has the priority
+        if len(events) == 2:
+            return self._recv_serialized(self.control_socket)
+        elif len(events) == 1:
+            return self._recv_serialized(events[0][0])
+        return None
 
     def close(self):
         """

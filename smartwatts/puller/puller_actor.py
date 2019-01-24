@@ -152,7 +152,7 @@ class PullerActor(Actor):
             for dispatcher in dispatchers:
                 if dispatcher is not None:
                     dispatcher.send_data(report)
-            time.sleep(self.state.frequency)
+            time.sleep(self.state.frequency/1000)
 
         # Behaviour to _initial_behaviour
         self.state.behaviour = Actor._initial_behaviour

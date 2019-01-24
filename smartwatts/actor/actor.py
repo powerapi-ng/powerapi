@@ -169,17 +169,21 @@ class Actor(multiprocessing.Process):
         If the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """
-        msg_list = self.receive()
-        self.log('received : ' + str(msg_list))
+        msg = self.receive()
+        self.log('received : ' + str(msg))
 
         # Timeout
-        if msg_list == []:
+        if msg == []:
             self.state = self.timeout_handler.handle(None, self.state)
         # Message
         else:
-            for msg in msg_list:
-                handler = self.state.get_corresponding_handler(msg)
+            try:
+                handler = self.get_corresponding_handler(msg)
                 self.state = handler.handle_message(msg, self.state)
+            except UnknowMessageTypeException:
+                self.log("UnknowMessageTypeException: " + msg)
+            except HandlerException as handler_except:
+                self.log(handler_except)
 
     def _kill_process(self):
         """

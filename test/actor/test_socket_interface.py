@@ -136,7 +136,7 @@ def test_push_receive(connected_interface):
     """
     msg = 'toto'
     connected_interface.send_data(msg)
-    assert connected_interface.receive() == [msg]
+    assert connected_interface.receive() == msg
 
 
 def test_control_connection(controlled_interface):
@@ -162,7 +162,7 @@ def test_control_receive(controlled_interface):
     """
     msg = 'toto'
     controlled_interface.send_control(msg)
-    assert controlled_interface.receive() == [msg]
+    assert controlled_interface.receive() == msg
 
 
 def test_multiple_receive(fully_connected_interface):
@@ -173,7 +173,7 @@ def test_multiple_receive(fully_connected_interface):
     controlled_msg = 'controlled_msg'
     push_msg = 'push_msg'
     fully_connected_interface.send_control(controlled_msg)
-    assert fully_connected_interface.receive() == [controlled_msg]
+    assert fully_connected_interface.receive() == controlled_msg
 
     fully_connected_interface.send_control(push_msg)
-    assert fully_connected_interface.receive() == [push_msg]
+    assert fully_connected_interface.receive() == push_msg
