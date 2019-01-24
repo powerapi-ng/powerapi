@@ -14,16 +14,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from smartwatts.message import UnknowMessageTypeException
 
 class State:
     """
     A basic state class that encapsulate basic actor values :
 
-    :attr:`initialized <smartwatts.actor.state.BasicState.initialized>`
-    :attr:`alive <smartwatts.actor.state.BasicState.alive>`
-    :attr:`behaviour <smartwatts.actor.state.BasicState.behaviour>`
-    :attr:`socket_interface <smartwatts.actor.state.BasicState.socket_interface>`
-    :attr:`handlers <smartwatts.actor.state.BasicState.handlers>`
+    :attr:`initialized <smartwatts.actor.state.State.initialized>`
+    :attr:`alive <smartwatts.actor.state.State.alive>`
+    :attr:`behaviour <smartwatts.actor.state.State.behaviour>`
+    :attr:`socket_interface <smartwatts.actor.state.State.socket_interface>`
+    :attr:`handlers <smartwatts.actor.state.State.handlers>`
+    :attr:`timeout_handler <smartwatts.actor.state.State.timeout_handler>`
     """
 
     def __init__(self, behaviour, socket_interface):
@@ -47,6 +49,9 @@ class State:
         #: mapping between message type and handler that the mapped handler
         #: must handle
         self.handlers = []
+        #: (func): function activated when no message was
+        #: received since `timeout` milliseconds
+        self.timeout_handler = None
 
     def get_corresponding_handler(self, msg):
         """
@@ -61,6 +66,8 @@ class State:
         for (msg_type, handler) in self.handlers:
             if isinstance(msg, msg_type):
                 return handler
+
+        raise UnknowMessageTypeException()
 
     def add_handler(self, message_type, handler):
         """

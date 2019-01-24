@@ -77,13 +77,13 @@ def test_get_handler_unknow_message_type(initialized_dummy_actor):
 
     """
     with pytest.raises(UnknowMessageTypeException):
-        initialized_dummy_actor.get_corresponding_handler('toto')
+        initialized_dummy_actor.state.get_corresponding_handler('toto')
 
 
 def test_get_handler(initialized_dummy_actor):
     """ Test to get the predefined handler for PoisonPillMessage type
     """
-    handler = initialized_dummy_actor.get_corresponding_handler(
+    handler = initialized_dummy_actor.state.get_corresponding_handler(
         PoisonPillMessage())
     assert isinstance(handler, PoisonPillMessageHandler)
 

@@ -66,12 +66,8 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Accessible from Client/Server   | :attr:`verbose <smartwatts.actor.actor.Actor.verbose>`                                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`timeout <smartwatts.actor.actor.Actor.timeout>`                                     |
+    | Server interface                | :attr:`state <smartwatts.actor.actor.Actor.state>`                                          |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :attr:`timeout_handler <smartwatts.actor.actor.Actor.timeout_handler>`                     |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
 
     """
 
@@ -92,9 +88,6 @@ class Actor(multiprocessing.Process):
         #: (smartwatts.actor.state.State): actor's state
         self.state = State(self._initial_behaviour,
                            SocketInterface(name, timeout))
-        #: (function): function activated when no message was
-        #: received since `timeout` milliseconds
-        self.timeout_handler = None
 
     def log(self, message):
         """
@@ -146,8 +139,6 @@ class Actor(multiprocessing.Process):
 
         self._signal_handler_setup()
 
-        raise UnknowMessageTypeException()
-
     def add_handler(self, message_type, handler):
         """
         Map a handler to a message type
@@ -173,11 +164,12 @@ class Actor(multiprocessing.Process):
 
         # Timeout
         if msg is None:
-            self.state = self.timeout_handler.handle(None, self.state)
+            self.state = self.state.timeout_handler.handle_message(None,
+                                                                   self.state)
         # Message
         else:
             try:
-                handler = self.get_corresponding_handler(msg)
+                handler = self.state.get_corresponding_handler(msg)
                 self.state = handler.handle_message(msg, self.state)
             except UnknowMessageTypeException:
                 self.log("UnknowMessageTypeException: " + msg)

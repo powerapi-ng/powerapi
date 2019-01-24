@@ -90,5 +90,5 @@ class PusherActor(Actor):
         if msg is None:
             self.state.alive = False
         else:
-            handler = self.get_corresponding_handler(msg)
+            handler = self.state.get_corresponding_handler(msg)
             self.state = handler.handle_message(msg, self.state)
