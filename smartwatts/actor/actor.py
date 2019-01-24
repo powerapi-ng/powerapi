@@ -147,23 +147,6 @@ class Actor(multiprocessing.Process):
 
         self._signal_handler_setup()
 
-<<<<<<< HEAD
-    def get_corresponding_handler(self, msg):
-        """
-        Return the handler corresponding to the given message type
-
-        :param Object msg: the received message
-        :return: the handler corresponding to the given message type
-        :rtype: smartwatts.handler.Handler
-
-        :raises UnknowMessageTypeException: if no handler could be find
-        """
-        for (msg_type, handler) in self.handlers:
-            if isinstance(msg, msg_type):
-                return handler
-
-=======
->>>>>>> refactor: put handlers in State
         raise UnknowMessageTypeException()
 
     def add_handler(self, message_type, handler):
@@ -195,18 +178,8 @@ class Actor(multiprocessing.Process):
         # Message
         else:
             for msg in msg_list:
-<<<<<<< HEAD
-                try:
-                    handler = self.get_corresponding_handler(msg)
-                    self.state = handler.handle_message(msg, self.state)
-                except UnknowMessageTypeException:
-                    pass
-                except HandlerException as handler_except:
-                    self.log(handler_except)
-=======
                 handler = self.state.get_corresponding_handler(msg)
                 self.state = handler.handle_message(msg, self.state)
->>>>>>> refactor: put handlers in State
 
     def _kill_process(self):
         """
