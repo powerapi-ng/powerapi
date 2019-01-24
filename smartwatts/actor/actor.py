@@ -49,8 +49,6 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :meth:`setup <smartwatts.actor.actor.Actor.setup>`                                         |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`get_corresponding_handler <smartwatts.actor.actor.Actor.get_corresponding_handler>` |
-    |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`add_handler <smartwatts.actor.actor.Actor.add_handler>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`terminated_behaviour <smartwatts.actor.actor.Actor.terminated_behaviour>`           |
@@ -70,8 +68,6 @@ class Actor(multiprocessing.Process):
     | Server interface                | :attr:`timeout <smartwatts.actor.actor.Actor.timeout>`                                     |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :attr:`handlers <smartwatts.actor.actor.Actor.handlers>`                                   |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :attr:`timeout_handler <smartwatts.actor.actor.Actor.timeout_handler>`                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
@@ -100,10 +96,6 @@ class Actor(multiprocessing.Process):
         #: (function): function activated when no message was
         #: received since `timeout` milliseconds
         self.timeout_handler = None
-        #: ([(type, smartwatts.handler.handler.Handler)]):
-        #: mapping between message type and handler that the mapped handler
-        #: must handle
-        self.handlers = []
 
     def log(self, message):
         """
@@ -155,6 +147,7 @@ class Actor(multiprocessing.Process):
 
         self._signal_handler_setup()
 
+<<<<<<< HEAD
     def get_corresponding_handler(self, msg):
         """
         Return the handler corresponding to the given message type
@@ -169,6 +162,8 @@ class Actor(multiprocessing.Process):
             if isinstance(msg, msg_type):
                 return handler
 
+=======
+>>>>>>> refactor: put handlers in State
         raise UnknowMessageTypeException()
 
     def add_handler(self, message_type, handler):
@@ -180,7 +175,7 @@ class Actor(multiprocessing.Process):
         :param handler: handler that will handle all messages of the given type
         :type handler: smartwatts.handler.Handler
         """
-        self.handlers.append((message_type, handler))
+        self.state.add_handler(message_type, handler)
 
     def _initial_behaviour(self):
         """
@@ -200,6 +195,7 @@ class Actor(multiprocessing.Process):
         # Message
         else:
             for msg in msg_list:
+<<<<<<< HEAD
                 try:
                     handler = self.get_corresponding_handler(msg)
                     self.state = handler.handle_message(msg, self.state)
@@ -207,6 +203,10 @@ class Actor(multiprocessing.Process):
                     pass
                 except HandlerException as handler_except:
                     self.log(handler_except)
+=======
+                handler = self.state.get_corresponding_handler(msg)
+                self.state = handler.handle_message(msg, self.state)
+>>>>>>> refactor: put handlers in State
 
     def _kill_process(self):
         """

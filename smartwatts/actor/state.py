@@ -23,6 +23,7 @@ class BasicState:
     :attr:`alive <smartwatts.actor.state.BasicState.alive>`
     :attr:`behaviour <smartwatts.actor.state.BasicState.behaviour>`
     :attr:`socket_interface <smartwatts.actor.state.BasicState.socket_interface>`
+    :attr:`handlers <smartwatts.actor.state.BasicState.handlers>`
     """
 
     def __init__(self, behaviour, socket_interface):
@@ -42,3 +43,32 @@ class BasicState:
         self.socket_interface = socket_interface
         #: (func): Function that implement the current behaviour
         self.behaviour = behaviour
+        #: ([(type, smartwatts.handler.abstract_handler.AbstractHandler)]):
+        #: mapping between message type and handler that the mapped handler
+        #: must handle
+        self.handlers = []
+        
+    def get_corresponding_handler(self, msg):
+        """
+        Return the handler corresponding to the given message type
+
+        :param Object msg: the received message
+        :return: the handler corresponding to the given message type
+        :rtype: smartwatts.handler.AbstractHandler
+
+        :raises UnknowMessageTypeException: if no handler could be find
+        """
+        for (msg_type, handler) in self.handlers:
+            if isinstance(msg, msg_type):
+                return handler
+        
+    def add_handler(self, message_type, handler):
+        """
+        Map a handler to a message type
+
+        :param type message_type: type of the message that the handler can
+                                  handle
+        :param handler: handler that will handle all messages of the given type
+        :type handler: smartwatts.handler.AbstractHandler
+        """
+        self.handlers.append((message_type, handler))
