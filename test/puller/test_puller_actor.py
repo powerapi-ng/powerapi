@@ -26,7 +26,7 @@ from smartwatts.filter import Filter
 from smartwatts.report import Report, HWPCReport
 from smartwatts.puller import PullerActor, PullerState
 from smartwatts.puller import StartHandler
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import OKMessage, ErrorMessage, StartMessage
 
 #########################################
@@ -96,8 +96,8 @@ class TestPullerActor:
                              get_fake_filter(), 0, autokill=True)
         puller.start()
         context = zmq.Context()
-        puller.monitor(context)
-        puller.send_monitor(StartMessage())
+        puller.connect_control(context)
+        puller.send_control(StartMessage())
         puller.join()
         assert puller.is_alive() is False
 

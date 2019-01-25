@@ -40,10 +40,10 @@ class Handler:
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
-        :type state: smartwatts.actor.state.BasicState
+        :type state: smartwatts.actor.state.State
 
         :return: The new actor's state
-        :rtype: smartwatts.actor.state.BasicState
+        :rtype: smartwatts.actor.state.State
         """
         return self.handle(msg, state)
 
@@ -55,10 +55,10 @@ class Handler:
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
-        :type state: smartwatts.actor.state.BasicState
+        :type state: smartwatts.actor.state.State
 
         :return: The new actor's state
-        :rtype: smartwatts.actor.state.BasicState
+        :rtype: smartwatts.actor.state.State
         """
         raise NotImplementedError()
 
@@ -81,10 +81,10 @@ class InitHandler(Handler):
 
         :param Object msg: the message received by the actor
         :param state: The current actor's state
-        :type state: smartwatts.actor.state.BasicState
+        :type state: smartwatts.actor.state.State
 
         :return: The new actor's state
-        :rtype: smartwatts.actor.state.BasicState
+        :rtype: smartwatts.actor.state.State
         """
         if not state.initialized:
             return state

@@ -49,10 +49,10 @@ class DummyHWPCReportHandler(Handler):
         Process a report and send the result to the pusher actor
 
         :param smartwatts.Report msg:       Received message
-        :param smartwatts.BasicState state: Actor state
+        :param smartwatts.State state: Actor state
 
         :return: New Actor state
-        :rtype:  smartwatts.BasicState
+        :rtype:  smartwatts.State
 
         :raises UnknowMessageTypeException: If the msg is not a Report
         """
@@ -60,7 +60,7 @@ class DummyHWPCReportHandler(Handler):
             raise UnknowMessageTypeException(type(msg))
 
         result = self._process_report(msg)
-        self.actor_pusher.send(result)
+        self.actor_pusher.send_data(result)
         return state
 
 

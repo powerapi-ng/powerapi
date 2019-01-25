@@ -24,14 +24,14 @@ class SocketInterface:
 
     general methods :
 
-    - :meth:`send_monitor <smartwatts.actor.socket_interface.SocketInterface.send_monitor>`
+    - :meth:`send_control <smartwatts.actor.socket_interface.SocketInterface.send_control>`
 
     client interface methods :
 
-    - :meth:`connect <smartwatts.actor.socket_interface.SocketInterface.connect>`
+    - :meth:`connect_data <smartwatts.actor.socket_interface.SocketInterface.connect_data>`
     - :meth:`disconnect <smartwatts.actor.socket_interface.SocketInterface.disconnect>`
-    - :meth:`monitor <smartwatts.actor.socket_interface.SocketInterface.monitor>`
-    - :meth:`send <smartwatts.actor.socket_interface.SocketInterface.send>`
+    - :meth:`connect_control <smartwatts.actor.socket_interface.SocketInterface.connect_control>`
+    - :meth:`send_data <smartwatts.actor.socket_interface.SocketInterface.send_data>`
 
     server interface methods :
 
@@ -53,8 +53,8 @@ class SocketInterface:
         #: (str): Address of the pull socket
         self.pull_socket_address = 'ipc://@' + name
 
-        #: (str): Address of the monitor socket
-        self.monitor_socket_address = 'ipc://@monitor_' + name
+        #: (str): Address of the control socket
+        self.control_socket_address = 'ipc://@control_' + name
 
         #: (zmq.Context): ZMQ Context of the process
         self.context = None
@@ -66,7 +66,7 @@ class SocketInterface:
         self.pull_socket = None
 
         #: (zmq.Socket): ZMQ Pair socket for receiving control message
-        self.monitor_socket = None
+        self.control_socket = None
 
         # This socket is used to connect to the pull socket of this actor. It
         # won't be created on the actor's process but on the process that want
@@ -87,10 +87,10 @@ class SocketInterface:
         self.pull_socket = self._create_socket(zmq.PULL,
                                                self.pull_socket_address)
 
-        # create the monitor socket (to monitor this actor, a process have to
-        # connect a pair socket to this socket with the `monitor` method)
-        self.monitor_socket = self._create_socket(zmq.PAIR,
-                                                  self.monitor_socket_address)
+        # create the control socket (to control this actor, a process have to
+        # connect a pair socket to this socket with the `control` method)
+        self.control_socket = self._create_socket(zmq.PAIR,
+                                                  self.control_socket_address)
 
     def _create_socket(self, socket_type, socket_addr):
         """
@@ -116,8 +116,12 @@ class SocketInterface:
         """
         events = self.poller.poll(self.timeout)
 
-        return [self._recv_serialized(socket) for socket, event in events
-                if event == zmq.POLLIN]
+        # If there is control socket, he has the priority
+        if len(events) == 2:
+            return self._recv_serialized(self.control_socket)
+        elif len(events) == 1:
+            return self._recv_serialized(events[0][0])
+        return None
 
     def close(self):
         """
@@ -126,8 +130,8 @@ class SocketInterface:
         if self.pull_socket is not None:
             self.pull_socket.close()
 
-        if self.monitor_socket is not None:
-            self.monitor_socket.close()
+        if self.control_socket is not None:
+            self.control_socket.close()
 
     def _send_serialized(self, socket, msg):
         """
@@ -149,7 +153,7 @@ class SocketInterface:
         msg = pickle.loads(socket.recv())
         return msg
 
-    def connect(self, context):
+    def connect_data(self, context):
         """
         Connect to the pull socket of this actor
 
@@ -164,35 +168,35 @@ class SocketInterface:
 
     def disconnect(self):
         """
-        Close connection to the pull socket and monitor socket of this actor
+        Close connection to the pull socket and control socket of this actor
         """
         if self.push_socket is not None:
             self.push_socket.close()
 
-        if self.monitor_socket is not None:
-            self.monitor_socket.close()
+        if self.control_socket is not None:
+            self.control_socket.close()
 
-    def monitor(self, context):
+    def connect_control(self, context):
         """
-        Connect to the monitor socket of this actor
+        Connect to the control socket of this actor
 
-        Open a pair socket on the process that want to monitor this actor
+        Open a pair socket on the process that want to control this actor
 
         :param zmq.Context context: ZMQ context of the process that want to
-                                    monitor this actor
+                                    control this actor
         """
-        self.monitor_socket = context.socket(zmq.PAIR)
-        self.monitor_socket.connect(self.monitor_socket_address)
+        self.control_socket = context.socket(zmq.PAIR)
+        self.control_socket.connect(self.control_socket_address)
 
-    def send_monitor(self, msg):
+    def send_control(self, msg):
         """
-        Send a message on the monitor canal
+        Send a message on the control canal
 
         :param Object msg: message to send
         """
-        self._send_serialized(self.monitor_socket, msg)
+        self._send_serialized(self.control_socket, msg)
 
-    def send(self, msg):
+    def send_data(self, msg):
         """
         Send a message on data canal
 

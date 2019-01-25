@@ -118,25 +118,25 @@ def main():
     # start actors
     context = zmq.Context()
 
-    pusher.monitor(context)
+    pusher.connect_control(context)
     pusher.start()
-    dispatcher.monitor(context)
-    dispatcher.connect(context)
+    dispatcher.connect_control(context)
+    dispatcher.connect_data(context)
     dispatcher.start()
-    puller.monitor(context)
+    puller.connect_control(context)
     puller.start()
 
     # Send StartMessage
-    pusher.send_monitor(StartMessage())
-    dispatcher.send_monitor(StartMessage())
-    puller.send_monitor(StartMessage())
+    pusher.send_control(StartMessage())
+    dispatcher.send_control(StartMessage())
+    puller.send_control(StartMessage())
 
     # Wait for OKMessage
     poller = zmq.Poller()
-    poller.register(pusher.state.socket_interface.monitor_socket, zmq.POLLIN)
-    poller.register(dispatcher.state.socket_interface.monitor_socket,
+    poller.register(pusher.state.socket_interface.control_socket, zmq.POLLIN)
+    poller.register(dispatcher.state.socket_interface.control_socket,
                     zmq.POLLIN)
-    poller.register(puller.state.socket_interface.monitor_socket, zmq.POLLIN)
+    poller.register(puller.state.socket_interface.control_socket, zmq.POLLIN)
 
     cpt_ok = 0
     while cpt_ok < 3:

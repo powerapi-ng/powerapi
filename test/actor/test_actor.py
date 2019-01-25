@@ -7,7 +7,7 @@ import pytest
 from mock import Mock, patch
 
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
-from smartwatts.actor import Actor, BasicState
+from smartwatts.actor import Actor, State
 from smartwatts.handler import PoisonPillMessageHandler
 
 
@@ -15,10 +15,9 @@ class DummyActor(Actor):
 
     def __init__(self, name='dummy_actor', verbose=False):
         Actor.__init__(self, name, verbose=verbose)
-        self.state = BasicState(Mock(), Mock())
+        self.state = State(Mock(), Mock())
 
     def setup(self):
-        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
 
 
@@ -38,7 +37,7 @@ def dummy_actor():
 @pytest.fixture()
 def initialized_dummy_actor(dummy_actor):
     """ return an initialized dummy actor """
-    dummy_actor.setup()
+    dummy_actor._setup()
     return dummy_actor
 
 
@@ -53,7 +52,7 @@ def test_setup(dummy_actor):
     was call
 
     """
-    dummy_actor.setup()
+    dummy_actor._setup()
 
     assert setproctitle.getproctitle() == ACTOR_NAME
     assert len(dummy_actor.state.socket_interface.setup.mock_calls) == 1
@@ -77,13 +76,13 @@ def test_get_handler_unknow_message_type(initialized_dummy_actor):
 
     """
     with pytest.raises(UnknowMessageTypeException):
-        initialized_dummy_actor.get_corresponding_handler('toto')
+        initialized_dummy_actor.state.get_corresponding_handler('toto')
 
 
 def test_get_handler(initialized_dummy_actor):
     """ Test to get the predefined handler for PoisonPillMessage type
     """
-    handler = initialized_dummy_actor.get_corresponding_handler(
+    handler = initialized_dummy_actor.state.get_corresponding_handler(
         PoisonPillMessage())
     assert isinstance(handler, PoisonPillMessageHandler)
 

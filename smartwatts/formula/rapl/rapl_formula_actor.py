@@ -81,7 +81,7 @@ class RAPLFormulaHWPCReportHandler(Handler):
 
         result = self._process_report(msg)
         for report in result:
-            self.actor_pusher.send(report)
+            self.actor_pusher.send_data(report)
 
         return state
 

@@ -31,7 +31,7 @@ class StartHandler(Handler):
         Initialize the output database
 
         :param smartwatts.StartMessage msg: Message that initialize the actor.
-        :param smartwatts.BasicState state: State of the actor.
+        :param smartwatts.State state: State of the actor.
         """
 
         # If it's already initialized, return state
@@ -46,12 +46,12 @@ class StartHandler(Handler):
         try:
             state.database.load()
         except DBError as error:
-            state.socket_interface.send_monitor(ErrorMessage(error.msg))
+            state.socket_interface.send_control(ErrorMessage(error.msg))
             return state
 
         # Else, we can initialize state
         state.initialized = True
-        state.socket_interface.send_monitor(OKMessage())
+        state.socket_interface.send_control(OKMessage())
         return state
 
 
@@ -65,10 +65,26 @@ class PowerHandler(InitHandler):
         Save the msg in the database
 
         :param smartwatts.PowerReport msg: PowerReport to save.
-        :param smartwatts.BasicState state: State of the actor.
+        :param smartwatts.State state: State of the actor.
         """
         if not isinstance(msg, PowerReport):
             return state
 
         state.database.save(msg.serialize())
+        return state
+
+
+class TimeoutHandler(InitHandler):
+    """
+    Pusher timeout kill the actor
+    """
+
+    def handle(self, msg, state):
+        """
+        Kill the actor by setting alive to False
+
+        :param None msg: None.
+        :param smartwatts.State state: State of the actor.
+        """
+        state.alive = False
         return state

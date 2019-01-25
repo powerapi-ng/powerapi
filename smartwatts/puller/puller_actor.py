@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
-from smartwatts.actor import Actor, BasicState, SocketInterface
+from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.puller import StartHandler
@@ -28,11 +28,11 @@ class NoReportExtractedException(Exception):
     """
 
 
-class PullerState(BasicState):
+class PullerState(State):
     """
     Puller Actor State
 
-    Contains in addition to BasicState values :
+    Contains in addition to State values :
       - the database interface
       - the Filter class
     """
@@ -49,7 +49,7 @@ class PullerState(BasicState):
         :param bool autokill: Puller autokill himself when it finish to read
                               all the database.
         """
-        BasicState.__init__(self, behaviour, socket_interface)
+        State.__init__(self, behaviour, socket_interface)
 
         #: (BaseDB): Allow to interact with a Database
         self.database = database
@@ -97,7 +97,6 @@ class PullerActor(Actor):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
-        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(StartMessage,
                          StartHandler(PullerActor._read_behaviour))
@@ -143,7 +142,7 @@ class PullerActor(Actor):
                 (report, dispatchers) = get_report_dispatcher(self.state)
             except NoReportExtractedException:
                 for _, dispatcher in self.state.report_filter.filters:
-                    dispatcher.send(PoisonPillMessage())
+                    dispatcher.send_data(PoisonPillMessage())
                 if self.state.autokill:
                     self.state.alive = False
                 break
@@ -151,8 +150,8 @@ class PullerActor(Actor):
             # Send to the dispatcher if it's not None
             for dispatcher in dispatchers:
                 if dispatcher is not None:
-                    dispatcher.send(report)
-            time.sleep(self.state.frequency)
+                    dispatcher.send_data(report)
+            time.sleep(self.state.frequency/1000)
 
         # Behaviour to _initial_behaviour
         self.state.behaviour = Actor._initial_behaviour

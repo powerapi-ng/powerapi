@@ -19,6 +19,7 @@ import signal
 import multiprocessing
 import setproctitle
 
+from smartwatts.actor import State, SocketInterface
 from smartwatts.message import PoisonPillMessage
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.handler import HandlerException
@@ -37,13 +38,13 @@ class Actor(multiprocessing.Process):
     +=================================+============================================================================================+
     | Accessible from Client/Server   | :meth:`log <smartwatts.actor.actor.Actor.log>`                                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Client interface                | :meth:`connect <smartwatts.actor.actor.Actor.connect>`                                     |
+    | Client interface                | :meth:`connect_data <smartwatts.actor.actor.Actor.connect_data>`                           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`monitor <smartwatts.actor.actor.Actor.monitor>`                                     |
+    |                                 | :meth:`connect_control <smartwatts.actor.actor.Actor.connect_control>`                     |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    |                                 | :meth:`send_control <smartwatts.actor.actor.Actor.send_control>`                           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send <smartwatts.actor.actor.Actor.send>`                                           |
+    |                                 | :meth:`send_data <smartwatts.actor.actor.Actor.send_data>`                                 |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`kill <smartwatts.actor.actor.Actor.kill>`                                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
@@ -53,7 +54,7 @@ class Actor(multiprocessing.Process):
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`terminated_behaviour <smartwatts.actor.actor.Actor.terminated_behaviour>`           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_monitor <smartwatts.actor.actor.Actor.send_monitor>`                           |
+    |                                 | :meth:`send_control <smartwatts.actor.actor.Actor.send_control>`                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -65,12 +66,8 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Accessible from Client/Server   | :attr:`verbose <smartwatts.actor.actor.Actor.verbose>`                                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`timeout <smartwatts.actor.actor.Actor.timeout>`                                     |
+    | Server interface                | :attr:`state <smartwatts.actor.actor.Actor.state>`                                          |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :attr:`timeout_handler <smartwatts.actor.actor.Actor.timeout_handler>`                     |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
 
     """
 
@@ -88,14 +85,9 @@ class Actor(multiprocessing.Process):
 
         #: (bool): allow to display log
         self.verbose = verbose
-        #: (int): time in millisecond to wait for a message before
-        #: activate the `timeout_behaviour`
-        self.timeout = timeout
-        #: (smartwatts.actor.state.BasicState): actor's state
-        self.state = None
-        #: (function): function activated when no message was
-        #: received since `timeout` milliseconds
-        self.timeout_handler = None
+        #: (smartwatts.actor.state.State): actor's state
+        self.state = State(self._initial_behaviour,
+                           SocketInterface(name, timeout))
 
     def log(self, message):
         """
@@ -110,7 +102,7 @@ class Actor(multiprocessing.Process):
         """
         Main code executed by the actor
         """
-        self.setup()
+        self._setup()
 
         while self.state.alive:
             self.state.behaviour(self)
@@ -128,7 +120,7 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def setup(self):
+    def _setup(self):
         """
         Set actor specific configuration:
 
@@ -147,7 +139,14 @@ class Actor(multiprocessing.Process):
 
         self._signal_handler_setup()
 
-        raise UnknowMessageTypeException()
+        self.setup()
+
+    def setup(self):
+        """
+        Function called before entering on the behaviour loop
+
+        Can be overriden to use personal actor setup
+        """
 
     def add_handler(self, message_type, handler):
         """
@@ -169,17 +168,22 @@ class Actor(multiprocessing.Process):
         If the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """
-        msg_list = self.state.socket_interface.receive()
-        self.log('received : ' + str(msg_list))
+        msg = self.receive()
+        self.log('received : ' + str(msg))
 
         # Timeout
-        if msg_list == []:
-            self.state = self.timeout_handler.handle(None, self.state)
+        if msg is None:
+            self.state = self.state.timeout_handler.handle_message(None,
+                                                                   self.state)
         # Message
         else:
-            for msg in msg_list:
+            try:
                 handler = self.state.get_corresponding_handler(msg)
                 self.state = handler.handle_message(msg, self.state)
+            except UnknowMessageTypeException:
+                self.log("UnknowMessageTypeException: " + msg)
+            except HandlerException as handler_except:
+                self.log(handler_except)
 
     def _kill_process(self):
         """
@@ -189,15 +193,20 @@ class Actor(multiprocessing.Process):
         self.state.socket_interface.close()
         self.log("terminated")
 
+    def set_timeout_handler(self, new_timeout_handler):
+        """
+        Set the timeout_handler
+        """
+        self.state.timeout_handler = new_timeout_handler
+
     def terminated_behaviour(self):
         """
         Function called before closing sockets
 
         Can be overriden to use personal actor termination behaviour
         """
-        pass
 
-    def connect(self, context):
+    def connect_data(self, context):
         """
         Open a canal that can be use for unidirectional communication to this
         actor
@@ -206,38 +215,48 @@ class Actor(multiprocessing.Process):
                         communicate with this actor
         :type context: zmq.Context
         """
-        self.state.socket_interface.connect(context)
+        self.state.socket_interface.connect_data(context)
         self.log('connected to ' + self.name)
 
-    def monitor(self, context):
+    def connect_control(self, context):
         """
-        Open a monitor canal with this actor. An actor can have only one
-        monitor open at the same time. Open a pair socket on the process
-        that want to monitor this actor
+        Open a control canal with this actor. An actor can have only one
+        control open at the same time. Open a pair socket on the process
+        that want to control this actor
 
         :param context: ZMQ context of the process that want to
                         communicate with this actor
         :type context: zmq.Context
         """
-        self.state.socket_interface.monitor(context)
-        self.log('monitor' + self.name)
+        self.state.socket_interface.connect_control(context)
+        self.log('control' + self.name)
 
-    def send_monitor(self, msg):
+    def send_control(self, msg):
         """
-        Send a message to this actor on the monitor canal
+        Send a message to this actor on the control canal
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send_monitor(msg)
+        self.state.socket_interface.send_control(msg)
 
-    def send(self, msg):
+    def send_data(self, msg):
         """
         Send a msg to this actor using the data canal
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send(msg)
+        self.state.socket_interface.send_data(msg)
         self.log('sent ' + str(msg) + ' to ' + self.name)
+
+    def receive(self):
+        """
+        Block until a message was received (or until timeout) an return the
+        received messages
+
+        :return: the list of received messages or an empty list if timeout
+        :rtype: a list of Object
+        """
+        return self.state.socket_interface.receive()
 
     def kill(self):
         """
@@ -245,6 +264,6 @@ class Actor(multiprocessing.Process):
         :class:`PoisonPillMessage
         <smartwatts.message.message.PoisonPillMessage>`
         """
-        self.send_monitor(PoisonPillMessage())
+        self.send_control(PoisonPillMessage())
         self.log('send kill msg to ' + str(self.name))
         self.state.socket_interface.disconnect()

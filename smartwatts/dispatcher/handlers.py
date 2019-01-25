@@ -26,11 +26,11 @@ class StartHandler(Handler):
 
     def handle(self, msg, state):
         """
-        Allow to initialize the state of the actor, then reply to the monitor
+        Allow to initialize the state of the actor, then reply to the control
         socket.
 
         :param smartwatts.StartMessage msg: Message that initialize the actor
-        :param smartwatts.BasicState state: State of the actor
+        :param smartwatts.State state: State of the actor
         """
         if state.initialized:
             return state
@@ -39,7 +39,7 @@ class StartHandler(Handler):
             return state
 
         state.initialized = True
-        state.socket_interface.send_monitor(OKMessage())
+        state.socket_interface.send_control(OKMessage())
 
         return state
 
@@ -75,7 +75,7 @@ class FormulaDispatcherReportHandler(InitHandler):
         actor state, containing the new formula.
 
         :param smartwatts.Report msg:       Report message
-        :param smartwatts.BasicState state: Actor state
+        :param smartwatts.State state: Actor state
 
         :return: List of the (formula_id, report) where formula_id is a tuple
                  that identitfy the formula_actor
@@ -91,11 +91,11 @@ class FormulaDispatcherReportHandler(InitHandler):
                         if formula is None:
                             state.add_formula(formula_id)
                         else:
-                            formula.send(report)
+                            formula.send_data(report)
                     else:
                         for formula in state.get_corresponding_formula(
                                 list(formula_id)):
-                            formula.send(report)
+                            formula.send_data(report)
 
                 return state
 

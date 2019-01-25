@@ -25,7 +25,7 @@ from smartwatts.filter import Filter
 from smartwatts.report import Report
 from smartwatts.pusher import PusherActor, StartHandler, PowerHandler
 from smartwatts.pusher import PusherState
-from smartwatts.actor import BasicState, Actor, SocketInterface
+from smartwatts.actor import State, Actor, SocketInterface
 from smartwatts.report import HWPCReport, PowerReport
 from smartwatts.message import StartMessage, OKMessage, ErrorMessage
 

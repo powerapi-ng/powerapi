@@ -25,7 +25,7 @@ from smartwatts.message import UnknowMessageTypeException
 from smartwatts.report import create_core_report, create_socket_report
 from smartwatts.report import create_group_report, create_report_root
 from smartwatts.report import PowerReport
-from smartwatts.actor import BasicState
+from smartwatts.actor import State
 
 #####################################
 
@@ -52,7 +52,7 @@ def test_handle_no_hwpc_report():
     with pytest.raises(UnknowMessageTypeException):
         RAPLFormulaHWPCReportHandler(
             get_fake_pusher()).handle("toto",
-                                      BasicState(None, mock.Mock()))
+                                      State(None, mock.Mock()))
 
 
 def test_handle_hwpc_report_with_one_rapl_event():
