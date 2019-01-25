@@ -97,7 +97,6 @@ class PullerActor(Actor):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
-        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(StartMessage,
                          StartHandler(PullerActor._read_behaviour))

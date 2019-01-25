@@ -70,7 +70,6 @@ class PusherActor(Actor):
         Define StartMessage, PoisonPillMessage handlers and a handler for
         each report type
         """
-        Actor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(self.report_type, PowerHandler())
         self.add_handler(StartMessage, StartHandler())

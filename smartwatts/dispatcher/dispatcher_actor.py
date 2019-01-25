@@ -159,7 +159,6 @@ class DispatcherActor(Actor):
         Check if there is a primary group by rule. Set define
         StartMessage, PoisonPillMessage and Report handlers
         """
-        Actor.setup(self)
         if self.primary_group_by_rule is None:
             raise NoPrimaryGroupByRuleException()
 

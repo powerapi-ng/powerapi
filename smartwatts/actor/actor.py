@@ -102,7 +102,7 @@ class Actor(multiprocessing.Process):
         """
         Main code executed by the actor
         """
-        self.setup()
+        self._setup()
 
         while self.state.alive:
             self.state.behaviour(self)
@@ -120,7 +120,7 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def setup(self):
+    def _setup(self):
         """
         Set actor specific configuration:
 
@@ -138,6 +138,15 @@ class Actor(multiprocessing.Process):
         self.log('I\'m ' + self.name)
 
         self._signal_handler_setup()
+
+        self.setup()
+
+    def setup(self):
+        """
+        Function called before entering on the behaviour loop
+
+        Can be overriden to use personal actor setup
+        """
 
     def add_handler(self, message_type, handler):
         """
@@ -190,7 +199,6 @@ class Actor(multiprocessing.Process):
 
         Can be overriden to use personal actor termination behaviour
         """
-        pass
 
     def connect_data(self, context):
         """

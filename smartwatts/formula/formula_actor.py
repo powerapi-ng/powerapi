@@ -49,5 +49,4 @@ class FormulaActor(Actor):
         """
         Formula basic setup, Connect the formula to the pusher
         """
-        Actor.setup(self)
         self.actor_pusher.connect_data(self.state.socket_interface.context)
