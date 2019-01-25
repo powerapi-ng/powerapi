@@ -14,4 +14,4 @@ There are two steps for measure the energetic consumption:
 
 .. figure:: _static/powerAPI_archi.png
 
-	    calcul de la consommation énergétique de la machine **HOST**
+            Energetic consumption compute process of the **HOST**
