@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from smartwatts.handler import InitHandler, Handler
-from smartwatts.message import UnknowMessageTypeException
 from smartwatts.message import OKMessage, StartMessage
 
 
@@ -50,22 +49,6 @@ class FormulaDispatcherReportHandler(InitHandler):
     reports and formulas ids to send theses reports.
     """
 
-    def __init__(self, route_table, primary_group_by_rule):
-        """
-        :param route_table:           List all group by rule with their
-                                      associated message type
-        :type route_table:            array(tuple(Message, GroupBy))
-
-        :param primary_group_by_rule: Primary GroupBy rule
-        :type primary_group_by_rule:  GroupBy
-        """
-        #: (array(tuple(Message, GroupBy))): List all group by rule
-        #: with their associated message type
-        self.route_table = route_table
-
-        #: (GroupBy): Primary GroupBy rule
-        self.primary_group_by_rule = primary_group_by_rule
-
     def handle(self, msg, state):
         """
         Split the received report into sub-reports (if needed) and send them to
@@ -81,27 +64,27 @@ class FormulaDispatcherReportHandler(InitHandler):
                  that identitfy the formula_actor
         :rtype:  list(tuple(formula_id, report))
         """
-        for (report_class, group_by_rule) in self.route_table:
-            if isinstance(msg, report_class):
-                for formula_id, report in self._extract_reports(msg,
-                                                                group_by_rule):
-                    primary_rule_fields = self.primary_group_by_rule.fields
-                    if len(formula_id) == len(primary_rule_fields):
-                        formula = state.get_direct_formula(formula_id)
-                        if formula is None:
-                            state.add_formula(formula_id)
-                        else:
-                            formula.send_data(report)
-                    else:
-                        for formula in state.get_corresponding_formula(
-                                list(formula_id)):
-                            formula.send_data(report)
+        group_by_rule = state.route_table.get_group_by_rule(msg)
+        primary_group_by_rule = state.route_table.primary_group_by_rule
+        
+        for formula_id, report in self._extract_reports(msg, group_by_rule,
+                                                        primary_group_by_rule):
+            primary_rule_fields = primary_group_by_rule.fields
+            if len(formula_id) == len(primary_rule_fields):
+                formula = state.get_direct_formula(formula_id)
+                if formula is None:
+                    state.add_formula(formula_id)
+                else:
+                    formula.send(report)
+            else:
+                for formula in state.get_corresponding_formula(
+                        list(formula_id)):
+                    formula.send(report)
 
-                return state
+        return state
 
-        raise UnknowMessageTypeException(type(msg))
 
-    def _extract_reports(self, report, group_by_rule):
+    def _extract_reports(self, report, group_by_rule, primary_group_by_rule):
         """
         Use the group by rule to split the report. Generated report identifier
         are then mapped to an identifier that match the primary report
@@ -125,11 +108,12 @@ class FormulaDispatcherReportHandler(InitHandler):
             return report_list
 
         return list(map(lambda _tuple:
-                        (self._match_report_id(_tuple[0], group_by_rule),
+                        (self._match_report_id(_tuple[0], group_by_rule,
+                                               primary_group_by_rule),
                          _tuple[1]),
                         report_list))
 
-    def _match_report_id(self, report_id, group_by_rule):
+    def _match_report_id(self, report_id, group_by_rule, primary_rule):
         """
         Return the new_report_id with the report_id by removing
         every "useless" fields from it.
@@ -138,7 +122,6 @@ class FormulaDispatcherReportHandler(InitHandler):
         :param smartwatts.GroupBy group_by_rule: GroupBy rule
         """
         new_report_id = ()
-        primary_rule = self.primary_group_by_rule
         for i in range(len(report_id)):
             if i >= len(primary_rule.fields):
                 return new_report_id

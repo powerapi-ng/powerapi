@@ -8,6 +8,7 @@ import mock
 
 from smartwatts.dispatcher import FormulaDispatcherReportHandler
 from smartwatts.dispatcher import DispatcherState, DispatcherActor
+from smartwatts.dispatcher import RouteTable
 from smartwatts.message import UnknowMessageTypeException
 from smartwatts.group_by import GroupBy
 from smartwatts.report import Report, HWPCReport
@@ -166,10 +167,10 @@ class TestExtractReportFunction:
         the same reports as in *validation_reports*
 
         """
-        handler = FormulaDispatcherReportHandler(None,
-                                                 primary_group_by_rule)
+        handler = FormulaDispatcherReportHandler()
 
-        result_reports = handler._extract_reports(input_report, group_by_rule)
+        result_reports = handler._extract_reports(input_report, group_by_rule,
+                                                  primary_group_by_rule)
         result_reports.sort(key=lambda result_tuple: result_tuple[0])
         validation_reports.sort(key=lambda result_tuple: result_tuple[0])
 
@@ -268,7 +269,8 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), lambda formula_id, context: Mock())
+    return DispatcherState(None, Mock(), lambda formula_id, context: Mock(),
+                           RouteTable())
 
 
 class TestHandlerFunction:
@@ -281,7 +283,7 @@ class TestHandlerFunction:
         handler's route table
 
         """
-        handler = FormulaDispatcherReportHandler([], GroupBy1A())
+        handler = FormulaDispatcherReportHandler()
 
         with pytest.raises(UnknowMessageTypeException):
             handler.handle(REPORT_1, init_state())
@@ -293,8 +295,9 @@ class TestHandlerFunction:
         which their id are in formula_id_validation_list
 
         """
-        route_table = [(Report1, GroupBy1AB()), (Report2, GroupBy2AC())]
-        handler = FormulaDispatcherReportHandler(route_table, GroupBy1AB())
+        init_state.route_table.group_by(Report1, GroupBy1AB(True))
+        init_state.route_table.group_by(Report2, GroupBy2AC())
+        handler = FormulaDispatcherReportHandler()
 
         for formula_id in init_formula_id_list:
             init_state.add_formula(formula_id)
@@ -376,7 +379,7 @@ class TestHandlerFunction:
         fake_socket_interface = get_fake_socket_interface()
         dispatcher_state = DispatcherState(Actor._initial_behaviour,
                                            fake_socket_interface,
-                                           None)
+                                           None, None)
         assert dispatcher_state.initialized is False
 
         # Define StartHandler
@@ -403,17 +406,22 @@ ACTOR_NAME = 'dispatcher_actor'
 @pytest.fixture()
 def dispatcher_actor():
     """ return an uninitialized actor """
-    dispatcher = DispatcherActor(ACTOR_NAME, Mock())
+    dispatcher = DispatcherActor(ACTOR_NAME, Mock(), RouteTable())
     dispatcher.state.socket_interface = Mock()
     return dispatcher
 
 
 @pytest.fixture()
-def initialized_dispatcher_actor(dispatcher_actor):
+def initialized_dispatcher_actor():
     """ return an uninitialized actor """
-    dispatcher_actor.group_by(Report1, GroupBy1A(primary=True))
-    dispatcher_actor.setup()
-    return dispatcher_actor
+    route_table = RouteTable()
+
+    gbr = GroupBy1A(primary=True)
+    route_table.group_by(Report1, gbr)
+    dispatcher = DispatcherActor(ACTOR_NAME, Mock(), route_table)
+    dispatcher.state.socket_interface = Mock()
+    dispatcher.setup()
+    return dispatcher
 
 
 def test_actor_initialisation(dispatcher_actor):
@@ -427,4 +435,4 @@ def test_actor_setup_without_group_by(dispatcher_actor):
 
 
 def test_actor_setup(initialized_dispatcher_actor):
-    assert initialized_dispatcher_actor.primary_group_by_rule is not None
+    assert initialized_dispatcher_actor.state.route_table.primary_group_by_rule is not None
