@@ -193,6 +193,12 @@ class Actor(multiprocessing.Process):
         self.state.socket_interface.close()
         self.log("terminated")
 
+    def set_timeout_handler(self, new_timeout_handler):
+        """
+        Set the timeout_handler
+        """
+        self.state.timeout_handler = new_timeout_handler
+
     def terminated_behaviour(self):
         """
         Function called before closing sockets

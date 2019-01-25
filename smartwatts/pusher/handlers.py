@@ -72,3 +72,19 @@ class PowerHandler(InitHandler):
 
         state.database.save(msg.serialize())
         return state
+
+
+class TimeoutHandler(InitHandler):
+    """
+    Pusher timeout kill the actor
+    """
+
+    def handle(self, msg, state):
+        """
+        Kill the actor by setting alive to False
+
+        :param None msg: None.
+        :param smartwatts.State state: State of the actor.
+        """
+        state.alive = False
+        return state

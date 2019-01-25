@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from smartwatts.actor import Actor, State, SocketInterface
-from smartwatts.pusher import PowerHandler, StartHandler
+from smartwatts.pusher import PowerHandler, StartHandler, TimeoutHandler
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 
@@ -62,7 +62,7 @@ class PusherActor(Actor):
         self.report_type = report_type
 
         #: (State): State of the actor.
-        self.state = PusherState(PusherActor._initial_behaviour,
+        self.state = PusherState(Actor._initial_behaviour,
                                  SocketInterface(name, timeout), database)
 
     def setup(self):
@@ -73,21 +73,4 @@ class PusherActor(Actor):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(self.report_type, PowerHandler())
         self.add_handler(StartMessage, StartHandler())
-
-    def _initial_behaviour(self):
-        """
-        Initial behaviour of Pusher actor
-
-        Wait for a message, and handle it with the correct handler
-        if the message is None, call the timout_handler otherwise find the
-        handler correponding to the message type and call it on the message.
-        """
-        msg = self.receive()
-        self.log('received : ' + str(msg))
-
-        # Timeout
-        if msg is None:
-            self.state.alive = False
-        else:
-            handler = self.state.get_corresponding_handler(msg)
-            self.state = handler.handle_message(msg, self.state)
+        self.set_timeout_handler(TimeoutHandler())
