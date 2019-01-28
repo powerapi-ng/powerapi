@@ -66,16 +66,14 @@ class FormulaDispatcherReportHandler(InitHandler):
         """
         group_by_rule = state.route_table.get_group_by_rule(msg)
         primary_group_by_rule = state.route_table.primary_group_by_rule
-        
+
         for formula_id, report in self._extract_reports(msg, group_by_rule,
                                                         primary_group_by_rule):
             primary_rule_fields = primary_group_by_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = state.get_direct_formula(formula_id)
-                if formula is None:
-                    state.add_formula(formula_id)
-                else:
-                    formula.send(report)
+                formula.send_data(report)
+
             else:
                 for formula in state.get_corresponding_formula(
                         list(formula_id)):
