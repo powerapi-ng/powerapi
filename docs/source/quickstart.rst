@@ -1,14 +1,16 @@
 .. PowerAPI (QuickStart)
 
 Démarrage rapide
-****************
 
-Cette partie permet de voir comment utiliser **PowerAPI**. Il est considéré que vous possédez une base de donnée MongoDB contenant des données exploitables, obtenues à partir d'un des :doc:`Capteurs énergétiques <sensors>` supportés par **PowerAPI**. Il est préférable d'avoir lu la partie :doc:`Présentation PowerAPI <intro>` avant.
+Quickstart
+**********
 
-PowerAPI CLI sur Docker
-=========================
+This part help you to understand how to use **PowerAPI**. It's assumed that you have a MongoDB database containing exploitable data, obtain from :doc:`sensors <sensors>` support by **PowerAPI**. It's recommended to read the :doc:`PowerAPI quick overview <intro>` before.
 
-Il est nécessaire d'installer `Docker <https://docs.docker.com/install/>`_ pour lancer **PowerAPI**, la commande ci-dessous permet de démarrer le traitement des données.
+PowerAPI CLI on Docker
+======================
+
+You have to install `Docker <https://docs.docker.com/install/>`_ to run **PowerAPI**, the command below allow to run the data processing.
 
 .. code-block:: none
 
@@ -16,11 +18,11 @@ Il est nécessaire d'installer `Docker <https://docs.docker.com/install/>`_ pour
                          output_hostname output_port output_database_name output_collection_name \
                          SOCKET
 
-Les paramètres permettent de configurer les bases MongoDB en entrée et en sortie.
+Following parameters configure MongoDB database in input/output.
 
-* **hostname**: Adresse du serveur Mongo. (localhost, adresse IP, ...)
-* **port**: Port du serveur Mongo. (27017 le plus souvent)
-* **database_name**: Nom de la base de donnée.
-* **collection_name**: Nom de la collection.
+* **hostname**: Mongo server address. (localhost, IP address, ...)
+* **port**: Mongo server port. (usually 27017)
+* **database_name**: Database name.
+* **collection_name**: Collection name.
 
-Si vous utilisez un serveur MongoDB localement, vous devez ajouter l'option ``--network=host`` après ``docker run``. Il est également possible d'ajouter l'option ``-v`` à la fin de la commande pour avoir des logs de retour accessible avec la commande ``docker logs nom_du_conteneur``.
+If you are using MongoDB server on your localhost, you need to add ``--network=host`` to your Docker command. You can also add ``-v`` in the **PowerAPI** command for display logs readable with ``docker logs container_name``.

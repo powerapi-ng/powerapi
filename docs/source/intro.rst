@@ -1,17 +1,17 @@
-Présentation de PowerAPI 
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+PowerAPI quick overview
+^^^^^^^^^^^^^^^^^^^^^^^
 
-**PowerAPI** est une suite d'outils utilisés pour mesurer la consommation énergétique logiciel d'une infrastructure informatique. La consommation est mesurée à l'échelle d'un conteneur Docker ou d'un pod Kubernetes (Cgroups). Elle est estimée à partir de données recueillies par des :doc:`Capteurs énergétiques <sensors>` (logiciel ou physique). Cette estimation peut être réalisée au fur et à mesure que les données sont recueillies, ou à partir d'un ensemble de mesure réalisées au préalable.
+**PowerAPI** is a framework used as a power meter. It allows to measure the energetic consumption of containerized environments (with cgroups). These data are computed using raws metrics collected by some :doc:`sensors <sensors>` (hardware or software). The computed estimation of consumption can be made online or offline. (in real time or after collecting data on a database) 
 
-Mesurer la consomation énergétique
-==================================
+Measure energetic consumption
+=============================
 
-Mesurer la consommation énergétique d'un conteneur se fait en deux phases:
+There are two steps for measure the energetic consumption:
 
-- Recueillir les données grâce à des **Capteurs** (logiciels ou matériels). Chaque capteur récolte des données nécessaires à l'estimation de la consommation énergétique (consommation globale de la machine, compteur de performance processeur, etc.). Ces données sont ensuite stockées dans une base de données MongoDB.
+- Collect data from :doc:`sensors <sensors>`. Each :doc:`sensors <sensors>` gather useful data for compute the estimation of energetic consumption (e.g. global computer consumption, processor performance counter, etc.). Data are saved in a Database, usually a MongoDB.
 
-- Estimer la consommation énergétique grâce à des modèles de consommation. Un deuxième outil: le **Wattmetre** utilise des modèles de consommation prédéfinis pour estimer une mesure de consommation énergétique de conteneur à partir des données recueillies par les capteurs. Ce Wattmetre récupère les données depuis la base de donnée MongoDB. Il peut effectuer ses estimations de consommation au fur et a mesure que les données sont écrites en base ou en utilisant l'intégralité des données présentes dans la base de donnée. Les estimations de consommations sont ensuite stockées en base.
+- Compute the energetic consumption using pre-trained model. **PowerAPI** use this pre-trained consumption model to estimate a measure of energetic consumption of the containers from all data collect by :doc:`sensors <sensors>`. Results are then saved in a Database, usually (still) a MongoDB.
 
 .. figure:: _static/powerAPI_archi.png
 
-	    calcul de la consommation énergétique de la machine **HOST**
+            Energetic consumption compute process of the **HOST**

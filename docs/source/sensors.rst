@@ -1,27 +1,23 @@
 
-Capteurs énergétiques
-=====================
+Sensors
+=======
 
-Cette page regroupe tous les types de **Capteurs énergétiques** qui produisent les données brutes nécessaire à **PowerAPI** pour effectuer ses traitements.
+Here you can find every kind of **sensors** collecting raw data useable by **PowerAPI** to compute energetic estimation.
 
 .. note::
 
-   Le code de cette page n'est pas encore testé :D
+   Code in this page is not tested :D
 
 HWPC-Sensor
 -----------
 
-Le **HWPC-Sensor** (Hardware Performance Counters Sensor) permet de récupérer des données à partir des compteurs de performance accessible dans les processeurs récents.
-
-Pour l'utiliser, il faut lui mettre à disposition un serveur MongoDB, dans lequel il va stocker ses données.
-
-On peut télécharger l'image Docker de HWPC-sensor avec la commande suivante
+The **HWPC-Sensor** (Hardware Performance Counters Sensor) get data from hardware performance counters reachable in recent processor. You have to provide him a MongoDB database for saving data. Docker image can be downloaded with the following command:
 
 .. code-block:: none 
 
    docker pull gfieni/hwpc-sensor
 
-Une fois l'image téléchargée, la commande suivante lance le capteur qui va nourrir la base de donnée.
+When the image is correctly downloaded, you can run the sensor with the next following command:
 
 .. code-block:: none
 
@@ -35,10 +31,11 @@ Une fois l'image téléchargée, la commande suivante lance le capteur qui va no
              -c "llc" -e "LLC_MISSES" \
              -c "rapl" -e "RAPL_ENERGY_CORES" -e "RAPL_ENERGY_PKG" -e "RAPL_ENERGY_GPU" -e "RAPL_ENERGY_DRAM"
 
-Il faut penser à changer les variables suivantes:
 
-* **HWPC_DOCKER_IMAGE**: Nom de l'image docker de **HWPC-Sensor**.
-* **SENSOR_NAME**: Nom du capteur.
-* **MONGO_ADDRESS**: Adresse pour accéder au serveur MongoDB.
-* **DATABASE_NAME**: Nom de la base de donnée.
-* **COLLECTION_NAME**: Nom de la collection.
+These parameters had to be configure:
+
+* **HWPC_DOCKER_IMAGE**:**HWPC-Sensor** docker image name.
+* **SENSOR_NAME**: Sensor name.
+* **MONGO_ADDRESS**: MongoDB server address.
+* **DATABASE_NAME**: MongoDB database name.
+* **COLLECTION_NAME**: MongoDB collection name.
