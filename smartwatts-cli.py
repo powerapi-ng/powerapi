@@ -30,7 +30,7 @@ from smartwatts.filter import Filter
 from smartwatts.puller import PullerActor
 from smartwatts.report import HWPCReport, PowerReport
 from smartwatts.report_model import HWPCModel
-from smartwatts.dispatcher import DispatcherActor
+from smartwatts.dispatcher import DispatcherActor, RouteTable
 from smartwatts.message import OKMessage, StartMessage
 
 
@@ -87,11 +87,13 @@ def main():
                        RAPLFormulaActor(name, pusher, verbose=verbose))
 
     # Dispatcher
-    dispatcher = DispatcherActor('dispatcher', formula_factory,
+    route_table = RouteTable()
+    route_table.group_by(HWPCReport, HWPCGroupBy(getattr(HWPCDepthLevel,
+                                                         args.hwpc_group_by),
+                                                 primary=True))
+
+    dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,
                                  verbose=args.verbose)
-    dispatcher.group_by(HWPCReport, HWPCGroupBy(getattr(HWPCDepthLevel,
-                                                        args.hwpc_group_by),
-                                                primary=True))
 
     # Puller
     input_mongodb = MongoDB(args.input_hostname, args.input_port,

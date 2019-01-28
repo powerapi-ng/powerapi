@@ -130,14 +130,14 @@ class DispatcherState(State):
     def get_direct_formula(self, formula_id):
         """
         Get the formula corresponding to the given formula id
-        or None if no formula correspond to this id
+        or create and return it if its didn't exist
 
         :param tuple formula_id: Key corresponding to a Formula
         :return: a Formula
         :rtype: Formula or None
         """
         if formula_id not in self.formula_dict:
-            return None
+            self.add_formula(formula_id)
         return self.formula_dict[formula_id]
 
     def get_corresponding_formula(self, formula_id):
