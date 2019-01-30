@@ -64,8 +64,6 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-
-
     """
 
     def __init__(self, name, level_logger=logging.NOTSET, timeout=None):
