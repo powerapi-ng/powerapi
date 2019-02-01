@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from smartwatts.actor import Actor, State, SocketInterface
 
 
@@ -26,17 +27,18 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, actor_pusher, verbose=False, timeout=None):
+    def __init__(self, name, actor_pusher,
+                 level_logger=logging.NOTSET, timeout=None):
         """
         :param str name:                            Actor name
         :param smartwatts.PusherActor actor_pusher: Pusher actor whom send
                                                     results
-        :param bool verbose:                        Allow to display log
+        :param int level_logger:                    Define logger level
         :param bool timeout:                        Time in millisecond to wait
                                                     for a message before called
                                                     timeout_handler.
         """
-        Actor.__init__(self, name, verbose, timeout)
+        Actor.__init__(self, name, level_logger, timeout)
 
         #: (smartwatts.PusherActor): Pusher actor whom send results.
         self.actor_pusher = actor_pusher

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import time
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
@@ -70,12 +71,12 @@ class DummyFormulaActor(FormulaActor):
     power report containing 42
     """
 
-    def __init__(self, name, actor_pusher, verbose=False):
+    def __init__(self, name, actor_pusher, level_logger=logging.NOTSET):
         """
         :param str name:                            Actor name
         :param smartwatts.PusherActor actor_pusher: Pusher to send results.
         """
-        FormulaActor.__init__(self, name, actor_pusher, verbose)
+        FormulaActor.__init__(self, name, actor_pusher, level_logger)
 
     def setup(self):
         """

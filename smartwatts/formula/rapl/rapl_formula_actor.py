@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import math
-
 from smartwatts.formula.formula_actor import FormulaActor
 from smartwatts.handler import Handler, PoisonPillMessageHandler
 from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
@@ -91,14 +91,14 @@ class RAPLFormulaActor(FormulaActor):
     A formula to handle RAPL events.
     """
 
-    def __init__(self, name, actor_pusher, verbose=False):
+    def __init__(self, name, actor_pusher, level_logger=logging.NOTSET):
         """
         Initialize an RAPL formula.
         :param name: Name of the formula
         :param actor_pusher: Pusher to whom the formula must send its reports
-        :param verbose: Verbose flag
+        :param int level_logger: Define the level of the logger
         """
-        FormulaActor.__init__(self, name, actor_pusher, verbose)
+        FormulaActor.__init__(self, name, actor_pusher, level_logger)
 
     def setup(self):
         """

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import logging
 import signal
 import multiprocessing
 import setproctitle
@@ -36,8 +36,6 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     |  Interface type                 |                                   method name                                              |
     +=================================+============================================================================================+
-    | Accessible from Client/Server   | :meth:`log <smartwatts.actor.actor.Actor.log>`                                             |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
     | Client interface                | :meth:`connect_data <smartwatts.actor.actor.Actor.connect_data>`                           |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`connect_control <smartwatts.actor.actor.Actor.connect_control>`                     |
@@ -64,40 +62,36 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     |  Interface type                 |                                   method name                                              |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Accessible from Client/Server   | :attr:`verbose <smartwatts.actor.actor.Actor.verbose>`                                     |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
 
     """
 
-    def __init__(self, name, verbose=False, timeout=None):
+    def __init__(self, name, level_logger=logging.NOTSET, timeout=None):
         """
         Initialization and start of the process.
 
         :param str name: unique name that will be used to indentify the actor
                          processus
-        :param bool verbose: allow to display log
+        :param int level_logger: Define the level of the logger
         :param int timeout: if define, do something if no msg is recv every
                             timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
 
-        #: (bool): allow to display log
-        self.verbose = verbose
         #: (smartwatts.actor.state.State): actor's state
         self.state = State(self._initial_behaviour,
                            SocketInterface(name, timeout))
-
-    def log(self, message):
-        """
-        Print message if verbose mode is enable.
-
-        :param str message: message to print
-        """
-        if self.verbose:
-            print('[' + str(os.getpid()) + ']' + ' ' + message)
+        #: (logging.Logger): Logger
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(level_logger)
+        formatter = logging.Formatter(
+            '%(asctime)s || %(levelname)s || ' +
+            '%(process)d %(processName)s || %(message)s')
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
 
     def run(self):
         """
@@ -136,7 +130,7 @@ class Actor(multiprocessing.Process):
 
         self.state.socket_interface.setup()
 
-        self.log('I\'m ' + self.name)
+        self.logger.info(self.name + ' process created.')
 
         self._signal_handler_setup()
 
@@ -170,7 +164,6 @@ class Actor(multiprocessing.Process):
         handler correponding to the message type and call it on the message.
         """
         msg = self.receive()
-        self.log('received : ' + str(msg))
 
         # Timeout
         if msg is None:
@@ -182,9 +175,10 @@ class Actor(multiprocessing.Process):
                 handler = self.state.get_corresponding_handler(msg)
                 self.state = handler.handle_message(msg, self.state)
             except UnknowMessageTypeException:
-                self.log("UnknowMessageTypeException: " + msg)
-            except HandlerException as handler_except:
-                self.log(handler_except)
+                self.logger.warning("UnknowMessageTypeException: " +
+                                    repr(msg))
+            except HandlerException:
+                self.logger.warning("HandlerException")
 
     def _kill_process(self):
         """
@@ -192,7 +186,7 @@ class Actor(multiprocessing.Process):
         """
         self.terminated_behaviour()
         self.state.socket_interface.close()
-        self.log("terminated")
+        self.logger.info(self.name + " terminated")
 
     def set_timeout_handler(self, new_timeout_handler):
         """
@@ -217,7 +211,7 @@ class Actor(multiprocessing.Process):
         :type context: zmq.Context
         """
         self.state.socket_interface.connect_data(context)
-        self.log('connected to ' + self.name)
+        self.logger.info('connected data to ' + self.name)
 
     def connect_control(self, context):
         """
@@ -230,7 +224,7 @@ class Actor(multiprocessing.Process):
         :type context: zmq.Context
         """
         self.state.socket_interface.connect_control(context)
-        self.log('control' + self.name)
+        self.logger.info('connected control to ' + self.name)
 
     def send_control(self, msg):
         """
@@ -247,7 +241,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_data(msg)
-        self.log('sent ' + str(msg) + ' to ' + self.name)
+        self.logger.info('send [' + repr(msg) + '] to ' + self.name)
 
     def receive(self):
         """
@@ -257,14 +251,22 @@ class Actor(multiprocessing.Process):
         :return: the list of received messages or an empty list if timeout
         :rtype: a list of Object
         """
-        return self.state.socket_interface.receive()
+        msg = self.state.socket_interface.receive()
+        self.logger.info("receive : [" + repr(msg) + "]")
+        return msg
 
-    def kill(self):
+    def kill(self, by_data=False):
         """
         Kill this actor by sending a
         :class:`PoisonPillMessage
         <smartwatts.message.message.PoisonPillMessage>`
+
+        :param bool by_data: Define if the kill msg is send in the control
+                             socket or the data socket
         """
-        self.send_control(PoisonPillMessage())
-        self.log('send kill msg to ' + str(self.name))
+        if by_data:
+            self.send_data(PoisonPillMessage())
+        else:
+            self.send_control(PoisonPillMessage())
+        self.logger.info('send kill msg to ' + self.name)
         self.state.socket_interface.disconnect()

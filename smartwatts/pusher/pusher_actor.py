@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.pusher import PowerHandler, StartHandler, TimeoutHandler
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -47,16 +48,16 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_type, database, verbose=False):
+    def __init__(self, name, report_type, database, level_logger=logging.NOTSET):
         """
         :param str name: Pusher name.
         :param Report report_type: Type of the report that the pusher
                                    handle.
         :param BaseDB database: Database use for saving data.
-        :param bool verbose: Allow to display log.
+        :param int level_logger: Define the level of the logger
         """
         timeout = 3000
-        Actor.__init__(self, name, verbose, timeout)
+        Actor.__init__(self, name, level_logger, timeout)
 
         #: (Report): Type of the report that the pusher handle.
         self.report_type = report_type

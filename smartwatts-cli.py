@@ -20,6 +20,7 @@ Module smartwatts-cli
 
 import argparse
 import pickle
+import logging
 import signal
 import zmq
 from smartwatts.database import MongoDB
@@ -36,7 +37,6 @@ from smartwatts.message import OKMessage, StartMessage
 
 class BadActorInitializationError(Exception):
     """ Error if actor doesn't answer with "OKMessage" """
-    pass
 
 
 def arg_parser_init():
@@ -74,17 +74,21 @@ def main():
     # Actor initialization step
 
     args = arg_parser_init().parse_args()
+    if args.verbose:
+        args.verbose = logging.DEBUG
+    else:
+        args.verbose = logging.NOTSET
 
     # Pusher
     output_mongodb = MongoDB(args.output_hostname, args.output_port,
                              args.output_db, args.output_collection,
                              save_mode=True)
     pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
-                         verbose=args.verbose)
+                         level_logger=args.verbose)
 
     # Formula
     formula_factory = (lambda name, verbose:
-                       RAPLFormulaActor(name, pusher, verbose=verbose))
+                       RAPLFormulaActor(name, pusher, level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()
@@ -93,7 +97,7 @@ def main():
                                                  primary=True))
 
     dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,
-                                 verbose=args.verbose)
+                                 level_logger=args.verbose)
 
     # Puller
     input_mongodb = MongoDB(args.input_hostname, args.input_port,
@@ -102,7 +106,8 @@ def main():
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         report_filter, 0, verbose=args.verbose, autokill=True)
+                         report_filter, 0, level_logger=args.verbose,
+                         autokill=True)
 
     ##########################################################################
     # Actor start step

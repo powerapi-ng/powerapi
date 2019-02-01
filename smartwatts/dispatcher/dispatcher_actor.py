@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from smartwatts.actor import Actor, SocketInterface
 from smartwatts.handler import PoisonPillMessageHandler
 from smartwatts.report import Report
@@ -37,18 +38,18 @@ class DispatcherActor(Actor):
     if no Formula exist for this message.
     """
 
-    def __init__(self, name, formula_init_function, route_table, verbose=False,
-                 timeout=None):
+    def __init__(self, name, formula_init_function, route_table,
+                 level_logger=logging.NOTSET, timeout=None):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
         :param route_table: initialized route table of the DispatcherActor
         :type route_table: smartwatts.dispatcher.state.RouteTable
-        :param bool verbose: Allow to display log
+        :param int level_logger: Define the level of the logger
         :param bool timeout: Define the time in millisecond to wait for a
                              message before run timeout_handler
         """
-        Actor.__init__(self, name, verbose, timeout)
+        Actor.__init__(self, name, level_logger, timeout)
 
         # (func): Function for creating Formula
         self.formula_init_function = formula_init_function
@@ -78,8 +79,7 @@ class DispatcherActor(Actor):
         Kill each formula before terminate
         """
         for name, formula in self.state.get_all_formula():
-            self.log('kill ' + str(name))
-            formula.send_data(PoisonPillMessage())
+            formula.kill(by_data=True)
             formula.join()
 
     def _create_factory(self):
@@ -91,10 +91,10 @@ class DispatcherActor(Actor):
         """
         # context = self.state.socket_interface.context
         formula_init_function = self.formula_init_function
-        verbose = self.verbose
 
         def factory(formula_id, context):
-            formula = formula_init_function(str(formula_id), verbose)
+            formula = formula_init_function(str(formula_id),
+                                            self.logger.getEffectiveLevel())
             formula.connect_data(context)
             formula.connect_control(context)
             return formula

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import time
 from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
@@ -75,18 +76,18 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, frequency=0,
-                 verbose=False, autokill=False):
+                 level_logger=logging.NOTSET, autokill=False):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
         :param int frequency: Define (in ms) the sleep time between each
                               read in the database.
-        :param bool verbose: Allow to display log.
+        :param int level_logger: Define the level of the logger
         :param bool autokill: Puller autokill himself when it finish to read
                               all the database.
         """
-        Actor.__init__(self, name, verbose)
+        Actor.__init__(self, name, level_logger)
 
         #: (State): Actor State.
         self.state = PullerState(Actor._initial_behaviour,

@@ -14,8 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from smartwatts.message import Message
+import smartwatts.utils as utils
 
-class Report:
+
+class Report(Message):
     """
     Report abtract class.
     """
@@ -29,6 +32,11 @@ class Report:
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
+
+    def __repr__(self):
+        return (self.__class__.__name__ + " " +
+                str(utils.datetime_to_timestamp(self.timestamp)) + "|"
+                + self.sensor + "|" + self.target)
 
     def serialize(self):
         """
