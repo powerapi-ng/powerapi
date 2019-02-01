@@ -20,27 +20,41 @@ class UnknowMessageTypeException(Exception):
     Exception happen when we don't know the message type
     """
 
+class Message:
+    """
+    Abstract class message. Each object that is used by zmq
+    need to be a Message.
+    """
+    def __repr__(self):
+        raise NotImplementedError()
 
-class PoisonPillMessage:
+
+class PoisonPillMessage(Message):
     """
     Message which allow to kill an actor
     """
+    def __repr__(self):
+        return "PoisonPillMessage"
 
 
-class StartMessage:
+class StartMessage(Message):
     """
     Message that ask the actor to launch its initialisation process
     """
+    def __repr__(self):
+        return "StartMessage"
 
 
-class OKMessage:
+class OKMessage(Message):
     """
     Message used in synchron communication to answer that the actor
     completed the task previously asked
     """
+    def __repr__(self):
+        return "OKMessage"
 
 
-class ErrorMessage:
+class ErrorMessage(Message):
     """
     Message used to indicate that an error as occuried
     """
@@ -50,3 +64,6 @@ class ErrorMessage:
         :param error_code: Code of the error
         """
         self.error_code = error_code
+
+    def __repr__(self):
+        return "ErrorMessage"

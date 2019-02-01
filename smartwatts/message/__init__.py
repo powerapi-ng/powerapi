@@ -1,3 +1,4 @@
+from smartwatts.message.message import Message
 from smartwatts.message.message import PoisonPillMessage
 from smartwatts.message.message import UnknowMessageTypeException
 from smartwatts.message.message import StartMessage

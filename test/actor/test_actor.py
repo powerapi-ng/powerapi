@@ -1,8 +1,23 @@
+# Copyright (C) 2018  University of Lille
+# Copyright (C) 2018  INRIA
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
 import multiprocessing
-
-
-import setproctitle
 import pytest
+import setproctitle
 
 from mock import Mock, patch
 
@@ -11,25 +26,22 @@ from smartwatts.actor import Actor, State
 from smartwatts.handler import PoisonPillMessageHandler
 
 
+ACTOR_NAME = "dummy_actor"
+
 class DummyActor(Actor):
 
-    def __init__(self, name='dummy_actor', verbose=False):
-        Actor.__init__(self, name, verbose=verbose)
+    def __init__(self, name=ACTOR_NAME):
+        Actor.__init__(self, name)
         self.state = State(Mock(), Mock())
 
     def setup(self):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
 
 
-ACTOR_NAME = 'dummy_actor'
-VERBOSE_MODE = False
-
-
-
 @pytest.fixture()
 def dummy_actor():
     """ Return a dummy actor"""
-    actor = DummyActor(name=ACTOR_NAME, verbose=VERBOSE_MODE)
+    actor = DummyActor()
     actor._signal_handler_setup = Mock()
     return actor
 
