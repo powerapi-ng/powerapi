@@ -123,6 +123,21 @@ class SocketInterface:
             return self._recv_serialized(events[0][0])
         return None
 
+    def receive_control(self):
+        """
+        Block until a message was received on the control canal (client side) (or
+        until timeout) an return the received messages
+
+        :return: the list of received messages or an empty list if timeout
+        :rtype: a list of Object
+
+        """
+        event = self.control_socket.poll(self.timeout)
+        if event == 0:
+            return None
+        return self._recv_serialized(self.control_socket)
+
+
     def close(self):
         """
         Close all socket handle by this interface

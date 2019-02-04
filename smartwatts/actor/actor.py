@@ -232,6 +232,12 @@ class Actor(multiprocessing.Process):
         """
         self.state.socket_interface.send_control(msg)
 
+    def receive_control(self):
+        """
+        Receive a message from this actor on the control canal
+        """
+        return self.state.socket_interface.receive_control()
+
     def send_data(self, msg):
         """
         Send a msg to this actor using the data canal
