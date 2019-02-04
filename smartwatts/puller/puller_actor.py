@@ -76,7 +76,7 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, frequency=0,
-                 level_logger=logging.NOTSET, autokill=False):
+                 level_logger=logging.NOTSET, autokill=False, timeout=None):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
@@ -87,11 +87,11 @@ class PullerActor(Actor):
         :param bool autokill: Puller autokill himself when it finish to read
                               all the database.
         """
-        Actor.__init__(self, name, level_logger)
 
+        Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
         self.state = PullerState(Actor._initial_behaviour,
-                                 SocketInterface(name, None), database,
+                                 SocketInterface(name, timeout), database,
                                  report_filter, frequency, autokill)
 
     def setup(self):

@@ -91,14 +91,15 @@ class RAPLFormulaActor(FormulaActor):
     A formula to handle RAPL events.
     """
 
-    def __init__(self, name, actor_pusher, level_logger=logging.NOTSET):
+    def __init__(self, name, actor_pusher, level_logger=logging.NOTSET,
+                 timeout=None):
         """
         Initialize an RAPL formula.
         :param name: Name of the formula
         :param actor_pusher: Pusher to whom the formula must send its reports
         :param int level_logger: Define the level of the logger
         """
-        FormulaActor.__init__(self, name, actor_pusher, level_logger)
+        FormulaActor.__init__(self, name, actor_pusher, level_logger, timeout)
 
     def setup(self):
         """
