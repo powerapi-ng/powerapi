@@ -1,4 +1,5 @@
 from smartwatts.database.stdoutdb import StdoutDB
+from smartwatts.database.base_db import BaseDB
 from smartwatts.database.mongodb import MongoDB, MongoBadDBError
 from smartwatts.database.mongodb import MongoBadDBNameError
 from smartwatts.database.mongodb import MongoBadCollectionNameError

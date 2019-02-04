@@ -49,6 +49,7 @@ class StartHandler(Handler):
         :param StartMessage msg: Message that initialize the actor.
         :param State state: State of the actor.
         """
+
         if state.initialized:
             return state
 
@@ -59,6 +60,7 @@ class StartHandler(Handler):
             state.database.load()
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))
+            state.alive = False
             return state
 
         # Connect to all dispatcher

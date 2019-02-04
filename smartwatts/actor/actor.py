@@ -64,8 +64,6 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :attr:`state <smartwatts.actor.actor.Actor.state>`                                         |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-
-
     """
 
     def __init__(self, name, level_logger=logging.NOTSET, timeout=None):
@@ -233,6 +231,12 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_control(msg)
+
+    def receive_control(self):
+        """
+        Receive a message from this actor on the control canal
+        """
+        return self.state.socket_interface.receive_control()
 
     def send_data(self, msg):
         """
