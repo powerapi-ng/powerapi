@@ -18,6 +18,10 @@
 function used to communicate with mocked actors
 """
 
+import pickle
+import zmq
+
+
 def gen_side_effect(address, msg):
     """
     generate a function for patching mocked methods with a side effect
@@ -47,7 +51,8 @@ def is_log_ok(address, validation_msg_list, context):
                                      send
     :param zmq.context context: zmq context used for receiving message from the
                                 side effect
-    :rtype boolean: True if all the waited message was received, False otherwise
+    :rtype boolean: True if all the waited message was received,
+                    False otherwise
     """
     socket = context.socket(zmq.PULL)
     socket.bind(address)
