@@ -16,7 +16,7 @@
 
 import logging
 from smartwatts.actor import Actor, State, SocketInterface
-from smartwatts.pusher import PowerHandler, StartHandler, TimeoutHandler
+from smartwatts.pusher import PowerHandler, PusherStartHandler, TimeoutHandler
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
 
@@ -73,5 +73,5 @@ class PusherActor(Actor):
         """
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(self.report_type, PowerHandler())
-        self.add_handler(StartMessage, StartHandler())
+        self.add_handler(StartMessage, PusherStartHandler())
         self.set_timeout_handler(TimeoutHandler())

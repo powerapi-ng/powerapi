@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import Handler
+from smartwatts.handler import Handler, StartHandler
 from smartwatts.database import DBError
 from smartwatts.message import ErrorMessage, OKMessage, StartMessage
 
@@ -26,7 +26,7 @@ class NoReportExtractedException(Exception):
     """
 
 
-class StartHandler(Handler):
+class PullerStartHandler(StartHandler):
     """
     Initialize the database interface
     """
@@ -41,21 +41,14 @@ class StartHandler(Handler):
         #: received.
         self.next_behaviour = next_behaviour
 
-    def handle(self, msg, state):
+    def initialization(self, state):
         """
         Initialize the database and connect all dispatcher to the
         socket_interface
 
-        :param StartMessage msg: Message that initialize the actor.
         :param State state: State of the actor.
+        :rtype smartwatts.State: the new state of the actor
         """
-
-        if state.initialized:
-            return state
-
-        if not isinstance(msg, StartMessage):
-            return state
-
         try:
             state.database.load()
         except DBError as error:
@@ -67,7 +60,5 @@ class StartHandler(Handler):
         for _, dispatcher in state.report_filter.filters:
             dispatcher.connect_data(state.socket_interface.context)
 
-        state.initialized = True
-        state.socket_interface.send_control(OKMessage())
         state.behaviour = self.next_behaviour
         return state

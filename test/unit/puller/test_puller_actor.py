@@ -25,7 +25,7 @@ from smartwatts.database import MongoDB
 from smartwatts.filter import Filter
 from smartwatts.report import Report, HWPCReport
 from smartwatts.puller import PullerActor, PullerState
-from smartwatts.puller import StartHandler
+from smartwatts.puller import PullerStartHandler
 from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import OKMessage, ErrorMessage, StartMessage
 
@@ -123,7 +123,7 @@ class TestHandlerPuller:
         assert puller_state.initialized is False
 
         # Define StartHandler
-        start_handler = StartHandler(Actor._initial_behaviour)
+        start_handler = PullerStartHandler(Actor._initial_behaviour)
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),

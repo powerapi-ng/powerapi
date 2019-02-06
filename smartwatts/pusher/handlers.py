@@ -14,44 +14,31 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import InitHandler, Handler
+from smartwatts.handler import InitHandler, Handler, StartHandler
 from smartwatts.report import PowerReport
 from smartwatts.message import ErrorMessage
 from smartwatts.message import OKMessage, StartMessage
 from smartwatts.database import DBError
 
 
-class StartHandler(Handler):
+class PusherStartHandler(StartHandler):
     """
     Handle Start Message
     """
 
-    def handle(self, msg, state):
+    def initialization(self, state):
         """
         Initialize the output database
 
-        :param smartwatts.StartMessage msg: Message that initialize the actor.
         :param smartwatts.State state: State of the actor.
+        :rtype smartwatts.State: the new state of the actor
         """
-
-        # If it's already initialized, return state
-        if state.initialized:
-            return state
-
-        # If it's not a StartMessage, return state
-        if not isinstance(msg, StartMessage):
-            return state
-
-        # If load database fail, return state
         try:
             state.database.load()
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))
             return state
 
-        # Else, we can initialize state
-        state.initialized = True
-        state.socket_interface.send_control(OKMessage())
         return state
 
 
