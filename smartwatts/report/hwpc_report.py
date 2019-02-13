@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from smartwatts.report.report import Report
-
+import datetime
 
 class HWPCReportCore(Report):
     """
@@ -45,6 +45,10 @@ class HWPCReportCore(Report):
         Return the JSON format of the report
         """
         return self.events
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self)) and
+                self.events == other.events and self.core_id == other.core_id)
 
     def deserialize(self, json):
         """
@@ -80,6 +84,11 @@ class HWPCReportSocket(Report):
                    '  ' + ''.join([self.cores[c].__str__()
                                    for c in self.cores]))
         return display
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self)) and self.cores == other.cores
+                and self.socket_id == other.socket_id and
+                self.group_id == other.group_id)
 
     def serialize(self):
         """
@@ -152,6 +161,12 @@ class HWPCReport(Report):
                    "\n")
         return display
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self)) and
+                self.timestamp == other.timestamp and
+                self.sensor == other.sensor and self.target == other.target and
+                self.groups == other.groups)
+
     def serialize(self):
         """
         Return the JSON format of the report
@@ -212,8 +227,8 @@ def create_group_report(group_id, socket_list):
     return (group_id, group)
 
 
-def create_report_root(group_list):
-    sensor = HWPCReport(timestamp='time0', sensor='toto', target='system')
+def create_report_root(group_list, timestamp=datetime.datetime.fromtimestamp(0), sensor='toto', target='system'):
+    sensor = HWPCReport(timestamp=timestamp, sensor=sensor, target=target)
     for (group_id, group) in group_list:
         sensor.groups[group_id] = group
     return sensor
