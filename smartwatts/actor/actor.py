@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import psutil
 import signal
 import multiprocessing
 import setproctitle
@@ -231,12 +232,15 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_control(msg)
+        self.logger.info('send control [' + repr(msg) + '] to ' + self.name)
 
     def receive_control(self):
         """
         Receive a message from this actor on the control canal
         """
-        return self.state.socket_interface.receive_control()
+        msg = self.state.socket_interface.receive_control()
+        self.logger.info("receive control : [" + repr(msg) + "]")
+        return msg
 
     def send_data(self, msg):
         """
@@ -245,7 +249,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_data(msg)
-        self.logger.info('send [' + repr(msg) + '] to ' + self.name)
+        self.logger.info('send data [' + repr(msg) + '] to ' + self.name)
 
     def receive(self):
         """
@@ -256,7 +260,7 @@ class Actor(multiprocessing.Process):
         :rtype: a list of Object
         """
         msg = self.state.socket_interface.receive()
-        self.logger.info("receive : [" + repr(msg) + "]")
+        self.logger.info("receive data : [" + repr(msg) + "]")
         return msg
 
     def kill(self, by_data=False):
