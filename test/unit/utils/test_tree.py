@@ -48,6 +48,14 @@ class TestTree():
         assert tree.get([]) == [1]
         assert tree.get(['A']) == [1]
 
+    def test_add_val_at_root(self):
+        """Test to add a leaf to a tree of depth 0"""
+
+        tree = Tree()
+        tree.add(['A'], 1)
+
+        assert tree.get([]) == [1]
+        assert tree.get(['A']) == [1]
 
 class TestNode():
     """
