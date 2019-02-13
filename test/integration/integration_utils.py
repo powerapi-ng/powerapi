@@ -22,6 +22,13 @@ import pickle
 import zmq
 
 
+def is_actor_alive(actor):
+    """
+    wait the actor to terminate or 0.5 secondes and return its is_alive value
+    """
+    actor.join(0.5)
+    return actor.is_alive()
+
 def gen_side_effect(address, msg):
     """
     generate a function for patching mocked methods with a side effect
