@@ -18,6 +18,15 @@ import pickle
 import zmq
 
 
+class NotConnectedException(Exception):
+    """
+    Exception raised when attempting to send/receinve a message on a socket
+    that is not conected
+    """
+    pass
+
+
+
 class SocketInterface:
     """
     Interface to handle comunication to/from the actor
@@ -125,13 +134,16 @@ class SocketInterface:
 
     def receive_control(self):
         """
-        Block until a message was received on the control canal (client side) (or
-        until timeout) an return the received messages
+        Block until a message was received on the control canal (client side
+        (or until timeout) an return the received messages
 
         :return: the list of received messages or an empty list if timeout
         :rtype: a list of Object
 
         """
+        if self.control_socket is None:
+            raise NotConnectedException
+
         event = self.control_socket.poll(self.timeout)
         if event == 0:
             return None
@@ -209,6 +221,8 @@ class SocketInterface:
 
         :param Object msg: message to send
         """
+        if self.control_socket is None:
+            raise NotConnectedException
         self._send_serialized(self.control_socket, msg)
 
     def send_data(self, msg):
@@ -217,4 +231,6 @@ class SocketInterface:
 
         :param Object msg: message to send
         """
+        if self.push_socket is None:
+            raise NotConnectedException
         self._send_serialized(self.push_socket, msg)

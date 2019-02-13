@@ -59,11 +59,11 @@ class ErrorMessage(Message):
     Message used to indicate that an error as occuried
     """
 
-    def __init__(self, error_code):
+    def __init__(self, error_message):
         """
-        :param error_code: Code of the error
+        :param str error_code: message associated to the error
         """
-        self.error_code = error_code
+        self.error_message = error_message
 
     def __repr__(self):
         return "ErrorMessage"

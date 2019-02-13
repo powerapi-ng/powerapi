@@ -42,6 +42,11 @@ class Tree:
         if len(path) == 0:
             raise ValueError()
 
+
+        if len(path) == 1:
+            self.root = Node(path[0], value)
+            return
+
         if self.root is None:
             self.root = Node(path[0])
 
@@ -195,7 +200,6 @@ class Node:
         if (self.label != other.label or self.val != other.val or
             self.is_leaf != other.is_leaf):
             return False
-        print('ok')
         sorted_child = deepcopy(self.childs)
         sorted_child.sort(key=lambda node: node.label)
         sorted_child2 = deepcopy(other.childs)

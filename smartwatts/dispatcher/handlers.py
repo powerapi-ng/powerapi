@@ -14,33 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from smartwatts.handler import InitHandler, Handler
+from smartwatts.handler import InitHandler, Handler, StartHandler
 from smartwatts.message import OKMessage, StartMessage
-
-
-class StartHandler(Handler):
-    """
-    Initialize the received state
-    """
-
-    def handle(self, msg, state):
-        """
-        Allow to initialize the state of the actor, then reply to the control
-        socket.
-
-        :param smartwatts.StartMessage msg: Message that initialize the actor
-        :param smartwatts.State state: State of the actor
-        """
-        if state.initialized:
-            return state
-
-        if not isinstance(msg, StartMessage):
-            return state
-
-        state.initialized = True
-        state.socket_interface.send_control(OKMessage())
-
-        return state
 
 
 class FormulaDispatcherReportHandler(InitHandler):

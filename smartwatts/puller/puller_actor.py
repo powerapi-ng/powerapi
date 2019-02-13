@@ -19,7 +19,7 @@ import time
 from smartwatts.actor import Actor, State, SocketInterface
 from smartwatts.message import PoisonPillMessage, StartMessage
 from smartwatts.handler import PoisonPillMessageHandler
-from smartwatts.puller import StartHandler
+from smartwatts.puller import PullerStartHandler
 
 
 class NoReportExtractedException(Exception):
@@ -100,7 +100,7 @@ class PullerActor(Actor):
         """
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(StartMessage,
-                         StartHandler(PullerActor._read_behaviour))
+                         PullerStartHandler(PullerActor._read_behaviour))
 
     def _read_behaviour(self):
         """

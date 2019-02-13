@@ -23,7 +23,7 @@ import zmq
 from smartwatts.database import MongoDB
 from smartwatts.filter import Filter
 from smartwatts.report import Report
-from smartwatts.pusher import PusherActor, StartHandler, PowerHandler
+from smartwatts.pusher import PusherActor, PusherStartHandler, PowerHandler
 from smartwatts.pusher import PusherState
 from smartwatts.actor import State, Actor, SocketInterface
 from smartwatts.report import HWPCReport, PowerReport
@@ -71,7 +71,7 @@ class TestHandlerPusher:
         assert pusher_state.initialized is False
 
         # Define StartHandler
-        start_handler = StartHandler()
+        start_handler = PusherStartHandler()
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
