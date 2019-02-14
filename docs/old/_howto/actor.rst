@@ -1,6 +1,6 @@
 .. How to create an Actor
 
-un nouveau ``smartwatts.Actor``
+un nouveau ``powerapi.Actor``
 -------------------------------------
 
 Tutoriel de création d'un ``Actor``.

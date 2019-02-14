@@ -14,7 +14,7 @@ You have to install `Docker <https://docs.docker.com/install/>`_ to run **PowerA
 
 .. code-block:: none
 
-   docker run smartwatts input_hostname  input_port  input_database_name  input_collection_name  \
+   docker run powerapi input_hostname  input_port  input_database_name  input_collection_name  \
                          output_hostname output_port output_database_name output_collection_name \
                          SOCKET
 

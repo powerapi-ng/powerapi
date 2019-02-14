@@ -1,16 +1,31 @@
-# SmartWatts
+# PowerAPI
 
-SmartWatts is a self-adaptive software-defined power meter for containerized environments.
+PowerAPI is a self-adaptive software-defined power meter for containerized environments.
 
-# Usage
+# Quick start
 
-## Without docker
+## Installation without docker
 
-requirement : [`poetry`](https://github.com/sdispater/poetry)
+requirement : python 3, [`pip`](https://pypi.org/project/pip/)
 
-- run unit tests : `poetry run pytest smartwatts/test/`
-- install dependency : `poetry install`
-- run smartwatts as command line interface : `poetry run main`
+- install dependencies : python3 -m pip install --no-cache-dir -r requirements.txt
+- run unit tests : `python -m pytest test/unit/`
+- run integration tests : `python -m pytest test/integration/`
+
+## Launch powerapi
+
+Start command : 
+
+	$ docker run powerapi input_hostname  input_port  input_database_name\
+		                  input_collection_name output_hostname output_port\
+						  output_database_name output_collection_name SOCKET
+						
+with : 
+
+- hostname: Mongo server address. (localhost, IP address, ...)
+- port: Mongo server port. (usually 27017)
+- database_name: Database name.
+- collection_name: Collection name.
 
 # Contribution guideline
 

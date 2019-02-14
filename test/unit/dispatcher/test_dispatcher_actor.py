@@ -6,16 +6,16 @@ import pytest
 from mock import Mock, patch
 import mock
 
-from smartwatts.dispatcher import FormulaDispatcherReportHandler
-from smartwatts.dispatcher import DispatcherState, DispatcherActor
-from smartwatts.dispatcher import RouteTable
-from smartwatts.message import UnknowMessageTypeException
-from smartwatts.group_by import GroupBy
-from smartwatts.report import Report, HWPCReport
-from smartwatts.database import MongoDB
-from smartwatts.actor import Actor, SocketInterface
-from smartwatts.dispatcher import StartHandler, NoPrimaryGroupByRuleException
-from smartwatts.message import OKMessage, StartMessage, ErrorMessage
+from powerapi.dispatcher import FormulaDispatcherReportHandler
+from powerapi.dispatcher import DispatcherState, DispatcherActor
+from powerapi.dispatcher import RouteTable
+from powerapi.message import UnknowMessageTypeException
+from powerapi.group_by import GroupBy
+from powerapi.report import Report, HWPCReport
+from powerapi.database import MongoDB
+from powerapi.actor import Actor, SocketInterface
+from powerapi.dispatcher import StartHandler, NoPrimaryGroupByRuleException
+from powerapi.message import OKMessage, StartMessage, ErrorMessage
 
 
 ##############################################################################
@@ -402,7 +402,7 @@ class TestHandlerFunction:
 
 ACTOR_NAME = 'dispatcher_actor'
 
-@patch('smartwatts.actor.SocketInterface')
+@patch('powerapi.actor.SocketInterface')
 @pytest.fixture()
 def dispatcher_actor():
     """ return an uninitialized actor """

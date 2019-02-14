@@ -1,4 +1,4 @@
-from smartwatts import XXXFormulaActor
+from powerapi import XXXFormulaActor
 
 # With basic function
 def my_factory(name, verbose):

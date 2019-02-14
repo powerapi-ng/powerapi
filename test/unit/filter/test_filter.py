@@ -19,10 +19,10 @@ Module test_filter
 """
 
 import pytest
-from smartwatts.filter import Filter, FilterUselessError
-from smartwatts.report import HWPCReport
-from smartwatts.report_model import HWPCModel
-from smartwatts.database import MongoDB
+from powerapi.filter import Filter, FilterUselessError
+from powerapi.report import HWPCReport
+from powerapi.report_model import HWPCModel
+from powerapi.database import MongoDB
 
 
 class TestFilter:

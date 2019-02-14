@@ -20,9 +20,9 @@ Module test_csvdb
 
 import pytest
 
-from smartwatts.report_model import HWPCModel, KEYS_COMMON
-from smartwatts.database import CsvDB
-from smartwatts.database import CsvBadFilePathError, CsvBadCommonKeysError
+from powerapi.report_model import HWPCModel, KEYS_COMMON
+from powerapi.database import CsvDB
+from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError
 
 PATH_TO_TEST = "./test/unit/environment/csv/"
 

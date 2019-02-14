@@ -20,13 +20,13 @@ Module test db
 
 import pytest
 
-from smartwatts.report_model import HWPCModel
-from smartwatts.database import MongoDB, MongoBadDBError
-from smartwatts.database import MongoBadDBNameError
-from smartwatts.database import MongoBadCollectionNameError
-from smartwatts.database import MongoNeedReportModelError
-from smartwatts.database import MongoSaveInReadModeError
-from smartwatts.database import MongoGetNextInSaveModeError
+from powerapi.report_model import HWPCModel
+from powerapi.database import MongoDB, MongoBadDBError
+from powerapi.database import MongoBadDBNameError
+from powerapi.database import MongoBadCollectionNameError
+from powerapi.database import MongoNeedReportModelError
+from powerapi.database import MongoSaveInReadModeError
+from powerapi.database import MongoGetNextInSaveModeError
 
 
 HOSTNAME = "localhost"

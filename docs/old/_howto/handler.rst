@@ -1,6 +1,6 @@
 .. How to create a Handler 
 
-un nouveau ``smartwatts.Handler``
+un nouveau ``powerapi.Handler``
 =====================================
 
 Tutoriel de création d'un ``Handler``.

@@ -19,11 +19,11 @@ Module test_hwpc_report
 """
 
 import pytest
-from smartwatts.filter import HWPCFilter, FilterUselessError
-from smartwatts.report import HWPCReport, HWPCReportSocket, HWPCReportCore
-from smartwatts.report import create_core_report, create_socket_report
-from smartwatts.report_model import HWPCModel
-from smartwatts.database import MongoDB
+from powerapi.filter import HWPCFilter, FilterUselessError
+from powerapi.report import HWPCReport, HWPCReportSocket, HWPCReportCore
+from powerapi.report import create_core_report, create_socket_report
+from powerapi.report_model import HWPCModel
+from powerapi.database import MongoDB
 
 
 CORE_ID1 = 3

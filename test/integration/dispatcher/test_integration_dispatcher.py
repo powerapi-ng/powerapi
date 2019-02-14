@@ -24,14 +24,14 @@ from mock import Mock, patch
 import pytest
 import zmq
 
-from smartwatts.actor import NotConnectedException
-from smartwatts.dispatcher import DispatcherActor, RouteTable
-from smartwatts.message import StartMessage, OKMessage, ErrorMessage, UnknowMessageTypeException
-from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel, GroupBy
-from smartwatts.report import *
+from powerapi.actor import NotConnectedException
+from powerapi.dispatcher import DispatcherActor, RouteTable
+from powerapi.message import StartMessage, OKMessage, ErrorMessage, UnknowMessageTypeException
+from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel, GroupBy
+from powerapi.report import *
 from test.integration.integration_utils import *
 from test.integration.dispatcher.fake_formula import FakeFormulaActor
-from smartwatts.dispatcher import NoPrimaryGroupByRuleException
+from powerapi.dispatcher import NoPrimaryGroupByRuleException
 
 
 FORMULA_SOCKET_ADDR = 'ipc://@test_formula_socket'

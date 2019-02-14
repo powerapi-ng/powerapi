@@ -1,6 +1,6 @@
 .. How to create a new Database 
 
-un nouveau ``smartwatts.BaseDB``
+un nouveau ``powerapi.BaseDB``
 ================================
 
 Tutoriel de création d'un ``BaseDB``.

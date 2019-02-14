@@ -18,12 +18,12 @@ import time
 import pytest
 import zmq
 
-from smartwatts.dispatcher import DispatcherActor
-from smartwatts.group_by import AbstractGroupBy
-from smartwatts.report import Report
-from smartwatts.test.mocked_formula import MockedFormula
-# from smartwatts.report import HWPCReport
-# from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
+from powerapi.dispatcher import DispatcherActor
+from powerapi.group_by import AbstractGroupBy
+from powerapi.report import Report
+from powerapi.test.mocked_formula import MockedFormula
+# from powerapi.report import HWPCReport
+# from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel
 
 
 class Report1(Report):

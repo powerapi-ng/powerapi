@@ -20,12 +20,12 @@ import math
 import mock
 import pytest
 
-from smartwatts.formula import RAPLFormulaHWPCReportHandler
-from smartwatts.message import UnknowMessageTypeException
-from smartwatts.report import create_core_report, create_socket_report
-from smartwatts.report import create_group_report, create_report_root
-from smartwatts.report import PowerReport
-from smartwatts.actor import State
+from powerapi.formula import RAPLFormulaHWPCReportHandler
+from powerapi.message import UnknowMessageTypeException
+from powerapi.report import create_core_report, create_socket_report
+from powerapi.report import create_group_report, create_report_root
+from powerapi.report import PowerReport
+from powerapi.actor import State
 
 #####################################
 
