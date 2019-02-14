@@ -7,7 +7,7 @@ jobs:
       - image: circleci/python:3.7
 
       # Service image for integration tests
-      - image: circleci/mongo:4.1-ram
+      - image: circleci/mongo:4.1
 
     working_directory: ~/repo
 
