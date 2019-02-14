@@ -1,0 +1,42 @@
+# PowerAPI CircleCI 2.0 configuration file
+version: 2
+jobs:
+  build:
+    docker:
+      # Language image for build and unit tests
+      - image: circleci/python:3.7
+
+      # Service image for integration tests
+      - image: circleci/mongo:4.1-ram
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      # Run unit and integration tests
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            python -m pytest test/unit/
+            python -m pytest test/integration/
