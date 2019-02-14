@@ -1,6 +1,6 @@
 .. How to create a Report 
 
-un nouveau ``smartwatts.Report``
+un nouveau ``powerapi.Report``
 =====================================
 
 Tutoriel de création d'un ``Report``.

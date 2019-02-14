@@ -21,10 +21,10 @@ When the image is correctly downloaded, you can run the sensor with the next fol
 
 .. code-block:: none
 
-  docker run --privileged --name smartwatts-sensor -td \
+  docker run --privileged --name powerapi-sensor -td \
              -v /sys:/sys \
              -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
-             -v /tmp/smartwatts-sensor-reporting:/reporting \
+             -v /tmp/powerapi-sensor-reporting:/reporting \
              HWPC_DOCKER_IMAGE -n "SENSOR_NAME" -r "mongodb" -U "mongodb://MONGO_ADDRESS" -D "DATABASE_NAME" -C "COLLECTION_NAME" \
              -c "sys" -e "INSTRUCTIONS_RETIRED" \
              -c "cycles" -e "CYCLES" \

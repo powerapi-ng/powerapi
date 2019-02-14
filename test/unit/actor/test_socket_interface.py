@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Test smartwatts.actor.SocketInterface
+Test powerapi.actor.SocketInterface
 """
 
 import pytest
 import zmq
 
-from smartwatts.actor import SocketInterface
+from powerapi.actor import SocketInterface
 
 
 ACTOR_NAME = 'dummy_actor'

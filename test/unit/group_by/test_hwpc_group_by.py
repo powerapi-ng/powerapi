@@ -16,8 +16,8 @@
 from copy import deepcopy
 
 import pytest
-from smartwatts.report import *
-from smartwatts.group_by import HWPCGroupBy, HWPCDepthLevel
+from powerapi.report import *
+from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel
 
 
 """

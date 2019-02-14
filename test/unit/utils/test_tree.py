@@ -17,13 +17,13 @@
 import pytest
 
 from copy import deepcopy
-from smartwatts.utils.tree import Node, Tree
+from powerapi.utils.tree import Node, Tree
 
 
 
 class TestTree():
     """
-    test smartwatts.tree.Tree class
+    test powerapi.tree.Tree class
     """
 
     def get_child_to_emtpy_tree(self):
@@ -59,7 +59,7 @@ class TestTree():
 
 class TestNode():
     """
-    Test smartwatts.tree.Node class
+    Test powerapi.tree.Node class
     """
 
     def test_add_child_depth1(self):

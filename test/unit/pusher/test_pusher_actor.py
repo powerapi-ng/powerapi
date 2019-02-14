@@ -20,14 +20,14 @@ Module test_actor_pusher
 
 import mock
 import zmq
-from smartwatts.database import MongoDB
-from smartwatts.filter import Filter
-from smartwatts.report import Report
-from smartwatts.pusher import PusherActor, PusherStartHandler, PowerHandler
-from smartwatts.pusher import PusherState
-from smartwatts.actor import State, Actor, SocketInterface
-from smartwatts.report import HWPCReport, PowerReport
-from smartwatts.message import StartMessage, OKMessage, ErrorMessage
+from powerapi.database import MongoDB
+from powerapi.filter import Filter
+from powerapi.report import Report
+from powerapi.pusher import PusherActor, PusherStartHandler, PowerHandler
+from powerapi.pusher import PusherState
+from powerapi.actor import State, Actor, SocketInterface
+from powerapi.report import HWPCReport, PowerReport
+from powerapi.message import StartMessage, OKMessage, ErrorMessage
 
 ##############################################################################
 

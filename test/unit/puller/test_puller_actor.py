@@ -20,14 +20,14 @@ Module test_actor_puller
 
 import mock
 import zmq
-from smartwatts.puller import PullerState
-from smartwatts.database import MongoDB
-from smartwatts.filter import Filter
-from smartwatts.report import Report, HWPCReport
-from smartwatts.puller import PullerActor, PullerState
-from smartwatts.puller import PullerStartHandler
-from smartwatts.actor import Actor, State, SocketInterface
-from smartwatts.message import OKMessage, ErrorMessage, StartMessage
+from powerapi.puller import PullerState
+from powerapi.database import MongoDB
+from powerapi.filter import Filter
+from powerapi.report import Report, HWPCReport
+from powerapi.puller import PullerActor, PullerState
+from powerapi.puller import PullerStartHandler
+from powerapi.actor import Actor, State, SocketInterface
+from powerapi.message import OKMessage, ErrorMessage, StartMessage
 
 #########################################
 # Initialization functions

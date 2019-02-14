@@ -21,12 +21,12 @@ import pytest
 import zmq
 from mock import patch, Mock
 
-from smartwatts.message import OKMessage, StartMessage, ErrorMessage
-from smartwatts.filter import Filter
-from smartwatts.dispatcher import DispatcherActor
-from smartwatts.database import BaseDB, MongoDB
-from smartwatts.puller import PullerActor
-from smartwatts.actor import Actor
+from powerapi.message import OKMessage, StartMessage, ErrorMessage
+from powerapi.filter import Filter
+from powerapi.dispatcher import DispatcherActor
+from powerapi.database import BaseDB, MongoDB
+from powerapi.puller import PullerActor
+from powerapi.actor import Actor
 from test.integration.integration_utils import *
 
 SOCKET_ADDRESS = 'ipc://@test_puller'
@@ -44,11 +44,11 @@ def context():
 ##################
 
 
-@patch('smartwatts.database.base_db.BaseDB.load',
+@patch('powerapi.database.base_db.BaseDB.load',
        side_effect=gen_side_effect(SOCKET_ADDRESS, "load"))
-@patch('smartwatts.puller.puller_actor.PullerActor._read_behaviour',
+@patch('powerapi.puller.puller_actor.PullerActor._read_behaviour',
        side_effect=Actor._initial_behaviour)
-@patch('smartwatts.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
+@patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
        side_effect=gen_side_effect(SOCKET_ADDRESS, 'connect_data'))
 def test_start_msg_db_ok(a, b, c, context):
     """

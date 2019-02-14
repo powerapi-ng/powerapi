@@ -1,9 +1,9 @@
-.. SmartWatts documentation master file, created by
+.. PowerAPI documentation master file, created by
    sphinx-quickstart on Thu Nov 22 10:09:08 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SmartWatts's documentation!
+Welcome to PowerAPI's documentation!
 ======================================
 
 .. toctree::
@@ -25,4 +25,4 @@ Welcome to SmartWatts's documentation!
    :maxdepth: 3
    :caption: API
 
-   _doc/smartwatts
+   _doc/powerapi

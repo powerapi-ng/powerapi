@@ -21,9 +21,9 @@ import setproctitle
 
 from mock import Mock, patch
 
-from smartwatts.message import UnknowMessageTypeException, PoisonPillMessage
-from smartwatts.actor import Actor, State
-from smartwatts.handler import PoisonPillMessageHandler
+from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
+from powerapi.actor import Actor, State
+from powerapi.handler import PoisonPillMessageHandler
 
 
 ACTOR_NAME = "dummy_actor"

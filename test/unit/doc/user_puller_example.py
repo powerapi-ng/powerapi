@@ -1,4 +1,4 @@
-from smartwatts import ActorPuller, YYYModel, XXXDB, Filter
+from powerapi import ActorPuller, YYYModel, XXXDB, Filter
 
 # Create the XXXDB object which handle the link to the database
 xxxDB = XXXDB(..., report_model=YYYModel())
