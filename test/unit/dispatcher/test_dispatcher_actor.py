@@ -10,11 +10,11 @@ from powerapi.dispatcher import FormulaDispatcherReportHandler
 from powerapi.dispatcher import DispatcherState, DispatcherActor
 from powerapi.dispatcher import RouteTable
 from powerapi.message import UnknowMessageTypeException
-from powerapi.group_by import GroupBy
+from powerapi.dispatch_rule import DispatchRule
 from powerapi.report import Report, HWPCReport
 from powerapi.database import MongoDB
 from powerapi.actor import Actor, SocketInterface
-from powerapi.dispatcher import StartHandler, NoPrimaryGroupByRuleException
+from powerapi.dispatcher import StartHandler, NoPrimaryDispatchRuleRuleException
 from powerapi.message import OKMessage, StartMessage, ErrorMessage
 
 
@@ -46,21 +46,21 @@ class Report1(Report):
                                                 ')')) + ')'
 
 
-class GroupBy1A(GroupBy):
+class DispatchRule1A(DispatchRule):
     """ Group by rule that return the received report
 
     its id is the report *a* value
 
     """
     def __init__(self, primary=False):
-        GroupBy.__init__(self, primary)
+        DispatchRule.__init__(self, primary)
         self.fields = ['A']
 
     def extract(self, report):
         return [((report.a,), report)]
 
 
-class GroupBy1AB(GroupBy):
+class DispatchRule1AB(DispatchRule):
     """Group by rule that split the report if it contains a *b2* value
 
     if the report contain a *b2* value, it is spliten in two report the first
@@ -72,7 +72,7 @@ class GroupBy1AB(GroupBy):
 
     """
     def __init__(self, primary=False):
-        GroupBy.__init__(self, primary)
+        DispatchRule.__init__(self, primary)
         self.fields = ['A', 'B']
 
     def extract(self, report):
@@ -99,21 +99,21 @@ class Report2(Report):
                                           if self.c2 is None
                                           else ('(' + self.c + ',' + self.c2 +
                                                 ')')) + ')'
-class GroupBy2A(GroupBy):
+class DispatchRule2A(DispatchRule):
     """ Group by rule that return the received report
 
     its id is the report *a* value
 
     """
     def __init__(self, primary=False):
-        GroupBy.__init__(self, primary)
+        DispatchRule.__init__(self, primary)
         self.fields = ['A']
 
     def extract(self, report):
         return [((report.a,), report)]
 
 
-class GroupBy2AC(GroupBy):
+class DispatchRule2AC(DispatchRule):
     """Group by rule that split the report if it contains a *c2* value
 
     if the report contain a *c2* value, it is spliten in two report the first
@@ -125,7 +125,7 @@ class GroupBy2AC(GroupBy):
 
     """
     def __init__(self, primary=False):
-        GroupBy.__init__(self, primary)
+        DispatchRule.__init__(self, primary)
         self.fields = ['A', 'C']
 
     def extract(self, report):
@@ -160,26 +160,26 @@ class TestExtractReportFunction:
 
     """
 
-    def gen_test_extract_report(self, primary_group_by_rule, group_by_rule,
+    def gen_test_extract_report(self, primary_dispatch_rule_rule, dispatch_rule_rule,
                                 input_report, validation_reports):
-        """instanciate the handler whit given route table and primary groupby
+        """instanciate the handler whit given route table and primary dispatchrule
         rule, test if the handle function application on *input_report* return
         the same reports as in *validation_reports*
 
         """
         handler = FormulaDispatcherReportHandler()
 
-        result_reports = handler._extract_reports(input_report, group_by_rule,
-                                                  primary_group_by_rule)
+        result_reports = handler._extract_reports(input_report, dispatch_rule_rule,
+                                                  primary_dispatch_rule_rule)
         result_reports.sort(key=lambda result_tuple: result_tuple[0])
         validation_reports.sort(key=lambda result_tuple: result_tuple[0])
 
         assert result_reports == validation_reports
 
-    def test_extract_report_pgb_GroupBy1A_gb_GroupBy2A(self):
+    def test_extract_report_pgb_DispatchRule1A_gb_DispatchRule2A(self):
         """
-        test extract_report function for a GroupBy1A rule for Report1 as
-        primary rule and GroupBy2A rule for Report2
+        test extract_report function for a DispatchRule1A rule for Report1 as
+        primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
         - REPORT_1 : [(('a',), REPORT_1)]
@@ -188,18 +188,18 @@ class TestExtractReportFunction:
         - REPORT_2_C2 : [(('a',), REPORT_2_C2)]
 
         """
-        self.gen_test_extract_report(GroupBy1A(), GroupBy1A(), REPORT_1,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1,
                                      [(('a',), REPORT_1)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy2A(), REPORT_2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2A(), REPORT_2,
                                      [(('a',), REPORT_2)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy1A(), REPORT_1_B2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1_B2,
                                      [(('a',), REPORT_1_B2)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy2A(), REPORT_2_C2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2A(), REPORT_2_C2,
                                      [(('a',), REPORT_2_C2)])
 
-    def test_extract_report_pgb_GroupBy1A_gb_GroupBy2AC(self):
-        """test extract_report function for a GroupBy1A rule for Report1 as
-        primary rule and GroupBy2AC rule for Report2
+    def test_extract_report_pgb_DispatchRule1A_gb_DispatchRule2AC(self):
+        """test extract_report function for a DispatchRule1A rule for Report1 as
+        primary rule and DispatchRule2AC rule for Report2
 
         Expected result for each input report :
         - REPORT_1 : [(('a',), REPORT_1)]
@@ -209,20 +209,20 @@ class TestExtractReportFunction:
                          (('a',), SPLITED_REPORT_2_C2)]
 
         """
-        self.gen_test_extract_report(GroupBy1A(), GroupBy1A(), REPORT_1,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1,
                                      [(('a',), REPORT_1)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy2AC(), REPORT_2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2,
                                      [(('a',), REPORT_2)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy1A(), REPORT_1_B2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1_B2,
                                      [(('a',), REPORT_1_B2)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy2AC(), REPORT_2_C2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2_C2,
                                      [(('a',), REPORT_2),
                                       (('a',), SPLITED_REPORT_2_C2)])
 
-    def test_extract_report_pgb_GroupBy1AB_gb_GroupBy2A(self):
+    def test_extract_report_pgb_DispatchRule1AB_gb_DispatchRule2A(self):
         """
-        test extract_report function for a GroupBy1AB rule for Report1 as
-        primary rule and GroupBy2A rule for Report2
+        test extract_report function for a DispatchRule1AB rule for Report1 as
+        primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
         - REPORT_1 : [(('a', 'b'), REPORT_1)]
@@ -232,20 +232,20 @@ class TestExtractReportFunction:
         - REPORT_2_C2 : [(('a',), REPORT_2_C2)]
 
         """
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy1AB(), REPORT_1,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1,
                                      [(('a', 'b'), REPORT_1)])
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy2A(), REPORT_2,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2A(), REPORT_2,
                                      [(('a',), REPORT_2)])
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy1AB(), REPORT_1_B2,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1_B2,
                                      [(('a', 'b'), REPORT_1),
                                       (('a', 'b2'), SPLITED_REPORT_1_B2)])
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy2A(), REPORT_2_C2,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2A(), REPORT_2_C2,
                                      [(('a',), REPORT_2_C2)])
 
-    def test_extract_report_pgb_GroupBy1AB_gb_GroupBy2AC(self):
+    def test_extract_report_pgb_DispatchRule1AB_gb_DispatchRule2AC(self):
         """
-        test extract_report function for a GroupBy1AB rule for Report1 as
-        primary rule and GroupBy2A rule for Report2
+        test extract_report function for a DispatchRule1AB rule for Report1 as
+        primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
         - REPORT_1 : [(('a', 'b'), REPORT_1)]
@@ -255,14 +255,14 @@ class TestExtractReportFunction:
         - REPORT_2_C2 : [(('a',), REPORT_2),
                          (('a',), SPLITED_REPORT_2_C2)]
         """
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy1AB(), REPORT_1,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1,
                                      [(('a', 'b'), REPORT_1)])
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy2AC(), REPORT_2,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2AC(), REPORT_2,
                                      [(('a',), REPORT_2)])
-        self.gen_test_extract_report(GroupBy1AB(), GroupBy1AB(), REPORT_1_B2,
+        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1_B2,
                                      [(('a', 'b'), REPORT_1),
                                       (('a', 'b2'), SPLITED_REPORT_1_B2)])
-        self.gen_test_extract_report(GroupBy1A(), GroupBy2AC(), REPORT_2_C2,
+        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2_C2,
                                      [(('a',), REPORT_2),
                                       (('a',), SPLITED_REPORT_2_C2)])
 
@@ -276,10 +276,10 @@ def init_state():
 class TestHandlerFunction:
     """ Test Handle function of the dispatcher Handler """
 
-    def test_empty_no_associated_group_by_rule(self):
+    def test_empty_no_associated_dispatch_rule_rule(self):
         """
         Test if an UnknowMessageTypeException is raised when using handle
-        function on a report that is not associated with a group_by rule in the
+        function on a report that is not associated with a dispatch_rule rule in the
         handler's route table
 
         """
@@ -290,13 +290,13 @@ class TestHandlerFunction:
 
     def gen_test_handle(self, input_report, init_formula_id_list,
                         formula_id_validation_list, init_state):
-        """instanciate the handler whit given route table and primary groupby
+        """instanciate the handler whit given route table and primary dispatchrule
         rule, test if the handle function return a state containing formula
         which their id are in formula_id_validation_list
 
         """
-        init_state.route_table.group_by(Report1, GroupBy1AB(True))
-        init_state.route_table.group_by(Report2, GroupBy2AC())
+        init_state.route_table.dispatch_rule(Report1, DispatchRule1AB(True))
+        init_state.route_table.dispatch_rule(Report2, DispatchRule2AC())
         handler = FormulaDispatcherReportHandler()
 
         for formula_id in init_formula_id_list:
@@ -416,8 +416,8 @@ def initialized_dispatcher_actor():
     """ return an uninitialized actor """
     route_table = RouteTable()
 
-    gbr = GroupBy1A(primary=True)
-    route_table.group_by(Report1, gbr)
+    gbr = DispatchRule1A(primary=True)
+    route_table.dispatch_rule(Report1, gbr)
     dispatcher = DispatcherActor(ACTOR_NAME, Mock(), route_table)
     dispatcher.state.socket_interface = Mock()
     dispatcher.setup()
@@ -428,11 +428,11 @@ def test_actor_initialisation(dispatcher_actor):
     assert dispatcher_actor.state.alive is True
 
 
-def test_actor_setup_without_group_by(dispatcher_actor):
+def test_actor_setup_without_dispatch_rule(dispatcher_actor):
     """ test to setup the dispatcher without seting a primary group by rule"""
-    with pytest.raises(NoPrimaryGroupByRuleException):
+    with pytest.raises(NoPrimaryDispatchRuleRuleException):
         dispatcher_actor.setup()
 
 
 def test_actor_setup(initialized_dispatcher_actor):
-    assert initialized_dispatcher_actor.state.route_table.primary_group_by_rule is not None
+    assert initialized_dispatcher_actor.state.route_table.primary_dispatch_rule_rule is not None

@@ -39,12 +39,12 @@ class FormulaDispatcherReportHandler(InitHandler):
                  that identitfy the formula_actor
         :rtype:  list(tuple(formula_id, report))
         """
-        group_by_rule = state.route_table.get_group_by_rule(msg)
-        primary_group_by_rule = state.route_table.primary_group_by_rule
+        dispatch_rule_rule = state.route_table.get_dispatch_rule_rule(msg)
+        primary_dispatch_rule_rule = state.route_table.primary_dispatch_rule_rule
 
-        for formula_id, report in self._extract_reports(msg, group_by_rule,
-                                                        primary_group_by_rule):
-            primary_rule_fields = primary_group_by_rule.fields
+        for formula_id, report in self._extract_reports(msg, dispatch_rule_rule,
+                                                        primary_dispatch_rule_rule):
+            primary_rule_fields = primary_dispatch_rule_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = state.get_direct_formula(formula_id)
                 formula.send_data(report)
@@ -57,48 +57,48 @@ class FormulaDispatcherReportHandler(InitHandler):
         return state
 
 
-    def _extract_reports(self, report, group_by_rule, primary_group_by_rule):
+    def _extract_reports(self, report, dispatch_rule_rule, primary_dispatch_rule_rule):
         """
         Use the group by rule to split the report. Generated report identifier
         are then mapped to an identifier that match the primary report
         identifier fields
 
-        ex: primary group_by (sensor, socket, core)
-            second  group_by (sensor)
-        The second group_by need to match with the primary if sensor are equal.
+        ex: primary dispatch_rule (sensor, socket, core)
+            second  dispatch_rule (sensor)
+        The second dispatch_rule need to match with the primary if sensor are equal.
 
         :param powerapi.Report report:                 Report to split
-        :param powerapi.GroupBy group_by_rule: GroupBy rule
+        :param powerapi.DispatchRule dispatch_rule_rule: DispatchRule rule
 
         :return: List of formula_id associated to a sub-report of report
         :rtype:  list(tuple(formula_id, powerapi.Report))
         """
 
         # List of tuple (id_report, report)
-        report_list = group_by_rule.extract(report)
+        report_list = dispatch_rule_rule.extract(report)
 
-        if group_by_rule.is_primary:
+        if dispatch_rule_rule.is_primary:
             return report_list
 
         return list(map(lambda _tuple:
-                        (self._match_report_id(_tuple[0], group_by_rule,
-                                               primary_group_by_rule),
+                        (self._match_report_id(_tuple[0], dispatch_rule_rule,
+                                               primary_dispatch_rule_rule),
                          _tuple[1]),
                         report_list))
 
-    def _match_report_id(self, report_id, group_by_rule, primary_rule):
+    def _match_report_id(self, report_id, dispatch_rule_rule, primary_rule):
         """
         Return the new_report_id with the report_id by removing
         every "useless" fields from it.
 
         :param tuple report_id:                          Original report id
-        :param powerapi.GroupBy group_by_rule: GroupBy rule
+        :param powerapi.DispatchRule dispatch_rule_rule: DispatchRule rule
         """
         new_report_id = ()
         for i in range(len(report_id)):
             if i >= len(primary_rule.fields):
                 return new_report_id
-            if group_by_rule.fields[i] == primary_rule.fields[i]:
+            if dispatch_rule_rule.fields[i] == primary_rule.fields[i]:
                 new_report_id += (report_id[i],)
             else:
                 return new_report_id

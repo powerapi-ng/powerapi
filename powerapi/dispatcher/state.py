@@ -18,9 +18,9 @@ from powerapi.actor import State
 from powerapi.utils.tree import Tree
 from powerapi.message import UnknowMessageTypeException
 
-class PrimaryGroupByRuleAlreadyDefinedException(Exception):
+class PrimaryDispatchRuleRuleAlreadyDefinedException(Exception):
     """
-    Exception raised when user want to add a primary group_by rule on a
+    Exception raised when user want to add a primary dispatch_rule rule on a
     formula dispatcher that already have one
     """
 
@@ -28,47 +28,47 @@ class PrimaryGroupByRuleAlreadyDefinedException(Exception):
 class RouteTable:
     """
     Structure that map a :class:`Report<powerapi.report.Report>` type to a
-    :class:`GroupBy<powerapi.group_by.GroupBy>` rule
+    :class:`DispatchRule<powerapi.dispatch_rule.DispatchRule>` rule
     """
 
     def __init__(self):
-        #: (array): Array of tuple that link a Report type to a GroupBy rule
+        #: (array): Array of tuple that link a Report type to a DispatchRule rule
         self.route_table = []
-        #: (powerapi.GroupBy): Allow to define how to create the Formula id
-        self.primary_group_by_rule = None
+        #: (powerapi.DispatchRule): Allow to define how to create the Formula id
+        self.primary_dispatch_rule_rule = None
 
-    def get_group_by_rule(self, msg):
+    def get_dispatch_rule_rule(self, msg):
         """
         Return the corresponding group by rule mapped to the received message
         type
 
         :param type msg: the received message
-        :return: the group_by rule mapped to the received message type
-        :rtype: powerapi.group_by.GroupBy
+        :return: the dispatch_rule rule mapped to the received message type
+        :rtype: powerapi.dispatch_rule.DispatchRule
         :raise: UnknowMessageTypeException if no group by rule is mapped to the
                 received message type
         """
-        for (report_class, group_by_rule) in self.route_table:
+        for (report_class, dispatch_rule_rule) in self.route_table:
             if isinstance(msg, report_class):
-                return group_by_rule
+                return dispatch_rule_rule
 
         raise UnknowMessageTypeException(type(msg))
 
-    def group_by(self, report_class, group_by_rule):
+    def dispatch_rule(self, report_class, dispatch_rule_rule):
         """
-        Add a group_by rule to the route table
+        Add a dispatch_rule rule to the route table
 
         :param Type report_class: Type of the message that the
-                                  group_by rule must handle
-        :param group_by_rule: Group_by rule to add
-        :type group_by_rule:  powerapi.group_by.GroupBy
+                                  dispatch_rule rule must handle
+        :param dispatch_rule_rule: Group_by rule to add
+        :type dispatch_rule_rule:  powerapi.dispatch_rule.DispatchRule
         """
-        if group_by_rule.is_primary:
-            if self.primary_group_by_rule is not None:
-                raise PrimaryGroupByRuleAlreadyDefinedException()
-            self.primary_group_by_rule = group_by_rule
+        if dispatch_rule_rule.is_primary:
+            if self.primary_dispatch_rule_rule is not None:
+                raise PrimaryDispatchRuleRuleAlreadyDefinedException()
+            self.primary_dispatch_rule_rule = dispatch_rule_rule
 
-        self.route_table.append((report_class, group_by_rule))
+        self.route_table.append((report_class, dispatch_rule_rule))
 
 
 class DispatcherState(State):
@@ -104,7 +104,7 @@ class DispatcherState(State):
         self.formula_dict = {}
 
         #: (utils.Tree): Tree store of the formula for faster
-        #: GroupBy
+        #: DispatchRule
         self.formula_tree = Tree()
 
         #: (func): Factory for formula creation

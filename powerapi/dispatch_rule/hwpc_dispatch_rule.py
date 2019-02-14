@@ -20,7 +20,7 @@ HWPC group by rules utilities
 
 from enum import IntEnum
 
-from powerapi.group_by import GroupBy
+from powerapi.dispatch_rule import DispatchRule
 from powerapi.report import HWPCReport, HWPCReportSocket
 
 
@@ -35,7 +35,7 @@ class HWPCDepthLevel(IntEnum):
     CORE = 2
 
 
-class HWPCGroupBy(GroupBy):
+class HWPCDispatchRule(DispatchRule):
     """
     Group by rule for HWPC report
     """
@@ -44,7 +44,7 @@ class HWPCGroupBy(GroupBy):
         :param depth:
         :type depth: HWPCDepthLevel
         """
-        GroupBy.__init__(self, primary)
+        DispatchRule.__init__(self, primary)
         self.depth = depth
         self.fields = self._set_field()
 
@@ -56,7 +56,7 @@ class HWPCGroupBy(GroupBy):
 
     def extract(self, report):
         """
-        See :meth:`GroupBy.extract <powerapi.group_by.abstract_group_by.GroupBy.extract>`
+        See :meth:`DispatchRule.extract <powerapi.dispatch_rule.abstract_dispatch_rule.DispatchRule.extract>`
         """
         if not _check_report_integrity(report):
             return []

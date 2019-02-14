@@ -17,7 +17,7 @@ from copy import deepcopy
 
 import pytest
 from powerapi.report import *
-from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel
+from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 
 
 """
@@ -99,18 +99,18 @@ def report_assert(r_1, r_2):
         assert group_id in r_2.groups
 
 
-class TestHWPCGroupBy():
+class TestHWPCDispatchRule():
 
 
     def test_init_fields_name_test(self):
         """
-        test if the field's names of the group_by identifier tuple are correctly
+        test if the field's names of the dispatch_rule identifier tuple are correctly
         initialized
         """
-        assert HWPCGroupBy(HWPCDepthLevel.TARGET).fields == ['target']
-        assert HWPCGroupBy(HWPCDepthLevel.ROOT).fields == ['sensor']
-        assert HWPCGroupBy(HWPCDepthLevel.SOCKET).fields == ['sensor', 'socket']
-        assert HWPCGroupBy(HWPCDepthLevel.CORE).fields == ['sensor', 'socket',
+        assert HWPCDispatchRule(HWPCDepthLevel.TARGET).fields == ['target']
+        assert HWPCDispatchRule(HWPCDepthLevel.ROOT).fields == ['sensor']
+        assert HWPCDispatchRule(HWPCDepthLevel.SOCKET).fields == ['sensor', 'socket']
+        assert HWPCDispatchRule(HWPCDepthLevel.CORE).fields == ['sensor', 'socket',
                                                            'core']
 
     def validate_reports(self, reports, validation_list):
@@ -140,7 +140,7 @@ class TestHWPCGroupBy():
 
         extract function must return an emtpy list
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.ROOT).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract
         report = create_report_root([])
 
         assert extract(report) == []
@@ -150,7 +150,7 @@ class TestHWPCGroupBy():
 
         extract function must return an emtpy list
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract
         report = create_report_root(
             [create_group_report('1', [])])
 
@@ -161,7 +161,7 @@ class TestHWPCGroupBy():
 
         extract function must return an emtpy list
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.CORE).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.CORE).extract
         report = create_report_root(
             [create_group_report('1', [
                 create_socket_report('1', [])
@@ -173,7 +173,7 @@ class TestHWPCGroupBy():
 
         extract function must return an emtpy list
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.CORE).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.CORE).extract
         report = create_report_root(
             [create_group_report('1', [
                 create_socket_report('1', [HWPCReportCore('1')])
@@ -185,7 +185,7 @@ class TestHWPCGroupBy():
 
         extract method must return the fake report with its id
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.ROOT).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract
         extracted_reports = extract(REPORT)
 
         assert len(extracted_reports) == 1
@@ -198,7 +198,7 @@ class TestHWPCGroupBy():
 
         extract method must return the fake report with its id
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.TARGET).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.TARGET).extract
         extracted_reports = extract(REPORT)
 
         assert len(extracted_reports) == 1
@@ -212,7 +212,7 @@ class TestHWPCGroupBy():
 
         extract method must return two HWPCReports with their id
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract
         extracted_reports = extract(REPORT)
 
         assert len(extracted_reports) == 2
@@ -247,7 +247,7 @@ class TestHWPCGroupBy():
 
         extract method must return four HWPCReports with their id
         """
-        extract = HWPCGroupBy(HWPCDepthLevel.CORE).extract
+        extract = HWPCDispatchRule(HWPCDepthLevel.CORE).extract
         extracted_reports = extract(REPORT)
 
         assert len(extracted_reports) == 4
@@ -316,7 +316,7 @@ class TestHWPCGroupBy():
         and one core
 
         The extracted report must be equal to the initial report regardless of
-        the group_by rule
+        the dispatch_rule rule
         """
         report = create_report_root(
             [create_group_report('rapl', [
@@ -327,16 +327,16 @@ class TestHWPCGroupBy():
 
         # ROOT test
         validation_list = [((report.sensor,), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         # SOCKET and CORE test
         validation_list = [((report.sensor, '1'), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         validation_list = [((report.sensor, '1', '1'), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.CORE).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
     def test_extract_rapl_hwpc_report_for_two_socket_one_core(self):
@@ -362,7 +362,7 @@ class TestHWPCGroupBy():
 
         # ROOT test
         validation_list = [((report.sensor,), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         # SOCKET and CORE test
@@ -382,12 +382,12 @@ class TestHWPCGroupBy():
 
         validation_list = [((report.sensor, '1'), validation_report1),
                            ((report.sensor, '2'), validation_report2)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         validation_list = [((report.sensor, '1', '1'), validation_report1),
                            ((report.sensor, '2', '2'), validation_report2)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.CORE).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
     def test_extract_rapl_hwpc_report_for_one_socket_two_core(self):
@@ -412,11 +412,11 @@ class TestHWPCGroupBy():
 
         # ROOT and SOCKET test
         validation_list = [((report.sensor,), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         validation_list = [((report.sensor, '1'), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         # CORE test
@@ -436,7 +436,7 @@ class TestHWPCGroupBy():
 
         validation_list = [((report.sensor, '1', '1'), validation_report1),
                            ((report.sensor, '1', '2'), validation_report2)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.CORE).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
     def test_extract_rapl_hwpc_report_for_two_socket_two_core(self):
@@ -468,7 +468,7 @@ class TestHWPCGroupBy():
 
         # ROOT test
         validation_list = [((report.sensor,), report)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.ROOT).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.ROOT).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         # SOCKET test
@@ -489,7 +489,7 @@ class TestHWPCGroupBy():
 
         validation_list = [((report.sensor, '1'), validation_report1),
                            ((report.sensor, '2'), validation_report2)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.SOCKET).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.SOCKET).extract(report)
         self.validate_reports(extracted_reports, validation_list)
 
         # CORE test
@@ -525,5 +525,5 @@ class TestHWPCGroupBy():
                            ((report.sensor, '1', '2'), validation_report2),
                            ((report.sensor, '2', '3'), validation_report3),
                            ((report.sensor, '2', '4'), validation_report4)]
-        extracted_reports = HWPCGroupBy(HWPCDepthLevel.CORE).extract(report)
+        extracted_reports = HWPCDispatchRule(HWPCDepthLevel.CORE).extract(report)
         self.validate_reports(extracted_reports, validation_list)
