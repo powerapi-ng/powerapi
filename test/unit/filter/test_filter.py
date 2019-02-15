@@ -24,6 +24,20 @@ from powerapi.report import HWPCReport
 from powerapi.report_model import HWPCModel
 from powerapi.database import MongoDB
 
+from test.unit.database.mongo_utils import gen_base_test_unit_filter, clean_base_test_unit_filter
+from test.unit.database.mongo_utils import clean_base_test_unit_filter
+
+
+HOSTNAME = "localhost"
+PORT = 27017
+
+
+@pytest.fixture
+def database():
+    gen_base_test_unit_filter(HOSTNAME, PORT)
+    yield None
+    clean_base_test_unit_filter(HOSTNAME, PORT)
+
 
 class TestFilter:
 
@@ -35,14 +49,14 @@ class TestFilter:
         assert pytest_wrapped.type == FilterUselessError
 
 
-    def test_with_two_filter(self):
+    def test_with_two_filter(self, database):
         """
         Test filter with two filter
         - 2 first report return first dispatcher
         - 2 next report return first and second dispatcher
         - 2 next report return None
         """
-        mongodb = MongoDB("localhost", 27017, "test_filter",
+        mongodb = MongoDB(HOSTNAME, PORT, "test_filter",
                           "test_filter1", report_model=HWPCModel())
         mongodb.load()
         hwpc_filter = Filter()
