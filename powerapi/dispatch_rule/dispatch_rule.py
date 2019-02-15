@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class GroupBy:
+class DispatchRule:
     """
     Group by rule
     """
@@ -23,13 +23,12 @@ class GroupBy:
         self.is_primary = primary
         self.fields = None
 
-    def extract(self, report):
+    def get_formula_id(self, report):
         """
-        divide a report into multiple report given a group_by rule
+        return id of the formulas that the receive report must be send
 
         :param report:
         :type report: powerapi.report.report.Report
-        :rtype: ([(tuple, powerapi.report.report.Report)]) a list all report
-                with their identifier
+        :rtype: ([tuple]) a list formula identifier
         """
         raise NotImplementedError()

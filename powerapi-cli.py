@@ -26,7 +26,7 @@ import zmq
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.formula import RAPLFormulaActor
-from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel
+from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport, PowerReport
@@ -56,8 +56,8 @@ def arg_parser_init():
     parser.add_argument("output_db", help="MongoDB output database")
     parser.add_argument("output_collection", help="MongoDB output collection")
 
-    # GroupBy
-    parser.add_argument("hwpc_group_by", help="Define the group_by rule, "
+    # DispatchRule
+    parser.add_argument("hwpc_dispatch_rule", help="Define the dispatch_rule rule, "
                         "Can be CORE, SOCKET or ROOT",
                         choices=['CORE', 'SOCKET', 'ROOT'])
 
@@ -92,8 +92,8 @@ def main():
 
     # Dispatcher
     route_table = RouteTable()
-    route_table.group_by(HWPCReport, HWPCGroupBy(getattr(HWPCDepthLevel,
-                                                         args.hwpc_group_by),
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel,
+                                                         args.hwpc_dispatch_rule),
                                                  primary=True))
 
     dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,

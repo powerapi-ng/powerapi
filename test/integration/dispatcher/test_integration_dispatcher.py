@@ -27,11 +27,11 @@ import zmq
 from powerapi.actor import NotConnectedException
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import StartMessage, OKMessage, ErrorMessage, UnknowMessageTypeException
-from powerapi.group_by import HWPCGroupBy, HWPCDepthLevel, GroupBy
+from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
 from powerapi.report import *
 from test.integration.integration_utils import *
 from test.integration.dispatcher.fake_formula import FakeFormulaActor
-from powerapi.dispatcher import NoPrimaryGroupByRuleException
+from powerapi.dispatcher import NoPrimaryDispatchRuleRuleException
 
 
 FORMULA_SOCKET_ADDR = 'ipc://@test_formula_socket'
@@ -135,7 +135,6 @@ def dispatcher(request, route_table):
         level_logger=LOG_LEVEL)
     dispatcher_actor.start()
     yield dispatcher_actor
-
     dispatcher_actor.state.socket_interface.close()
     dispatcher_actor.terminate()
     dispatcher_actor.join()
@@ -183,7 +182,7 @@ def dispatcher_with_formula(formula_init_msg, initialized_dispatcher,
     """
     for msg in formula_init_msg:
         try:
-            gb_rule = route_table.get_group_by_rule(msg)
+            gb_rule = route_table.get_dispatch_rule(msg)
             if not gb_rule.is_primary:
                 msg = FakeReport()
             initialized_dispatcher.send_data(msg)
@@ -243,19 +242,19 @@ class FakeReport(Report):
                 self.sensor == other.sensor and self.target == other.target)
 
 
-class FakeGBR(GroupBy):
+class FakeGBR(DispatchRule):
     """
-    GroupBy Rule that can handle FakeReport type
+    DispatchRule Rule that can handle FakeReport type
     """
     def __init__(self, primary=False):
         self.is_primary = primary
         self.fields = ['sensor']
 
-    def extract(self, report):
+    def get_formula_id(self, report):
         """
         return the report and the sensor name as identifier
         """
-        return [(('toto',), report)]
+        return [('toto',)]
 
     def __str__(self):
         return 'MESSAGE OTHER GBR'
@@ -267,7 +266,7 @@ def route_table_no_hwpc():
       - a FakeGBR as primary rule
     """
     route_table = RouteTable()
-    route_table.group_by(FakeReport, FakeGBR(primary=True))
+    route_table.dispatch_rule(FakeReport, FakeGBR(primary=True))
     return route_table
 
 
@@ -285,8 +284,8 @@ def route_table_hwpc_not_primary():
       - a HWPCGrouptBy rule
     """
     route_table = RouteTable()
-    route_table.group_by(FakeReport, FakeGBR(primary=True))
-    route_table.group_by(HWPCReport, HWPCGroupBy(HWPCDepthLevel.ROOT))
+    route_table.dispatch_rule(FakeReport, FakeGBR(primary=True))
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.ROOT))
 
     return route_table
 
@@ -297,7 +296,7 @@ def route_table_with_primary_rule():
       - a HWPCGrouptBy rule as primary rule
     """
     route_table = RouteTable()
-    route_table.group_by(HWPCReport, HWPCGroupBy(HWPCDepthLevel.ROOT,
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.ROOT,
                                                  primary=True))
     return route_table
 
@@ -308,7 +307,7 @@ def route_table_with_primary_rule():
 @define_route_table(empty_route_table())
 def test_create_dispatcher_without_primary(dispatcher):
     """
-    Create a Dispatcher with no PrimaryGroupBy rule
+    Create a Dispatcher with no PrimaryDispatchRule rule
 
     Test if the actor is not alive after its initialisation
 
@@ -319,7 +318,7 @@ def test_create_dispatcher_without_primary(dispatcher):
 @define_route_table(route_table_with_primary_rule())
 def test_create_dispatcher_with_primary(dispatcher):
     """
-    Create a Dispatcher with a PrimaryGroupBy rule
+    Create a Dispatcher with a PrimaryDispatchRule rule
 
     Test if the actor is alive after its initialisation
 
@@ -350,7 +349,7 @@ def test_send_message_without_connect(dispatcher):
 @define_route_table(route_table_with_primary_rule())
 def test_init_dispatcher_already_init(initialized_dispatcher):
     """
-    Create a Dispatcher with a PrimaryGroupBy rule, initialize it with a
+    Create a Dispatcher with a PrimaryDispatchRule rule, initialize it with a
     StartMessage and send it another StartMessage
 
     Test :
@@ -366,7 +365,7 @@ def test_init_dispatcher_already_init(initialized_dispatcher):
 @define_route_table(route_table_with_primary_rule())
 def test_init_dispatcher(dispatcher, context):
     """
-    Create a Dispatcher with a PrimaryGroupBy rule and send it a StartMessage
+    Create a Dispatcher with a PrimaryDispatchRule rule and send it a StartMessage
 
     Test :
       - if the actor is alive

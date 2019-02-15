@@ -23,9 +23,9 @@ from powerapi.dispatcher import StartHandler, DispatcherState
 from powerapi.dispatcher import FormulaDispatcherReportHandler
 
 
-class NoPrimaryGroupByRuleException(Exception):
+class NoPrimaryDispatchRuleRuleException(Exception):
     """
-    Exception raised when user want to get the primary group_by rule on a
+    Exception raised when user want to get the primary dispatch_rule rule on a
     formula dispatcher that doesn't have one
     """
 
@@ -65,8 +65,8 @@ class DispatcherActor(Actor):
         StartMessage, PoisonPillMessage and Report handlers
         """
         Actor.setup(self)
-        if self.state.route_table.primary_group_by_rule is None:
-            raise NoPrimaryGroupByRuleException()
+        if self.state.route_table.primary_dispatch_rule is None:
+            raise NoPrimaryDispatchRuleRuleException()
 
         self.add_handler(Report, FormulaDispatcherReportHandler())
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
