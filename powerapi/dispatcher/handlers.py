@@ -18,6 +18,21 @@ from powerapi.handler import InitHandler, Handler, StartHandler
 from powerapi.message import OKMessage, StartMessage
 
 
+def _clean_list(id_list):
+    """
+    return a list where all elements are unique
+    """
+
+    id_list.sort()
+    r_list = []
+    last_element = None
+    for x in id_list:
+        if x != last_element:
+            r_list.append(x)
+            last_element = x
+    return r_list
+
+
 class FormulaDispatcherReportHandler(InitHandler):
     """
     Split received report into sub-reports (if needed) and return the sub
@@ -39,66 +54,68 @@ class FormulaDispatcherReportHandler(InitHandler):
                  that identitfy the formula_actor
         :rtype:  list(tuple(formula_id, report))
         """
-        dispatch_rule_rule = state.route_table.get_dispatch_rule_rule(msg)
-        primary_dispatch_rule_rule = state.route_table.primary_dispatch_rule_rule
+        dispatch_rule = state.route_table.get_dispatch_rule(msg)
+        primary_dispatch_rule = state.route_table.primary_dispatch_rule
 
-        for formula_id, report in self._extract_reports(msg, dispatch_rule_rule,
-                                                        primary_dispatch_rule_rule):
-            primary_rule_fields = primary_dispatch_rule_rule.fields
+        for formula_id in self._extract_formula_id(msg, dispatch_rule,
+                                                   primary_dispatch_rule):
+            primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = state.get_direct_formula(formula_id)
-                formula.send_data(report)
+                formula.send_data(msg)
 
             else:
                 for formula in state.get_corresponding_formula(
                         list(formula_id)):
-                    formula.send(report)
+                    formula.send(msg)
 
         return state
 
 
-    def _extract_reports(self, report, dispatch_rule_rule, primary_dispatch_rule_rule):
+    def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
         """
-        Use the group by rule to split the report. Generated report identifier
-        are then mapped to an identifier that match the primary report
-        identifier fields
+        Use the dispatch rule to extract formula_id from the given report.
+        Formula id are then mapped to an identifier that match the primary
+        report identifier fields
 
         ex: primary dispatch_rule (sensor, socket, core)
             second  dispatch_rule (sensor)
-        The second dispatch_rule need to match with the primary if sensor are equal.
+        The second dispatch_rule need to match with the primary if sensor are
+        equal.
 
         :param powerapi.Report report:                 Report to split
-        :param powerapi.DispatchRule dispatch_rule_rule: DispatchRule rule
+        :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
 
         :return: List of formula_id associated to a sub-report of report
-        :rtype:  list(tuple(formula_id, powerapi.Report))
+        :rtype: [tuple]
         """
 
         # List of tuple (id_report, report)
-        report_list = dispatch_rule_rule.extract(report)
+        id_list = dispatch_rule.get_formula_id(report)
 
-        if dispatch_rule_rule.is_primary:
-            return report_list
+        if dispatch_rule.is_primary:
+            return id_list
 
-        return list(map(lambda _tuple:
-                        (self._match_report_id(_tuple[0], dispatch_rule_rule,
-                                               primary_dispatch_rule_rule),
-                         _tuple[1]),
-                        report_list))
+        return _clean_list(list(map(
+            lambda id: (self._match_report_id(id, dispatch_rule,
+                                              primary_dispatch_rule)),
+            id_list)))
 
-    def _match_report_id(self, report_id, dispatch_rule_rule, primary_rule):
+
+
+    def _match_report_id(self, report_id, dispatch_rule, primary_rule):
         """
         Return the new_report_id with the report_id by removing
         every "useless" fields from it.
 
         :param tuple report_id:                          Original report id
-        :param powerapi.DispatchRule dispatch_rule_rule: DispatchRule rule
+        :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
         """
         new_report_id = ()
         for i in range(len(report_id)):
             if i >= len(primary_rule.fields):
                 return new_report_id
-            if dispatch_rule_rule.fields[i] == primary_rule.fields[i]:
+            if dispatch_rule.fields[i] == primary_rule.fields[i]:
                 new_report_id += (report_id[i],)
             else:
                 return new_report_id

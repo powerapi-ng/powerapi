@@ -135,7 +135,6 @@ def dispatcher(request, route_table):
         level_logger=LOG_LEVEL)
     dispatcher_actor.start()
     yield dispatcher_actor
-
     dispatcher_actor.state.socket_interface.close()
     dispatcher_actor.terminate()
     dispatcher_actor.join()
@@ -183,7 +182,7 @@ def dispatcher_with_formula(formula_init_msg, initialized_dispatcher,
     """
     for msg in formula_init_msg:
         try:
-            gb_rule = route_table.get_dispatch_rule_rule(msg)
+            gb_rule = route_table.get_dispatch_rule(msg)
             if not gb_rule.is_primary:
                 msg = FakeReport()
             initialized_dispatcher.send_data(msg)
@@ -251,11 +250,11 @@ class FakeGBR(DispatchRule):
         self.is_primary = primary
         self.fields = ['sensor']
 
-    def extract(self, report):
+    def get_formula_id(self, report):
         """
         return the report and the sensor name as identifier
         """
-        return [(('toto',), report)]
+        return [('toto',)]
 
     def __str__(self):
         return 'MESSAGE OTHER GBR'

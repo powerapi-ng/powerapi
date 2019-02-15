@@ -65,7 +65,7 @@ class DispatcherActor(Actor):
         StartMessage, PoisonPillMessage and Report handlers
         """
         Actor.setup(self)
-        if self.state.route_table.primary_dispatch_rule_rule is None:
+        if self.state.route_table.primary_dispatch_rule is None:
             raise NoPrimaryDispatchRuleRuleException()
 
         self.add_handler(Report, FormulaDispatcherReportHandler())

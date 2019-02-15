@@ -56,8 +56,8 @@ class DispatchRule1A(DispatchRule):
         DispatchRule.__init__(self, primary)
         self.fields = ['A']
 
-    def extract(self, report):
-        return [((report.a,), report)]
+    def get_formula_id(self, report):
+        return [(report.a,)]
 
 
 class DispatchRule1AB(DispatchRule):
@@ -75,11 +75,9 @@ class DispatchRule1AB(DispatchRule):
         DispatchRule.__init__(self, primary)
         self.fields = ['A', 'B']
 
-    def extract(self, report):
-        b2_report = [] if report.b2 is None else [
-            ((report.a, report.b2), Report1(report.a, report.b2))
-        ]
-        return [((report.a, report.b), Report1(report.a, report.b))] + b2_report
+    def get_formula_id(self, report):
+        b2_id = [] if report.b2 is None else [(report.a, report.b2)]
+        return [(report.a, report.b)] + b2_id
 
 
 class Report2(Report):
@@ -99,6 +97,8 @@ class Report2(Report):
                                           if self.c2 is None
                                           else ('(' + self.c + ',' + self.c2 +
                                                 ')')) + ')'
+
+
 class DispatchRule2A(DispatchRule):
     """ Group by rule that return the received report
 
@@ -109,8 +109,8 @@ class DispatchRule2A(DispatchRule):
         DispatchRule.__init__(self, primary)
         self.fields = ['A']
 
-    def extract(self, report):
-        return [((report.a,), report)]
+    def get_formula_id(self, report):
+        return [(report.a,)]
 
 
 class DispatchRule2AC(DispatchRule):
@@ -128,11 +128,9 @@ class DispatchRule2AC(DispatchRule):
         DispatchRule.__init__(self, primary)
         self.fields = ['A', 'C']
 
-    def extract(self, report):
-        c2_report = [] if report.c2 is None else [
-            ((report.a, report.c2), Report2(report.a, report.c2))
-        ]
-        return [((report.a, report.c), Report2(report.a, report.c))] + c2_report
+    def get_formula_id(self, report):
+        c2_ids = [] if report.c2 is None else [(report.a, report.c2)]
+        return [(report.a, report.c)] + c2_ids
 
 
 # Inputs reports
@@ -160,111 +158,105 @@ class TestExtractReportFunction:
 
     """
 
-    def gen_test_extract_report(self, primary_dispatch_rule_rule, dispatch_rule_rule,
-                                input_report, validation_reports):
-        """instanciate the handler whit given route table and primary dispatchrule
+    def gen_test_get_formula_id(self, primary_dispatch_rule, dispatch_rule,
+                                input_report, validation_id):
+        """instanciate the handler whit given route table and primary dispatch
         rule, test if the handle function application on *input_report* return
         the same reports as in *validation_reports*
 
         """
         handler = FormulaDispatcherReportHandler()
 
-        result_reports = handler._extract_reports(input_report, dispatch_rule_rule,
-                                                  primary_dispatch_rule_rule)
-        result_reports.sort(key=lambda result_tuple: result_tuple[0])
-        validation_reports.sort(key=lambda result_tuple: result_tuple[0])
+        formula_ids = handler._extract_formula_id(input_report, dispatch_rule,
+                                                  primary_dispatch_rule)
+        formula_ids.sort()
+        validation_id.sort()
 
-        assert result_reports == validation_reports
+        assert formula_ids == validation_id
 
-    def test_extract_report_pgb_DispatchRule1A_gb_DispatchRule2A(self):
+    def test_get_formula_id_pgb_DispatchRule1A_gb_DispatchRule2A(self):
         """
-        test extract_report function for a DispatchRule1A rule for Report1 as
+        test get_formula_id function for a DispatchRule1A rule for Report1 as
         primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
-        - REPORT_1 : [(('a',), REPORT_1)]
-        - REPORT_2 : [(('a',), REPORT_2)]
-        - REPORT_1_B2 : [(('a',), REPORT_1_B2)]
-        - REPORT_2_C2 : [(('a',), REPORT_2_C2)]
+        - REPORT_1 : [('a',)]
+        - REPORT_2 : [('a',)]
+        - REPORT_1_B2 : [('a',)]
+        - REPORT_2_C2 : [('a',)]
 
         """
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1,
-                                     [(('a',), REPORT_1)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2A(), REPORT_2,
-                                     [(('a',), REPORT_2)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1_B2,
-                                     [(('a',), REPORT_1_B2)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2A(), REPORT_2_C2,
-                                     [(('a',), REPORT_2_C2)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
+                                     REPORT_1, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2A(),
+                                     REPORT_2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
+                                     REPORT_1_B2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2A(),
+                                     REPORT_2_C2, [('a',)])
 
-    def test_extract_report_pgb_DispatchRule1A_gb_DispatchRule2AC(self):
-        """test extract_report function for a DispatchRule1A rule for Report1 as
+    def test_get_formula_id_pgb_DispatchRule1A_gb_DispatchRule2AC(self):
+        """test get_formula_id function for a DispatchRule1A rule for Report1 as
         primary rule and DispatchRule2AC rule for Report2
 
+        ?????????
+
         Expected result for each input report :
-        - REPORT_1 : [(('a',), REPORT_1)]
-        - REPORT_2 : [(('a',), REPORT_2)]
-        - REPORT_1_B2 : [(('a',), REPORT_1_B2)]
-        - REPORT_2_C2 : [(('a',), REPORT_2),
-                         (('a',), SPLITED_REPORT_2_C2)]
+        - REPORT_1 : [('a',)]
+        - REPORT_2 : [('a',)]
+        - REPORT_1_B2 : [('a',)]
+        - REPORT_2_C2 : [('a',)]
 
         """
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1,
-                                     [(('a',), REPORT_1)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2,
-                                     [(('a',), REPORT_2)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule1A(), REPORT_1_B2,
-                                     [(('a',), REPORT_1_B2)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2_C2,
-                                     [(('a',), REPORT_2),
-                                      (('a',), SPLITED_REPORT_2_C2)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
+                                     REPORT_1, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
+                                     REPORT_2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
+                                     REPORT_1_B2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
+                                     REPORT_2_C2, [('a',)])
 
-    def test_extract_report_pgb_DispatchRule1AB_gb_DispatchRule2A(self):
+    def test_get_formula_id_pgb_DispatchRule1AB_gb_DispatchRule2A(self):
         """
-        test extract_report function for a DispatchRule1AB rule for Report1 as
+        test get_formula_id function for a DispatchRule1AB rule for Report1 as
         primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
-        - REPORT_1 : [(('a', 'b'), REPORT_1)]
-        - REPORT_2 : [(('a',), REPORT_2)]
-        - REPORT_1_B2 : [(('a', 'b'), REPORT_1_B2),
-                         (('a', 'b2'), SPLITED_REPORT_1_B2)]
-        - REPORT_2_C2 : [(('a',), REPORT_2_C2)]
+        - REPORT_1 : [('a', 'b')]
+        - REPORT_2 : [('a',)]
+        - REPORT_1_B2 : [('a', 'b'), ('a', 'b2')]
+        - REPORT_2_C2 : [('a',)]
 
         """
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1,
-                                     [(('a', 'b'), REPORT_1)])
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2A(), REPORT_2,
-                                     [(('a',), REPORT_2)])
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1_B2,
-                                     [(('a', 'b'), REPORT_1),
-                                      (('a', 'b2'), SPLITED_REPORT_1_B2)])
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2A(), REPORT_2_C2,
-                                     [(('a',), REPORT_2_C2)])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
+                                     REPORT_1, [('a', 'b')])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2A(),
+                                     REPORT_2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
+                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2A(),
+                                     REPORT_2_C2, [('a',)])
 
-    def test_extract_report_pgb_DispatchRule1AB_gb_DispatchRule2AC(self):
+    def test_get_formula_id_pgb_DispatchRule1AB_gb_DispatchRule2AC(self):
         """
-        test extract_report function for a DispatchRule1AB rule for Report1 as
+        test get_formula_id function for a DispatchRule1AB rule for Report1 as
         primary rule and DispatchRule2A rule for Report2
 
         Expected result for each input report :
-        - REPORT_1 : [(('a', 'b'), REPORT_1)]
-        - REPORT_2 : [(('a',), REPORT_2)]
-        - REPORT_1_B2 : [(('a', 'b'), REPORT_1_B2),
-                         (('a', 'b2'), SPLITED_REPORT_1_B2)]
-        - REPORT_2_C2 : [(('a',), REPORT_2),
-                         (('a',), SPLITED_REPORT_2_C2)]
+        - REPORT_1 : [('a', 'b')]
+        - REPORT_2 : [('a',)]
+        - REPORT_1_B2 : [('a', 'b'), ('a', 'b2')]
+        - REPORT_2_C2 : [('a',)]
         """
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1,
-                                     [(('a', 'b'), REPORT_1)])
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule2AC(), REPORT_2,
-                                     [(('a',), REPORT_2)])
-        self.gen_test_extract_report(DispatchRule1AB(), DispatchRule1AB(), REPORT_1_B2,
-                                     [(('a', 'b'), REPORT_1),
-                                      (('a', 'b2'), SPLITED_REPORT_1_B2)])
-        self.gen_test_extract_report(DispatchRule1A(), DispatchRule2AC(), REPORT_2_C2,
-                                     [(('a',), REPORT_2),
-                                      (('a',), SPLITED_REPORT_2_C2)])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
+                                     REPORT_1, [('a', 'b')])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2AC(),
+                                     REPORT_2, [('a',)])
+        self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
+                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
+        self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
+                                     REPORT_2_C2, [('a',)])
 
 
 def init_state():
@@ -276,11 +268,11 @@ def init_state():
 class TestHandlerFunction:
     """ Test Handle function of the dispatcher Handler """
 
-    def test_empty_no_associated_dispatch_rule_rule(self):
+    def test_empty_no_associated_dispatch_rule(self):
         """
         Test if an UnknowMessageTypeException is raised when using handle
-        function on a report that is not associated with a dispatch_rule rule in the
-        handler's route table
+        function on a report that is not associated with a dispatch_rule
+        in the handler's route table
 
         """
         handler = FormulaDispatcherReportHandler()
@@ -290,9 +282,9 @@ class TestHandlerFunction:
 
     def gen_test_handle(self, input_report, init_formula_id_list,
                         formula_id_validation_list, init_state):
-        """instanciate the handler whit given route table and primary dispatchrule
-        rule, test if the handle function return a state containing formula
-        which their id are in formula_id_validation_list
+        """instanciate the handler whit given route table and primary
+        dispatchrule rule, test if the handle function return a state
+        containing formula which their id are in formula_id_validation_list
 
         """
         init_state.route_table.dispatch_rule(Report1, DispatchRule1AB(True))
@@ -402,6 +394,7 @@ class TestHandlerFunction:
 
 ACTOR_NAME = 'dispatcher_actor'
 
+
 @patch('powerapi.actor.SocketInterface')
 @pytest.fixture()
 def dispatcher_actor():
@@ -435,4 +428,4 @@ def test_actor_setup_without_dispatch_rule(dispatcher_actor):
 
 
 def test_actor_setup(initialized_dispatcher_actor):
-    assert initialized_dispatcher_actor.state.route_table.primary_dispatch_rule_rule is not None
+    assert initialized_dispatcher_actor.state.route_table.primary_dispatch_rule is not None

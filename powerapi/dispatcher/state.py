@@ -35,9 +35,9 @@ class RouteTable:
         #: (array): Array of tuple that link a Report type to a DispatchRule rule
         self.route_table = []
         #: (powerapi.DispatchRule): Allow to define how to create the Formula id
-        self.primary_dispatch_rule_rule = None
+        self.primary_dispatch_rule = None
 
-    def get_dispatch_rule_rule(self, msg):
+    def get_dispatch_rule(self, msg):
         """
         Return the corresponding group by rule mapped to the received message
         type
@@ -48,27 +48,27 @@ class RouteTable:
         :raise: UnknowMessageTypeException if no group by rule is mapped to the
                 received message type
         """
-        for (report_class, dispatch_rule_rule) in self.route_table:
+        for (report_class, dispatch_rule) in self.route_table:
             if isinstance(msg, report_class):
-                return dispatch_rule_rule
+                return dispatch_rule
 
         raise UnknowMessageTypeException(type(msg))
 
-    def dispatch_rule(self, report_class, dispatch_rule_rule):
+    def dispatch_rule(self, report_class, dispatch_rule):
         """
         Add a dispatch_rule rule to the route table
 
         :param Type report_class: Type of the message that the
                                   dispatch_rule rule must handle
-        :param dispatch_rule_rule: Group_by rule to add
-        :type dispatch_rule_rule:  powerapi.dispatch_rule.DispatchRule
+        :param dispatch_rule: Group_by rule to add
+        :type dispatch_rule:  powerapi.dispatch_rule.DispatchRule
         """
-        if dispatch_rule_rule.is_primary:
-            if self.primary_dispatch_rule_rule is not None:
+        if dispatch_rule.is_primary:
+            if self.primary_dispatch_rule is not None:
                 raise PrimaryDispatchRuleRuleAlreadyDefinedException()
-            self.primary_dispatch_rule_rule = dispatch_rule_rule
+            self.primary_dispatch_rule = dispatch_rule
 
-        self.route_table.append((report_class, dispatch_rule_rule))
+        self.route_table.append((report_class, dispatch_rule))
 
 
 class DispatcherState(State):

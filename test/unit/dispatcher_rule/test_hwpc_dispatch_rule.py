@@ -13,6 +13,8 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from copy import deepcopy
+
 import pytest
 from powerapi.report import *
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
@@ -103,7 +105,7 @@ def validate_formula_id(formula_id_list, validation_list):
     """
     assert len(formula_id_list) == len(validation_list)
     formula_id_list.sort()
-
+    
     for a, b in zip(formula_id_list, validation_list):
         assert a == b
 
@@ -136,8 +138,8 @@ def test_get_formula_id_from_bad_report(bad_report):
     - dispatch by socket
     - dispatch by cpu
 
-    bad formated reports are reports without events, cpus dictionary,
-    sockets dictionary or groups dictionary
+    bad formated reports are reports without events, cpus dictionary, sockets 
+    dictionary or groups dictionary
 
     the method must return an empty list
     """
