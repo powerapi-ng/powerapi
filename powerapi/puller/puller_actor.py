@@ -16,10 +16,10 @@
 
 import logging
 import time
-from powerapi.actor import Actor, State, SocketInterface
-from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.handler import PoisonPillMessageHandler
-from powerapi.puller import PullerStartHandler
+from smartwatts.actor import Actor, State, SocketInterface
+from smartwatts.message import PoisonPillMessage, StartMessage
+from smartwatts.handler import PoisonPillMessageHandler
+from smartwatts.puller import PullerStartHandler, TimeoutHandler
 
 
 class NoReportExtractedException(Exception):
@@ -37,20 +37,17 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, behaviour, socket_interface, database, report_filter,
-                 frequency, autokill):
+    def __init__(self, behaviour, socket_interface, logger,
+                 database, report_filter, stream_mode):
         """
         :param func behaviour: Function that define the initial_behaviour
         :param SocketInterface socket_interface: Communication interface of the
                                                  actor
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
-        :param int frequency: Define (in ms) the sleep time between each
-                              read in the database.
-        :param bool autokill: Puller autokill himself when it finish to read
-                              all the database.
+        :param bool stream_mode: Puller stream_mode database.
         """
-        State.__init__(self, behaviour, socket_interface)
+        State.__init__(self, behaviour, socket_interface, logger)
 
         #: (BaseDB): Allow to interact with a Database
         self.database = database
@@ -58,13 +55,8 @@ class PullerState(State):
         #: (Filter): Filter of the puller
         self.report_filter = report_filter
 
-        #: (int): Define (in ms) the sleep time between each read in the
-        #: database.
-        self.frequency = frequency
-
-        #: (bool): Puller autokill himself when it finish to read all the
-        #: database.
-        self.autokill = autokill
+        #: (bool): Puller stream_mode database.
+        self.stream_mode = stream_mode
 
 
 class PullerActor(Actor):
@@ -75,84 +67,37 @@ class PullerActor(Actor):
     to many Dispatcher depending of some rules.
     """
 
-    def __init__(self, name, database, report_filter, frequency=0,
-                 level_logger=logging.NOTSET, autokill=False, timeout=500):
+    def __init__(self, name, database, report_filter,
+                 level_logger=logging.WARNING, stream_mode=False, timeout=0):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
-        :param int frequency: Define (in ms) the sleep time between each
-                              read in the database.
         :param int level_logger: Define the level of the logger
-        :param bool autokill: Puller autokill himself when it finish to read
-                              all the database.
+        :param bool stream_mode: Puller stream_mode himself when it finish to
+                                 read all the database.
         """
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
         self.state = PullerState(Actor._initial_behaviour,
-                                 SocketInterface(name, timeout), database,
-                                 report_filter, frequency, autokill)
+                                 SocketInterface(name, timeout),
+                                 self.logger,
+                                 database,
+                                 report_filter, stream_mode)
 
     def setup(self):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(StartMessage,
-                         PullerStartHandler(PullerActor._read_behaviour))
+        self.add_handler(StartMessage, PullerStartHandler())
+        self.set_timeout_handler(TimeoutHandler())
 
-    def _read_behaviour(self):
+    def terminated_behaviour(self):
         """
-        Puller behaviour which read all the database, then autokill or
-        reconfigure behaviour with _initial_behaviour
+        Allow to end some socket connection properly
         """
-
-        def get_report_dispatcher(state):
-            """
-            read one report of the database and filter it,
-            then return the tuple (report, dispatcher).
-
-            Return:
-                (Report, DispatcherActor): (extracted_report,
-                                            dispatcher to sent
-                                            this report)
-
-            Raise:
-                NoReportExtractedException : if the database doesn't contains
-                                             report anymore
-
-            """
-            # Read one input, if it's None, it means there is not more
-            # report in the database, just pass
-            json = state.database.get_next()
-            if json is None:
-                raise NoReportExtractedException()
-
-            # Deserialization
-            report = state.database.report_model.get_type()()
-            report.deserialize(json)
-
-            # Filter the report
-            dispatchers = state.report_filter.route(report)
-            return (report, dispatchers)
-
-        # Read all the database
-        while True:
-            try:
-                (report, dispatchers) = get_report_dispatcher(self.state)
-            except NoReportExtractedException:
-                for (_, dispatcher) in self.state.report_filter.filters:
-                    dispatcher.kill(by_data=True)
-                if self.state.autokill:
-                    self.state.alive = False
-                break
-
-            # Send to the dispatcher if it's not None
-            for dispatcher in dispatchers:
-                if dispatcher is not None:
-                    dispatcher.send_data(report)
-            time.sleep(self.state.frequency/1000)
-
-        # Behaviour to _initial_behaviour
-        self.state.behaviour = Actor._initial_behaviour
+        # Connect to all dispatcher
+        for _, dispatcher in self.state.report_filter.filters:
+            dispatcher.state.socket_interface.close()
