@@ -242,11 +242,14 @@ class Actor(multiprocessing.Process):
         self.state.socket_interface.send_control(msg)
         self.logger.info('send control [' + repr(msg) + '] to ' + self.name)
 
-    def receive_control(self):
+    def receive_control(self, timeout=None):
         """
         Receive a message from this actor on the control canal
         """
-        msg = self.state.socket_interface.receive_control()
+        if timeout is None:
+            timeout = self.state.timeout_handler
+
+        msg = self.state.socket_interface.receive_control(timeout)
         self.logger.info("receive control : [" + repr(msg) + "]")
         return msg
 

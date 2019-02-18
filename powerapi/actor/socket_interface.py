@@ -127,9 +127,9 @@ class SocketInterface:
             return self._recv_serialized(events[0][0])
         return None
 
-    def receive_control(self):
+    def receive_control(self, timeout):
         """
-        Block until a message was received on the control canal (client side
+        Block until a message was received on the control canal (client side)
         (or until timeout) an return the received messages
 
         :return: the list of received messages or an empty list if timeout
@@ -138,9 +138,12 @@ class SocketInterface:
         """
         if self.control_socket is None:
             raise NotConnectedException
-        event = self.control_socket.poll(self.timeout)
+
+        event = self.control_socket.poll(timeout)
+
         if event == 0:
             return None
+
         return self._recv_serialized(self.control_socket)
 
     def close(self):
