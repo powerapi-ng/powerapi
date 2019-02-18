@@ -150,7 +150,7 @@ class MongoDB(BaseDB):
             self.mongo_client.close()
 
         self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
-                                                serverSelectionTimeoutMS=1)
+                                                serverSelectionTimeoutMS=5)
 
         self.collection = self.mongo_client[self.db_name][
             self.collection_name]
@@ -158,7 +158,7 @@ class MongoDB(BaseDB):
         # Check if hostname:port work
         try:
             self.mongo_client.admin.command('ismaster')
-        except pymongo.errors.ConnectionFailure:
+        except pymongo.errors.ServerSelectionTimeoutError:
             raise MongoBadDBError(self.host_name + ':' + str(self.port))
 
         if not self.save_mode:
