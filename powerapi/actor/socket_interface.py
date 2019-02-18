@@ -26,6 +26,7 @@ class NotConnectedException(Exception):
     that is not conected
     """
 
+
 class SocketInterface:
     """
     Interface to handle comunication to/from the actor
@@ -206,7 +207,7 @@ class SocketInterface:
         :param Object msg: message to send
         """
         if self.control_socket is None:
-            raise NotConnectedException
+            raise NotConnectedException()
         self._send_serialized(self.control_socket, msg)
 
     def send_data(self, msg):
@@ -216,5 +217,5 @@ class SocketInterface:
         :param Object msg: message to send
         """
         if self.push_socket is None:
-            raise NotConnectedException
+            raise NotConnectedException()
         self._send_serialized(self.push_socket, msg)
