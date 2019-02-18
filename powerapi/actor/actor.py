@@ -271,7 +271,7 @@ class Actor(multiprocessing.Process):
         self.logger.info("receive data : [" + repr(msg) + "]")
         return msg
 
-    def kill(self, by_data=False):
+    def send_kill(self, by_data=False):
         """
         Kill this actor by sending a
         :class:`PoisonPillMessage
