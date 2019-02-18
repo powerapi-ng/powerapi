@@ -261,7 +261,8 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), lambda formula_id: Mock(),
+    return DispatcherState(None, Mock(), Mock(),
+                           lambda formula_id: Mock(),
                            RouteTable())
 
 
@@ -371,6 +372,7 @@ class TestHandlerFunction:
         fake_socket_interface = get_fake_socket_interface()
         dispatcher_state = DispatcherState(Actor._initial_behaviour,
                                            fake_socket_interface,
+                                           Mock(),
                                            None, None)
         assert dispatcher_state.initialized is False
 

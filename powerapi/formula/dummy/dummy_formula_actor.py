@@ -71,7 +71,7 @@ class DummyFormulaActor(FormulaActor):
     power report containing 42
     """
 
-    def __init__(self, name, actor_pusher, level_logger=logging.NOTSET,
+    def __init__(self, name, actor_pusher, level_logger=logging.WARNING,
                  timeout=None):
         """
         :param str name:                            Actor name

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pickle
+import logging
 import zmq
 from powerapi.actor import SafeContext
 
@@ -52,6 +53,8 @@ class SocketInterface:
         :param str name: name of the actor using this interface
         :param int timeout: time in millisecond to wait for a message
         """
+        self.logger = logging.getLogger(name)
+
         #: (int): Time in millisecond to wait for a message before execute
         #:        timeout_handler
         self.timeout = timeout
@@ -104,6 +107,7 @@ class SocketInterface:
         socket = SafeContext.get_context().socket(socket_type)
         socket.bind(socket_addr)
         self.poller.register(socket, zmq.POLLIN)
+        self.logger.info("bind to " + str(socket_addr))
         return socket
 
     def receive(self):
@@ -111,8 +115,8 @@ class SocketInterface:
         Block until a message was received (or until timeout) an return the
         received messages
 
-        :return: the list of received messages or an empty list if timeout
-        :rtype: a list of Object
+        :return: the list of received messages or None if timeout
+        :rtype: a list of Object or None
         """
         events = self.poller.poll(self.timeout)
 

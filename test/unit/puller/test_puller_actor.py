@@ -90,10 +90,10 @@ def get_fake_socket_interface():
 class TestPullerActor:
     """ TestPullerActor class """
 
-    def test_autokill(self):
+    def test_no_stream(self):
         """ Test if the actor kill himself after reading db """
         puller = PullerActor("puller_mongo", get_fake_mongodb(),
-                             get_fake_filter(), 0, autokill=True)
+                             get_fake_filter(), 0, stream_mode=False)
         supervisor = Supervisor()
         supervisor.launch_actor(puller)
         puller.join()
@@ -114,9 +114,9 @@ class TestHandlerPuller:
         fake_filter = get_fake_filter()
         puller_state = PullerState(Actor._initial_behaviour,
                                    fake_socket_interface,
+                                   mock.Mock(),
                                    fake_database,
                                    fake_filter,
-                                   0,
                                    False)
         assert puller_state.initialized is False
 

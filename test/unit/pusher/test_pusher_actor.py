@@ -67,7 +67,8 @@ class TestHandlerPusher:
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(Actor._initial_behaviour,
                                    fake_socket_interface,
-                                   fake_database)
+                                   fake_database,
+                                   mock.Mock())
         assert pusher_state.initialized is False
 
         # Define StartHandler
@@ -97,7 +98,8 @@ class TestHandlerPusher:
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(Actor._initial_behaviour,
                                    fake_socket_interface,
-                                   fake_database)
+                                   fake_database,
+                                   mock.Mock())
         assert pusher_state.initialized is False
 
         # Define PowerHandler

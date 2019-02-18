@@ -39,7 +39,7 @@ class DispatcherActor(Actor):
     """
 
     def __init__(self, name, formula_init_function, route_table,
-                 level_logger=logging.NOTSET, timeout=500):
+                 level_logger=logging.WARNING, timeout=None):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
@@ -57,6 +57,7 @@ class DispatcherActor(Actor):
         # (powerapi.DispatcherState): Actor state
         self.state = DispatcherState(Actor._initial_behaviour,
                                      SocketInterface(name, timeout),
+                                     self.logger,
                                      self._create_factory(), route_table)
 
     def setup(self):

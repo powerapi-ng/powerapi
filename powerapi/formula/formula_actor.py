@@ -28,7 +28,7 @@ class FormulaActor(Actor):
     """
 
     def __init__(self, name, actor_pusher,
-                 level_logger=logging.NOTSET, timeout=500):
+                 level_logger=logging.WARNING, timeout=None):
         """
         :param str name:                            Actor name
         :param powerapi.PusherActor actor_pusher: Pusher actor whom send
@@ -45,7 +45,8 @@ class FormulaActor(Actor):
 
         #: (powerapi.State): Basic state of the Formula.
         self.state = State(Actor._initial_behaviour,
-                           SocketInterface(name, timeout))
+                           SocketInterface(name, timeout),
+                           self.logger)
 
     def setup(self):
         """

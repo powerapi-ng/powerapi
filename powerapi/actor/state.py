@@ -31,6 +31,7 @@ class TimeoutHandler(Handler):
         return state
 
 
+
 class State:
     """
     A basic state class that encapsulate basic actor values :
@@ -44,7 +45,7 @@ class State:
     :attr:`supervisor <powerapi.actor.state.State.supervisor>`
     """
 
-    def __init__(self, behaviour, socket_interface):
+    def __init__(self, behaviour, socket_interface, logger):
         """
         :param behaviour: function that implement the basic behaviour
         :type behaviour: (fun (actor) -> None)
@@ -67,10 +68,11 @@ class State:
         #: (func): function activated when no message was
         #: received since `timeout` milliseconds
         self.timeout_handler = TimeoutHandler()
-
         #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
         #: that are handle by this actor
         self.supervisor = Supervisor()
+        #: (logging.Logger): Logger
+        self.logger = logger
 
     def get_corresponding_handler(self, msg):
         """

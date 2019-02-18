@@ -97,8 +97,7 @@ def launch_powerapi(args, logger):
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         report_filter, 0, level_logger=args.verbose,
-                         autokill=True)
+                         report_filter, level_logger=args.verbose)
 
     ##########################################################################
     # Actor start step
