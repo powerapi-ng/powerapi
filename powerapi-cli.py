@@ -74,7 +74,7 @@ def launch_powerapi(args, logger):
     # Pusher
     output_mongodb = MongoDB(args.output_hostname, args.output_port,
                              args.output_db, args.output_collection,
-                             save_mode=True)
+                             HWPCModel())
     pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
                          level_logger=args.verbose)
 
@@ -93,7 +93,7 @@ def launch_powerapi(args, logger):
     # Puller
     input_mongodb = MongoDB(args.input_hostname, args.input_port,
                             args.input_db, args.input_collection,
-                            report_model=HWPCModel())
+                            HWPCModel())
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,

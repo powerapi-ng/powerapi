@@ -38,8 +38,11 @@ from test.integration.integration_utils import is_log_ok
 from test.integration.integration_utils import gen_send_side_effect
 from test.integration.integration_utils import receive_side_effect
 from test.integration.puller.fake_dispatcher import FakeDispatcherActor
+from test.unit.database.mongo_utils import gen_base_test_unit_mongo
+from test.unit.database.mongo_utils import clean_base_test_unit_mongo
 
-
+HOSTNAME = "localhost"
+PORT = 27017
 FILENAME = 'test_puller_file.csv'
 DISPATCHER_SOCKET_ADDRESS = "ipc://@test_dispatcher_socket"
 LOG_LEVEL = logging.NOTSET
@@ -96,6 +99,17 @@ def receive(socket):
 ##############################################################################
 #                                Fixtures                                    #
 ##############################################################################
+
+
+@pytest.fixture()
+def generate_mongodb_data():
+    """
+    setup : init and fill the database with data
+    teardown : drop collection loaded in database
+    """
+    gen_base_test_unit_mongo(HOSTNAME, PORT)
+    yield
+    clean_base_test_unit_mongo(HOSTNAME, PORT)
 
 
 @pytest.fixture()
@@ -225,7 +239,7 @@ def mongodb_database(hostname, port, database_name, collection_name):
     Return MongoDB database
     """
     database = MongoDB(hostname, port, database_name, collection_name,
-                       report_model=HWPCModel())
+                       HWPCModel())
     return database
 
 
@@ -343,10 +357,9 @@ class TestPuller:
 
 
 @define_database([
-    ("toto", 27017, "test_mongodb", "test_mongodb1"),
-    #("localhost", 27016, "test_mongodb", "test_mongodb1"),
-    ("localhost", 27017, "test_unknow", "test_mongodb1"),
-    ("localhost", 27017, "test_mongodb", "test_unknow")])
+    ("toto", PORT, "test_mongodb", "test_mongodb1"),
+    #(HOSTNAME, 27016, "test_mongodb", "test_mongodb1"),
+    ])
 @define_filt(basic_filt())
 @define_stream_mode('both')
 def test_mongodb_bad_config(initialized_puller):
@@ -363,11 +376,12 @@ def test_mongodb_bad_config(initialized_puller):
     assert not initialized_puller.is_alive()
 
 
-@define_database(mongodb_database("localhost", 27017,
+@define_database(mongodb_database(HOSTNAME, PORT,
                                   "test_mongodb", "test_mongodb1"))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
-def test_mongodb_reading_data(initialized_puller_with_dispatcher,
+def test_mongodb_reading_data(generate_mongodb_data,
+                              initialized_puller_with_dispatcher,
                               dispatcher_socket):
     """
     Send a start message to a PullerActor with a MongoDB

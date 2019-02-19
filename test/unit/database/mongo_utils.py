@@ -10,7 +10,7 @@ def generate_hwpc_report(report_id, sensor, target):
     """
     return {
         '_id': str(report_id),
-        'timestamp': str(datetime.datetime.now()),
+        'timestamp': datetime.datetime.now(),
         'sensor': str(sensor),
         'target': str(target),
         'groups': {
