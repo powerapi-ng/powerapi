@@ -17,10 +17,10 @@
 import logging
 import pickle
 import zmq
-from smartwatts.handler import Handler, PoisonPillMessageHandler
-from smartwatts.message import PoisonPillMessage
-from smartwatts.report import Report
-from smartwatts.actor import Actor, State, SocketInterface
+from powerapi.handler import Handler, PoisonPillMessageHandler
+from powerapi.message import PoisonPillMessage
+from powerapi.report import Report
+from powerapi.actor import Actor, State, SocketInterface
 
 
 class HWPCReportHandler(Handler):
@@ -49,7 +49,7 @@ class FakeDispatcherActor(Actor):
         """
         Actor.__init__(self, name, level_logger, timeout)
 
-        #: (smartwatts.State): Basic state of the Formula.
+        #: (powerapi.State): Basic state of the Formula.
         self.state = State(Actor._initial_behaviour,
                            SocketInterface(name, timeout),
                            self.logger)

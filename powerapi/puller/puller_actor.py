@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import time
-from smartwatts.actor import Actor, State, SocketInterface
-from smartwatts.message import PoisonPillMessage, StartMessage
-from smartwatts.handler import PoisonPillMessageHandler
-from smartwatts.puller import PullerStartHandler, TimeoutHandler
+from powerapi.actor import Actor, State, SocketInterface
+from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.handler import PoisonPillMessageHandler
+from powerapi.puller import PullerStartHandler, TimeoutHandler
 
 
 class NoReportExtractedException(Exception):

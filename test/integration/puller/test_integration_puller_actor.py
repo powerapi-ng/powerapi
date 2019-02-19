@@ -269,25 +269,25 @@ class TestPuller:
 
     @pytest.fixture(autouse=True)
     def basedb_mocked_load(self):
-        with patch('smartwatts.database.base_db.BaseDB.load',
+        with patch('powerapi.database.base_db.BaseDB.load',
                    side_effect=gen_side_effect(FILENAME, 'load')):
             yield
 
     @pytest.fixture(autouse=True)
     def basedb_mocked_get_next(self):
-        with patch('smartwatts.database.base_db.BaseDB.get_next',
+        with patch('powerapi.database.base_db.BaseDB.get_next',
                    Mock(return_value=None)):
             yield
 
     @pytest.fixture(autouse=True)
     def dispatcher_mocked_connect_data(self):
-        with patch('smartwatts.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
+        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
                    side_effect=gen_side_effect(FILENAME, 'connect_data')):
             yield
 
     @pytest.fixture(autouse=True)
     def dispatcher_mocked_send_kill(self):
-        with patch('smartwatts.dispatcher.dispatcher_actor.DispatcherActor.send_kill',
+        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.send_kill',
                    side_effect=gen_side_effect(FILENAME, 'send_kill')):
             yield
 

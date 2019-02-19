@@ -33,7 +33,7 @@ class PullerStartHandler(StartHandler):
     Initialize the database interface
     """
 
-    def handle(self, msg, state):
+    def initialization(self, state):
         """
         Initialize the database and connect all dispatcher to the
         socket_interface

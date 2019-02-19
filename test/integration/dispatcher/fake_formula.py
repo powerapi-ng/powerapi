@@ -22,6 +22,7 @@ from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
 from powerapi.actor import Actor, State, SocketInterface, SafeContext
 
+
 class HWPCReportHandler(Handler):
 
     def __init__(self, push_socket):
@@ -41,7 +42,7 @@ class FakeFormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, push_socket_addr, level_logger=logging.NOTSET,
+    def __init__(self, name, push_socket_addr, level_logger=logging.WARNING,
                  timeout=None):
         """
         :param str name: Actor name
@@ -54,7 +55,8 @@ class FakeFormulaActor(Actor):
 
         #: (powerapi.State): Basic state of the Formula.
         self.state = State(Actor._initial_behaviour,
-                           SocketInterface(name, timeout))
+                           SocketInterface(name, timeout),
+                           self.logger)
 
         self.addr = push_socket_addr
         self.push_socket = None

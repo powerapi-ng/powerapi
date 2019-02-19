@@ -121,7 +121,7 @@ class TestHandlerPuller:
         assert puller_state.initialized is False
 
         # Define StartHandler
-        start_handler = PullerStartHandler(Actor._initial_behaviour)
+        start_handler = PullerStartHandler()
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
