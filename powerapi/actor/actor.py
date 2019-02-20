@@ -41,6 +41,8 @@ class Actor(multiprocessing.Process):
     +=================================+============================================================================================+
     | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                       |
+    |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
