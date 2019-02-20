@@ -47,7 +47,7 @@ def test_mongodb_bad_hostname(database):
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
         MongoDB("lel", PORT, "error", "error",
-                HWPCModel()).load()
+                HWPCModel()).connect()
     assert pytest_wrapped.type == MongoBadDBError
 
 
@@ -57,7 +57,7 @@ def test_mongodb_bad_port(database):
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
         MongoDB(HOSTNAME, 1, "error", "error",
-                HWPCModel()).load()
+                HWPCModel()).connect()
     assert pytest_wrapped.type == MongoBadDBError
 
 
@@ -70,7 +70,7 @@ def test_mongodb_read_basic_db(database):
                       "test_mongodb1", HWPCModel())
 
     # Check if we can reload after reading
-    mongodb.load()
+    mongodb.connect()
 
     for _ in range(2):
         mongodb_iter = iter(mongodb)
@@ -91,7 +91,7 @@ def test_mongodb_read_capped_db(database):
                       "test_mongodb2", HWPCModel())
 
     # Check if we can read one time
-    mongodb.load()
+    mongodb.connect()
     mongodb_iter = iter(mongodb)
 
     for _ in range(mongodb.collection.count_documents({})):
@@ -127,7 +127,7 @@ def test_mongodb_save_basic_db(database):
     mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
                       "test_mongodb3", HWPCModel())
 
-    mongodb.load()
+    mongodb.connect()
 
     # Check if save work
     basic_count = mongodb.collection.count_documents({})

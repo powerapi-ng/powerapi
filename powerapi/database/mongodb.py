@@ -87,7 +87,7 @@ class MongoDB(BaseDB):
         # (bool): Define if the mongodb is capped or not
         self.capped = False
 
-    def load(self):
+    def connect(self):
         """
         Override from BaseDB.
 

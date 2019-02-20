@@ -50,7 +50,7 @@ class BaseDB:
         #: define the type of Report
         self.report_model = report_model
 
-    def load(self):
+    def connect(self):
         """
         Function that allow to load the database. Depending of the type,
         different process can happen.

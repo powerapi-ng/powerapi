@@ -42,7 +42,7 @@ class PullerStartHandler(StartHandler):
         :rtype powerapi.State: the new state of the actor
         """
         try:
-            state.database.load()
+            state.database.connect()
             state.database_it = iter(state.database)
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))

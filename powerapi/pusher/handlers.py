@@ -34,7 +34,7 @@ class PusherStartHandler(StartHandler):
         :rtype powerapi.State: the new state of the actor
         """
         try:
-            state.database.load()
+            state.database.connect()
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))
             return state

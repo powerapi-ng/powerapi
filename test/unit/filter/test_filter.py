@@ -58,7 +58,7 @@ class TestFilter:
         """
         mongodb = MongoDB(HOSTNAME, PORT, "test_filter",
                           "test_filter1", report_model=HWPCModel())
-        mongodb.load()
+        mongodb.connect()
         hwpc_filter = Filter()
         hwpc_filter.filter(lambda msg:
                            True if "sensor" in msg.sensor else False,

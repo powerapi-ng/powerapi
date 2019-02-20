@@ -84,7 +84,7 @@ class CsvDB(BaseDB):
         """
         Create the iterator for get the data
         """
-        self.load()
+        self.connect()
         return self
 
     def __next__(self):
@@ -134,7 +134,7 @@ class CsvDB(BaseDB):
             raise StopIteration()
         return json
 
-    def load(self):
+    def connect(self):
         """
         Override from BaseDB.
 

@@ -282,9 +282,9 @@ def pytest_generate_tests(metafunc):
 class TestPuller:
 
     @pytest.fixture(autouse=True)
-    def basedb_mocked_load(self):
-        with patch('powerapi.database.base_db.BaseDB.load',
-                   side_effect=gen_side_effect(FILENAME, 'load')):
+    def basedb_mocked_connect(self):
+        with patch('powerapi.database.base_db.BaseDB.connect',
+                   side_effect=gen_side_effect(FILENAME, 'connect')):
             yield
 
     @pytest.fixture(autouse=True)
@@ -322,7 +322,7 @@ class TestPuller:
           - if the actor send a OkMessage to the test process
           - if the actor is dead
           - if the following method has been called:
-            - load from database
+            - connect from database
             - connect_data from dispatcher
             - send_kill
         """
@@ -333,7 +333,7 @@ class TestPuller:
         assert isinstance(puller.receive_control(500), OKMessage)
         assert not puller.is_alive()
         assert is_log_ok(log_file,
-                         ['load', 'connect_data', 'send_kill'])
+                         ['connect', 'connect_data', 'send_kill'])
 
     @define_database(mocked_database())
     @define_filt(basic_filt())
@@ -346,7 +346,7 @@ class TestPuller:
           - if the actor send a OkMessage to the test process
           - if the actor is alive
           - if the following method has been called:
-            - load from database
+            - connect from database
             - connect_data from dispatcher
         """
         puller.connect_control(context)
@@ -355,7 +355,7 @@ class TestPuller:
         assert isinstance(puller.receive_control(500), OKMessage)
         assert puller.is_alive()
         assert is_log_ok(log_file,
-                         ['load', 'connect_data'])
+                         ['connect', 'connect_data'])
 
 #################
 # Mongo DB Test #

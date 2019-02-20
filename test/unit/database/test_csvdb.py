@@ -67,7 +67,7 @@ class TestCsvDB():
         Test with bad filepath
         """
         with pytest.raises(CsvBadFilePathError) as pytest_wrapped:
-            CsvDB(HWPCModel(), ["/tmp/unknowfile"]).load()
+            CsvDB(HWPCModel(), ["/tmp/unknowfile"]).connect()
         assert pytest_wrapped.type == CsvBadFilePathError
 
     def test_csvdb_bad_common(self):
@@ -77,7 +77,7 @@ class TestCsvDB():
         csv_files = BAD_COMMON
         while csv_files:
             with pytest.raises(CsvBadCommonKeysError) as pytest_wrapped:
-                CsvDB(HWPCModel(), csv_files).load()
+                CsvDB(HWPCModel(), csv_files).connect()
             assert pytest_wrapped.type == CsvBadCommonKeysError
             csv_files = csv_files[1:]
 
@@ -86,7 +86,7 @@ class TestCsvDB():
         Create two full HWPCReport, then return None
         """
         csvdb = CsvDB(HWPCModel(), BASIC_FILES)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in BASIC_FILES]
 
         csvdb_iter = iter(csvdb)
@@ -106,7 +106,7 @@ class TestCsvDB():
         Create one full HWPCReport (the second), then return None
         """
         csvdb = CsvDB(HWPCModel(), FIRST_PRIMARY_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in FIRST_PRIMARY_MISSING]
 
         csvdb_iter = iter(csvdb)
@@ -125,7 +125,7 @@ class TestCsvDB():
         Create one full HWPCReport (the first), then return None
         """
         csvdb = CsvDB(HWPCModel(), SECOND_PRIMARY_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in SECOND_PRIMARY_MISSING]
 
         csvdb_iter = iter(csvdb)
@@ -144,7 +144,7 @@ class TestCsvDB():
         Create two reports, one without rapl, second is full, then return None
         """
         csvdb = CsvDB(HWPCModel(), FIRST_RAPL_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in FIRST_RAPL_MISSING]
 
         csvdb_iter = iter(csvdb)
@@ -167,7 +167,7 @@ class TestCsvDB():
         Create two reports, one is full, second without rapl, then return None
         """
         csvdb = CsvDB(HWPCModel(), SECOND_RAPL_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in SECOND_RAPL_MISSING]
 
         csvdb_iter = iter(csvdb)
