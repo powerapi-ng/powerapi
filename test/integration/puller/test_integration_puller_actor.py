@@ -288,9 +288,15 @@ class TestPuller:
             yield
 
     @pytest.fixture(autouse=True)
-    def basedb_mocked_get_next(self):
-        with patch('powerapi.database.base_db.BaseDB.get_next',
-                   Mock(return_value=None)):
+    def basedb_mocked_iter(self):
+        with patch('powerapi.database.base_db.BaseDB.__iter__',
+                   side_effect=lambda: iter([])):
+            yield
+
+    @pytest.fixture(autouse=True)
+    def basedb_mocked_next(self):
+        with patch('powerapi.database.base_db.BaseDB.__next__',
+                   side_effect=StopIteration()):
             yield
 
     @pytest.fixture(autouse=True)
@@ -310,7 +316,7 @@ class TestPuller:
     @define_stream_mode(False)
     def test_start_msg_db_ok(self, puller, context, log_file):
         """
-        Send a start message to a PullerActor with stream mode on
+        Send a start message to a PullerActor
 
         After sending the message test :
           - if the actor send a OkMessage to the test process

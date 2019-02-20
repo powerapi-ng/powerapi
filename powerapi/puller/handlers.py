@@ -43,6 +43,7 @@ class PullerStartHandler(StartHandler):
         """
         try:
             state.database.load()
+            state.database_it = iter(state.database)
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))
             state.alive = False
@@ -79,8 +80,9 @@ class TimeoutHandler(InitHandler):
         """
         # Read one input, if it's None, it means there is not more
         # report in the database, just pass
-        json = state.database.get_next()
-        if json is None:
+        try:
+            json = next(state.database_it)
+        except StopIteration:
             raise NoReportExtractedException()
 
         # Deserialization

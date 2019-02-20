@@ -117,13 +117,6 @@ class MongoDB(BaseDB):
         self.capped = bool(('capped' in options and
                             options['capped']))
 
-        # Depend if capped or not, create cursor
-        if self.capped:
-            self.cursor = self.collection.find(
-                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
-        else:
-            self.cursor = self.collection.find({})
-
         # If collection exist and erase is True
         if (self.erase and
                 self.db_name in self.mongo_client.list_database_names() and
@@ -131,20 +124,26 @@ class MongoDB(BaseDB):
                     self.db_name].list_collection_names()):
             self.collection.drop()
 
-    def get_next(self):
+    def __iter__(self):
         """
-        Override from BaseDB.
+        Create the iterator for get the data
+        """
+        # Depend if capped or not, create cursor
+        if self.capped:
+            self.cursor = self.collection.find(
+                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
+        else:
+            self.cursor = self.collection.find({})
+        return self
 
-        Make one iteration on the cursor, remove the '_id' field and
-        return the data JSON.
-
-        :return: The next report
-        :rtype: formatted JSON
+    def __next__(self):
+        """
+        Allow to get the next data
         """
         try:
             json = self.cursor.next()
         except StopIteration:
-            return None
+            raise StopIteration()
 
         # Re arrange the json before return it by removing '_id' field
         json.pop('_id', None)

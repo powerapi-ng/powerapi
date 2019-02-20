@@ -70,14 +70,16 @@ def test_mongodb_read_basic_db(database):
                       "test_mongodb1", HWPCModel())
 
     # Check if we can reload after reading
+    mongodb.load()
+
     for _ in range(2):
-        mongodb.load()
-
+        mongodb_iter = iter(mongodb)
         for _ in range(10):
-            assert mongodb.get_next() is not None
+            assert next(mongodb_iter) is not None
 
-    # Check if there is nothing after
-    assert mongodb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(mongodb_iter)
+        assert pytest_wrapped.type == StopIteration
 
 
 def test_mongodb_read_capped_db(database):
@@ -90,13 +92,16 @@ def test_mongodb_read_capped_db(database):
 
     # Check if we can read one time
     mongodb.load()
+    mongodb_iter = iter(mongodb)
 
     for _ in range(mongodb.collection.count_documents({})):
-        report = mongodb.get_next()
+        report = next(mongodb_iter)
         assert report is not None
 
     # Check if there is nothing after
-    assert mongodb.get_next() is None
+    with pytest.raises(StopIteration) as pytest_wrapped:
+        next(mongodb_iter)
+    assert pytest_wrapped.type == StopIteration
 
     # Add data in the collection
     for _ in range(2):
@@ -105,11 +110,13 @@ def test_mongodb_read_capped_db(database):
 
     # Check if we can read it
     for _ in range(2):
-        report = mongodb.get_next()
+        report = next(mongodb_iter)
         assert report is not None
 
     # Check if there is nothing after
-    assert mongodb.get_next() is None
+    with pytest.raises(StopIteration) as pytest_wrapped:
+        next(mongodb_iter)
+    assert pytest_wrapped.type == StopIteration
 
 
 def test_mongodb_save_basic_db(database):

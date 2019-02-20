@@ -89,13 +89,17 @@ class TestCsvDB():
         csvdb.load()
         group_name = [path.split('/')[-1] for path in BASIC_FILES]
 
+        csvdb_iter = iter(csvdb)
         for _ in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
                 assert group in report['groups']
-        assert csvdb.get_next() is None
+
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_first_primary_missing(self):
         """
@@ -105,13 +109,16 @@ class TestCsvDB():
         csvdb.load()
         group_name = [path.split('/')[-1] for path in FIRST_PRIMARY_MISSING]
 
-        report = csvdb.get_next()
+        csvdb_iter = iter(csvdb)
+        report = next(csvdb_iter)
         for key in KEYS_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
         assert report['timestamp'] == "1539260665189"
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_second_primary_missing(self):
         """
@@ -121,13 +128,16 @@ class TestCsvDB():
         csvdb.load()
         group_name = [path.split('/')[-1] for path in SECOND_PRIMARY_MISSING]
 
-        report = csvdb.get_next()
+        csvdb_iter = iter(csvdb)
+        report = next(csvdb_iter)
         for key in KEYS_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
         assert report['timestamp'] == "1539260664189"
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_first_rapl_missing(self):
         """
@@ -137,8 +147,9 @@ class TestCsvDB():
         csvdb.load()
         group_name = [path.split('/')[-1] for path in FIRST_RAPL_MISSING]
 
+        csvdb_iter = iter(csvdb)
         for i in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
@@ -146,7 +157,9 @@ class TestCsvDB():
                     assert group not in report['groups']
                 else:
                     assert group in report['groups']
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
 
     def test_csvdb_second_rapl_missing(self):
@@ -157,8 +170,9 @@ class TestCsvDB():
         csvdb.load()
         group_name = [path.split('/')[-1] for path in SECOND_RAPL_MISSING]
 
+        csvdb_iter = iter(csvdb)
         for i in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
@@ -166,4 +180,6 @@ class TestCsvDB():
                     assert group not in report['groups']
                 else:
                     assert group in report['groups']
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration

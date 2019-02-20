@@ -37,12 +37,16 @@ def get_fake_mongodb():
     fake_mongo = mock.Mock(spec_set=MongoDB)
     values = [2, 3]
 
-    def fake_get_next():
+    def fake_next():
         if not values:
             return None
         return values.pop()
 
-    fake_mongo.get_next = fake_get_next
+    def fake_iter():
+        return iter([])
+
+    fake_mongo.__next__ = fake_next
+    fake_mongo.__iter__ = fake_iter
     return fake_mongo
 
 

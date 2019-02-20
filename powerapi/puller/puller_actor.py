@@ -51,6 +51,9 @@ class PullerState(State):
         #: (BaseDB): Allow to interact with a Database
         self.database = database
 
+        #: (it BaseDB): Allow to browse the database
+        self.database_it = None
+
         #: (Filter): Filter of the puller
         self.report_filter = report_filter
 
