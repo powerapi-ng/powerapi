@@ -32,7 +32,8 @@ class RouteTable:
     """
 
     def __init__(self):
-        #: (array): Array of tuple that link a Report type to a DispatchRule rule
+        #: (array): Array of tuple that link a Report type to a DispatchRule
+        # rule
         self.route_table = []
         #: (powerapi.DispatchRule): Allow to define how to create the Formula id
         self.primary_dispatch_rule = None
@@ -121,11 +122,9 @@ class DispatcherState(State):
                                  a specific Formula
         """
 
-        formula = self.formula_factory(formula_id,
-                                       self.socket_interface.context)
+        formula = self.formula_factory(formula_id)
         self.formula_dict[formula_id] = formula
         self.formula_tree.add(list(formula_id), formula)
-        self.formula_dict[formula_id].start()
 
     def get_direct_formula(self, formula_id):
         """

@@ -15,6 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from powerapi.message import UnknowMessageTypeException
+from powerapi.handler import Handler
+from powerapi.actor import Supervisor
+
+
+class TimeoutHandler(Handler):
+    """
+    Handler used when a timeout occurs
+    """
+
+    def handle(self, msg, state):
+        """
+        ignore the timeout and return the actual actor state
+        """
+        return state
+
 
 class State:
     """
@@ -26,6 +41,7 @@ class State:
     :attr:`socket_interface <powerapi.actor.state.State.socket_interface>`
     :attr:`handlers <powerapi.actor.state.State.handlers>`
     :attr:`timeout_handler <powerapi.actor.state.State.timeout_handler>`
+    :attr:`supervisor <powerapi.actor.state.State.supervisor>`
     """
 
     def __init__(self, behaviour, socket_interface):
@@ -35,7 +51,6 @@ class State:
         :param socket_interface: communication interface of the actor
         :type socket_interface: powerapi.actor.socket_interface.SocketInterface
         """
-
         #: (bool): True if the actor is initialized and can handle all
         #: message, False otherwise
         self.initialized = False
@@ -51,7 +66,11 @@ class State:
         self.handlers = []
         #: (func): function activated when no message was
         #: received since `timeout` milliseconds
-        self.timeout_handler = None
+        self.timeout_handler = TimeoutHandler()
+
+        #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
+        #: that are handle by this actor
+        self.supervisor = Supervisor()
 
     def get_corresponding_handler(self, msg):
         """

@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from powerapi.handler import Handler, StartHandler
+from powerapi.handler import StartHandler
 from powerapi.database import DBError
-from powerapi.message import ErrorMessage, OKMessage, StartMessage
+from powerapi.message import ErrorMessage
 
 
 class NoReportExtractedException(Exception):
@@ -58,7 +58,7 @@ class PullerStartHandler(StartHandler):
 
         # Connect to all dispatcher
         for _, dispatcher in state.report_filter.filters:
-            dispatcher.connect_data(state.socket_interface.context)
+            dispatcher.connect_data()
 
         state.behaviour = self.next_behaviour
         return state

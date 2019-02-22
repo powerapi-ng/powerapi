@@ -261,7 +261,7 @@ class TestExtractReportFunction:
 
 def init_state():
     """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), lambda formula_id, context: Mock(),
+    return DispatcherState(None, Mock(), lambda formula_id: Mock(),
                            RouteTable())
 
 

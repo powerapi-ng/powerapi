@@ -16,6 +16,7 @@
 
 import pickle
 import zmq
+from powerapi.actor import SafeContext
 
 
 class NotConnectedException(Exception):
@@ -23,9 +24,6 @@ class NotConnectedException(Exception):
     Exception raised when attempting to send/receinve a message on a socket
     that is not conected
     """
-    pass
-
-
 
 class SocketInterface:
     """
@@ -38,9 +36,9 @@ class SocketInterface:
     client interface methods :
 
     - :meth:`connect_data <powerapi.actor.socket_interface.SocketInterface.connect_data>`
-    - :meth:`disconnect <powerapi.actor.socket_interface.SocketInterface.disconnect>`
     - :meth:`connect_control <powerapi.actor.socket_interface.SocketInterface.connect_control>`
     - :meth:`send_data <powerapi.actor.socket_interface.SocketInterface.send_data>`
+    - :meth:`close <powerapi.actor.socket_interface.SocketInterface.close>`
 
     server interface methods :
 
@@ -54,7 +52,6 @@ class SocketInterface:
         :param str name: name of the actor using this interface
         :param int timeout: time in millisecond to wait for a message
         """
-
         #: (int): Time in millisecond to wait for a message before execute
         #:        timeout_handler
         self.timeout = timeout
@@ -65,11 +62,8 @@ class SocketInterface:
         #: (str): Address of the control socket
         self.control_socket_address = 'ipc://@control_' + name
 
-        #: (zmq.Context): ZMQ Context of the process
-        self.context = None
-
         #: (zmq.Poller): ZMQ Poller for read many socket at same time
-        self.poller = None
+        self.poller = zmq.Poller()
 
         #: (zmq.Socket): ZMQ Pull socket for receiving data message
         self.pull_socket = None
@@ -87,10 +81,6 @@ class SocketInterface:
         """
         Initialize zmq context and sockets
         """
-        # Basic initialization for ZMQ.
-        self.context = zmq.Context()
-        self.poller = zmq.Poller()
-
         # create the pull socket (to communicate with this actor, others
         # process have to connect a push socket to this socket)
         self.pull_socket = self._create_socket(zmq.PULL,
@@ -100,6 +90,7 @@ class SocketInterface:
         # connect a pair socket to this socket with the `control` method)
         self.control_socket = self._create_socket(zmq.PAIR,
                                                   self.control_socket_address)
+        self.control_socket.set(zmq.LINGER, 0)
 
     def _create_socket(self, socket_type, socket_addr):
         """
@@ -110,7 +101,7 @@ class SocketInterface:
         :param str socket_addr: address of the socket to open
         :return zmq.Socket: the initialized socket
         """
-        socket = self.context.socket(socket_type)
+        socket = SafeContext.get_context().socket(socket_type)
         socket.bind(socket_addr)
         self.poller.register(socket, zmq.POLLIN)
         return socket
@@ -143,12 +134,10 @@ class SocketInterface:
         """
         if self.control_socket is None:
             raise NotConnectedException
-
         event = self.control_socket.poll(self.timeout)
         if event == 0:
             return None
         return self._recv_serialized(self.control_socket)
-
 
     def close(self):
         """
@@ -156,6 +145,9 @@ class SocketInterface:
         """
         if self.pull_socket is not None:
             self.pull_socket.close()
+
+        if self.push_socket is not None:
+            self.push_socket.close()
 
         if self.control_socket is not None:
             self.control_socket.close()
@@ -180,39 +172,24 @@ class SocketInterface:
         msg = pickle.loads(socket.recv())
         return msg
 
-    def connect_data(self, context):
+    def connect_data(self):
         """
         Connect to the pull socket of this actor
 
         Open a push socket on the process that want to communicate with this
         actor
-
-        :param zmq.Context context: ZMQ context of the process that want to
-                                    communicate with this actor
         """
-        self.push_socket = context.socket(zmq.PUSH)
+        self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.connect(self.pull_socket_address)
 
-    def disconnect(self):
-        """
-        Close connection to the pull socket and control socket of this actor
-        """
-        if self.push_socket is not None:
-            self.push_socket.close()
-
-        if self.control_socket is not None:
-            self.control_socket.close()
-
-    def connect_control(self, context):
+    def connect_control(self):
         """
         Connect to the control socket of this actor
 
         Open a pair socket on the process that want to control this actor
-
-        :param zmq.Context context: ZMQ context of the process that want to
-                                    control this actor
         """
-        self.control_socket = context.socket(zmq.PAIR)
+        self.control_socket = SafeContext.get_context().socket(zmq.PAIR)
+        self.control_socket.set(zmq.LINGER, 0)
         self.control_socket.connect(self.control_socket_address)
 
     def send_control(self, msg):

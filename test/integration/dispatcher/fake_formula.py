@@ -20,16 +20,17 @@ import zmq
 from powerapi.handler import Handler, PoisonPillMessageHandler
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
-from powerapi.actor import Actor, State, SocketInterface
+from powerapi.actor import Actor, State, SocketInterface, SafeContext
 
 class HWPCReportHandler(Handler):
 
     def __init__(self, push_socket):
         self.push_socket = push_socket
-    
+
     def handle(self, msg, state):
         self.push_socket.send(pickle.dumps(msg))
         return state
+
 
 class FakeFormulaActor(Actor):
     """
@@ -40,7 +41,8 @@ class FakeFormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, push_socket_addr, level_logger=logging.NOTSET, timeout=None):
+    def __init__(self, name, push_socket_addr, level_logger=logging.NOTSET,
+                 timeout=None):
         """
         :param str name: Actor name
         :param int level_logger: Define logger level
@@ -57,13 +59,16 @@ class FakeFormulaActor(Actor):
         self.addr = push_socket_addr
         self.push_socket = None
 
+
     def setup(self):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.push_socket = self.state.socket_interface.context.socket(zmq.PUSH)
+        self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.connect(self.addr)
 
         self.add_handler(Report, HWPCReportHandler(self.push_socket))
+
         self.push_socket.send(pickle.dumps('created'))
+
 
     def terminated_behaviour(self):
         self.push_socket.send(pickle.dumps('terminated'))
