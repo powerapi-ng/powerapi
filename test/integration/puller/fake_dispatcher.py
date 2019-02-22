@@ -18,9 +18,10 @@ import logging
 import pickle
 import zmq
 from powerapi.handler import Handler, PoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
+from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.handler import StartHandler
 from powerapi.report import Report
-from powerapi.actor import Actor, State, SocketInterface
+from powerapi.actor import Actor, State, SocketInterface, SafeContext
 
 
 class HWPCReportHandler(Handler):
@@ -58,15 +59,12 @@ class FakeDispatcherActor(Actor):
         self.push_socket = None
 
     def setup(self):
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        #self.push_socket = self.state.socket_interface.context.socket(zmq.PUSH)
-        #self.push_socket.connect(self.addr)
+        self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
+        self.push_socket.connect(self.addr)
 
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        self.add_handler(StartMessage, StartHandler())
         self.add_handler(Report, HWPCReportHandler(self.push_socket))
-        #self.push_socket.send(pickle.dumps('created'))
 
     def terminated_behaviour(self):
-        """
-        """
-        #self.push_socket.send(pickle.dumps('terminated'))
-        #self.push_socket.close()
+        self.push_socket.close()

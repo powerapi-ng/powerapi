@@ -389,7 +389,7 @@ def test_kill_non_init_dispatcher(dispatcher):
       - if the actor is terminated
     """
     with pytest.raises(NotConnectedException):
-        dispatcher.kill()
+        dispatcher.send_kill()
 
 
 @define_route_table(route_table_with_primary_rule())
@@ -400,7 +400,7 @@ def test_kill_init_dispatcher(initialized_dispatcher):
     Test :
       - if the actor is terminated
     """
-    initialized_dispatcher.kill()
+    initialized_dispatcher.send_kill()
     assert not is_actor_alive(initialized_dispatcher)
 
 
@@ -414,7 +414,7 @@ def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
       - if the actor is terminated
       - if the created formula was terminated
     """
-    dispatcher_with_formula.kill()
+    dispatcher_with_formula.send_kill()
     assert not is_actor_alive(dispatcher_with_formula)
     assert receive(formula_socket) == 'terminated'
 

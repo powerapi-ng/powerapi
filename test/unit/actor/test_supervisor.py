@@ -15,7 +15,7 @@ class FakeActor(Actor):
 
     def __init__(self):
         Actor.__init__(self, 'test_supervisor')
-        self.state = State(Mock, SocketInterface('test_supervisor', 0))
+        self.state = State(Mock(), SocketInterface('test_supervisor', 0), Mock())
         self.send_msg = []
         self.alive = False
 
@@ -40,7 +40,7 @@ class FakeActor(Actor):
     def send_control(self, msg):
         self.send_msg.append(msg)
 
-    def receive_control(self):
+    def receive_control(self, timeout=None):
         return OKMessage()
 
 
@@ -56,7 +56,7 @@ class FakeActorInitError(FakeActor):
     """
     FakeActor that raise an error when trying to initialize it
     """
-    def receive_control(self):
+    def receive_control(self, timeout=None):
         return ErrorMessage('error')
 
 ############
