@@ -59,9 +59,10 @@ class CsvDB(BaseDB):
         self.tmp = {
             path_file: {
                 'next_line': [],
-                'csv': None
+                'reader': None,
+                'file': None
             }
-            for path_file in files_name
+            for path_file in self.files_name
         }
 
         #: (int): allow to know if we read a new report, or the same
@@ -75,44 +76,21 @@ class CsvDB(BaseDB):
         :param str path_file: file name we want to read
         """
         try:
-            return self.tmp[path_file]['csv'].__next__()
+            return self.tmp[path_file]['reader'].__next__()
         except StopIteration:
             return None
 
-    def load(self):
+    def __iter__(self):
         """
-        Override from BaseDB.
-
-        Read first line of all the .csv file and check if the pattern is good.
+        Create the iterator for get the data
         """
+        self.connect()
+        return self
 
-        # Open all files with csv and read first line
-        for path_file in self.files_name:
-            try:
-                self.tmp[path_file]['csv'] = csv.DictReader(open(path_file))
-            except FileNotFoundError as error:
-                raise CsvBadFilePathError(error)
-            self.tmp[path_file]['next_line'] = self._next(path_file)
-
-            # Check common key
-            for key in KEYS_COMMON:
-                if key not in self.tmp[path_file]['next_line']:
-                    raise CsvBadCommonKeysError("Wrong columns keys")
-
-        # Save the first timestamp
-        self.saved_timestamp = utils.timestamp_to_datetime(
-            int(self.tmp[self.files_name[0]]['next_line']['timestamp']))
-
-    def get_next(self):
+    def __next__(self):
         """
-        Override from BaseDB.
-
-        Get the next report from csv files, or None is there is no more.
-
-        :return: The next report
-        :rtype: formated JSON from report_model
+        Allow to get the next data
         """
-
         # Dict to return
         json = {}
 
@@ -153,11 +131,36 @@ class CsvDB(BaseDB):
                 self.tmp[path_file]['next_line'] = self._next(path_file)
 
         if not json:
-            return None
+            raise StopIteration()
         return json
 
-    def save(self, json):
+    def connect(self):
         """
-        Not implemented yet.
+        Override from BaseDB.
+
+        Close file if already open
+        Read first line of all the .csv file and check if the pattern is good.
         """
-        raise NotImplementedError()
+        # Close file if already opened
+        for path_file in self.files_name:
+            if self.tmp[path_file]['file'] is not None:
+                self.tmp[path_file]['file'].close()
+
+        # Open all files with csv and read first line
+        for path_file in self.files_name:
+            try:
+                self.tmp[path_file]['file'] = open(path_file)
+                self.tmp[path_file]['reader'] = csv.DictReader(
+                    self.tmp[path_file]['file'])
+            except FileNotFoundError as error:
+                raise CsvBadFilePathError(error)
+            self.tmp[path_file]['next_line'] = self._next(path_file)
+
+            # Check common key
+            for key in KEYS_COMMON:
+                if key not in self.tmp[path_file]['next_line']:
+                    raise CsvBadCommonKeysError("Wrong columns keys")
+
+        # Save the first timestamp
+        self.saved_timestamp = utils.timestamp_to_datetime(
+            int(self.tmp[self.files_name[0]]['next_line']['timestamp']))

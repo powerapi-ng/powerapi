@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from powerapi.handler import StartHandler
+import logging
+from powerapi.handler import InitHandler, StartHandler
 from powerapi.database import DBError
-from powerapi.message import ErrorMessage
+from powerapi.message import ErrorMessage, OKMessage, StartMessage
+from powerapi.message import PoisonPillMessage
 
 
 class NoReportExtractedException(Exception):
@@ -31,16 +33,6 @@ class PullerStartHandler(StartHandler):
     Initialize the database interface
     """
 
-    def __init__(self, next_behaviour):
-        """
-        :param func next_behaviour: Define the next behaviour to apply after
-                                    StartMessage is received.
-        """
-
-        #: (func): Define the next behaviour to apply after the StartMessage is
-        #: received.
-        self.next_behaviour = next_behaviour
-
     def initialization(self, state):
         """
         Initialize the database and connect all dispatcher to the
@@ -50,7 +42,8 @@ class PullerStartHandler(StartHandler):
         :rtype powerapi.State: the new state of the actor
         """
         try:
-            state.database.load()
+            state.database.connect()
+            state.database_it = iter(state.database)
         except DBError as error:
             state.socket_interface.send_control(ErrorMessage(error.msg))
             state.alive = False
@@ -60,5 +53,64 @@ class PullerStartHandler(StartHandler):
         for _, dispatcher in state.report_filter.filters:
             dispatcher.connect_data()
 
-        state.behaviour = self.next_behaviour
+        return state
+
+
+class TimeoutHandler(InitHandler):
+    """
+    Puller timeout, read the database.
+    """
+
+    def get_report_dispatcher(self, state):
+        """
+        read one report of the database and filter it,
+        then return the tuple (report, dispatcher).
+
+        Return:
+            (Report, DispatcherActor): (extracted_report,
+                                        dispatcher to sent
+                                        this report)
+
+        Raise:
+            NoReportExtractedException : if the database doesn't contains
+                                         report anymore
+
+        """
+        # Read one input, if it's None, it means there is not more
+        # report in the database, just pass
+        try:
+            json = next(state.database_it)
+        except StopIteration:
+            raise NoReportExtractedException()
+
+        # Deserialization
+        report = state.database.report_model.get_type()()
+        report.deserialize(json)
+
+        # Filter the report
+        dispatchers = state.report_filter.route(report)
+        return (report, dispatchers)
+
+    def handle(self, msg, state):
+        """
+        Read data from Database and send it to the dispatchers.
+        If there is no more data, send a kill message to every
+        dispatcher.
+        If stream mode is disable, kill the actor.
+
+        :param None msg: None.
+        :param smartwatts.State state: State of the actor.
+        """
+        try:
+            (report, dispatchers) = self.get_report_dispatcher(state)
+        except NoReportExtractedException:
+            if not state.stream_mode:
+                state.alive = False
+            return state
+
+        # Send to the dispatcher if it's not None
+        for dispatcher in dispatchers:
+            if dispatcher is not None:
+                dispatcher.send_data(report)
+
         return state

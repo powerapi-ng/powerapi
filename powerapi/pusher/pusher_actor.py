@@ -28,14 +28,14 @@ class PusherState(State):
     Contains in addition to State values :
       - The database interface
     """
-    def __init__(self, behaviour, socket_interface, database):
+    def __init__(self, behaviour, socket_interface, database, logger):
         """
         :param func behaviour: Function that define the initial_behaviour.
         :param SocketInterface socket_interface: Communication interface of the
                                                  actor.
         :param BaseDB database: Database for saving data.
         """
-        State.__init__(self, behaviour, socket_interface)
+        State.__init__(self, behaviour, socket_interface, logger)
 
         #: (BaseDB): Database for saving data.
         self.database = database
@@ -48,7 +48,8 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_type, database, level_logger=logging.NOTSET,
+    def __init__(self, name, report_type, database,
+                 level_logger=logging.WARNING,
                  timeout=3000):
         """
         :param str name: Pusher name.
@@ -64,7 +65,9 @@ class PusherActor(Actor):
 
         #: (State): State of the actor.
         self.state = PusherState(Actor._initial_behaviour,
-                                 SocketInterface(name, timeout), database)
+                                 SocketInterface(name, timeout),
+                                 database,
+                                 self.logger)
 
     def setup(self):
         """

@@ -56,7 +56,7 @@ class Supervisor:
 
         if start_message:
             actor.send_control(StartMessage())
-            msg = actor.receive_control()
+            msg = actor.receive_control(500)
             if isinstance(msg, ErrorMessage):
                 raise ActorInitError(msg.error_message)
             elif msg is None:
@@ -83,5 +83,5 @@ class Supervisor:
                              socket or the data socket
         """
         for actor in self.supervised_actors:
-            actor.kill(by_data=by_data)
+            actor.send_kill(by_data=by_data)
             actor.join()

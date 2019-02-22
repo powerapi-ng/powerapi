@@ -28,42 +28,6 @@ class MongoBadDBError(DBError):
                          hostname)
 
 
-class MongoBadDBNameError(DBError):
-    """
-    Error raised when database doesn't exist
-    """
-    def __init__(self, db_name):
-        DBError.__init__(self, 'Mongo DB error : DB ' + db_name +
-                         ' doesn\'t exist')
-
-
-class MongoBadCollectionNameError(DBError):
-    """
-    Error raised when collection doesn't exist
-    """
-    def __init__(self, collection_name):
-        DBError.__init__(self, 'Mongo DB error : collection ' +
-                         collection_name + ' doesn\'t exist')
-
-
-class MongoNeedReportModelError(Error):
-    """
-    Error raised when MongoDB is define without report model
-    """
-
-
-class MongoSaveInReadModeError(Error):
-    """
-    Error raised when save() is called in read mode
-    """
-
-
-class MongoGetNextInSaveModeError(Error):
-    """
-    Error raised when get_next() is called in save_mode
-    """
-
-
 class MongoDB(BaseDB):
     """
     MongoDB class herited from BaseDB
@@ -72,8 +36,8 @@ class MongoDB(BaseDB):
     """
 
     def __init__(self,
-                 host_name, port, db_name, collection_name,
-                 report_model=None, save_mode=False, erase=False):
+                 host_name, port, db_name, collection_name, report_model,
+                 erase=False):
         """
         :param str host_name:       hostname of the mongodb (ex: "localhost")
 
@@ -88,9 +52,6 @@ class MongoDB(BaseDB):
         :param report_model:        XXXModel object. Allow to read specific
                                     report with a specific format in a database
         :type report_model:         powerapi.ReportModel
-
-        :param bool save_mode:      put save_mode to True if you want to use it
-                                    with a Pusher
 
         :param bool erase:          If save_mode is False, erase too. It allows
                                     to erase the collection on setup.
@@ -109,19 +70,9 @@ class MongoDB(BaseDB):
         #: (str): Collection name in the mongodb
         self.collection_name = collection_name
 
-        #: (bool): True if you want to save data,
-        #: False if you want to read data
-        self.save_mode = save_mode
-
         #: (bool): If save_mode is False, erase has no effect.
         #: It allows to erase the collection on setup.
-        self.erase = erase
-
-        # If save_mode is False, erase too.
-        if not self.save_mode:
-            self.erase = False
-            if report_model is None:
-                raise MongoNeedReportModelError("Mongo need a report model.")
+        self.erase = False
 
         #: (pymongo.MongoClient): MongoClient instance of the server
         self.mongo_client = None
@@ -136,7 +87,7 @@ class MongoDB(BaseDB):
         # (bool): Define if the mongodb is capped or not
         self.capped = False
 
-    def load(self):
+    def connect(self):
         """
         Override from BaseDB.
 
@@ -150,7 +101,7 @@ class MongoDB(BaseDB):
             self.mongo_client.close()
 
         self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
-                                                serverSelectionTimeoutMS=1)
+                                                serverSelectionTimeoutMS=5)
 
         self.collection = self.mongo_client[self.db_name][
             self.collection_name]
@@ -158,54 +109,41 @@ class MongoDB(BaseDB):
         # Check if hostname:port work
         try:
             self.mongo_client.admin.command('ismaster')
-        except pymongo.errors.ConnectionFailure:
+        except pymongo.errors.ServerSelectionTimeoutError:
             raise MongoBadDBError(self.host_name + ':' + str(self.port))
 
-        if not self.save_mode:
-            # Check if database exist
-            if self.db_name not in self.mongo_client.list_database_names():
-                raise MongoBadDBNameError(self.db_name)
+        # Check if collection is capped or not
+        options = self.collection.options()
+        self.capped = bool(('capped' in options and
+                            options['capped']))
 
-            # Check if collection exist
-            if self.collection_name not in self.mongo_client[
-                    self.db_name].list_collection_names():
-                raise MongoBadCollectionNameError(self.collection_name)
-
-            # Check if collection is capped or not
-            options = self.collection.options()
-            self.capped = bool(('capped' in options and
-                                options['capped']))
-
-            # Depend if capped or not, create cursor
-            if self.capped:
-                self.cursor = self.collection.find(
-                    cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
-            else:
-                self.cursor = self.collection.find({})
-        # Else if collection exist and erase is True
-        elif (self.erase and
-              self.db_name in self.mongo_client.list_database_names() and
-              self.collection_name in self.mongo_client[
-                  self.db_name].list_collection_names()):
+        # If collection exist and erase is True
+        if (self.erase and
+                self.db_name in self.mongo_client.list_database_names() and
+                self.collection_name in self.mongo_client[
+                    self.db_name].list_collection_names()):
             self.collection.drop()
 
-    def get_next(self):
+    def __iter__(self):
         """
-        Override from BaseDB.
-
-        Make one iteration on the cursor, remove the '_id' field and
-        return the data JSON.
-
-        :return: The next report
-        :rtype: formatted JSON
+        Create the iterator for get the data
         """
-        if self.save_mode:
-            raise MongoGetNextInSaveModeError("get_next can't be used.")
+        # Depend if capped or not, create cursor
+        if self.capped:
+            self.cursor = self.collection.find(
+                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
+        else:
+            self.cursor = self.collection.find({})
+        return self
 
+    def __next__(self):
+        """
+        Allow to get the next data
+        """
         try:
             json = self.cursor.next()
         except StopIteration:
-            return None
+            raise StopIteration()
 
         # Re arrange the json before return it by removing '_id' field
         json.pop('_id', None)
@@ -218,8 +156,5 @@ class MongoDB(BaseDB):
 
         :param dict json: data JSON to save
         """
-        if not self.save_mode:
-            raise MongoSaveInReadModeError("save can't be used.")
-
         # TODO: Check if json is valid with the report_model
         self.collection.insert_one(json)

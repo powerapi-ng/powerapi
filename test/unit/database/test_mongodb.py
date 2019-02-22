@@ -22,11 +22,6 @@ import pytest
 
 from powerapi.report_model import HWPCModel
 from powerapi.database import MongoDB, MongoBadDBError
-from powerapi.database import MongoBadDBNameError
-from powerapi.database import MongoBadCollectionNameError
-from powerapi.database import MongoNeedReportModelError
-from powerapi.database import MongoSaveInReadModeError
-from powerapi.database import MongoGetNextInSaveModeError
 
 from test.unit.database.mongo_utils import gen_base_test_unit_mongo
 from test.unit.database.mongo_utils import clean_base_test_unit_mongo
@@ -46,43 +41,24 @@ def database():
     clean_base_test_unit_mongo(HOSTNAME, PORT)
 
 
-def test_mongodb_without_report_model(database):
+def test_mongodb_bad_hostname(database):
     """
-    Test if we can create mongodb without report_model
+    Test if the database doesn't exist (hostname/port error)
     """
-    with pytest.raises(MongoNeedReportModelError) as pytest_wrapped:
-        MongoDB(HOSTNAME, 1, "error", "error")
-    assert pytest_wrapped.type == MongoNeedReportModelError
+    with pytest.raises(MongoBadDBError) as pytest_wrapped:
+        MongoDB("lel", PORT, "error", "error",
+                HWPCModel()).connect()
+    assert pytest_wrapped.type == MongoBadDBError
 
 
-def test_mongodb_bad_db(database):
+def test_mongodb_bad_port(database):
     """
     Test if the database doesn't exist (hostname/port error)
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
         MongoDB(HOSTNAME, 1, "error", "error",
-                report_model=HWPCModel()).load()
+                HWPCModel()).connect()
     assert pytest_wrapped.type == MongoBadDBError
-
-
-def test_mongodb_bad_db_name(database):
-    """
-    Test if the database name exist in the Mongodb
-    """
-    with pytest.raises(MongoBadDBNameError) as pytest_wrapped:
-        MongoDB(HOSTNAME, PORT, "error", "error",
-                report_model=HWPCModel()).load()
-    assert pytest_wrapped.type == MongoBadDBNameError
-
-
-def test_mongodb_bad_collection_name(database):
-    """
-    Test if the collection name exist in the Mongodb
-    """
-    with pytest.raises(MongoBadCollectionNameError) as pytest_wrapped:
-        MongoDB(HOSTNAME, PORT, "test_mongodb",
-                "error", report_model=HWPCModel()).load()
-    assert pytest_wrapped.type == MongoBadCollectionNameError
 
 
 def test_mongodb_read_basic_db(database):
@@ -91,17 +67,19 @@ def test_mongodb_read_basic_db(database):
     """
     # Load DB
     mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                      "test_mongodb1", report_model=HWPCModel())
+                      "test_mongodb1", HWPCModel())
 
     # Check if we can reload after reading
+    mongodb.connect()
+
     for _ in range(2):
-        mongodb.load()
-
+        mongodb_iter = iter(mongodb)
         for _ in range(10):
-            assert mongodb.get_next() is not None
+            assert next(mongodb_iter) is not None
 
-    # Check if there is nothing after
-    assert mongodb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(mongodb_iter)
+        assert pytest_wrapped.type == StopIteration
 
 
 def test_mongodb_read_capped_db(database):
@@ -110,17 +88,20 @@ def test_mongodb_read_capped_db(database):
     """
     # Load DB
     mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                      "test_mongodb2", report_model=HWPCModel())
+                      "test_mongodb2", HWPCModel())
 
     # Check if we can read one time
-    mongodb.load()
+    mongodb.connect()
+    mongodb_iter = iter(mongodb)
 
     for _ in range(mongodb.collection.count_documents({})):
-        report = mongodb.get_next()
+        report = next(mongodb_iter)
         assert report is not None
 
     # Check if there is nothing after
-    assert mongodb.get_next() is None
+    with pytest.raises(StopIteration) as pytest_wrapped:
+        next(mongodb_iter)
+    assert pytest_wrapped.type == StopIteration
 
     # Add data in the collection
     for _ in range(2):
@@ -129,60 +110,13 @@ def test_mongodb_read_capped_db(database):
 
     # Check if we can read it
     for _ in range(2):
-        report = mongodb.get_next()
+        report = next(mongodb_iter)
         assert report is not None
 
     # Check if there is nothing after
-    assert mongodb.get_next() is None
-
-
-def test_mongodb_save_mode_and_erase(database):
-    """
-    Test save_mode and erase
-
-    save_mode   erase   behaviour
-    False       False   can't call save()
-    False       True    can't call save(), erase == False
-    True        False   can't call get_next(), count_doc > 0
-    True        True    can't call get_next(), count_doc == 0
-    """
-    # basic read mode
-    mongodb_ff = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                         "test_mongodb3", report_model=HWPCModel())
-    mongodb_ff.load()
-
-    with pytest.raises(MongoSaveInReadModeError) as pytest_wrapped:
-        mongodb_ff.save(None)
-    assert pytest_wrapped.type == MongoSaveInReadModeError
-
-    # basic read mode and try to force erase
-    mongodb_ft = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                         "test_mongodb3", report_model=HWPCModel(),
-                         erase=True)
-    mongodb_ft.load()
-
-    with pytest.raises(MongoSaveInReadModeError) as pytest_wrapped:
-        mongodb_ft.save(None)
-    assert pytest_wrapped.type == MongoSaveInReadModeError
-    assert mongodb_ft.erase is False
-
-    # save mode with no erase
-    mongodb_tf = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                         "test_mongodb3", save_mode=True)
-    mongodb_tf.load()
-    with pytest.raises(MongoGetNextInSaveModeError) as pytest_wrapped:
-        mongodb_tf.get_next()
-    assert pytest_wrapped.type == MongoGetNextInSaveModeError
-    assert mongodb_tf.collection.count_documents({}) > 0
-
-    # save mode with erase mode
-    mongodb_tt = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                         "test_mongodb3", save_mode=True, erase=True)
-    mongodb_tt.load()
-    with pytest.raises(MongoGetNextInSaveModeError) as pytest_wrapped:
-        mongodb_tt.get_next()
-    assert pytest_wrapped.type == MongoGetNextInSaveModeError
-    assert mongodb_tt.collection.count_documents({}) == 0
+    with pytest.raises(StopIteration) as pytest_wrapped:
+        next(mongodb_iter)
+    assert pytest_wrapped.type == StopIteration
 
 
 def test_mongodb_save_basic_db(database):
@@ -191,9 +125,9 @@ def test_mongodb_save_basic_db(database):
     """
     # Load DB
     mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
-                      "test_mongodb3", save_mode=True)
+                      "test_mongodb3", HWPCModel())
 
-    mongodb.load()
+    mongodb.connect()
 
     # Check if save work
     basic_count = mongodb.collection.count_documents({})

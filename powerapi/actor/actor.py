@@ -18,6 +18,7 @@ import logging
 import signal
 import multiprocessing
 import setproctitle
+import sys
 
 import zmq
 
@@ -40,19 +41,19 @@ class Actor(multiprocessing.Process):
     +=================================+============================================================================================+
     | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
+    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                       |
+    |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`kill <powerapi.actor.actor.Actor.kill>`                                             |
+    |                                 | :meth:`send_kill <powerapi.actor.actor.Actor.send_kill>`                                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`terminated_behaviour <powerapi.actor.actor.Actor.terminated_behaviour>`             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -66,7 +67,7 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     """
 
-    def __init__(self, name, level_logger=logging.NOTSET, timeout=500):
+    def __init__(self, name, level_logger=logging.WARNING, timeout=None):
         """
         Initialization and start of the process.
 
@@ -78,8 +79,6 @@ class Actor(multiprocessing.Process):
         """
         multiprocessing.Process.__init__(self, name=name)
 
-        #: (powerapi.actor.state.State): actor's state
-        self.state = None
         #: (logging.Logger): Logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level_logger)
@@ -88,7 +87,19 @@ class Actor(multiprocessing.Process):
             '%(process)d %(processName)s || %(message)s')
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
+
+        # file logger
+        #handlerf = logging.FileHandler('powerapi.log')
+        #handlerf.setLevel(level_logger)
+        #handlerf.setFormatter(formatter)
+
         self.logger.addHandler(handler)
+        #self.logger.addHandler(handlerf)
+
+        #: (smartwatts.actor.state.State): actor's state
+        self.state = State(self._initial_behaviour,
+                           SocketInterface(name, timeout),
+                           self.logger)
 
     def run(self):
         """
@@ -106,8 +117,9 @@ class Actor(multiprocessing.Process):
         Define how to handle signal interrupts
         """
         def term_handler(_, __):
+            self.logger.info("Term handler")
             self._kill_process()
-            exit(0)
+            sys.exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
@@ -232,11 +244,14 @@ class Actor(multiprocessing.Process):
         self.state.socket_interface.send_control(msg)
         self.logger.info('send control [' + repr(msg) + '] to ' + self.name)
 
-    def receive_control(self):
+    def receive_control(self, timeout=None):
         """
         Receive a message from this actor on the control canal
         """
-        msg = self.state.socket_interface.receive_control()
+        if timeout is None:
+            timeout = self.state.socket_interface.timeout
+
+        msg = self.state.socket_interface.receive_control(timeout)
         self.logger.info("receive control : [" + repr(msg) + "]")
         return msg
 
@@ -261,7 +276,7 @@ class Actor(multiprocessing.Process):
         self.logger.info("receive data : [" + repr(msg) + "]")
         return msg
 
-    def kill(self, by_data=False):
+    def send_kill(self, by_data=False):
         """
         Kill this actor by sending a
         :class:`PoisonPillMessage

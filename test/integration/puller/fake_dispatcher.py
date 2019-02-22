@@ -18,7 +18,8 @@ import logging
 import pickle
 import zmq
 from powerapi.handler import Handler, PoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
+from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.handler import StartHandler
 from powerapi.report import Report
 from powerapi.actor import Actor, State, SocketInterface, SafeContext
 
@@ -33,23 +34,19 @@ class HWPCReportHandler(Handler):
         return state
 
 
-class FakeFormulaActor(Actor):
+class FakeDispatcherActor(Actor):
     """
-    Formula abstract class. A Formula is an Actor which use data
-    for computing some new useful power estimation.
-
-    A Formula is design to be handle by a Dispatcher, and to send
-    result to a Pusher.
+    Formula abstract class. A Dispatcher is an Actor which use data
+    for dispatcher them to some Formulas.
     """
 
-    def __init__(self, name, push_socket_addr, level_logger=logging.WARNING,
+    def __init__(self, name, push_socket_addr, level_logger=logging.DEBUG,
                  timeout=None):
         """
         :param str name: Actor name
         :param int level_logger: Define logger level
         :param bool timeout: Time in millisecond to wait for a message before
                              called timeout_handler.
-
         """
         Actor.__init__(self, name, level_logger, timeout)
 
@@ -61,16 +58,13 @@ class FakeFormulaActor(Actor):
         self.addr = push_socket_addr
         self.push_socket = None
 
-
     def setup(self):
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.connect(self.addr)
 
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        self.add_handler(StartMessage, StartHandler())
         self.add_handler(Report, HWPCReportHandler(self.push_socket))
 
-        self.push_socket.send(pickle.dumps('created'))
-
-
     def terminated_behaviour(self):
-        self.push_socket.send(pickle.dumps('terminated'))
+        self.push_socket.close()

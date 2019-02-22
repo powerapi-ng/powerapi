@@ -28,13 +28,19 @@ class StdoutDB(BaseDB):
     def __init__(self):
         pass
 
-    def load(self):
+    def connect(self):
         """
         Override from BaseDB
         """
         pass
 
-    def get_next(self):
+    def __iter__(self):
+        """
+        Override from BaseDB
+        """
+        pass
+
+    def __next__(self):
         """
         Override from BaseDB
         """

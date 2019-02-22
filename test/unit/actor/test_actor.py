@@ -15,11 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import multiprocessing
 import pytest
+from mock import Mock
 import setproctitle
-
-from mock import Mock, patch
 
 from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
 from powerapi.actor import Actor, State
@@ -27,12 +25,13 @@ from powerapi.handler import PoisonPillMessageHandler
 
 
 ACTOR_NAME = "dummy_actor"
+LOG_LEVEL = logging.NOTSET
 
 class DummyActor(Actor):
 
     def __init__(self, name=ACTOR_NAME):
-        Actor.__init__(self, name)
-        self.state = State(Mock(), Mock())
+        Actor.__init__(self, name, level_logger=LOG_LEVEL)
+        self.state = State(Mock(), Mock(), self.logger)
 
     def setup(self):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())

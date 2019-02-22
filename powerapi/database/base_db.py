@@ -50,7 +50,7 @@ class BaseDB:
         #: define the type of Report
         self.report_model = report_model
 
-    def load(self):
+    def connect(self):
         """
         Function that allow to load the database. Depending of the type,
         different process can happen.
@@ -59,15 +59,15 @@ class BaseDB:
         """
         raise NotImplementedError()
 
-    def get_next(self):
+    def __iter__(self):
         """
-        Get the next report on the database, or None if there is no more
-        data.
+        Create the iterator for get the data
+        """
+        raise NotImplementedError()
 
-        :return: The next report
-        :rtype: JSON formated and feedable for Report
-
-        .. note:: Need to be overrided
+    def __next__(self):
+        """
+        Allow to get the next data
         """
         raise NotImplementedError()
 

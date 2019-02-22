@@ -58,7 +58,7 @@ class TestFilter:
         """
         mongodb = MongoDB(HOSTNAME, PORT, "test_filter",
                           "test_filter1", report_model=HWPCModel())
-        mongodb.load()
+        mongodb.connect()
         hwpc_filter = Filter()
         hwpc_filter.filter(lambda msg:
                            True if "sensor" in msg.sensor else False,
@@ -69,17 +69,19 @@ class TestFilter:
         hwpc_filter.filter(lambda msg:
                            True if msg.sensor == "sensor_test2" else False,
                            3)
+
+        mongodb_it = iter(mongodb)
         for _ in range(2):
             hwpc_report = HWPCReport()
-            hwpc_report.deserialize(mongodb.get_next())
+            hwpc_report.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1, 2]
 
         for _ in range(2):
             hwpc_report = HWPCReport()
-            hwpc_report.deserialize(mongodb.get_next())
+            hwpc_report.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1, 3]
 
         for _ in range(2):
             hwpc_report = HWPCReport()
-            hwpc_report.deserialize(mongodb.get_next())
+            hwpc_report.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1]

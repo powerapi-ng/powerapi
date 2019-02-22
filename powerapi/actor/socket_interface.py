@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pickle
+import logging
 import zmq
 from powerapi.actor import SafeContext
 
@@ -24,6 +25,7 @@ class NotConnectedException(Exception):
     Exception raised when attempting to send/receinve a message on a socket
     that is not conected
     """
+
 
 class SocketInterface:
     """
@@ -52,6 +54,8 @@ class SocketInterface:
         :param str name: name of the actor using this interface
         :param int timeout: time in millisecond to wait for a message
         """
+        self.logger = logging.getLogger(name)
+
         #: (int): Time in millisecond to wait for a message before execute
         #:        timeout_handler
         self.timeout = timeout
@@ -104,6 +108,7 @@ class SocketInterface:
         socket = SafeContext.get_context().socket(socket_type)
         socket.bind(socket_addr)
         self.poller.register(socket, zmq.POLLIN)
+        self.logger.info("bind to " + str(socket_addr))
         return socket
 
     def receive(self):
@@ -111,8 +116,8 @@ class SocketInterface:
         Block until a message was received (or until timeout) an return the
         received messages
 
-        :return: the list of received messages or an empty list if timeout
-        :rtype: a list of Object
+        :return: the list of received messages or None if timeout
+        :rtype: a list of Object or None
         """
         events = self.poller.poll(self.timeout)
 
@@ -123,9 +128,9 @@ class SocketInterface:
             return self._recv_serialized(events[0][0])
         return None
 
-    def receive_control(self):
+    def receive_control(self, timeout):
         """
-        Block until a message was received on the control canal (client side
+        Block until a message was received on the control canal (client side)
         (or until timeout) an return the received messages
 
         :return: the list of received messages or an empty list if timeout
@@ -134,15 +139,21 @@ class SocketInterface:
         """
         if self.control_socket is None:
             raise NotConnectedException
-        event = self.control_socket.poll(self.timeout)
+
+        event = self.control_socket.poll(timeout)
+
         if event == 0:
             return None
+
         return self._recv_serialized(self.control_socket)
 
     def close(self):
         """
         Close all socket handle by this interface
         """
+        if self.push_socket is not None:
+            self.push_socket.close()
+
         if self.pull_socket is not None:
             self.pull_socket.close()
 
@@ -199,7 +210,7 @@ class SocketInterface:
         :param Object msg: message to send
         """
         if self.control_socket is None:
-            raise NotConnectedException
+            raise NotConnectedException()
         self._send_serialized(self.control_socket, msg)
 
     def send_data(self, msg):
@@ -209,5 +220,5 @@ class SocketInterface:
         :param Object msg: message to send
         """
         if self.push_socket is None:
-            raise NotConnectedException
+            raise NotConnectedException()
         self._send_serialized(self.push_socket, msg)

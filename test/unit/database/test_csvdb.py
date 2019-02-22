@@ -67,7 +67,7 @@ class TestCsvDB():
         Test with bad filepath
         """
         with pytest.raises(CsvBadFilePathError) as pytest_wrapped:
-            CsvDB(HWPCModel(), ["/tmp/unknowfile"]).load()
+            CsvDB(HWPCModel(), ["/tmp/unknowfile"]).connect()
         assert pytest_wrapped.type == CsvBadFilePathError
 
     def test_csvdb_bad_common(self):
@@ -77,7 +77,7 @@ class TestCsvDB():
         csv_files = BAD_COMMON
         while csv_files:
             with pytest.raises(CsvBadCommonKeysError) as pytest_wrapped:
-                CsvDB(HWPCModel(), csv_files).load()
+                CsvDB(HWPCModel(), csv_files).connect()
             assert pytest_wrapped.type == CsvBadCommonKeysError
             csv_files = csv_files[1:]
 
@@ -86,59 +86,70 @@ class TestCsvDB():
         Create two full HWPCReport, then return None
         """
         csvdb = CsvDB(HWPCModel(), BASIC_FILES)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in BASIC_FILES]
 
+        csvdb_iter = iter(csvdb)
         for _ in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
                 assert group in report['groups']
-        assert csvdb.get_next() is None
+
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_first_primary_missing(self):
         """
         Create one full HWPCReport (the second), then return None
         """
         csvdb = CsvDB(HWPCModel(), FIRST_PRIMARY_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in FIRST_PRIMARY_MISSING]
 
-        report = csvdb.get_next()
+        csvdb_iter = iter(csvdb)
+        report = next(csvdb_iter)
         for key in KEYS_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
         assert report['timestamp'] == "1539260665189"
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_second_primary_missing(self):
         """
         Create one full HWPCReport (the first), then return None
         """
         csvdb = CsvDB(HWPCModel(), SECOND_PRIMARY_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in SECOND_PRIMARY_MISSING]
 
-        report = csvdb.get_next()
+        csvdb_iter = iter(csvdb)
+        report = next(csvdb_iter)
         for key in KEYS_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
         assert report['timestamp'] == "1539260664189"
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
     def test_csvdb_first_rapl_missing(self):
         """
         Create two reports, one without rapl, second is full, then return None
         """
         csvdb = CsvDB(HWPCModel(), FIRST_RAPL_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in FIRST_RAPL_MISSING]
 
+        csvdb_iter = iter(csvdb)
         for i in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
@@ -146,7 +157,9 @@ class TestCsvDB():
                     assert group not in report['groups']
                 else:
                     assert group in report['groups']
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration
 
 
     def test_csvdb_second_rapl_missing(self):
@@ -154,11 +167,12 @@ class TestCsvDB():
         Create two reports, one is full, second without rapl, then return None
         """
         csvdb = CsvDB(HWPCModel(), SECOND_RAPL_MISSING)
-        csvdb.load()
+        csvdb.connect()
         group_name = [path.split('/')[-1] for path in SECOND_RAPL_MISSING]
 
+        csvdb_iter = iter(csvdb)
         for i in range(2):
-            report = csvdb.get_next()
+            report = next(csvdb_iter)
             for key in KEYS_COMMON:
                 assert key in report
             for group in group_name:
@@ -166,4 +180,6 @@ class TestCsvDB():
                     assert group not in report['groups']
                 else:
                     assert group in report['groups']
-        assert csvdb.get_next() is None
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_iter)
+        assert pytest_wrapped.type == StopIteration

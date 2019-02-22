@@ -56,12 +56,16 @@ def get_fake_mongodb():
     fake_mongo = mock.Mock(spec_set=MongoDB)
     values = [2, 3]
 
-    def fake_get_next():
+    def fake_next():
         if not values:
             return None
         return values.pop()
 
-    fake_mongo.get_next = fake_get_next
+    def fake_iter(_):
+        return iter([])
+
+    fake_mongo.__next__ = fake_next
+    fake_mongo.__iter__ = fake_iter
     return fake_mongo
 
 
@@ -90,10 +94,10 @@ def get_fake_socket_interface():
 class TestPullerActor:
     """ TestPullerActor class """
 
-    def test_autokill(self):
+    def test_no_stream(self):
         """ Test if the actor kill himself after reading db """
         puller = PullerActor("puller_mongo", get_fake_mongodb(),
-                             get_fake_filter(), 0, autokill=True)
+                             get_fake_filter(), 0, stream_mode=False)
         supervisor = Supervisor()
         supervisor.launch_actor(puller)
         puller.join()
@@ -114,14 +118,14 @@ class TestHandlerPuller:
         fake_filter = get_fake_filter()
         puller_state = PullerState(Actor._initial_behaviour,
                                    fake_socket_interface,
+                                   mock.Mock(),
                                    fake_database,
                                    fake_filter,
-                                   0,
                                    False)
         assert puller_state.initialized is False
 
         # Define StartHandler
-        start_handler = PullerStartHandler(Actor._initial_behaviour)
+        start_handler = PullerStartHandler()
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
