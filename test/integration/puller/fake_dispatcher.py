@@ -39,7 +39,7 @@ class FakeDispatcherActor(Actor):
     for dispatcher them to some Formulas.
     """
 
-    def __init__(self, name, push_socket_addr, level_logger=logging.NOTSET,
+    def __init__(self, name, push_socket_addr, level_logger=logging.DEBUG,
                  timeout=None):
         """
         :param str name: Actor name
@@ -59,11 +59,14 @@ class FakeDispatcherActor(Actor):
 
     def setup(self):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.push_socket = self.state.socket_interface.context.socket(zmq.PUSH)
-        self.push_socket.connect(self.addr)
+        #self.push_socket = self.state.socket_interface.context.socket(zmq.PUSH)
+        #self.push_socket.connect(self.addr)
 
         self.add_handler(Report, HWPCReportHandler(self.push_socket))
-        self.push_socket.send(pickle.dumps('created'))
+        #self.push_socket.send(pickle.dumps('created'))
 
     def terminated_behaviour(self):
-        self.push_socket.send(pickle.dumps('terminated'))
+        """
+        """
+        #self.push_socket.send(pickle.dumps('terminated'))
+        #self.push_socket.close()

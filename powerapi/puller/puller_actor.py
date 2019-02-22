@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import zmq
 import logging
 from powerapi.actor import Actor, State, SocketInterface
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.handler import PoisonPillMessageHandler
 from powerapi.puller import PullerStartHandler, TimeoutHandler
+from powerapi.actor import NotConnectedException
 
 
 class NoReportExtractedException(Exception):
@@ -100,6 +102,13 @@ class PullerActor(Actor):
         """
         Allow to end some socket connection properly
         """
-        # Connect to all dispatcher
+        # Send kill to dispatcher
+        for _, dispatcher in self.state.report_filter.filters:
+            try:
+                dispatcher.send_kill(by_data=True)
+            except NotConnectedException:
+                pass
+
+        # Close connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.state.socket_interface.close()

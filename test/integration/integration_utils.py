@@ -83,7 +83,6 @@ def is_log_ok(filename, validation_msg_list):
 
     result_list.sort()
     validation_msg_list.sort()
-
     return result_list == validation_msg_list
 
 #######################

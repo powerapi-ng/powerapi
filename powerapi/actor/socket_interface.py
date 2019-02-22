@@ -151,6 +151,9 @@ class SocketInterface:
         """
         Close all socket handle by this interface
         """
+        if self.push_socket is not None:
+            self.push_socket.close()
+
         if self.pull_socket is not None:
             self.pull_socket.close()
 

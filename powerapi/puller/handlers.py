@@ -53,8 +53,6 @@ class PullerStartHandler(StartHandler):
         for _, dispatcher in state.report_filter.filters:
             dispatcher.connect_data()
 
-        state.initialized = True
-        state.socket_interface.send_control(OKMessage())
         return state
 
 
@@ -107,8 +105,6 @@ class TimeoutHandler(InitHandler):
             (report, dispatchers) = self.get_report_dispatcher(state)
         except NoReportExtractedException:
             if not state.stream_mode:
-                for _, dispatcher in state.report_filter.filters:
-                    dispatcher.send_kill(by_data=True)
                 state.alive = False
             return state
 

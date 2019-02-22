@@ -17,6 +17,7 @@
 Integration test of the puller actor
 """
 
+import time
 import logging
 import os
 import pickle
@@ -28,7 +29,6 @@ from powerapi.message import OKMessage, StartMessage, ErrorMessage
 from powerapi.message import PoisonPillMessage
 from powerapi.filter import Filter
 from powerapi.report_model import HWPCModel
-from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor
 from powerapi.database import BaseDB, MongoDB
 from powerapi.puller import PullerActor
@@ -37,6 +37,7 @@ from test.integration.integration_utils import gen_side_effect
 from test.integration.integration_utils import is_log_ok
 from test.integration.integration_utils import gen_send_side_effect
 from test.integration.integration_utils import receive_side_effect
+from test.integration.integration_utils import is_actor_alive
 from test.integration.puller.fake_dispatcher import FakeDispatcherActor
 from test.unit.database.mongo_utils import gen_base_test_unit_mongo
 from test.unit.database.mongo_utils import clean_base_test_unit_mongo
@@ -45,7 +46,7 @@ HOSTNAME = "localhost"
 PORT = 27017
 FILENAME = 'test_puller_file.csv'
 DISPATCHER_SOCKET_ADDRESS = "ipc://@test_dispatcher_socket"
-LOG_LEVEL = logging.NOTSET
+LOG_LEVEL = logging.DEBUG
 
 ##############################################################################
 #                                Fixtures utility                            #
@@ -179,16 +180,16 @@ def initialized_puller(puller, context):
     """
     puller.connect_control(context)
     puller.send_control(StartMessage())
-    return puller
+    assert isinstance(puller.receive_control(500), OKMessage)
+    yield puller
 
 
 @pytest.fixture()
-def initialized_puller_with_dispatcher(initialized_puller, context):
+def initialized_puller_with_dispatcher(initialized_puller):
     """
     Setup PullerActor, send a StartMessage and handle Dispatcher
     """
 
-    assert isinstance(initialized_puller.receive_control(500), OKMessage)
     for _, disp in initialized_puller.state.report_filter.filters:
         disp.start()
 
@@ -219,7 +220,7 @@ def fake_dispatcher_filt():
     """
     Return a filter that dispatch to a fake dispatcher
     """
-    dispatcher = FakeDispatcherActor('dispatcher__',
+    dispatcher = FakeDispatcherActor('fake_dispatcher__',
                                      DISPATCHER_SOCKET_ADDRESS,
                                      level_logger=LOG_LEVEL)
     filt = Filter()
@@ -279,127 +280,171 @@ def pytest_generate_tests(metafunc):
 #                                Tests                                       #
 ##############################################################################
 
-class TestPuller:
 
-    @pytest.fixture(autouse=True)
-    def basedb_mocked_connect(self):
-        with patch('powerapi.database.base_db.BaseDB.connect',
-                   side_effect=gen_side_effect(FILENAME, 'connect')):
-            yield
-
-    @pytest.fixture(autouse=True)
-    def basedb_mocked_iter(self):
-        with patch('powerapi.database.base_db.BaseDB.__iter__',
-                   side_effect=lambda: iter([])):
-            yield
-
-    @pytest.fixture(autouse=True)
-    def basedb_mocked_next(self):
-        with patch('powerapi.database.base_db.BaseDB.__next__',
-                   side_effect=StopIteration()):
-            yield
-
-    @pytest.fixture(autouse=True)
-    def dispatcher_mocked_connect_data(self):
-        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
-                   side_effect=gen_side_effect(FILENAME, 'connect_data')):
-            yield
-
-    @pytest.fixture(autouse=True)
-    def dispatcher_mocked_send_kill(self):
-        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.send_kill',
-                   side_effect=gen_side_effect(FILENAME, 'send_kill')):
-            yield
-
-    @define_database(mocked_database())
-    @define_filt(basic_filt())
-    @define_stream_mode(False)
-    def test_start_msg_db_ok(self, puller, context, log_file):
-        """
-        Send a start message to a PullerActor
-
-        After sending the message test :
-          - if the actor send a OkMessage to the test process
-          - if the actor is dead
-          - if the following method has been called:
-            - connect from database
-            - connect_data from dispatcher
-            - send_kill
-        """
-        puller.connect_control(context)
-        puller.send_control(StartMessage())
-        puller.join(0.5)
-
-        assert isinstance(puller.receive_control(500), OKMessage)
-        assert not puller.is_alive()
-        assert is_log_ok(log_file,
-                         ['connect', 'connect_data', 'send_kill'])
-
-    @define_database(mocked_database())
-    @define_filt(basic_filt())
-    @define_stream_mode(True)
-    def test_start_msg_db_ok_stream(self, puller, context, log_file):
-        """
-        Send a start message to a PullerActor with stream mode on
-
-        After sending the message test :
-          - if the actor send a OkMessage to the test process
-          - if the actor is alive
-          - if the following method has been called:
-            - connect from database
-            - connect_data from dispatcher
-        """
-        puller.connect_control(context)
-        puller.send_control(StartMessage())
-
-        assert isinstance(puller.receive_control(500), OKMessage)
-        assert puller.is_alive()
-        assert is_log_ok(log_file,
-                         ['connect', 'connect_data'])
-
-#################
-# Mongo DB Test #
-#################
-
-
-@define_database([
-    ("toto", PORT, "test_mongodb", "test_mongodb1"),
-    #(HOSTNAME, 27016, "test_mongodb", "test_mongodb1"),
-    ])
-@define_filt(basic_filt())
-@define_stream_mode('both')
-def test_mongodb_bad_config(initialized_puller):
-    """
-    Send a start message to a PullerActor with a DB with a bad configuration
-
-    After sending the message test :
-      - if the actor send an ErrorMessage to the test process
-      - if the actor is dead
-    """
-
-    assert isinstance(initialized_puller.receive_control(500), ErrorMessage)
-    initialized_puller.join(0.5)
-    assert not initialized_puller.is_alive()
+#class TestPuller:
+#
+#    @pytest.fixture(autouse=True)
+#    def basedb_mocked_connect(self):
+#        with patch('powerapi.database.base_db.BaseDB.connect',
+#                   side_effect=gen_side_effect(FILENAME, 'connect')):
+#            yield
+#
+#    @pytest.fixture(autouse=True)
+#    def basedb_mocked_iter(self):
+#        with patch('powerapi.database.base_db.BaseDB.__iter__',
+#                   side_effect=lambda: iter([])):
+#            yield
+#
+#    @pytest.fixture(autouse=True)
+#    def basedb_mocked_next(self):
+#        with patch('powerapi.database.base_db.BaseDB.__next__',
+#                   side_effect=StopIteration()):
+#            yield
+#
+#    @pytest.fixture(autouse=True)
+#    def dispatcher_mocked_connect_data(self):
+#        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.connect_data',
+#                   side_effect=gen_side_effect(FILENAME, 'connect_data')):
+#            yield
+#
+#    @pytest.fixture(autouse=True)
+#    def dispatcher_mocked_send_kill(self):
+#        with patch('powerapi.dispatcher.dispatcher_actor.DispatcherActor.send_kill',
+#                   side_effect=gen_side_effect(FILENAME, 'send_kill')):
+#            yield
+#
+#    #################
+#    #      Init     #
+#    #################
+#
+#    @define_database(mocked_database())
+#    @define_filt(basic_filt())
+#    @define_stream_mode(False)
+#    def test_start_msg_db_ok(self, log_file, initialized_puller):
+#        """
+#        Send a start message to a PullerActor
+#
+#        After sending the message test :
+#          - if the actor send a OkMessage to the test process
+#          - if the actor is dead
+#          - if the following method has been called:
+#            - connect from database
+#            - connect_data from dispatcher
+#            - send_kill
+#        """
+#        assert not is_actor_alive(initialized_puller)
+#        assert is_log_ok(log_file,
+#                         ['connect', 'connect_data', 'send_kill'])
+#
+#    @define_database(mocked_database())
+#    @define_filt(basic_filt())
+#    @define_stream_mode(True)
+#    def test_start_msg_db_ok_stream(self, log_file, initialized_puller):
+#        """
+#        Send a start message to a PullerActor with stream mode on
+#
+#        After sending the message test :
+#          - if the actor send a OkMessage to the test process
+#          - if the actor is alive
+#          - if the following method has been called:
+#            - connect from database
+#            - connect_data from dispatcher
+#        """
+#        assert initialized_puller.is_alive()
+#        assert is_log_ok(log_file,
+#                         ['connect', 'connect_data'])
+#
+#    #################
+#    #      Kill     #
+#    #################
+#
+#    @define_database(mocked_database())
+#    @define_filt(basic_filt())
+#    @define_stream_mode('both')
+#    def test_puller_kill_non_init(self, puller, context):
+#        """
+#        Create a Puller and call its kill method
+#
+#        Test if:
+#         - Actor is terminated
+#        """
+#        puller.connect_control(context)
+#        puller.send_kill()
+#        assert not is_actor_alive(puller)
+#
+#    @define_database(mocked_database())
+#    @define_filt(basic_filt())
+#    @define_stream_mode(True)
+#    def test_puller_kill_init(self, initialized_puller):
+#        """
+#        Create an initialized Puller and call its kill method
+#
+#        Test if:
+#         - Actor is terminated
+#        """
+#        initialized_puller.send_kill()
+#        assert not is_actor_alive(initialized_puller)
 
 
 @define_database(mongodb_database(HOSTNAME, PORT,
                                   "test_mongodb", "test_mongodb1"))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
-def test_mongodb_reading_data(generate_mongodb_data,
-                              initialized_puller_with_dispatcher,
-                              dispatcher_socket):
+def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
     """
-    Send a start message to a PullerActor with a MongoDB
-    And test if reading data is ok
+    Create an initialized Puller and call its kill method
 
-    After sending the message test :
-      - if the actor is alive
-      - if the actor send a OkMessage to the test process
-      - if dispatcher receive data
+    Test if:
+     - Actor is terminated
+     - Disconnect from Dispatchers
     """
+    initialized_puller_with_dispatcher.send_kill()
+    assert not is_actor_alive(initialized_puller_with_dispatcher)
+    for _, disp in initialized_puller_with_dispatcher.state.report_filter.filters:
+        assert not is_actor_alive(disp)
 
-    assert initialized_puller_with_dispatcher.is_alive()
-    assert receive(dispatcher_socket) == 'created'
-    for _ in range(10):
-        assert isinstance(receive(dispatcher_socket), HWPCReport)
+#################
+# Mongo DB Test #
+#################
+
+
+#@define_database([
+#    ("toto", PORT, "test_mongodb", "test_mongodb1"),
+#    #(HOSTNAME, 27016, "test_mongodb", "test_mongodb1"),
+#    ])
+#@define_filt(basic_filt())
+#@define_stream_mode('both')
+#def test_mongodb_bad_config(initialized_puller):
+#    """
+#    Send a start message to a PullerActor with a DB with a bad configuration
+#
+#    After sending the message test :
+#      - if the actor send an ErrorMessage to the test process
+#      - if the actor is dead
+#    """
+#
+#    assert isinstance(initialized_puller.receive_control(500), ErrorMessage)
+#    assert not is_actor_alive(initialized_puller)
+#
+#
+#@define_database(mongodb_database(HOSTNAME, PORT,
+#                                  "test_mongodb", "test_mongodb1"))
+#@define_filt(fake_dispatcher_filt())
+#@define_stream_mode(True)
+#def test_mongodb_reading_data(generate_mongodb_data,
+#                              initialized_puller_with_dispatcher,
+#                              dispatcher_socket):
+#    """
+#    Send a start message to a PullerActor with a MongoDB
+#    And test if reading data is ok
+#
+#    After sending the message test :
+#      - if the actor is alive
+#      - if the actor send a OkMessage to the test process
+#      - if dispatcher receive data
+#    """
+#
+#    assert initialized_puller_with_dispatcher.is_alive()
+#    assert receive(dispatcher_socket) == 'created'
+#    for _ in range(10):
+#        assert isinstance(receive(dispatcher_socket), HWPCReport)
