@@ -26,7 +26,7 @@ from powerapi.filter import Filter
 from powerapi.report import Report, HWPCReport
 from powerapi.puller import PullerActor, PullerState
 from powerapi.puller import PullerStartHandler
-from powerapi.actor import Actor, State, SocketInterface
+from powerapi.actor import Actor, State, SocketInterface, Supervisor
 from powerapi.message import OKMessage, ErrorMessage, StartMessage
 
 #########################################
@@ -94,10 +94,8 @@ class TestPullerActor:
         """ Test if the actor kill himself after reading db """
         puller = PullerActor("puller_mongo", get_fake_mongodb(),
                              get_fake_filter(), 0, autokill=True)
-        puller.start()
-        context = zmq.Context()
-        puller.connect_control(context)
-        puller.send_control(StartMessage())
+        supervisor = Supervisor()
+        supervisor.launch_actor(puller)
         puller.join()
         assert puller.is_alive() is False
 

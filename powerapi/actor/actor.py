@@ -19,6 +19,8 @@ import signal
 import multiprocessing
 import setproctitle
 
+import zmq
+
 from powerapi.actor import State, SocketInterface
 from powerapi.message import PoisonPillMessage
 from powerapi.message import UnknowMessageTypeException
@@ -36,23 +38,21 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     |  Interface type                 |                                   method name                                              |
     +=================================+============================================================================================+
-    | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                           |
+    | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                     |
+    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                           |
+    |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                 |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`kill <powerapi.actor.actor.Actor.kill>`                                           |
+    |                                 | :meth:`kill <powerapi.actor.actor.Actor.kill>`                                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                         |
+    | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                             |
+    |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`terminated_behaviour <powerapi.actor.actor.Actor.terminated_behaviour>`           |
+    |                                 | :meth:`terminated_behaviour <powerapi.actor.actor.Actor.terminated_behaviour>`             |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                           |
+    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -62,11 +62,11 @@ class Actor(multiprocessing.Process):
     +---------------------------------+--------------------------------------------------------------------------------------------+
     |  Interface type                 |                                   method name                                              |
     +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`state <powerapi.actor.actor.Actor.state>`                                         |
+    | Server interface                | :attr:`state <powerapi.actor.actor.Actor.state>`                                           |
     +---------------------------------+--------------------------------------------------------------------------------------------+
     """
 
-    def __init__(self, name, level_logger=logging.NOTSET, timeout=None):
+    def __init__(self, name, level_logger=logging.NOTSET, timeout=500):
         """
         Initialization and start of the process.
 
@@ -79,8 +79,7 @@ class Actor(multiprocessing.Process):
         multiprocessing.Process.__init__(self, name=name)
 
         #: (powerapi.actor.state.State): actor's state
-        self.state = State(self._initial_behaviour,
-                           SocketInterface(name, timeout))
+        self.state = None
         #: (logging.Logger): Logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level_logger)
@@ -186,6 +185,7 @@ class Actor(multiprocessing.Process):
         self.state.socket_interface.close()
         self.logger.info(self.name + " terminated")
 
+
     def set_timeout_handler(self, new_timeout_handler):
         """
         Set the timeout_handler
@@ -199,29 +199,28 @@ class Actor(multiprocessing.Process):
         Can be overriden to use personal actor termination behaviour
         """
 
-    def connect_data(self, context):
+    def connect_data(self):
         """
         Open a canal that can be use for unidirectional communication to this
         actor
-
-        :param context: ZMQ context of the process that want to
-                        communicate with this actor
-        :type context: zmq.Context
         """
-        self.state.socket_interface.connect_data(context)
+        self.state.socket_interface.connect_data()
         self.logger.info('connected data to ' + self.name)
 
-    def connect_control(self, context):
+    def set_context(self, context):
+        """
+        set the context of the actor
+        :param zmq.Context context: the context to set
+        """
+        self.state.socket_interface.set_context(context)
+
+    def connect_control(self):
         """
         Open a control canal with this actor. An actor can have only one
         control open at the same time. Open a pair socket on the process
         that want to control this actor
-
-        :param context: ZMQ context of the process that want to
-                        communicate with this actor
-        :type context: zmq.Context
         """
-        self.state.socket_interface.connect_control(context)
+        self.state.socket_interface.connect_control()
         self.logger.info('connected control to ' + self.name)
 
     def send_control(self, msg):
@@ -276,4 +275,4 @@ class Actor(multiprocessing.Process):
         else:
             self.send_control(PoisonPillMessage())
         self.logger.info('send kill msg to ' + self.name)
-        self.state.socket_interface.disconnect()
+        self.state.socket_interface.close()

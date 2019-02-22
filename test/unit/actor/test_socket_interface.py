@@ -49,7 +49,6 @@ def socket_interface():
     """
     return SocketInterface(ACTOR_NAME, 100)
 
-
 @pytest.fixture()
 def initialized_socket_interface(socket_interface):
     """Return an initialized socket interface
@@ -66,12 +65,11 @@ def initialized_socket_interface(socket_interface):
 def connected_interface(initialized_socket_interface):
     """ Return an initialized socket interface with an open connection to the
     push socket
-n
+
     """
-    context = zmq.Context()
-    initialized_socket_interface.connect_data(context)
+    initialized_socket_interface.connect_data()
     yield initialized_socket_interface
-    initialized_socket_interface.disconnect()
+    initialized_socket_interface.close()
 
 
 @pytest.fixture()
@@ -80,10 +78,9 @@ def controlled_interface(initialized_socket_interface):
     control socket
 
     """
-    context = zmq.Context()
-    initialized_socket_interface.connect_control(context)
+    initialized_socket_interface.connect_control()
     yield initialized_socket_interface
-    initialized_socket_interface.disconnect()
+    initialized_socket_interface.close()
 
 
 @pytest.fixture()
@@ -92,11 +89,10 @@ def fully_connected_interface(initialized_socket_interface):
     control and the push socket
 
     """
-    context = zmq.Context()
-    initialized_socket_interface.connect_data(context)
-    initialized_socket_interface.connect_control(context)
+    initialized_socket_interface.connect_data()
+    initialized_socket_interface.connect_control()
     yield initialized_socket_interface
-    initialized_socket_interface.disconnect()
+    initialized_socket_interface.close()
 
 
 def test_socket_initialisation(socket_interface):
@@ -121,7 +117,6 @@ def test_close(initialized_socket_interface):
 def test_setup(initialized_socket_interface):
     """ test if the setup method open the control and pull socket
     """
-    assert isinstance(initialized_socket_interface.context, zmq.Context)
     assert isinstance(initialized_socket_interface.poller, zmq.Poller)
 
     check_socket(initialized_socket_interface.pull_socket, zmq.PULL,
@@ -142,7 +137,7 @@ def test_push_disconnection(connected_interface):
 
     """
     assert connected_interface.push_socket.closed is False
-    connected_interface.disconnect()
+    connected_interface.close()
     assert connected_interface.push_socket.closed is True
 
 
@@ -168,7 +163,7 @@ def test_control_disconnection(controlled_interface):
 
     """
     assert controlled_interface.control_socket.closed is False
-    controlled_interface.disconnect()
+    controlled_interface.close()
     assert controlled_interface.control_socket.closed is True
 
 

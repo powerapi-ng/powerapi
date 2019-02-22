@@ -19,10 +19,10 @@ Module powerapi-cli
 """
 
 import argparse
-import pickle
 import logging
 import signal
 import zmq
+from powerapi.actor import ActorInitError, Supervisor
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.formula import RAPLFormulaActor
@@ -32,7 +32,6 @@ from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport, PowerReport
 from powerapi.report_model import HWPCModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.message import OKMessage, StartMessage
 
 
 class BadActorInitializationError(Exception):
@@ -57,7 +56,8 @@ def arg_parser_init():
     parser.add_argument("output_collection", help="MongoDB output collection")
 
     # DispatchRule
-    parser.add_argument("hwpc_dispatch_rule", help="Define the dispatch_rule rule, "
+    parser.add_argument("hwpc_dispatch_rule", help=
+                        "Define the dispatch_rule rule, "
                         "Can be CORE, SOCKET or ROOT",
                         choices=['CORE', 'SOCKET', 'ROOT'])
 
@@ -67,17 +67,9 @@ def arg_parser_init():
     return parser
 
 
-def main():
-    """ Main function """
-
+def launch_powerapi(args, logger):
     ##########################################################################
-    # Actor initialization step
-
-    args = arg_parser_init().parse_args()
-    if args.verbose:
-        args.verbose = logging.DEBUG
-    else:
-        args.verbose = logging.NOTSET
+    # Actor Creation
 
     # Pusher
     output_mongodb = MongoDB(args.output_hostname, args.output_port,
@@ -92,9 +84,8 @@ def main():
 
     # Dispatcher
     route_table = RouteTable()
-    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel,
-                                                         args.hwpc_dispatch_rule),
-                                                 primary=True))
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(
+        getattr(HWPCDepthLevel, args.hwpc_dispatch_rule), primary=True))
 
     dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,
                                  level_logger=args.verbose)
@@ -122,57 +113,35 @@ def main():
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)
 
-    # start actors
-    context = zmq.Context()
+    supervisor = Supervisor()
+    try:
+        supervisor.launch_actor(pusher)
+        supervisor.launch_actor(dispatcher)
+        supervisor.launch_actor(puller)
 
-    pusher.connect_control(context)
-    pusher.start()
-    dispatcher.connect_control(context)
-    dispatcher.connect_data(context)
-    dispatcher.start()
-    puller.connect_control(context)
-    puller.start()
-
-    # Send StartMessage
-    pusher.send_control(StartMessage())
-    dispatcher.send_control(StartMessage())
-    puller.send_control(StartMessage())
-
-    # Wait for OKMessage
-    poller = zmq.Poller()
-    poller.register(pusher.state.socket_interface.control_socket, zmq.POLLIN)
-    poller.register(dispatcher.state.socket_interface.control_socket,
-                    zmq.POLLIN)
-    poller.register(puller.state.socket_interface.control_socket, zmq.POLLIN)
-
-    cpt_ok = 0
-    while cpt_ok < 3:
-        events = poller.poll(1000)
-        msgs = [pickle.loads(sock.recv()) for sock, event in events
-                if event == zmq.POLLIN]
-        for msg in msgs:
-            if isinstance(msg, OKMessage):
-                cpt_ok += 1
-            else:
-                print(msg.error_message)
-                puller.kill()
-                puller.join()
-                dispatcher.kill()
-                dispatcher.join()
-                pusher.kill()
-                pusher.join()
-                exit(0)
+    except zmq.error.ZMQError as exn:
+        logger.error('Communication error, ZMQError code : ' + str(exn.errno) +
+                     ' reason : ' + exn.strerror)
+        supervisor.kill_actors()
+    except ActorInitError as exn:
+        logger.error('Actor initialisation error, reason : ' + exn.message)
+        supervisor.kill_actors()
 
     ##########################################################################
     # Actor run step
 
     # wait
-    puller.join()
-    dispatcher.join()
-    pusher.join()
+    supervisor.join()
 
     ##########################################################################
 
 
 if __name__ == "__main__":
-    main()
+    ARGS = arg_parser_init().parse_args()
+    if ARGS.verbose:
+        ARGS.verbose = logging.DEBUG
+
+    LOGGER = logging.getLogger('main_logger')
+    LOGGER.setLevel(ARGS.verbose)
+    LOGGER.addHandler(logging.StreamHandler())
+    launch_powerapi(ARGS, LOGGER)

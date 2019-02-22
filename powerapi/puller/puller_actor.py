@@ -76,7 +76,7 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, frequency=0,
-                 level_logger=logging.NOTSET, autokill=False, timeout=None):
+                 level_logger=logging.NOTSET, autokill=False, timeout=500):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
@@ -142,8 +142,8 @@ class PullerActor(Actor):
             try:
                 (report, dispatchers) = get_report_dispatcher(self.state)
             except NoReportExtractedException:
-                for _, dispatcher in self.state.report_filter.filters:
-                    dispatcher.send_data(PoisonPillMessage())
+                for (_, dispatcher) in self.state.report_filter.filters:
+                    dispatcher.kill(by_data=True)
                 if self.state.autokill:
                     self.state.alive = False
                 break

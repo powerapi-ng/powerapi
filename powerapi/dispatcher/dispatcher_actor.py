@@ -39,7 +39,7 @@ class DispatcherActor(Actor):
     """
 
     def __init__(self, name, formula_init_function, route_table,
-                 level_logger=logging.NOTSET, timeout=None):
+                 level_logger=logging.NOTSET, timeout=500):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
@@ -78,25 +78,21 @@ class DispatcherActor(Actor):
 
         Kill each formula before terminate
         """
-        for name, formula in self.state.get_all_formula():
-            formula.kill(by_data=True)
-            formula.join()
+        self.state.supervisor.kill_actors(by_data=True)
 
     def _create_factory(self):
         """
         Create the full Formula Factory
 
         :return: Formula Factory
-        :rtype: func(formula_id, context) -> Formula
+        :rtype: func(formula_id) -> Formula
         """
-        # context = self.state.socket_interface.context
         formula_init_function = self.formula_init_function
 
-        def factory(formula_id, context):
+        def factory(formula_id):
             formula = formula_init_function(str(formula_id),
                                             self.logger.getEffectiveLevel())
-            formula.connect_data(context)
-            formula.connect_control(context)
+            self.state.supervisor.launch_actor(formula, start_message=False)
             return formula
 
         return factory
