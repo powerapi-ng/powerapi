@@ -44,14 +44,12 @@ def arg_parser_init():
         description="Start PowerAPI with the specified configuration.")
 
     # MongoDB input
-    parser.add_argument("input_hostname", help="MongoDB input hostname")
-    parser.add_argument("input_port", help="MongoDB input port", type=int)
+    parser.add_argument("input_uri", help="MongoDB input uri")
     parser.add_argument("input_db", help="MongoDB input database")
     parser.add_argument("input_collection", help="MongoDB input collection")
 
     # MongoDB output
-    parser.add_argument("output_hostname", help="MongoDB output hostname")
-    parser.add_argument("output_port", help="MongoDB output port", type=int)
+    parser.add_argument("output_uri", help="MongoDB output uri")
     parser.add_argument("output_db", help="MongoDB output database")
     parser.add_argument("output_collection", help="MongoDB output collection")
 
@@ -72,7 +70,7 @@ def launch_powerapi(args, logger):
     # Actor Creation
 
     # Pusher
-    output_mongodb = MongoDB(args.output_hostname, args.output_port,
+    output_mongodb = MongoDB(args.output_uri,
                              args.output_db, args.output_collection,
                              HWPCModel())
     pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
@@ -91,7 +89,7 @@ def launch_powerapi(args, logger):
                                  level_logger=args.verbose)
 
     # Puller
-    input_mongodb = MongoDB(args.input_hostname, args.input_port,
+    input_mongodb = MongoDB(args.input_uri,
                             args.input_db, args.input_collection,
                             HWPCModel())
     report_filter = Filter()
