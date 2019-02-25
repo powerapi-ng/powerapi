@@ -28,15 +28,14 @@ from test.unit.database.mongo_utils import gen_base_test_unit_filter, clean_base
 from test.unit.database.mongo_utils import clean_base_test_unit_filter
 
 
-HOSTNAME = "localhost"
-PORT = 27017
+URI = "mongodb://localhost:27017"
 
 
 @pytest.fixture
 def database():
-    gen_base_test_unit_filter(HOSTNAME, PORT)
+    gen_base_test_unit_filter(URI)
     yield None
-    clean_base_test_unit_filter(HOSTNAME, PORT)
+    clean_base_test_unit_filter(URI)
 
 
 class TestFilter:
@@ -56,7 +55,7 @@ class TestFilter:
         - 2 next report return first and second dispatcher
         - 2 next report return None
         """
-        mongodb = MongoDB(HOSTNAME, PORT, "test_filter",
+        mongodb = MongoDB(URI, "test_filter",
                           "test_filter1", report_model=HWPCModel())
         mongodb.connect()
         hwpc_filter = Filter()

@@ -61,11 +61,11 @@ def make_generator_unit_mongo(nb_items):
     return generator
 
 
-def gen_base_test_unit_mongo(hostname, port):
+def gen_base_test_unit_mongo(uri):
     """
     create a database that will be used by mongodb unit test
     """
-    mongo = pymongo.MongoClient(hostname, port)
+    mongo = pymongo.MongoClient(uri)
     db = mongo['test_mongodb']
 
     generate_colection(db, 'test_mongodb1', False,
@@ -77,11 +77,11 @@ def gen_base_test_unit_mongo(hostname, port):
     mongo.close()
 
 
-def clean_base_test_unit_mongo(hostname, port):
+def clean_base_test_unit_mongo(uri):
     """
     drop test_mongodb1, test_mongodb2 and test_mongodb3 collections
     """
-    mongo = pymongo.MongoClient(hostname, port)
+    mongo = pymongo.MongoClient(uri)
     db = mongo['test_mongodb']
     for col_name in ['test_mongodb1', 'test_mongodb2', 'test_mongodb3']:
         db[col_name].drop()
@@ -96,22 +96,22 @@ def make_generator_unit_filter(sensor_names):
     return generator
 
 
-def gen_base_test_unit_filter(hostname, port):
+def gen_base_test_unit_filter(uri):
     """
     create a database that will be used by filter unit test
     """
-    mongo = pymongo.MongoClient(hostname, port)
+    mongo = pymongo.MongoClient(uri)
     db = mongo['test_filter']
     generate_colection(db, 'test_filter1', False, make_generator_unit_filter(
         ["sensor_test1", "sensor_test2", "sensor_test3"]))
     mongo.close()
 
 
-def clean_base_test_unit_filter(hostname, port):
+def clean_base_test_unit_filter(uri):
     """
     drop test_filter1 collection
     """
-    mongo = pymongo.MongoClient(hostname, port)
+    mongo = pymongo.MongoClient(uri)
     db = mongo['test_filter']
     db['test_filter1'].drop()
     mongo.close()

@@ -36,12 +36,10 @@ class MongoDB(BaseDB):
     """
 
     def __init__(self,
-                 host_name, port, db_name, collection_name, report_model,
+                 uri, db_name, collection_name, report_model,
                  erase=False):
         """
-        :param str host_name:       hostname of the mongodb (ex: "localhost")
-
-        :param int port:            port of the mongodb (ex: 27017)
+        :param str uri:             URI of the MongoDB server
 
         :param str db_name:         database name in the mongodb
                                     (ex: "powerapi")
@@ -58,11 +56,8 @@ class MongoDB(BaseDB):
         """
         BaseDB.__init__(self, report_model)
 
-        #: (str): Hostname of the mongodb server
-        self.host_name = host_name
-
-        #: (int): Port of the mongodb server
-        self.port = port
+        #: (str): URI of the mongodb server
+        self.uri = uri
 
         #: (str): Database name in the mongodb
         self.db_name = db_name
@@ -100,7 +95,7 @@ class MongoDB(BaseDB):
         if self.mongo_client is not None:
             self.mongo_client.close()
 
-        self.mongo_client = pymongo.MongoClient(self.host_name, self.port,
+        self.mongo_client = pymongo.MongoClient(self.uri,
                                                 serverSelectionTimeoutMS=5)
 
         self.collection = self.mongo_client[self.db_name][
@@ -110,7 +105,7 @@ class MongoDB(BaseDB):
         try:
             self.mongo_client.admin.command('ismaster')
         except pymongo.errors.ServerSelectionTimeoutError:
-            raise MongoBadDBError(self.host_name + ':' + str(self.port))
+            raise MongoBadDBError(self.uri)
 
         # Check if collection is capped or not
         options = self.collection.options()

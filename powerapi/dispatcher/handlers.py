@@ -71,7 +71,6 @@ class FormulaDispatcherReportHandler(InitHandler):
 
         return state
 
-
     def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
         """
         Use the dispatch rule to extract formula_id from the given report.

@@ -26,9 +26,7 @@ from powerapi.database import MongoDB, MongoBadDBError
 from test.unit.database.mongo_utils import gen_base_test_unit_mongo
 from test.unit.database.mongo_utils import clean_base_test_unit_mongo
 
-HOSTNAME = "localhost"
-PORT = 27017
-
+URI = "mongodb://localhost:27017/"
 
 @pytest.fixture
 def database():
@@ -36,9 +34,9 @@ def database():
     setup : init and fill the database with data
     teardown : drop collection loaded in database
     """
-    gen_base_test_unit_mongo(HOSTNAME, PORT)
+    gen_base_test_unit_mongo(URI)
     yield
-    clean_base_test_unit_mongo(HOSTNAME, PORT)
+    clean_base_test_unit_mongo(URI)
 
 
 def test_mongodb_bad_hostname(database):
@@ -46,7 +44,7 @@ def test_mongodb_bad_hostname(database):
     Test if the database doesn't exist (hostname/port error)
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
-        MongoDB("lel", PORT, "error", "error",
+        MongoDB("mongodb://lel:27017/", "error", "error",
                 HWPCModel()).connect()
     assert pytest_wrapped.type == MongoBadDBError
 
@@ -56,7 +54,7 @@ def test_mongodb_bad_port(database):
     Test if the database doesn't exist (hostname/port error)
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
-        MongoDB(HOSTNAME, 1, "error", "error",
+        MongoDB("mongodb://localhost:1", "error", "error",
                 HWPCModel()).connect()
     assert pytest_wrapped.type == MongoBadDBError
 
@@ -66,7 +64,7 @@ def test_mongodb_read_basic_db(database):
     Test read mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
+    mongodb = MongoDB(URI, "test_mongodb",
                       "test_mongodb1", HWPCModel())
 
     # Check if we can reload after reading
@@ -87,7 +85,7 @@ def test_mongodb_read_capped_db(database):
     Test read mongodb capped collection
     """
     # Load DB
-    mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
+    mongodb = MongoDB(URI, "test_mongodb",
                       "test_mongodb2", HWPCModel())
 
     # Check if we can read one time
@@ -124,7 +122,7 @@ def test_mongodb_save_basic_db(database):
     Test save mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(HOSTNAME, PORT, "test_mongodb",
+    mongodb = MongoDB(URI, "test_mongodb",
                       "test_mongodb3", HWPCModel())
 
     mongodb.connect()

@@ -43,8 +43,8 @@ from test.integration.puller.fake_dispatcher import FakeDispatcherActor
 from test.unit.database.mongo_utils import gen_base_test_unit_mongo
 from test.unit.database.mongo_utils import clean_base_test_unit_mongo
 
-HOSTNAME = "localhost"
-PORT = 27017
+
+URI = "mongodb://localhost:27017"
 FILENAME = 'test_puller_file.csv'
 DISPATCHER_SOCKET_ADDRESS = "ipc://@test_dispatcher_socket"
 LOG_LEVEL = logging.NOTSET
@@ -109,9 +109,9 @@ def generate_mongodb_data():
     setup : init and fill the database with data
     teardown : drop collection loaded in database
     """
-    gen_base_test_unit_mongo(HOSTNAME, PORT)
+    gen_base_test_unit_mongo(URI)
     yield
-    clean_base_test_unit_mongo(HOSTNAME, PORT)
+    clean_base_test_unit_mongo(URI)
 
 
 @pytest.fixture()
@@ -232,11 +232,11 @@ def mocked_database():
     return BaseDB(Mock())
 
 
-def mongodb_database(hostname, port, database_name, collection_name):
+def mongodb_database(uri, database_name, collection_name):
     """
     Return MongoDB database
     """
-    database = MongoDB(hostname, port, database_name, collection_name,
+    database = MongoDB(uri, database_name, collection_name,
                        HWPCModel())
     return database
 
@@ -256,8 +256,8 @@ def pytest_generate_tests(metafunc):
         database = getattr(metafunc.function, '_database', None)
         if isinstance(database, list):
             metafunc.parametrize('database',
-                                 [mongodb_database(arg1, arg2, arg3, arg4)
-                                  for arg1, arg2, arg3, arg4 in database])
+                                 [mongodb_database(arg1, arg2, arg3)
+                                  for arg1, arg2, arg3 in database])
         else:
             metafunc.parametrize('database', [database])
 
@@ -369,7 +369,7 @@ class TestPuller:
         assert not is_actor_alive(initialized_puller)
 
 
-@define_database(mongodb_database(HOSTNAME, PORT,
+@define_database(mongodb_database(URI,
                                   "test_mongodb", "test_mongodb1"))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
@@ -392,8 +392,8 @@ def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
 
 
 @define_database([
-    ("toto", PORT, "test_mongodb", "test_mongodb1"),
-    (HOSTNAME, 27016, "test_mongodb", "test_mongodb1"),
+    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1"),
+    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
     ])
 @define_filt(basic_filt())
 @define_stream_mode('both')
@@ -410,7 +410,7 @@ def test_mongodb_bad_config(puller, supervisor):
     assert not is_actor_alive(puller)
 
 
-@define_database(mongodb_database(HOSTNAME, PORT,
+@define_database(mongodb_database(URI,
                                   "test_mongodb", "test_mongodb1"))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
