@@ -91,7 +91,7 @@ class DispatcherActor(Actor):
         formula_init_function = self.formula_init_function
 
         def factory(formula_id):
-            formula = formula_init_function(str(formula_id),
+            formula = formula_init_function(str((self.name,) + formula_id),
                                             self.logger.getEffectiveLevel())
             self.state.supervisor.launch_actor(formula, start_message=False)
             return formula

@@ -114,7 +114,7 @@ def dispatcher(request, route_table):
     return an instance of a DispatcherActor that is not launched
     """
     dispatcher_actor = DispatcherActor(
-        'test_dispatcher-' + str(request.node.name),
+        'test_dispatcher-',
         lambda name, log: FakeFormulaActor(name, FORMULA_SOCKET_ADDR,
                                            level_logger=log),
         route_table,
@@ -142,12 +142,31 @@ def initialized_dispatcher(dispatcher):
 @pytest.fixture()
 def dispatcher2(request, route_table):
     """
-    return an instance of a second DispatcherActor that is not launched
-    the teardown of this fixtures terminate the actor (in case it was started
-    and close its socket)
+    return an instance of a second DispatcherActor with the same name that the
+    first dispatcher that is not launched the teardown of this fixtures
+    terminate the actor (in case it was started and close its socket)
     """
     dispatcher_actor = DispatcherActor(
-        'test_dispatcher-' + str(request.node.name),
+        'test_dispatcher-',
+        lambda name, log: FakeFormulaActor(name, FORMULA_SOCKET_ADDR,
+                                           level_logger=log),
+        route_table,
+        level_logger=LOG_LEVEL)
+    yield dispatcher_actor
+    dispatcher_actor.state.socket_interface.close()
+    dispatcher_actor.terminate()
+    dispatcher_actor.join()
+
+
+@pytest.fixture()
+def dispatcher3(request, route_table):
+    """
+    return an instance of a second DispatcherActor with another name that is
+    not launched the teardown of this fixtures terminate the actor (in case it
+    was started and close its socket)
+    """
+    dispatcher_actor = DispatcherActor(
+        'test_dispatcher2-',
         lambda name, log: FakeFormulaActor(name, FORMULA_SOCKET_ADDR,
                                            level_logger=log),
         route_table,
@@ -375,6 +394,45 @@ def test_init_dispatcher(initialized_dispatcher):
       - if the actor is alive
     """
     assert is_actor_alive(initialized_dispatcher)
+
+
+####################
+# Multi-Dispatcher #
+####################
+@define_route_table(route_table_with_primary_rule())
+def test_create_double_dispatcher(initialized_dispatcher, dispatcher3):
+    """
+    Create two dispatcher with different names
+    Test :
+      - if the two dispatcher are alive
+    """
+    Supervisor().launch_actor(dispatcher3)
+    assert is_actor_alive(dispatcher3)
+    assert is_actor_alive(initialized_dispatcher)
+
+
+@define_route_table(route_table_with_primary_rule())
+def test_create_formula_double_dispatcher(initialized_dispatcher, dispatcher3, formula_socket):
+    """
+    Create two dispatcher with different names but same dispatch rules and send
+    them the same HWPCReport
+
+    Test:
+      - if each dispatcher are alive
+      - if each dispatcher create one formula
+    """
+    Supervisor().launch_actor(dispatcher3)
+    initialized_dispatcher.send_data(gen_good_report())
+    assert is_actor_alive(initialized_dispatcher)
+    assert receive(formula_socket) == 'created'
+    assert receive(formula_socket) == gen_good_report()
+    assert receive(formula_socket) is None
+
+    dispatcher3.send_data(gen_good_report())
+    assert is_actor_alive(dispatcher3)
+    assert receive(formula_socket) == 'created'
+    assert receive(formula_socket) == gen_good_report()
+    assert receive(formula_socket) is None
 
 
 ##########
