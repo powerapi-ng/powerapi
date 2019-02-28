@@ -5,20 +5,27 @@ import datetime
 import pymongo
 
 
-def generate_hwpc_report(report_id, sensor, target):
+def generate_hwpc_report(report_id, sensor, target, timestamp=[0]):
     """ generate a HWPC report with json format
     """
+    timestamp[0] += 1
     return {
         '_id': str(report_id),
-        'timestamp': datetime.datetime.now(),
+        'timestamp': datetime.datetime.fromtimestamp(timestamp[0]),
         'sensor': str(sensor),
         'target': str(target),
         'groups': {
-            'megagroup': {
+            'rapl': {
                 '0': {
                     '0': {
-                        'event1': 100,
-                        'event2': 200
+                        'RAPL_EVENT': 100,
+                        'simple_event': 200
+                    }
+                },
+                '1': {
+                    '0': {
+                        'RAPL_EVENT': 100,
+                        'simple_event': 300
                     }
                 }
             }
@@ -50,7 +57,7 @@ def generate_colection(db, name, capped, item_generator, size=None):
     for item in item_generator():
         db[name].insert_one(item)
 
-        
+
 def make_generator_unit_mongo(nb_items):
     """
     Generate *nb_items* HWPCReport
@@ -133,9 +140,8 @@ def clean_base_db_test(uri):
     drop test_hwrep and test_result collections
     """
     mongo = pymongo.MongoClient(uri)
-    db = mongo['test_hwrep']
+    db = mongo['MongoDB1']
     db['test_hwrep'].drop()
 
-    db2 = mongo['test_result']
     db['test_result'].drop()
     mongo.close()
