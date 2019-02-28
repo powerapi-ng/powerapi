@@ -24,8 +24,8 @@ from powerapi.report import HWPCReport, create_report_root
 from powerapi.report_model import HWPCModel
 from powerapi.database import MongoDB
 
-from test.unit.database.mongo_utils import gen_base_test_unit_filter, clean_base_test_unit_filter
-from test.unit.database.mongo_utils import clean_base_test_unit_filter
+from test.mongo_utils import gen_base_test_unit_filter, clean_base_test_unit_filter
+from test.mongo_utils import clean_base_test_unit_filter
 
 
 URI = "mongodb://localhost:27017"

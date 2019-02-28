@@ -34,14 +34,14 @@ from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
 from powerapi.actor import Actor, Supervisor
 from powerapi.actor import SafeContext, ActorInitError
-from test.integration.integration_utils import gen_side_effect
-from test.integration.integration_utils import is_log_ok
-from test.integration.integration_utils import gen_send_side_effect
-from test.integration.integration_utils import receive_side_effect
-from test.integration.integration_utils import is_actor_alive
+from test.utils import gen_side_effect
+from test.utils import is_log_ok
+from test.utils import gen_send_side_effect
+from test.utils import receive_side_effect
+from test.utils import is_actor_alive
 from test.integration.puller.fake_dispatcher import FakeDispatcherActor
-from test.unit.database.mongo_utils import gen_base_test_unit_mongo
-from test.unit.database.mongo_utils import clean_base_test_unit_mongo
+from test.mongo_utils import gen_base_test_unit_mongo
+from test.mongo_utils import clean_base_test_unit_mongo
 
 
 URI = "mongodb://localhost:27017"

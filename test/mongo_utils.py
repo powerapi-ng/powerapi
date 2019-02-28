@@ -50,7 +50,7 @@ def generate_colection(db, name, capped, item_generator, size=None):
     for item in item_generator():
         db[name].insert_one(item)
 
-
+        
 def make_generator_unit_mongo(nb_items):
     """
     Generate *nb_items* HWPCReport
@@ -114,4 +114,28 @@ def clean_base_test_unit_filter(uri):
     mongo = pymongo.MongoClient(uri)
     db = mongo['test_filter']
     db['test_filter1'].drop()
+    mongo.close()
+
+def gen_base_db_test(uri, nb_items):
+    """
+    Generate a mongoDB database named MongoDB1 containing *nb_items* HWPC report
+    in the test_hwrep collection
+    """
+    mongo = pymongo.MongoClient(uri)
+    db = mongo['MongoDB1']
+    generate_colection(db, 'test_hwrep', False,
+                       make_generator_unit_mongo(nb_items))
+    mongo.close()
+
+
+def clean_base_db_test(uri):
+    """
+    drop test_hwrep and test_result collections
+    """
+    mongo = pymongo.MongoClient(uri)
+    db = mongo['test_hwrep']
+    db['test_hwrep'].drop()
+
+    db2 = mongo['test_result']
+    db['test_result'].drop()
     mongo.close()
