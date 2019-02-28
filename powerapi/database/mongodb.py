@@ -153,3 +153,11 @@ class MongoDB(BaseDB):
         """
         # TODO: Check if json is valid with the report_model
         self.collection.insert_one(json)
+
+    def save_many(self, tab_json):
+        """
+        Allow to save a batch of data
+
+        :param [Dict] tab_json: Batch of data.
+        """
+        self.collection.insert_many(tab_json)

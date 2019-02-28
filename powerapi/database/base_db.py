@@ -80,3 +80,11 @@ class BaseDB:
         .. note:: Need to be overrided
         """
         raise NotImplementedError()
+
+    def save_many(self, tab_json):
+        """
+        Allow to save a batch of data
+
+        :param [Dict] tab_json: Batch of data.
+        """
+        raise NotImplementedError()

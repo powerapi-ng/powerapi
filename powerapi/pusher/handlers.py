@@ -58,6 +58,11 @@ class PowerHandler(InitHandler):
             return state
 
         state.buffer.append(msg.serialize())
+
+        if len(state.buffer) >= 100:
+            state.database.save_many(state.buffer)
+            state.buffer = []
+
         return state
 
 
@@ -73,5 +78,9 @@ class TimeoutHandler(InitHandler):
         :param None msg: None.
         :param powerapi.State state: State of the actor.
         """
+        # Flush buffer
+        if len(state.buffer) > 0:
+            state.database.save_many(state.buffer)
+
         state.alive = False
         return state

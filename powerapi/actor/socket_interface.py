@@ -88,24 +88,29 @@ class SocketInterface:
         # create the pull socket (to communicate with this actor, others
         # process have to connect a push socket to this socket)
         self.pull_socket = self._create_socket(zmq.PULL,
-                                               self.pull_socket_address)
+                                               self.pull_socket_address,
+                                               -1)
 
         # create the control socket (to control this actor, a process have to
         # connect a pair socket to this socket with the `control` method)
         self.control_socket = self._create_socket(zmq.PAIR,
-                                                  self.control_socket_address)
-        self.control_socket.set(zmq.LINGER, 0)
+                                                  self.control_socket_address,
+                                                  0)
 
-    def _create_socket(self, socket_type, socket_addr):
+    def _create_socket(self, socket_type, socket_addr, linger_value):
         """
         Create a socket of the given type, bind it to the given address and
         register it to the poller
 
         :param int socket_type: type of the socket to open
         :param str socket_addr: address of the socket to open
+        :param int linger_value: -1 mean wait for receive all msg and block closing,
+                                 0 mean hardkill the socket even if msg are still here.
         :return zmq.Socket: the initialized socket
         """
         socket = SafeContext.get_context().socket(socket_type)
+        socket.setsockopt(zmq.LINGER, linger_value)
+        socket.set_hwm(0)
         socket.bind(socket_addr)
         self.poller.register(socket, zmq.POLLIN)
         self.logger.info("bind to " + str(socket_addr))
@@ -157,9 +162,6 @@ class SocketInterface:
         if self.pull_socket is not None:
             self.pull_socket.close()
 
-        if self.push_socket is not None:
-            self.push_socket.close()
-
         if self.control_socket is not None:
             self.control_socket.close()
 
@@ -191,6 +193,8 @@ class SocketInterface:
         actor
         """
         self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
+        self.push_socket.setsockopt(zmq.LINGER, -1)
+        self.push_socket.set_hwm(0)
         self.push_socket.connect(self.pull_socket_address)
 
     def connect_control(self):
@@ -200,7 +204,8 @@ class SocketInterface:
         Open a pair socket on the process that want to control this actor
         """
         self.control_socket = SafeContext.get_context().socket(zmq.PAIR)
-        self.control_socket.set(zmq.LINGER, 0)
+        self.control_socket.setsockopt(zmq.LINGER, 0)
+        self.control_socket.set_hwm(0)
         self.control_socket.connect(self.control_socket_address)
 
     def send_control(self, msg):
