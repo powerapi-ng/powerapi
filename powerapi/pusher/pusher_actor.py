@@ -40,6 +40,9 @@ class PusherState(State):
         #: (BaseDB): Database for saving data.
         self.database = database
 
+        #: (Dict): Buffer data.
+        self.buffer = []
+
 
 class PusherActor(Actor):
     """

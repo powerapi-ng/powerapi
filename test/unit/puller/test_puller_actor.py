@@ -23,7 +23,7 @@ import zmq
 from powerapi.puller import PullerState
 from powerapi.database import MongoDB
 from powerapi.filter import Filter
-from powerapi.report import Report, HWPCReport
+from powerapi.report import Report, HWPCReport, create_report_root
 from powerapi.puller import PullerActor, PullerState
 from powerapi.puller import PullerStartHandler
 from powerapi.actor import Actor, State, SocketInterface, Supervisor
@@ -129,7 +129,7 @@ class TestHandlerPuller:
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
-                   HWPCReport("test", "test", "test")]
+                   create_report_root({})]
         for msg in to_send:
             start_handler.handle(msg, puller_state)
             assert fake_database.method_calls == []

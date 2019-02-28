@@ -59,9 +59,8 @@ class RAPLFormulaHWPCReportHandler(Handler):
 
         reports = []
         for socket, socket_report in report.groups['rapl'].items():
-            cores = list(socket_report.cores.values())
-            for events_counter in cores:
-                for event, counter in events_counter.events.items():
+            for events_counter in socket_report.values():
+                for event, counter in events_counter.items():
                     if event.startswith('RAPL_'):
                         reports.append(self._gen_power_report(report, socket,
                                                               event, counter))

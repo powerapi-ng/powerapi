@@ -57,9 +57,6 @@ class HWPCDispatchRule(DispatchRule):
         """
         See :meth:`DispatchRule.extract <powerapi.dispatch_rule.abstract_dispatch_rule.DispatchRule.extract>`
         """
-        if not _check_report_integrity(report):
-            return []
-
         if self.depth == HWPCDepthLevel.TARGET:
             return [(report.target,)]
 
@@ -70,16 +67,16 @@ class HWPCDispatchRule(DispatchRule):
 
         if self.depth == HWPCDepthLevel.SOCKET:
             id_list = []
-            for socket_report in non_shared_group.values():
-                id_list.append((report.sensor, socket_report.socket_id))
+            for socket_report in non_shared_group.items():
+                id_list.append((report.sensor, socket_report[0]))
             return id_list
 
         if self.depth == HWPCDepthLevel.CORE:
             id_list = []
-            for socket_report in non_shared_group.values():
-                for core_report in socket_report.cores.values():
-                    id_list.append((report.sensor, socket_report.socket_id,
-                                    core_report.core_id))
+            for socket_report in non_shared_group.items():
+                for core_report in socket_report[1].items():
+                    id_list.append((report.sensor, socket_report[0],
+                                    core_report[0]))
             return id_list
 
         return []
@@ -89,11 +86,10 @@ def _number_of_core_per_socket(group):
     """
     Compute the number of core per socket in this group
     :param group: group must be a valide group (composed by socket, core, event)
-    :type group: {str:HWPCReportSocket}
+    :type group: Dict
     :rtype: int : the number of core per socket in this group
     """
-    first_socket_report = list(group.values())[0]
-    return len(first_socket_report.cores.values())
+    return len(list(group.values())[0])
 
 
 def _extract_non_shared_group(report):
@@ -112,27 +108,3 @@ def _extract_non_shared_group(report):
             maximum_number_of_core = number_of_core
             biggest_group = group
     return biggest_group
-
-
-def _check_report_integrity(report):
-    """
-    Check is report is valid
-    :rtype: boolean
-    """
-    if report.groups == {}:
-        # check if the report contains at least one group
-        return False
-
-    for group in report.groups.values():
-        if group == {}:
-            # check if report's group are not emtpy
-            return False
-        for socket in group.values():
-            if socket.cores == {}:
-                # check if report's socket are not emtpy
-                return False
-            for core in socket.cores.values():
-                if core.events == {}:
-                    # check if report's core are not emtpy
-                    return False
-    return True

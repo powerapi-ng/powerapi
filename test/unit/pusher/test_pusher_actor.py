@@ -22,7 +22,7 @@ import mock
 import zmq
 from powerapi.database import MongoDB
 from powerapi.filter import Filter
-from powerapi.report import Report
+from powerapi.report import Report, create_report_root
 from powerapi.pusher import PusherActor, PusherStartHandler, PowerHandler
 from powerapi.pusher import PusherState
 from powerapi.actor import State, Actor, SocketInterface
@@ -80,7 +80,7 @@ class TestHandlerPusher:
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
-                   HWPCReport("test", "test", "test")]
+                   create_report_root({})]
         for msg in to_send:
             start_handler.handle(msg, pusher_state)
             assert fake_database.method_calls == []
@@ -111,7 +111,7 @@ class TestHandlerPusher:
         
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
-                   HWPCReport("test", "test", "test")]
+                   create_report_root({})]
         for msg in to_send:
             power_handler.handle(msg, pusher_state)
             assert pusher_state.database.method_calls == []
@@ -121,12 +121,13 @@ class TestHandlerPusher:
 
         # Test Random message when state is initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
-                   HWPCReport("test", "test", "test")]
+                   create_report_root({})]
         for msg in to_send:
             power_handler.handle(msg, pusher_state)
             assert pusher_state.database.method_calls == []
 
         # Test with a PowerMessage
-        power_handler.handle(PowerReport("10", "test", "test", "test", "test"),
-                             pusher_state)
+        for _ in range(101):
+            power_handler.handle(PowerReport("10", "test", "test", "test", "test"),
+                                 pusher_state)
         assert pusher_state.database.method_calls != []

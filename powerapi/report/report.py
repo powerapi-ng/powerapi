@@ -14,8 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Dict
 from powerapi.message import Message
-import powerapi.utils as utils
 
 
 class Report(Message):
@@ -23,31 +26,38 @@ class Report(Message):
     Report abtract class.
     """
 
-    def __init__(self, timestamp, sensor, target):
+    def __init__(self, timestamp: datetime, sensor: str, target: str):
         """
-        :param time.Datetime timestamp: Timestamp of the report.
-        :param str sensor: Report sensor name.
-        :param str target: Report target name.
+        Initialize a report using the given parameters.
+        :param datetime timestamp: Timestamp
+        :param str sensor: Sensor name.
+        :param str target: Target name.
         """
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
 
+    def __str__(self):
+        return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
+
     def __repr__(self):
-        return (self.__class__.__name__ + " " +
-                str(utils.datetime_to_timestamp(self.timestamp)) + "|"
-                + self.sensor + "|" + self.target)
+        return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
 
-    def serialize(self):
-        """
-        Return the JSON format of the report
-        """
-        raise NotImplementedError()
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and (repr(other) == repr(self))
 
-    def deserialize(self, json):
+    def serialize(self) -> Dict:
         """
-        Feed the report with the JSON input
+        Serialize the report in JSON.
+        :return: A string containing the report in JSON format
+        """
+        return self.__dict__
 
-        :param dict json: JSON report.
+    @staticmethod
+    def deserialize(data: Dict) -> Report:
+        """
+        Generate a report using the given data.
+
+        :param dict json_data: JSON report.
         """
         raise NotImplementedError()
