@@ -381,7 +381,7 @@ class TestHandlerFunction:
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
-                   HWPCReport("test", "test", "test")]
+                   HWPCReport("test", "test", "test", {})]
         for msg in to_send:
             start_handler.handle(msg, dispatcher_state)
             assert fake_socket_interface.method_calls == []

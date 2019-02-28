@@ -77,8 +77,8 @@ def test_handle_hwpc_report_with_one_rapl_event():
     validation_report = PowerReport(hwpc_report.timestamp, hwpc_report.sensor,
                                     hwpc_report.target,
                                     math.ldexp(raw_power, -32),
-                                    {'socket_id': socket_id,
-                                     'rapl_event_id': rapl_event_id})
+                                    {'socket': socket_id,
+                                     'event': rapl_event_id})
 
     result = RAPLFormulaHWPCReportHandler(get_fake_pusher())._process_report(
         hwpc_report)
@@ -113,8 +113,8 @@ def test_handle_hwpc_report_with_one_rapl_event_and_other_groups():
     validation_report = PowerReport(hwpc_report.timestamp, hwpc_report.sensor,
                                     hwpc_report.target,
                                     math.ldexp(raw_power, -32),
-                                    {'socket_id': socket_id,
-                                     'rapl_event_id': rapl_event_id})
+                                    {'socket': socket_id,
+                                     'event': rapl_event_id})
 
     result = RAPLFormulaHWPCReportHandler(get_fake_pusher())._process_report(
         hwpc_report)
@@ -150,15 +150,15 @@ def test_handle_hwpc_report_with_two_rapl_event():
                                       hwpc_report.sensor,
                                       hwpc_report.target,
                                       math.ldexp(raw_power_1, -32),
-                                      {'socket_id': socket_id,
-                                       'rapl_event_id': rapl_event_id_1})
+                                      {'socket': socket_id,
+                                       'event': rapl_event_id_1})
 
     validation_report_2 = PowerReport(hwpc_report.timestamp,
                                       hwpc_report.sensor,
                                       hwpc_report.target,
                                       math.ldexp(raw_power_2, -32),
-                                      {'socket_id': socket_id,
-                                       'rapl_event_id': rapl_event_id_2})
+                                      {'socket': socket_id,
+                                       'event': rapl_event_id_2})
 
     result = RAPLFormulaHWPCReportHandler(get_fake_pusher())._process_report(
         hwpc_report)
@@ -204,15 +204,15 @@ def test_handle_hwpc_report_with_two_rapl_event_and_other_groups():
                                       hwpc_report.sensor,
                                       hwpc_report.target,
                                       math.ldexp(raw_power_1, -32),
-                                      {'socket_id': socket_id,
-                                       'rapl_event_id': rapl_event_id_1})
+                                      {'socket': socket_id,
+                                       'event': rapl_event_id_1})
 
     validation_report_2 = PowerReport(hwpc_report.timestamp,
                                       hwpc_report.sensor,
                                       hwpc_report.target,
                                       math.ldexp(raw_power_2, -32),
-                                      {'socket_id': socket_id,
-                                       'rapl_event_id': rapl_event_id_2})
+                                      {'socket': socket_id,
+                                       'event': rapl_event_id_2})
 
     result = RAPLFormulaHWPCReportHandler(get_fake_pusher())._process_report(
         hwpc_report)

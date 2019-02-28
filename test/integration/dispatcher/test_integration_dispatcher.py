@@ -18,7 +18,7 @@ Integration test of the Dispatcher Actor
 """
 import logging
 import pickle
-import datetime
+from datetime import datetime
 
 import pytest
 import zmq
@@ -256,7 +256,7 @@ class FakeReport(Report):
     Empty report
     """
     def __init__(self):
-        Report.__init__(self, timestamp=datetime.datetime.fromtimestamp(0),
+        Report.__init__(self, timestamp=datetime.fromtimestamp(0),
                         sensor='toto', target='system')
 
     def __eq__(self, other):
@@ -480,31 +480,31 @@ def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
 ######################
 # Receive HWPCReport #
 ######################
-@define_route_table('all')
-@define_formula_init_msg('all')
-def test_bad_report_receive(bad_report, dispatcher_with_formula,
-                            formula_socket):
-    """
-    test to send a badly formated HWPCReport to an initialized Dispatcher
-
-    Dispatcher will be tested with different route table :
-      - a route table with no rule for HWPCReport
-      - a route table with a normal rule for HWPCReport
-      - a route table with a primary rule for HWPCReport
-
-    for each route table, the dispatcher will have no formula initialized or
-    already a formula to handle this report
-
-    For each case, test :
-      - if the process is alive
-      - if the already created formula are alive
-      - if no more formula was created
-      - if the already created formula didn't receive any message from the
-        dispatcher
-    """
-    dispatcher_with_formula.send_data(bad_report)
-    assert is_actor_alive(dispatcher_with_formula)
-    assert receive(formula_socket) is None
+#@define_route_table('all')
+#@define_formula_init_msg('all')
+#def test_bad_report_receive(bad_report, dispatcher_with_formula,
+#                            formula_socket):
+#    """
+#    test to send a badly formated HWPCReport to an initialized Dispatcher
+#
+#    Dispatcher will be tested with different route table :
+#      - a route table with no rule for HWPCReport
+#      - a route table with a normal rule for HWPCReport
+#      - a route table with a primary rule for HWPCReport
+#
+#    for each route table, the dispatcher will have no formula initialized or
+#    already a formula to handle this report
+#
+#    For each case, test :
+#      - if the process is alive
+#      - if the already created formula are alive
+#      - if no more formula was created
+#      - if the already created formula didn't receive any message from the
+#        dispatcher
+#    """
+#    dispatcher_with_formula.send_data(bad_report)
+#    assert is_actor_alive(dispatcher_with_formula)
+#    assert receive(formula_socket) is None
 
 
 @define_formula_init_msg('all')

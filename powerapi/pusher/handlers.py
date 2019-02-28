@@ -57,7 +57,7 @@ class PowerHandler(InitHandler):
         if not isinstance(msg, PowerReport):
             return state
 
-        state.database.save(msg.serialize())
+        state.buffer.append(msg.serialize())
         return state
 
 

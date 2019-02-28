@@ -13,62 +13,45 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from typing import Dict, Any
 
 from powerapi.report import Report
 
 
 class PowerReport(Report):
     """
-    PowerReport class
+    PowerReport stores the power estimation information.
     """
 
-    def __init__(self, timestamp, sensor, target, power, metadata):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: Dict[str, Any]):
         """
-        :param time.Datetime timestamp: Report timestamp.
-        :param str sensor: Sensor name.
-        :param str target: Target name.
-        :param float power: Power value.
-        :param dict metadata: Metadata values, can be anything that add
-                              useful informations.
+        Initialize a Power report using the given parameters.
+        :param datetime timestamp: Report timestamp
+        :param str sensor: Sensor name
+        :param str target: Target name
+        :param float power: Power value
+        :param dict metadata: Metadata values, can be anything that add useful information
         """
         Report.__init__(self, timestamp, sensor, target)
 
-        #: (dict): Metadate values, can be anything that add useful
-        #: informations.
+        #: (dict): Metadate values, can be anything that add useful information.
         self.metadata = metadata
 
         #: (float): Power value.
         self.power = power
 
-    def serialize(self):
-        """
-        Return the JSON format of the report
-        """
-        json = {}
-        json['timestamp'] = self.timestamp
-        json['sensor'] = self.sensor
-        json['target'] = self.target
-        json['power'] = self.power
-        json['metadata'] = self.metadata
-        return json
+    def __repr__(self) -> str:
+        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, self.metadata)
 
-    def deserialize(self, json):
+    @staticmethod
+    def deserialize(data: Dict) -> PowerReport:
         """
-        Feed the report with the JSON input
-        :param dict json: JSON data.
+        Generate a report using the given data.
+        :param Dict data: Dictionary containing the report attributes
+        :return: The Power report initialized with the given data
         """
-        self.timestamp = json['timestamp']
-        self.sensor = json['sensor']
-        self.target = json['target']
-        self.power = json['power']
-        self.metadata = json['metadata']
-
-    def __eq__(self, other):
-        if not isinstance(other, PowerReport):
-            return False
-
-        return (self.timestamp == other.timestamp or
-                self.sensor == other.sensor or
-                self.target == other.target or
-                self.metadata == other.metadata or
-                self.power == other.power)
+        return PowerReport(data['timestamp'], data['sensor'], data['target'], data['power'], data['metadata'])

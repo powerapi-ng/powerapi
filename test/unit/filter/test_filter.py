@@ -20,7 +20,7 @@ Module test_filter
 
 import pytest
 from powerapi.filter import Filter, FilterUselessError
-from powerapi.report import HWPCReport
+from powerapi.report import HWPCReport, create_report_root
 from powerapi.report_model import HWPCModel
 from powerapi.database import MongoDB
 
@@ -44,7 +44,7 @@ class TestFilter:
         """ Test filter without any filter, raise an error """
         hwpc_filter = Filter()
         with pytest.raises(FilterUselessError) as pytest_wrapped:
-            hwpc_filter.route(HWPCReport())
+            hwpc_filter.route(create_report_root({}))
         assert pytest_wrapped.type == FilterUselessError
 
 
@@ -71,16 +71,13 @@ class TestFilter:
 
         mongodb_it = iter(mongodb)
         for _ in range(2):
-            hwpc_report = HWPCReport()
-            hwpc_report.deserialize(next(mongodb_it))
+            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1, 2]
 
         for _ in range(2):
-            hwpc_report = HWPCReport()
-            hwpc_report.deserialize(next(mongodb_it))
+            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1, 3]
 
         for _ in range(2):
-            hwpc_report = HWPCReport()
-            hwpc_report.deserialize(next(mongodb_it))
+            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
             assert hwpc_filter.route(hwpc_report) == [1]

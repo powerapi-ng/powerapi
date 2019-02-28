@@ -53,3 +53,9 @@ class FormulaActor(Actor):
         Formula basic setup, Connect the formula to the pusher
         """
         self.actor_pusher.connect_data()
+
+    def terminated_behaviour(self):
+        """
+        Allow to close actor_pusher socket
+        """
+        self.actor_pusher.state.socket_interface.close()

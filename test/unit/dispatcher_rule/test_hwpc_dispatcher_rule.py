@@ -54,22 +54,10 @@ REPORT_1_RAPL = create_report_root([GROUP_1, RAPL])
 REPORT_2_RAPL = create_report_root([GROUP_2, RAPL])
 REPORT_3_RAPL = create_report_root([GROUP_3, RAPL])
 
-BAD_REPORT_1 = create_report_root([])
-BAD_REPORT_2 = create_report_root([create_group_report('1', [])])
-BAD_REPORT_3 = create_report_root([create_group_report('1', [
-    create_socket_report('1', [])])])
-BAD_REPORT_4 = create_report_root([create_group_report('1', [
-    create_socket_report('1', [HWPCReportCore('1')])])])
-
 
 ############
 # Fixtures #
 ############
-@pytest.fixture(params=[BAD_REPORT_1, BAD_REPORT_2, BAD_REPORT_3, BAD_REPORT_4])
-def bad_report(request):
-    return request.param
-
-
 @pytest.fixture(params=[REPORT_1, REPORT_2, REPORT_3, REPORT_1_RAPL,
                         REPORT_2_RAPL, REPORT_3_RAPL])
 def report(request):
@@ -124,39 +112,11 @@ def test_init_fields_name_test():
     assert HWPCDispatchRule(HWPCDepthLevel.CORE).fields == ['sensor', 'socket',
                                                             'core']
 
-
-######################
-# TEST ON BAD REPORT #
-######################
-def test_get_formula_id_from_bad_report(bad_report):
-    """
-    get formula id from  bad formated reports to four dispatcher rule :
-    - dispatch by sensor
-    - dispatch by target
-    - dispatch by socket
-    - dispatch by cpu
-
-    bad formated reports are reports without events, cpus dictionary,
-    sockets dictionary or groups dictionary
-
-    the method must return an empty list
-    """
-    ids = HWPCDispatchRule(HWPCDepthLevel.ROOT).get_formula_id(bad_report)
-    validate_formula_id(ids, [])
-
-    ids = HWPCDispatchRule(HWPCDepthLevel.TARGET).get_formula_id(bad_report)
-    validate_formula_id(ids, [])
-
-    ids = HWPCDispatchRule(HWPCDepthLevel.SOCKET).get_formula_id(bad_report)
-    validate_formula_id(ids, [])
-
-    ids = HWPCDispatchRule(HWPCDepthLevel.CORE).get_formula_id(bad_report)
-    validate_formula_id(ids, [])
-
-
 ####################################
 # TEST DISPATCH BY ROOT AND TARGET #
 ####################################
+
+
 def test_get_formula_id_sensor_rule(report):
     """
     get formula id from reports with a rule that dispatch by sensor :

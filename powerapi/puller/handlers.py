@@ -79,13 +79,12 @@ class TimeoutHandler(InitHandler):
         # Read one input, if it's None, it means there is not more
         # report in the database, just pass
         try:
-            json = next(state.database_it)
+            data = next(state.database_it)
         except StopIteration:
             raise NoReportExtractedException()
 
         # Deserialization
-        report = state.database.report_model.get_type()()
-        report.deserialize(json)
+        report = state.database.report_model.get_type().deserialize(data)
 
         # Filter the report
         dispatchers = state.report_filter.route(report)
