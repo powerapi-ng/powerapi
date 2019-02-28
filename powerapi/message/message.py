@@ -25,7 +25,7 @@ class Message:
     Abstract class message. Each object that is used by zmq
     need to be a Message.
     """
-    def __repr__(self):
+    def __str__(self):
         raise NotImplementedError()
 
 
@@ -33,7 +33,7 @@ class PoisonPillMessage(Message):
     """
     Message which allow to kill an actor
     """
-    def __repr__(self):
+    def __str__(self):
         return "PoisonPillMessage"
 
 
@@ -41,7 +41,7 @@ class StartMessage(Message):
     """
     Message that ask the actor to launch its initialisation process
     """
-    def __repr__(self):
+    def __str__(self):
         return "StartMessage"
 
 
@@ -50,7 +50,7 @@ class OKMessage(Message):
     Message used in synchron communication to answer that the actor
     completed the task previously asked
     """
-    def __repr__(self):
+    def __str__(self):
         return "OKMessage"
 
 
@@ -65,5 +65,5 @@ class ErrorMessage(Message):
         """
         self.error_message = error_message
 
-    def __repr__(self):
+    def __str__(self):
         return "ErrorMessage"

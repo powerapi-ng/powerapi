@@ -185,7 +185,7 @@ class Actor(multiprocessing.Process):
                 self.state = handler.handle_message(msg, self.state)
             except UnknowMessageTypeException:
                 self.logger.warning("UnknowMessageTypeException: " +
-                                    repr(msg))
+                                    str(msg))
             except HandlerException:
                 self.logger.warning("HandlerException")
 
@@ -196,7 +196,6 @@ class Actor(multiprocessing.Process):
         self.terminated_behaviour()
         self.state.socket_interface.close()
         self.logger.info(self.name + " terminated")
-
 
     def set_timeout_handler(self, new_timeout_handler):
         """
@@ -242,7 +241,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_control(msg)
-        self.logger.info('send control [' + repr(msg) + '] to ' + self.name)
+        self.logger.info('send control [' + str(msg) + '] to ' + self.name)
 
     def receive_control(self, timeout=None):
         """
@@ -252,7 +251,7 @@ class Actor(multiprocessing.Process):
             timeout = self.state.socket_interface.timeout
 
         msg = self.state.socket_interface.receive_control(timeout)
-        self.logger.info("receive control : [" + repr(msg) + "]")
+        self.logger.info("receive control : [" + str(msg) + "]")
         return msg
 
     def send_data(self, msg):
@@ -262,7 +261,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.state.socket_interface.send_data(msg)
-        self.logger.info('send data [' + repr(msg) + '] to ' + self.name)
+        self.logger.info('send data [' + str(msg) + '] to ' + self.name)
 
     def receive(self):
         """
@@ -273,7 +272,7 @@ class Actor(multiprocessing.Process):
         :rtype: a list of Object
         """
         msg = self.state.socket_interface.receive()
-        self.logger.info("receive data : [" + repr(msg) + "]")
+        self.logger.info("receive data : [" + str(msg) + "]")
         return msg
 
     def send_kill(self, by_data=False):
