@@ -13,5 +13,4 @@ COPY requirements.txt ./
 RUN python3 -m pip install --user --no-cache-dir -r requirements.txt
 
 COPY . ./
-ENTRYPOINT ["python3", "powerapi-cli.py"]
-
+ENTRYPOINT ["python3", "powerapi"]
