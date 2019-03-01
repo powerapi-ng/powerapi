@@ -102,9 +102,9 @@ def launch_powerapi(args, logger):
 
     # Setup signal handler
     def term_handler(_, __):
-        puller.join()
-        dispatcher.join()
-        pusher.join()
+        puller.send_kill()
+        dispatcher.send_kill()
+        pusher.send_kill()
         exit(0)
 
     signal.signal(signal.SIGTERM, term_handler)
