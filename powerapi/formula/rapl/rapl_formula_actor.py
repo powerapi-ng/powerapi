@@ -46,7 +46,7 @@ class RAPLFormulaHWPCReportHandler(Handler):
         return PowerReport(report.timestamp, report.sensor, report.target,
                            power, metadata)
 
-    def _process_report(self, report):
+    def _process_report(self, report, state):
         """
         Handle the RAPL events counter contained in a HWPC report.
 
@@ -59,11 +59,12 @@ class RAPLFormulaHWPCReportHandler(Handler):
 
         reports = []
         for socket, socket_report in report.groups['rapl'].items():
-            for events_counter in socket_report.values():
-                for event, counter in events_counter.items():
-                    if event.startswith('RAPL_'):
-                        reports.append(self._gen_power_report(report, socket,
-                                                              event, counter))
+            if len(state.formula_id) < 3 or int(state.formula_id[2]) == int(socket):
+                for events_counter in socket_report.values():
+                    for event, counter in events_counter.items():
+                        if event.startswith('RAPL_'):
+                            reports.append(self._gen_power_report(report, socket,
+                                                                  event, counter))
         return reports
 
     def handle(self, msg, state):
@@ -78,7 +79,7 @@ class RAPLFormulaHWPCReportHandler(Handler):
         if not isinstance(msg, HWPCReport):
             raise UnknowMessageTypeException(type(msg))
 
-        result = self._process_report(msg)
+        result = self._process_report(msg, state)
         for report in result:
             self.actor_pusher.send_data(report)
 

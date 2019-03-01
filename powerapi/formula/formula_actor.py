@@ -15,7 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import re
+from functools import reduce
+
 from powerapi.actor import Actor, State, SocketInterface
+
+class FormulaState(State):
+
+    def __init__(self, behaviour, socket_interface, logger, formula_id):
+        State.__init__(self, behaviour, socket_interface, logger)
+        self.formula_id = formula_id
 
 
 class FormulaActor(Actor):
@@ -43,10 +52,12 @@ class FormulaActor(Actor):
         #: (powerapi.PusherActor): Pusher actor whom send results.
         self.actor_pusher = actor_pusher
 
+        formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
+
         #: (powerapi.State): Basic state of the Formula.
-        self.state = State(Actor._initial_behaviour,
-                           SocketInterface(name, timeout),
-                           self.logger)
+        self.state = FormulaState(Actor._initial_behaviour,
+                                  SocketInterface(name, timeout),
+                                  self.logger, formula_id)
 
     def setup(self):
         """
