@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-Module powerapi-cli
+Module PowerAPI CLI
 """
 
 import argparse
@@ -133,12 +133,19 @@ def launch_powerapi(args, logger):
     ##########################################################################
 
 
-if __name__ == "__main__":
-    ARGS = arg_parser_init().parse_args()
-    if ARGS.verbose:
-        ARGS.verbose = logging.DEBUG
+def main(args=None):
+    """
+    Main function of the PowerAPI CLI
+    """
+    args = arg_parser_init().parse_args()
+    if args.verbose:
+        args.verbose = logging.DEBUG
 
-    LOGGER = logging.getLogger('main_logger')
-    LOGGER.setLevel(ARGS.verbose)
-    LOGGER.addHandler(logging.StreamHandler())
-    launch_powerapi(ARGS, LOGGER)
+    logger = logging.getLogger('main_logger')
+    logger.setLevel(args.verbose)
+    logger.addHandler(logging.StreamHandler())
+    launch_powerapi(args, logger)
+
+
+if __name__ == "__main__":
+    main()
