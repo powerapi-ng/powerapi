@@ -40,3 +40,4 @@ jobs:
             . venv/bin/activate
             python -m pytest test/unit/
             python -m pytest test/integration/
+            python -m pytest test/acceptation/
