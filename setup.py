@@ -13,9 +13,4 @@ setup(name='powerapi',
       license='AGPL-3.0',
       packages=find_packages(exclude=("test",)),
       install_requires=requirements,
-      entry_points={
-          'console_scripts': [
-              'powerapi-cli=powerapi.__main__:main'
-          ]
-      },
       zip_safe=False)
