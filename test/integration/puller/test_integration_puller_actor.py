@@ -174,19 +174,25 @@ def initialized_puller(puller, supervisor):
 
 
 @pytest.fixture()
-def initialized_puller_with_dispatcher(initialized_puller, supervisor):
+def initialized_puller_with_dispatcher(puller, supervisor):
     """
     Setup PullerActor, send a StartMessage and handle Dispatcher
     """
-    for _, disp in initialized_puller.state.report_filter.filters:
+    for _, disp in puller.state.report_filter.filters:
         supervisor.launch_actor(disp)
 
-    yield initialized_puller
+    supervisor.launch_actor(puller)
+    yield puller
 
-    for _, disp in initialized_puller.state.report_filter.filters:
+    for _, disp in puller.state.report_filter.filters:
         disp.state.socket_interface.close()
         disp.terminate()
         disp.join()
+
+    puller.state.socket_interface.close()
+    puller.terminate()
+    puller.join()
+
 
 ##############################################################################
 #                          objects creations                                 #
@@ -305,23 +311,23 @@ class TestPuller:
     #################
 
     # TODO: need to fix, probably because actor kill himself before sending the "send_kill"
-    #"@define_database(mocked_database())
-    #"@define_filt(basic_filt())
-    #"@define_stream_mode(False)
-    #"def test_start_msg_db_ok(self, log_socket, initialized_puller):
-    #"    """
-    #"    Send a start message to a PullerActor
+    # @define_database(mocked_database())
+    # @define_filt(basic_filt())
+    # @define_stream_mode(False)
+    # def test_start_msg_db_ok(self, log_socket, initialized_puller):
+    #     """
+    #     Send a start message to a PullerActor
 
-    #"    After sending the message test :
-    #"      - if the actor is dead
-    #"      - if the following method has been called:
-    #"        - connect from database
-    #"        - connect_data from dispatcher
-    #"        - send_kill
-    #"    """
-    #"    assert is_log_ok(log_socket,
-    #"                     ['connect', 'connect_data', 'send_kill'])
-    #"    assert not is_actor_alive(initialized_puller)
+    #     After sending the message test :
+    #       - if the actor is dead
+    #       - if the following method has been called:
+    #         - connect from database
+    #         - connect_data from dispatcher
+    #         - send_kill
+    #     """
+    #     assert is_log_ok(log_socket,
+    #                      ['connect', 'connect_data', 'send_kill'])
+    #     assert not is_actor_alive(initialized_puller)
 
     @define_database(mocked_database())
     @define_filt(basic_filt())
@@ -359,24 +365,24 @@ class TestPuller:
 
 
 # TODO: To fix, disp are still alive... Maybe IPC problem ?
-#@define_database(mongodb_database(URI,
-#                                  "test_mongodb", "test_mongodb1"))
-#@define_filt(fake_dispatcher_filt())
-#@define_stream_mode(True)
-#def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
-#    """
-#    Create an initialized Puller and call its kill method
-#
-#    Test if:
-#     - Actor is terminated
-#     - Disconnect from Dispatchers
-#    """
-#    initialized_puller_with_dispatcher.send_kill()
-#    initialized_puller_with_dispatcher.join(500)
-#    assert not is_actor_alive(initialized_puller_with_dispatcher)
-#    for _, disp in initialized_puller_with_dispatcher.state.report_filter.filters:
-#        disp.join(200)
-#        assert not is_actor_alive(disp)
+@define_database(mongodb_database(URI,
+                                 "test_mongodb", "test_mongodb1"))
+@define_filt(fake_dispatcher_filt())
+@define_stream_mode(True)
+def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
+   """
+   Create an initialized Puller and call its kill method
+
+   Test if:
+    - Actor is terminated
+    - Disconnect from Dispatchers
+   """
+   initialized_puller_with_dispatcher.send_kill()
+   initialized_puller_with_dispatcher.join(500)
+   assert not is_actor_alive(initialized_puller_with_dispatcher)
+   for _, disp in initialized_puller_with_dispatcher.state.report_filter.filters:
+       disp.join(200)
+       assert not is_actor_alive(disp)
 
 #################
 # Mongo DB Test #
