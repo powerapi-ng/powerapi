@@ -216,7 +216,6 @@ class Actor(multiprocessing.Process):
         actor
         """
         self.state.socket_interface.connect_data()
-        self.logger.info('connected data to ' + self.name)
 
     def set_context(self, context):
         """
@@ -232,7 +231,6 @@ class Actor(multiprocessing.Process):
         that want to control this actor
         """
         self.state.socket_interface.connect_control()
-        self.logger.info('connected control to ' + self.name)
 
     def send_control(self, msg):
         """
@@ -288,5 +286,4 @@ class Actor(multiprocessing.Process):
             self.send_data(PoisonPillMessage())
         else:
             self.send_control(PoisonPillMessage())
-        self.logger.info('send kill msg to ' + self.name)
         self.state.socket_interface.close()

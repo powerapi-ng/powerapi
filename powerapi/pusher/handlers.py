@@ -65,22 +65,31 @@ class PowerHandler(InitHandler):
 
         return state
 
+class PusherPoisonPillHandler(Handler):
+    """
+    Set a timeout for the pusher for the timeout_handler. If he didn't
+    read any input during the timeout, the actor end.
+    """
+    def handle(self, msg, state):
+        """
+
+        :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
+        :param powerapi.pusher.PusherState state: State of the actor.
+        :return powerapi.State: new State
+        """
+        state.socket_interface.timeout = 2000
+        return state
 
 class TimeoutHandler(InitHandler):
     """
     Pusher timeout kill the actor
     """
-
     def handle(self, msg, state):
         """
         Kill the actor by setting alive to False
-
-        :param None msg: None.
-        :param powerapi.State state: State of the actor.
+        :param msg: None
+        :param state: State of the actor
+        :return powerapi.PusherState: new State
         """
-        # Flush buffer
-        if len(state.buffer) > 0:
-            state.database.save_many(state.buffer)
-
         state.alive = False
         return state

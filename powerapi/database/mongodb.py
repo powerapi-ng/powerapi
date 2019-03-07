@@ -36,8 +36,7 @@ class MongoDB(BaseDB):
     """
 
     def __init__(self,
-                 uri, db_name, collection_name, report_model,
-                 erase=False):
+                 uri, db_name, collection_name, report_model, stream_mode=False):
         """
         :param str uri:             URI of the MongoDB server
 
@@ -51,8 +50,6 @@ class MongoDB(BaseDB):
                                     report with a specific format in a database
         :type report_model:         powerapi.ReportModel
 
-        :param bool erase:          If save_mode is False, erase too. It allows
-                                    to erase the collection on setup.
         """
         BaseDB.__init__(self, report_model)
 
@@ -65,10 +62,6 @@ class MongoDB(BaseDB):
         #: (str): Collection name in the mongodb
         self.collection_name = collection_name
 
-        #: (bool): If save_mode is False, erase has no effect.
-        #: It allows to erase the collection on setup.
-        self.erase = False
-
         #: (pymongo.MongoClient): MongoClient instance of the server
         self.mongo_client = None
 
@@ -76,11 +69,11 @@ class MongoDB(BaseDB):
         #: targeted collection
         self.collection = None
 
+        #: (bool): Stream mode
+        self.stream_mode = stream_mode
+
         #: (pymongo.Cursor): Cursor which return data
         self.cursor = None
-
-        # (bool): Define if the mongodb is capped or not
-        self.capped = False
 
     def connect(self):
         """
@@ -107,27 +100,11 @@ class MongoDB(BaseDB):
         except pymongo.errors.ServerSelectionTimeoutError:
             raise MongoBadDBError(self.uri)
 
-        # Check if collection is capped or not
-        options = self.collection.options()
-        self.capped = bool(('capped' in options and
-                            options['capped']))
-
-        # If collection exist and erase is True
-        if (self.erase and
-                self.db_name in self.mongo_client.list_database_names() and
-                self.collection_name in self.mongo_client[
-                    self.db_name].list_collection_names()):
-            self.collection.drop()
-
     def __iter__(self):
         """
         Create the iterator for get the data
         """
-        # Depend if capped or not, create cursor
-        if self.capped:
-            self.cursor = self.collection.find(
-                cursor_type=pymongo.CursorType.TAILABLE_AWAIT)
-        else:
+        if not self.stream_mode:
             self.cursor = self.collection.find({})
         return self
 
@@ -136,7 +113,12 @@ class MongoDB(BaseDB):
         Allow to get the next data
         """
         try:
-            json = self.cursor.next()
+            if not self.stream_mode:
+                json = self.cursor.next()
+            else:
+                json = self.collection.find_one_and_delete({})
+                if json is None:
+                    raise StopIteration()
         except StopIteration:
             raise StopIteration()
 

@@ -18,8 +18,8 @@ function used to communicate with mocked actors
 """
 
 import pickle
-import csv
 import zmq
+from powerapi.actor import SafeContext
 
 
 def is_actor_alive(actor):
@@ -44,10 +44,10 @@ def gen_side_effect(filename, msg):
     :param str msg: message to send to the socket
     """
     def log_side_effect(*args, **kwargs):
-        with open(filename, 'a') as f:
-            writer = csv.writer(f)
-            writer.writerows([[msg]])
-            f.close()
+        socket = SafeContext.get_context().socket(zmq.PUSH)
+        socket.connect(filename)
+        socket.send_string(msg)
+        socket.close()
 
     return log_side_effect
 
@@ -61,27 +61,17 @@ def is_log_ok(filename, validation_msg_list):
                                      send
     """
 
-    """
     result_list = []
     for _ in range(len(validation_msg_list)):
-        event = socket.poll(500)
+        event = filename.poll(500)
         if event == 0:
             return False
-        msg = pickle.loads(socket.recv())
+        msg = filename.recv_string()
         result_list.append(msg)
 
     result_list.sort()
     validation_msg_list.sort()
 
-    return result_list == validation_msg_list
-    """
-    reader = csv.reader(filename)
-    result_list = []
-    for result in reader:
-        result_list.append(result[0])
-
-    result_list.sort()
-    validation_msg_list.sort()
     return result_list == validation_msg_list
 
 #######################

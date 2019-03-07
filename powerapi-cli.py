@@ -22,7 +22,8 @@ import argparse
 import logging
 import signal
 import zmq
-from powerapi.actor import ActorInitError, Supervisor
+from powerapi.actor import ActorInitError
+from powerapi.backendsupervisor import BackendSupervisor
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.formula import RAPLFormulaActor
@@ -62,10 +63,15 @@ def arg_parser_init():
     # Verbosity
     parser.add_argument("-v", "--verbose", help="Enable verbosity",
                         action="store_true", default=False)
+
+    # Stream mode
+    parser.add_argument("-s", "--stream_mode", help="Enable stream mode",
+                        action="store_true", default=False)
     return parser
 
 
 def launch_powerapi(args, logger):
+
     ##########################################################################
     # Actor Creation
 
@@ -91,11 +97,11 @@ def launch_powerapi(args, logger):
     # Puller
     input_mongodb = MongoDB(args.input_uri,
                             args.input_db, args.input_collection,
-                            HWPCModel())
+                            HWPCModel(), stream_mode=args.stream_mode)
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         report_filter, level_logger=args.verbose)
+                         report_filter, level_logger=args.verbose, stream_mode=args.stream_mode)
 
     ##########################################################################
     # Actor start step
@@ -110,7 +116,7 @@ def launch_powerapi(args, logger):
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)
 
-    supervisor = Supervisor()
+    supervisor = BackendSupervisor(args.stream_mode)
     try:
         supervisor.launch_actor(pusher)
         supervisor.launch_actor(dispatcher)

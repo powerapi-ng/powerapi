@@ -106,11 +106,6 @@ def test_mongodb_read_capped_db(database):
         report.pop('_id', None)
         mongodb.collection.insert_one(report)
 
-    # Check if we can read it
-    for _ in range(2):
-        report = next(mongodb_iter)
-        assert report is not None
-
     # Check if there is nothing after
     with pytest.raises(StopIteration) as pytest_wrapped:
         next(mongodb_iter)
