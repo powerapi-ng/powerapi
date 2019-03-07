@@ -102,9 +102,16 @@ class TimeoutHandler(InitHandler):
         """
         try:
             (report, dispatchers) = self.get_report_dispatcher(state)
+            # for sleeping mode
+            state.socket_interface.timeout = state.timeout_basic
         except NoReportExtractedException:
             if not state.stream_mode:
                 state.alive = False
+            # for sleeping mode
+            if state.counter < 10:
+                state.counter += 1
+            else:
+                state.socket_interface.timeout = state.timeout_sleeping
             return state
 
         # Send to the dispatcher if it's not None

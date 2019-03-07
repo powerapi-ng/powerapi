@@ -44,7 +44,7 @@ from multiprocessing import Process
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.actor import ActorInitError, Supervisor
+from powerapi.backendsupervisor import BackendSupervisor
 from powerapi.formula import RAPLFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
@@ -98,7 +98,8 @@ class MainProcess(Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-        supervisor = Supervisor()
+        stream_mode = True
+        supervisor = BackendSupervisor(stream_mode)
 
         # Pusher
         output_mongodb = MongoDB(DB_URI,
@@ -127,7 +128,7 @@ class MainProcess(Process):
         report_filter.filter(lambda msg: True, dispatcher)
         puller = PullerActor("puller_mongodb", input_mongodb,
                              report_filter, level_logger=LOG_LEVEL,
-                             stream_mode=True)
+                             stream_mode=stream_mode)
 
         supervisor.launch_actor(pusher)
         supervisor.launch_actor(dispatcher)
@@ -142,6 +143,7 @@ class MainProcess(Process):
 def test_crash_dispatcher(database, main_process):
     if main_process.is_alive():
         os.kill(main_process.pid, signal.SIGTERM)
+        main_process.join(5)
         assert not is_actor_alive(main_process)
 
     assert True

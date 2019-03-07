@@ -43,7 +43,7 @@ import pymongo
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.actor import ActorInitError, Supervisor
+from powerapi.backendsupervisor import BackendSupervisor
 from powerapi.formula import RAPLFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
@@ -51,7 +51,6 @@ from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport, PowerReport
 from powerapi.report_model import HWPCModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.report import create_report_root
 
 
 from test.mongo_utils import gen_base_db_test
@@ -59,7 +58,7 @@ from test.mongo_utils import clean_base_db_test
 from test.utils import is_actor_alive
 
 DB_URI = "mongodb://localhost:27017/"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.NOTSET
 
 
 @pytest.fixture
@@ -70,7 +69,7 @@ def database():
 
 @pytest.fixture
 def supervisor():
-    s = Supervisor()
+    s = BackendSupervisor(False)
     yield s
     s.kill_actors()
 
@@ -128,7 +127,6 @@ def test_crash_dispatcher(database, supervisor):
     supervisor.launch_actor(pusher)
     supervisor.launch_actor(dispatcher)
     supervisor.launch_actor(puller)
-
 
     supervisor.join()
 
