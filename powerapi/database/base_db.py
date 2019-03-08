@@ -40,7 +40,7 @@ class BaseDB:
     For example, Mongodb, influxdb, csv are different kind of BDD.
     """
 
-    def __init__(self, report_model):
+    def __init__(self, report_model, stream_mode):
         """
         :param report_model: object that herit from ReportModel and define
                              the type of Report
@@ -49,6 +49,9 @@ class BaseDB:
         #: (powerapi.ReportModel): Object that herit from ReportModel and
         #: define the type of Report
         self.report_model = report_model
+
+        #: (bool): Stream mode
+        self.stream_mode = stream_mode
 
     def connect(self):
         """

@@ -101,7 +101,7 @@ def launch_powerapi(args, logger):
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_mongodb", input_mongodb,
-                         report_filter, level_logger=args.verbose, stream_mode=args.stream_mode)
+                         report_filter, level_logger=args.verbose)
 
     ##########################################################################
     # Actor start step
@@ -116,7 +116,7 @@ def launch_powerapi(args, logger):
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)
 
-    supervisor = BackendSupervisor(args.stream_mode)
+    supervisor = BackendSupervisor(puller.state.stream_mode)
     try:
         supervisor.launch_actor(pusher)
         supervisor.launch_actor(dispatcher)
