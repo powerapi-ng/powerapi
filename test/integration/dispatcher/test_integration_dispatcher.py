@@ -353,22 +353,6 @@ def test_create_dispatcher_with_primary(initialized_dispatcher):
 # Initialisation #
 ##################
 @define_route_table(route_table_with_primary_rule())
-def test_create_dispatcher_address_already_used(initialized_dispatcher,
-                                                dispatcher2):
-    """
-    Create a dispatcher and try to launch it when this socket address is
-    already in use
-
-    Test :
-      - if the actor is dead
-      - if a ZMQError is raised with message Address already in use
-
-    """
-    with pytest.raises(ActorInitError):
-        Supervisor().launch_actor(dispatcher2)
-
-
-@define_route_table(route_table_with_primary_rule())
 def test_send_StartMessage_dispatcher_already_init(initialized_dispatcher):
     """
     Create a Dispatcher with a PrimaryDispatchRule rule, initialize it and send

@@ -16,8 +16,13 @@
 
 import pickle
 import logging
+import multiprocessing
+import ctypes
+
 import zmq
 from powerapi.actor import SafeContext
+
+LOCAL_ADDR = 'tcp://127.0.0.1'
 
 
 class NotConnectedException(Exception):
@@ -25,7 +30,6 @@ class NotConnectedException(Exception):
     Exception raised when attempting to send/receinve a message on a socket
     that is not conected
     """
-
 
 class SocketInterface:
     """
@@ -61,10 +65,10 @@ class SocketInterface:
         self.timeout = timeout
 
         #: (str): Address of the pull socket
-        self.pull_socket_address = 'ipc://@' + name
+        self.pull_socket_address = None
 
         #: (str): Address of the control socket
-        self.control_socket_address = 'ipc://@control_' + name
+        self.control_socket_address = None
 
         #: (zmq.Poller): ZMQ Poller for read many socket at same time
         self.poller = zmq.Poller()
@@ -81,40 +85,53 @@ class SocketInterface:
         #: (zmq.Socket): ZMQ Push socket for sending message to this actor
         self.push_socket = None
 
+        # Shared memory used to communicate the port used to bind sockets
+        self._pull_port = multiprocessing.Value(ctypes.c_int)
+        self._ctrl_port = multiprocessing.Value(ctypes.c_int)
+        self._values_available = multiprocessing.Event()
+
+        self._pull_port.value = -1
+        self._ctrl_port.value = -1
+
     def setup(self):
         """
-        Initialize zmq context and sockets
+        Initialize sockets and send the selected port number to the father
+        process with a Pipe
         """
         # create the pull socket (to communicate with this actor, others
         # process have to connect a push socket to this socket)
-        self.pull_socket = self._create_socket(zmq.PULL,
-                                               self.pull_socket_address,
-                                               -1)
+        self.pull_socket, pull_port = self._create_socket(zmq.PULL, -1)
 
         # create the control socket (to control this actor, a process have to
         # connect a pair socket to this socket with the `control` method)
-        self.control_socket = self._create_socket(zmq.PAIR,
-                                                  self.control_socket_address,
-                                                  0)
+        self.control_socket, ctrl_port = self._create_socket(zmq.PAIR, 0)
 
-    def _create_socket(self, socket_type, socket_addr, linger_value):
+        self.pull_socket_address = LOCAL_ADDR + ':' + str(pull_port)
+        self.control_socket_address = LOCAL_ADDR + ':' + str(ctrl_port)
+
+        self._pull_port.value = pull_port
+        self._ctrl_port.value = ctrl_port
+        self._values_available.set()
+
+    def _create_socket(self, socket_type, linger_value):
         """
-        Create a socket of the given type, bind it to the given address and
+        Create a socket of the given type, bind it to a random port and
         register it to the poller
 
         :param int socket_type: type of the socket to open
-        :param str socket_addr: address of the socket to open
-        :param int linger_value: -1 mean wait for receive all msg and block closing,
-                                 0 mean hardkill the socket even if msg are still here.
-        :return zmq.Socket: the initialized socket
+        :param int linger_value: -1 mean wait for receive all msg and block
+                                 closing 0 mean hardkill the socket even if msg
+                                 are still here.
+        :return (zmq.Socket, int): the initialized socket and the port where the
+                                   socket is bound
         """
         socket = SafeContext.get_context().socket(socket_type)
         socket.setsockopt(zmq.LINGER, linger_value)
         socket.set_hwm(0)
-        socket.bind(socket_addr)
+        port_number = socket.bind_to_random_port(LOCAL_ADDR)
         self.poller.register(socket, zmq.POLLIN)
-        self.logger.info("bind to " + str(socket_addr))
-        return socket
+        self.logger.info("bind to " + LOCAL_ADDR + ':' + str(port_number))
+        return (socket, port_number)
 
     def receive(self):
         """
@@ -191,7 +208,16 @@ class SocketInterface:
 
         Open a push socket on the process that want to communicate with this
         actor
+
+        this method shouldn't be called if socket interface was not initialized
+        with the setup method
         """
+
+        if self.pull_socket_address is None:
+            self._values_available.wait()
+            self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
+            self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
+
         self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.setsockopt(zmq.LINGER, -1)
         self.push_socket.set_hwm(0)
@@ -203,7 +229,14 @@ class SocketInterface:
         Connect to the control socket of this actor
 
         Open a pair socket on the process that want to control this actor
+        this method shouldn't be called if socket interface was not initialized
+        with the setup method
         """
+        if self.pull_socket_address is None:
+            self._values_available.wait()
+            self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
+            self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
+
         self.control_socket = SafeContext.get_context().socket(zmq.PAIR)
         self.control_socket.setsockopt(zmq.LINGER, 0)
         self.control_socket.set_hwm(0)

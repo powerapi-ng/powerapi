@@ -19,6 +19,7 @@ Test powerapi.actor.SocketInterface
 """
 
 import pytest
+import platform
 import zmq
 
 from powerapi.actor import SocketInterface
@@ -48,6 +49,7 @@ def socket_interface():
 
     """
     return SocketInterface(ACTOR_NAME, 100)
+
 
 @pytest.fixture()
 def initialized_socket_interface(socket_interface):
@@ -95,13 +97,6 @@ def fully_connected_interface(initialized_socket_interface):
     initialized_socket_interface.close()
 
 
-def test_socket_initialisation(socket_interface):
-    """ test socket interface attribute initialisation
-    """
-    assert socket_interface.pull_socket_address == PULL_SOCKET_ADDRESS
-    assert socket_interface.control_socket_address == CONTROL_SOCKET_ADDRESS
-
-
 def test_close(initialized_socket_interface):
     """ test if the close method close the control and pull socket
     """
@@ -120,16 +115,16 @@ def test_setup(initialized_socket_interface):
     assert isinstance(initialized_socket_interface.poller, zmq.Poller)
 
     check_socket(initialized_socket_interface.pull_socket, zmq.PULL,
-                 PULL_SOCKET_ADDRESS)
+                 initialized_socket_interface.pull_socket_address)
     check_socket(initialized_socket_interface.control_socket, zmq.PAIR,
-                 CONTROL_SOCKET_ADDRESS)
+                 initialized_socket_interface.control_socket_address)
 
 
 def test_push_connection(connected_interface):
     """test if the push socket is open
 
     """
-    check_socket(connected_interface.push_socket, zmq.PUSH, PULL_SOCKET_ADDRESS)
+    check_socket(connected_interface.push_socket, zmq.PUSH, connected_interface.pull_socket_address)
 
 
 def test_push_disconnection(connected_interface):
@@ -155,7 +150,7 @@ def test_control_connection(controlled_interface):
 
     """
     check_socket(controlled_interface.control_socket, zmq.PAIR,
-                 CONTROL_SOCKET_ADDRESS)
+                 controlled_interface.control_socket_address)
 
 
 def test_control_disconnection(controlled_interface):
