@@ -59,10 +59,6 @@ class PowerHandler(InitHandler):
 
         state.buffer.append(msg.serialize())
 
-        if len(state.buffer) >= 100:
-            state.database.save_many(state.buffer)
-            state.buffer = []
-
         return state
 
 class PusherPoisonPillHandler(Handler):
@@ -77,10 +73,27 @@ class PusherPoisonPillHandler(Handler):
         :param powerapi.pusher.PusherState state: State of the actor.
         :return powerapi.State: new State
         """
+        state.timeout_handler = TimeoutKillHandler()
         state.socket_interface.timeout = 2000
         return state
 
-class TimeoutHandler(InitHandler):
+class TimeoutBasicHandler(InitHandler):
+    """
+    Pusher timeout flush the buffer
+    """
+
+    def handle(self, msg, state):
+        """
+        Flush the buffer in the database
+        :param msg: None
+        :param state: State of the actor
+        :return powerapi.PusherState: new State
+        """
+        state.database.save_many(state.buffer)
+        state.buffer = []
+        return state
+
+class TimeoutKillHandler(InitHandler):
     """
     Pusher timeout kill the actor
     """

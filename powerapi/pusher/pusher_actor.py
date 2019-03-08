@@ -16,7 +16,7 @@
 
 import logging
 from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import PowerHandler, PusherStartHandler, TimeoutHandler, PusherPoisonPillHandler
+from powerapi.pusher import PowerHandler, PusherStartHandler, TimeoutBasicHandler, PusherPoisonPillHandler
 from powerapi.message import PoisonPillMessage, StartMessage
 
 
@@ -52,7 +52,7 @@ class PusherActor(Actor):
 
     def __init__(self, name, report_type, database,
                  level_logger=logging.WARNING,
-                 timeout=None):
+                 timeout=1000):
         """
         :param str name: Pusher name.
         :param Report report_type: Type of the report that the pusher
@@ -79,7 +79,7 @@ class PusherActor(Actor):
         self.add_handler(PoisonPillMessage, PusherPoisonPillHandler())
         self.add_handler(self.report_type, PowerHandler())
         self.add_handler(StartMessage, PusherStartHandler())
-        self.set_timeout_handler(TimeoutHandler())
+        self.set_timeout_handler(TimeoutBasicHandler())
 
     def terminated_behaviour(self):
         """
