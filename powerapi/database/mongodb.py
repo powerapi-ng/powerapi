@@ -16,7 +16,6 @@
 
 import pymongo
 from powerapi.database.base_db import BaseDB, DBError
-from powerapi.utils import Error
 
 
 class MongoBadDBError(DBError):
@@ -51,7 +50,7 @@ class MongoDB(BaseDB):
         :type report_model:         powerapi.ReportModel
 
         """
-        BaseDB.__init__(self, report_model)
+        BaseDB.__init__(self, report_model, stream_mode)
 
         #: (str): URI of the mongodb server
         self.uri = uri
@@ -68,9 +67,6 @@ class MongoDB(BaseDB):
         #: (pymongo.MongoClient): MongoClient pointed to the
         #: targeted collection
         self.collection = None
-
-        #: (bool): Stream mode
-        self.stream_mode = stream_mode
 
         #: (pymongo.Cursor): Cursor which return data
         self.cursor = None

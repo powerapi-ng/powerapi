@@ -38,7 +38,7 @@ class PullerState(State):
       - the Filter class
     """
     def __init__(self, behaviour, socket_interface, logger,
-                 database, report_filter, stream_mode,
+                 database, report_filter,
                  timeout_basic=0, timeout_sleeping=100):
         """
         :param func behaviour: Function that define the initial_behaviour
@@ -60,7 +60,7 @@ class PullerState(State):
         self.report_filter = report_filter
 
         #: (bool): Puller stream_mode database.
-        self.stream_mode = stream_mode
+        self.stream_mode = database.stream_mode
 
         #: (int): Timeout for "basic mode"
         self.timeout_basic = timeout_basic
@@ -81,7 +81,7 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter,
-                 level_logger=logging.WARNING, stream_mode=False, timeout=0, timeout_sleeping=100):
+                 level_logger=logging.WARNING, timeout=0, timeout_sleeping=100):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
@@ -97,7 +97,7 @@ class PullerActor(Actor):
                                  SocketInterface(name, timeout),
                                  self.logger,
                                  database,
-                                 report_filter, stream_mode,
+                                 report_filter,
                                  timeout, timeout_sleeping)
 
     def setup(self):

@@ -123,12 +123,11 @@ class MainProcess(Process):
         # Puller
         input_mongodb = MongoDB(DB_URI,
                                 'MongoDB1', 'test_hwrep',
-                                HWPCModel())
+                                HWPCModel(), stream_mode=stream_mode)
         report_filter = Filter()
         report_filter.filter(lambda msg: True, dispatcher)
         puller = PullerActor("puller_mongodb", input_mongodb,
-                             report_filter, level_logger=LOG_LEVEL,
-                             stream_mode=stream_mode)
+                             report_filter, level_logger=LOG_LEVEL)
 
         supervisor.launch_actor(pusher)
         supervisor.launch_actor(dispatcher)

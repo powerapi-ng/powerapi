@@ -50,7 +50,7 @@ class CsvDB(BaseDB):
                              the type of Report
         :type report_model: martwatts.ReportModel
         """
-        BaseDB.__init__(self, report_model)
+        BaseDB.__init__(self, report_model, False)
 
         #: (list): list of file name .csv
         self.files_name = files_name

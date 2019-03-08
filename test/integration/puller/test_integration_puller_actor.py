@@ -136,7 +136,7 @@ def dispatcher_socket():
 
 
 @pytest.fixture()
-def puller(request, database, filt, stream_mode):
+def puller(request, database, filt):
     """
     Setup and Teardown for managing a PullerActor
 
@@ -148,8 +148,7 @@ def puller(request, database, filt, stream_mode):
         "test_puller_" + str(request.node.name),
         database,
         filt,
-        level_logger=LOG_LEVEL,
-        stream_mode=stream_mode)
+        level_logger=LOG_LEVEL)
 
     yield puller_actor
 
@@ -220,15 +219,15 @@ def mocked_database():
     """
     Return a BaseDB mocked object
     """
-    return BaseDB(Mock())
+    return BaseDB(Mock(), Mock())
 
 
-def mongodb_database(uri, database_name, collection_name):
+def mongodb_database(uri, database_name, collection_name, stream_mode):
     """
     Return MongoDB database
     """
     database = MongoDB(uri, database_name, collection_name,
-                       HWPCModel())
+                       HWPCModel(), stream_mode=stream_mode)
     return database
 
 
@@ -247,8 +246,8 @@ def pytest_generate_tests(metafunc):
         database = getattr(metafunc.function, '_database', None)
         if isinstance(database, list):
             metafunc.parametrize('database',
-                                 [mongodb_database(arg1, arg2, arg3)
-                                  for arg1, arg2, arg3 in database])
+                                 [mongodb_database(arg1, arg2, arg3, arg4)
+                                  for arg1, arg2, arg3, arg4 in database])
         else:
             metafunc.parametrize('database', [database])
 
@@ -385,11 +384,11 @@ class TestPuller:
 
 
 @define_database([
-    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1"),
-    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
+    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1", False),
+    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1", False),
     ])
 @define_filt(basic_filt())
-@define_stream_mode('both')
+@define_stream_mode(False)
 def test_mongodb_bad_config(puller, supervisor):
     """
     Send a start message to a PullerActor with a DB with a bad configuration
@@ -404,7 +403,7 @@ def test_mongodb_bad_config(puller, supervisor):
 
 
 @define_database(mongodb_database(URI,
-                                  "test_mongodb", "test_mongodb1"))
+                                  "test_mongodb", "test_mongodb1", True))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
 def test_mongodb_reading_data(generate_mongodb_data,

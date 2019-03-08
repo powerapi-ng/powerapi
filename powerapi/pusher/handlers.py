@@ -68,7 +68,6 @@ class PusherPoisonPillHandler(Handler):
     """
     def handle(self, msg, state):
         """
-
         :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
         :param powerapi.pusher.PusherState state: State of the actor.
         :return powerapi.State: new State
@@ -89,7 +88,8 @@ class TimeoutBasicHandler(InitHandler):
         :param state: State of the actor
         :return powerapi.PusherState: new State
         """
-        state.database.save_many(state.buffer)
+        if len(state.buffer) > 0:
+            state.database.save_many(state.buffer)
         state.buffer = []
         return state
 

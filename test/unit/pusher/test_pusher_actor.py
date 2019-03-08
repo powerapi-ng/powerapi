@@ -32,9 +32,9 @@ from powerapi.message import StartMessage, OKMessage, ErrorMessage
 ##############################################################################
 
 
-def get_fake_mongodb():
+def get_fake_db():
     """ Return a fake MongoDB """
-    fake_mongo = mock.Mock(spec_set=MongoDB)
+    fake_mongo = mock.Mock(stream_mode=False)
     values = [2, 3]
 
     def fake_next():
@@ -67,7 +67,7 @@ class TestHandlerPusher:
         """
 
         # Define PusherState
-        fake_database = get_fake_mongodb()
+        fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(Actor._initial_behaviour,
                                    fake_socket_interface,
@@ -98,7 +98,7 @@ class TestHandlerPusher:
         """
         
         # Define PusherState
-        fake_database = get_fake_mongodb()
+        fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(Actor._initial_behaviour,
                                    fake_socket_interface,
@@ -130,4 +130,4 @@ class TestHandlerPusher:
         for _ in range(101):
             power_handler.handle(PowerReport("10", "test", "test", "test", "test"),
                                  pusher_state)
-        assert pusher_state.database.method_calls != []
+        assert len(pusher_state.buffer) == 101

@@ -19,10 +19,7 @@ Module test_actor_puller
 """
 
 import mock
-import zmq
-from powerapi.puller import PullerState
-from powerapi.database import MongoDB
-from powerapi.filter import Filter
+from powerapi.database import BaseDB
 from powerapi.report import Report, HWPCReport, create_report_root
 from powerapi.puller import PullerActor, PullerState
 from powerapi.puller import PullerStartHandler
@@ -51,9 +48,9 @@ class FakeReport(Report):
         return self.value
 
 
-def get_fake_mongodb():
-    """ Return a fake MongoDB """
-    fake_mongo = mock.Mock(spec_set=MongoDB)
+def get_fake_db():
+    """ Return a fake DB """
+    fake_mongo = mock.Mock(stream_mode=False)
     values = [2, 3]
 
     def fake_next():
@@ -96,8 +93,8 @@ class TestPullerActor:
 
     def test_no_stream(self):
         """ Test if the actor kill himself after reading db """
-        puller = PullerActor("puller_mongo", get_fake_mongodb(),
-                             get_fake_filter(), 0, stream_mode=False)
+        puller = PullerActor("puller_mongo", get_fake_db(),
+                             get_fake_filter(), 0)
         supervisor = Supervisor()
         supervisor.launch_actor(puller)
         puller.join()
@@ -113,15 +110,15 @@ class TestHandlerPuller:
         """
 
         # Define PullerState
-        fake_database = get_fake_mongodb()
+        fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         fake_filter = get_fake_filter()
         puller_state = PullerState(Actor._initial_behaviour,
                                    fake_socket_interface,
                                    mock.Mock(),
                                    fake_database,
-                                   fake_filter,
-                                   False)
+                                   fake_filter)
+
         assert puller_state.initialized is False
 
         # Define StartHandler
