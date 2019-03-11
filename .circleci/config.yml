@@ -26,7 +26,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -r requirements.txt
+            pip install -e ".[mongodb]"
 
       - save_cache:
           paths:
@@ -38,6 +38,4 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python -m pytest test/unit/
-            python -m pytest test/integration/
-            python -m pytest test/acceptation/
+            python setup.py test

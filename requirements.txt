@@ -1,3 +1,0 @@
-pyzmq>=17.1
-pymongo>=3.7.2
-setproctitle>=1.1.10
