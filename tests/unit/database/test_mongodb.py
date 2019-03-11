@@ -34,8 +34,8 @@ import pytest
 from powerapi.report_model import HWPCModel
 from powerapi.database import MongoDB, MongoBadDBError
 
-from test.mongo_utils import gen_base_test_unit_mongo
-from test.mongo_utils import clean_base_test_unit_mongo
+from tests.mongo_utils import gen_base_test_unit_mongo
+from tests.mongo_utils import clean_base_test_unit_mongo
 
 URI = "mongodb://localhost:27017/"
 

@@ -69,9 +69,9 @@ from powerapi.report_model import HWPCModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
 
 
-from test.mongo_utils import gen_base_db_test
-from test.mongo_utils import clean_base_db_test
-from test.utils import is_actor_alive
+from tests.mongo_utils import gen_base_db_test
+from tests.mongo_utils import clean_base_db_test
+from tests.utils import is_actor_alive
 
 DB_URI = "mongodb://localhost:27017/"
 LOG_LEVEL = logging.NOTSET

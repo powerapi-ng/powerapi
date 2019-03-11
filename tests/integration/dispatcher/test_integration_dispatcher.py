@@ -41,8 +41,8 @@ from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import StartMessage, OKMessage, ErrorMessage, UnknowMessageTypeException
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
 from powerapi.report import *
-from test.utils import *
-from test.integration.dispatcher.fake_formula import FakeFormulaActor
+from tests.utils import *
+from tests.integration.dispatcher.fake_formula import FakeFormulaActor
 from powerapi.dispatcher import NoPrimaryDispatchRuleRuleException
 
 
