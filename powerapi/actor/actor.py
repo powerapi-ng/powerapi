@@ -47,7 +47,7 @@ class Actor(multiprocessing.Process):
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_kill <powerapi.actor.actor.Actor.send_kill>`                                             |
+    |                                 | :meth:`send_kill <powerapi.actor.actor.Actor.send_kill>`                                   |
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
     |                                 +--------------------------------------------------------------------------------------------+
