@@ -366,7 +366,7 @@ class TestPuller:
 
 # TODO: To fix, disp are still alive... Maybe IPC problem ?
 @define_database(mongodb_database(URI,
-                                 "test_mongodb", "test_mongodb1"))
+                                 "test_mongodb", "test_mongodb1", True))
 @define_filt(fake_dispatcher_filt())
 @define_stream_mode(True)
 def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
