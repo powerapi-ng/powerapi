@@ -35,7 +35,7 @@ from powerapi.report_model import HWPCModel, KEYS_COMMON
 from powerapi.database import CsvDB
 from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError
 
-PATH_TO_TEST = "./test/unit/environment/csv/"
+PATH_TO_TEST = "./tests/unit/environment/csv/"
 
 # All this file raise error
 BAD_COMMON = [PATH_TO_TEST + "bad_common_miss_sensor.csv",
