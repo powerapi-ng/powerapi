@@ -393,7 +393,7 @@ def test_puller_kill_with_dispatcher(initialized_puller_with_dispatcher):
    initialized_puller_with_dispatcher.join(500)
    assert not is_actor_alive(initialized_puller_with_dispatcher)
    for _, disp in initialized_puller_with_dispatcher.state.report_filter.filters:
-       disp.join(200)
+       disp.join(500)
        assert not is_actor_alive(disp)
 
 #################

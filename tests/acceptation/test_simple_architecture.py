@@ -35,7 +35,7 @@ Test the behaviour of the most simple architecture
 Architecture :
   - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode off)
   - 1 dispatcher (HWPC dispatch rule (dispatch by SOCKET)
-  - 1 RAPL Formula
+  - 1 Dummy Formula
   - 1 pusher (connected to MongoDB1 [collection test_result]
 
 MongoDB1 content:
@@ -48,9 +48,6 @@ Scenario:
 Test if: 
   - each HWPCReport in the intput database was converted in one PowerReport per
     socket in the output database
-  - if the energy consumption was computed correctly using the following
-    formula : math.ldexp(RAPL_EVENT, -32)
-
 """
 import logging
 import math
@@ -60,7 +57,7 @@ import pymongo
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.formula import RAPLFormulaActor
+from powerapi.formula import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -103,15 +100,7 @@ def check_db():
             {'timestamp': report['timestamp'], 'sensor': report['sensor'],
              'target': report['target']}) == 2
 
-        for power_report in c_output.find({'timestamp': report['timestamp'],
-                                          'sensor': report['sensor'],
-                                          'target': report['target']}):
-
-            rapl_event = report['groups']['rapl']['0']['0']['RAPL_EVENT']
-            assert power_report['power'] == math.ldexp(rapl_event, -32)
-
-
-def test_crash_dispatcher(database, supervisor):
+def test_run(database, supervisor):
     # Pusher
     output_mongodb = MongoDB(DB_URI,
                              'MongoDB1', 'test_result',
@@ -121,7 +110,7 @@ def test_crash_dispatcher(database, supervisor):
 
     # Formula
     formula_factory = (lambda name, verbose:
-                       RAPLFormulaActor(name, pusher, level_logger=verbose))
+                       DummyFormulaActor(name, pusher, level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()

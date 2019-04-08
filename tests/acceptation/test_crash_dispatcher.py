@@ -35,7 +35,7 @@ Test to interrupt the whole architecure after a crash that could hang the system
 Architecture :
   - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode on)
   - 1 dispatcher (HWPC dispatch rule (dispatch by ROOT)
-  - 1 RAPL Formula
+  - 1 Dummy Formula
   - 1 pusher (connected to MongoDB1 [collection test_result]
 
 MongoDB1 content:
@@ -61,7 +61,7 @@ from multiprocessing import Process
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.formula import RAPLFormulaActor
+from powerapi.formula import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -126,7 +126,7 @@ class MainProcess(Process):
 
         # Formula
         formula_factory = (lambda name, verbose:
-                           RAPLFormulaActor(name, pusher, level_logger=verbose))
+                           DummyFormulaActor(name, pusher, level_logger=verbose))
 
         # Dispatcher
         route_table = RouteTable()
