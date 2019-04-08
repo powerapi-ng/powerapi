@@ -55,7 +55,6 @@ class DummyHWPCReportHandler(Handler):
         :rtype:  powerapi.PowerReport
         """
 
-        time.sleep(1)
         result_msg = PowerReport(report.timestamp, report.sensor,
                                  report.target, {}, 42)
         return result_msg
