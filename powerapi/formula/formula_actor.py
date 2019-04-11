@@ -37,9 +37,10 @@ from powerapi.actor import Actor, State, SocketInterface
 
 
 class FormulaState(State):
-    def __init__(self, behaviour, socket_interface, logger, formula_id):
+    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors):
         State.__init__(self, behaviour, socket_interface, logger)
         self.formula_id = formula_id
+        self.pusher_actors = pusher_actors
 
 
 class FormulaActor(Actor):
@@ -51,11 +52,11 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, actor_pusher,
+    def __init__(self, name, pusher_actors,
                  level_logger=logging.WARNING, timeout=None):
         """
         :param str name:                            Actor name
-        :param powerapi.PusherActor actor_pusher: Pusher actor whom send
+        :param powerapi.PusherActor pusher_actors:  Pusher actors whom send
                                                     results
         :param int level_logger:                    Define logger level
         :param bool timeout:                        Time in millisecond to wait
@@ -64,24 +65,23 @@ class FormulaActor(Actor):
         """
         Actor.__init__(self, name, level_logger, timeout)
 
-        #: (powerapi.PusherActor): Pusher actor whom send results.
-        self.actor_pusher = actor_pusher
-
         formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
 
         #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(Actor._initial_behaviour,
                                   SocketInterface(name, timeout),
-                                  self.logger, formula_id)
+                                  self.logger, formula_id, pusher_actors)
 
     def setup(self):
         """
         Formula basic setup, Connect the formula to the pusher
         """
-        self.actor_pusher.connect_data()
+        for actor_pusher in self.state.pusher_actors:
+            actor_pusher.connect_data()
 
     def terminated_behaviour(self):
         """
         Allow to close actor_pusher socket
         """
-        self.actor_pusher.state.socket_interface.close()
+        for actor_pusher in self.state.pusher_actors:
+            actor_pusher.state.socket_interface.close()

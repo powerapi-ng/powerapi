@@ -110,7 +110,7 @@ def test_run(database, supervisor):
 
     # Formula
     formula_factory = (lambda name, verbose:
-                       DummyFormulaActor(name, pusher, level_logger=verbose))
+                       DummyFormulaActor(name, [pusher], level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()

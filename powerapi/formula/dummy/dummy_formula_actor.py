@@ -30,7 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import time
 from powerapi.formula.formula_actor import FormulaActor
 from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
 from powerapi.report import Report, PowerReport
@@ -41,9 +40,6 @@ class DummyHWPCReportHandler(Handler):
     """
     A fake handler that simulate data processing
     """
-
-    def __init__(self, actor_pusher):
-        self.actor_pusher = actor_pusher
 
     def _process_report(self, report):
         """
@@ -63,7 +59,7 @@ class DummyHWPCReportHandler(Handler):
         """
         Process a report and send the result to the pusher actor
 
-        :param powerapi.Report msg:       Received message
+        :param powerapi.Report msg:  Received message
         :param powerapi.State state: Actor state
 
         :return: New Actor state
@@ -75,7 +71,8 @@ class DummyHWPCReportHandler(Handler):
             raise UnknowMessageTypeException(type(msg))
 
         result = self._process_report(msg)
-        self.actor_pusher.send_data(result)
+        for actor_pusher in state.pusher_actors:
+            actor_pusher.send_data(result)
         return state
 
 
@@ -85,13 +82,13 @@ class DummyFormulaActor(FormulaActor):
     power report containing 42
     """
 
-    def __init__(self, name, actor_pusher, level_logger=logging.WARNING,
+    def __init__(self, name, pusher_actors, level_logger=logging.WARNING,
                  timeout=None):
         """
         :param str name:                            Actor name
-        :param powerapi.PusherActor actor_pusher: Pusher to send results.
+        :param powerapi.PusherActor pusher_actors:  Pushers to send results.
         """
-        FormulaActor.__init__(self, name, actor_pusher, level_logger, timeout)
+        FormulaActor.__init__(self, name, pusher_actors, level_logger, timeout)
 
     def setup(self):
         """
@@ -99,5 +96,4 @@ class DummyFormulaActor(FormulaActor):
         """
         FormulaActor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        handler = DummyHWPCReportHandler(self.actor_pusher)
-        self.add_handler(Report, handler)
+        self.add_handler(Report, DummyHWPCReportHandler())
