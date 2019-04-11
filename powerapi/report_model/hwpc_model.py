@@ -51,6 +51,9 @@ class HWPCModel(ReportModel):
         """
         Get HWPCReport from a MongoDB database.
         """
+        # Re arrange the json before return it by removing '_id' field
+        json.pop('_id', None)
+
         return json
 
     def from_csvdb(self, file_name, row):
