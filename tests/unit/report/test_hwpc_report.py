@@ -29,39 +29,55 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-KEYS_COMMON = ['timestamp', 'sensor', 'target']
-KEYS_CSV_COMMON = KEYS_COMMON + ['socket', 'cpu']
+import pytest
+import datetime
+from powerapi.report.report import DeserializationFail
+from powerapi.report.hwpc_report import HWPCReport
 
 
-class BadInputData(Exception):
+##############################################################################
+#                                Tests                                       #
+##############################################################################
+
+
+@pytest.mark.parametrize("json_input", [
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "target": "fake-target",
+      "groups": {}})
+]
+)
+def test_hwpc_report_deserialize_work(json_input):
     """
-    Exception raised when the data read in input are not
-    in the good format
+    Test working input for HWPCReport deserialize
+    :param json_input: Data in input
     """
+    HWPCReport.deserialize(json_input)
+    assert True
 
 
-class ReportModel:
+@pytest.mark.parametrize("json_input", [
+    ({"sensor": "fake-sensor",
+      "target": "fake-target",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "target": "fake-target",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "target": "fake-target"})
+]
+)
+def test_hwpc_report_deserialize_fail(json_input):
     """
-    ReportModel class.
-
-    It define all the function that need to be override if we want
-    to format the raw data read in different kind of database.
+    Test failure input for HWPCReport deserialize
+    :param json_input: Data in input
     """
-
-    def get_type(self):
-        """
-        Return the type of report
-        """
-        raise NotImplementedError()
-
-    def from_mongodb(self, json):
-        """
-        Get the mongodb report
-        """
-        raise NotImplementedError()
-
-    def from_csvdb(self, file_name, row):
-        """
-        Get the csvdb report
-        """
-        raise NotImplementedError()
+    try:
+        HWPCReport.deserialize(json_input)
+        assert False
+    except DeserializationFail:
+        assert True

@@ -34,7 +34,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict
 
-from powerapi.report.report import Report
+from powerapi.report.report import Report, DeserializationFail
 
 
 class HWPCReport(Report):
@@ -88,7 +88,12 @@ class HWPCReport(Report):
         :param data: Dictionary containing the report attributes
         :return: The HWPC report initialized with the given data
         """
-        return HWPCReport(data['timestamp'], data['sensor'], data['target'], data['groups'])
+        try:
+            report = HWPCReport(data['timestamp'], data['sensor'], data['target'], data['groups'])
+        except KeyError:
+            raise DeserializationFail()
+
+        return report
 
 
 #############################
