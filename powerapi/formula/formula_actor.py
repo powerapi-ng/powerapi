@@ -85,3 +85,14 @@ class FormulaActor(Actor):
         """
         for actor_pusher in self.state.pusher_actors:
             actor_pusher.state.socket_interface.close()
+
+    @staticmethod
+    def compute(report, state):
+        """
+        This function is the Formula core. It's here that the Formula,
+        from the input report, compute a power consumption
+        :param report: Input Report
+        :param state: Formula State
+        :return: a power report containing power consumption
+        """
+        raise NotImplementedError()

@@ -41,20 +41,6 @@ class DummyHWPCReportHandler(Handler):
     A fake handler that simulate data processing
     """
 
-    def _process_report(self, report):
-        """
-        Wait 1 second and return a power report containing 42
-
-        :param powerapi.Report report: Received report
-
-        :return: A power report containing consumption estimation
-        :rtype:  powerapi.PowerReport
-        """
-
-        result_msg = PowerReport(report.timestamp, report.sensor,
-                                 report.target, {}, 42)
-        return result_msg
-
     def handle(self, msg, state):
         """
         Process a report and send the result to the pusher actor
@@ -70,7 +56,7 @@ class DummyHWPCReportHandler(Handler):
         if not isinstance(msg, Report):
             raise UnknowMessageTypeException(type(msg))
 
-        result = self._process_report(msg)
+        result = DummyFormulaActor.compute(msg, state)
         for actor_pusher in state.pusher_actors:
             actor_pusher.send_data(result)
         return state
@@ -97,3 +83,16 @@ class DummyFormulaActor(FormulaActor):
         FormulaActor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
         self.add_handler(Report, DummyHWPCReportHandler())
+
+    @staticmethod
+    def compute(report, state):
+        """
+        This function is the Formula core. It's here that the Formula,
+        from the input report, compute a power consumption
+        :param report: Input Report
+        :param state: Formula State
+        :return: a power report containing power consumption
+        """
+        result_msg = PowerReport(report.timestamp, report.sensor,
+                                 report.target, {}, 42)
+        return result_msg
