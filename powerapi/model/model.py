@@ -29,22 +29,16 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.formula import FormulaActor, BasicFormulaHandler
-from powerapi.message import PoisonPillMessage
-from powerapi.report import Report
-from powerapi.handler import PoisonPillMessageHandler
 
-
-class DummyFormulaActor(FormulaActor):
+class Model:
     """
-    A fake Formula that simulate data processing by waiting 1s and send a
-    power report containing 42
+    Model abstract class that allow to estimate a power consumption
     """
 
-    def setup(self):
+    def estimate(self, report):
         """
-        Initialize Handler
+        Method that estimate the power consumption from an input report
+        :param report: Input Report
+        :return: PowerReport
         """
-        FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(Report, BasicFormulaHandler())
+        raise NotImplementedError()

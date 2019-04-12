@@ -50,14 +50,13 @@ Test if:
     socket in the output database
 """
 import logging
-import math
 import pytest
 import pymongo
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.formula import DummyFormulaActor
+from powerapi.formula import DummyFormulaActor, DummyModel
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -68,7 +67,6 @@ from powerapi.dispatcher import DispatcherActor, RouteTable
 
 from tests.mongo_utils import gen_base_db_test
 from tests.mongo_utils import clean_base_db_test
-from tests.utils import is_actor_alive
 
 DB_URI = "mongodb://localhost:27017/"
 LOG_LEVEL = logging.NOTSET
@@ -108,9 +106,12 @@ def test_run(database, supervisor):
     pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
                          level_logger=LOG_LEVEL)
 
+    # Model
+    dummy_model = DummyModel()
+
     # Formula
     formula_factory = (lambda name, verbose:
-                       DummyFormulaActor(name, [pusher], level_logger=verbose))
+                       DummyFormulaActor(name, [pusher], dummy_model, level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()

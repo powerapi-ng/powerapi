@@ -34,13 +34,47 @@ import re
 from functools import reduce
 
 from powerapi.actor import Actor, State, SocketInterface
+from powerapi.handler import Handler
+from powerapi.report import Report
+from powerapi.message import UnknowMessageTypeException
+
+
+class BasicFormulaHandler(Handler):
+    """
+    Basic handler behaviour for a kind of Report
+    """
+
+    def handle(self, msg, state):
+        """
+        Process a report and send the result to the pusher actor
+
+        :param powerapi.Report msg:  Received message
+        :param powerapi.State state: Actor state
+
+        :return: New Actor state
+        :rtype:  powerapi.State
+
+        :raises UnknowMessageTypeException: If the msg is not a Report
+        """
+        if not isinstance(msg, Report):
+            raise UnknowMessageTypeException(type(msg))
+
+        result = state.model.estimate(msg)
+        for actor_pusher in state.pusher_actors:
+            actor_pusher.send_data(result)
+        return state
 
 
 class FormulaState(State):
-    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors):
+    """
+    Formula Actor State
+    """
+
+    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors, model):
         State.__init__(self, behaviour, socket_interface, logger)
         self.formula_id = formula_id
         self.pusher_actors = pusher_actors
+        self.model = model
 
 
 class FormulaActor(Actor):
@@ -52,12 +86,14 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, pusher_actors,
+    def __init__(self, name, pusher_actors, model,
                  level_logger=logging.WARNING, timeout=None):
         """
         :param str name:                            Actor name
         :param powerapi.PusherActor pusher_actors:  Pusher actors whom send
                                                     results
+        :param powerapi.Model model:                Model that allow to estimate
+                                                    the power consumption
         :param int level_logger:                    Define logger level
         :param bool timeout:                        Time in millisecond to wait
                                                     for a message before called
@@ -70,7 +106,7 @@ class FormulaActor(Actor):
         #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(Actor._initial_behaviour,
                                   SocketInterface(name, timeout),
-                                  self.logger, formula_id, pusher_actors)
+                                  self.logger, formula_id, pusher_actors, model)
 
     def setup(self):
         """
@@ -85,14 +121,3 @@ class FormulaActor(Actor):
         """
         for actor_pusher in self.state.pusher_actors:
             actor_pusher.state.socket_interface.close()
-
-    @staticmethod
-    def compute(report, state):
-        """
-        This function is the Formula core. It's here that the Formula,
-        from the input report, compute a power consumption
-        :param report: Input Report
-        :param state: Formula State
-        :return: a power report containing power consumption
-        """
-        raise NotImplementedError()
