@@ -36,6 +36,13 @@ from typing import Dict
 from powerapi.message import Message
 
 
+class DeserializationFail(Exception):
+    """
+    Exception raised when the
+    in the good format
+    """
+
+
 class Report(Message):
     """
     Report abtract class.

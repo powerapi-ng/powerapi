@@ -29,6 +29,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.report.report import Report
+from powerapi.report.report import Report, DeserializationFail
 from powerapi.report.power_report import PowerReport
 from powerapi.report.hwpc_report import *

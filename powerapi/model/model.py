@@ -29,6 +29,16 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.formula.formula_actor import FormulaActor, FormulaState
-from powerapi.formula.dummy.dummy_model import DummyModel
-from powerapi.formula.dummy.dummy_formula_actor import DummyFormulaActor
+
+class Model:
+    """
+    Model abstract class that allow to estimate a power consumption
+    """
+
+    def estimate(self, report):
+        """
+        Method that estimate the power consumption from an input report
+        :param report: Input Report
+        :return: List of PowerReport
+        """
+        raise NotImplementedError()

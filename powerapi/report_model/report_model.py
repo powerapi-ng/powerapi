@@ -33,12 +33,19 @@ KEYS_COMMON = ['timestamp', 'sensor', 'target']
 KEYS_CSV_COMMON = KEYS_COMMON + ['socket', 'cpu']
 
 
+class BadInputData(Exception):
+    """
+    Exception raised when the data read in input are not
+    in the good format
+    """
+
+
 class ReportModel:
     """
     ReportModel class.
 
     It define all the function that need to be override if we want
-    to get a report from every kind of db.
+    to format the raw data read in different kind of database.
     """
 
     def get_type(self):
