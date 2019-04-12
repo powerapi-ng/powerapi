@@ -56,7 +56,7 @@ import pymongo
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.formula import DummyFormulaActor, DummyModel
+from powerapi.formula import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -106,12 +106,9 @@ def test_run(database, supervisor):
     pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
                          level_logger=LOG_LEVEL)
 
-    # Model
-    dummy_model = DummyModel()
-
     # Formula
     formula_factory = (lambda name, verbose:
-                       DummyFormulaActor(name, [pusher], dummy_model, level_logger=verbose))
+                       DummyFormulaActor(name, [pusher], level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()

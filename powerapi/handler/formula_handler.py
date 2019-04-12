@@ -30,43 +30,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import re
-from functools import reduce
-
-from powerapi.formula import FormulaActor, FormulaState, DummyModel
-from powerapi.message import PoisonPillMessage
+from powerapi.handler import Handler
+from powerapi.message import UnknowMessageTypeException
 from powerapi.report import Report
-from powerapi.handler import PoisonPillMessageHandler, FormulaHandler
-from powerapi.actor import Actor, SocketInterface
 
 
-class DummyFormulaActor(FormulaActor):
+class FormulaHandler(Handler):
     """
-    A fake Formula that simulate data processing by waiting 1s and send a
-    power report containing 42
+    Basic handler behaviour for a kind of Report
     """
-    def __init__(self, name, pusher_actors,
-                 level_logger=logging.WARNING, timeout=None):
-        """
-        :param str name: Actor name
-        :param powerapi.PusherActor pusher_actors: Pusher actors whom send results
-        :param int level_logger: Define logger level
-        :param bool timeout: Time in millisecond to wait for a message before called timeout_handler
-        """
-        FormulaActor.__init__(self, name, pusher_actors, level_logger, timeout)
 
-        formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
-
-        #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(Actor._initial_behaviour,
-                                  SocketInterface(name, timeout),
-                                  self.logger, formula_id, pusher_actors,
-                                  DummyModel())
-
-    def setup(self):
+    def handle(self, msg, state):
         """
-        Initialize Handler
+        Process a report and send the result to the pusher actor
+
+        :param powerapi.Report msg:  Received message
+        :param powerapi.State state: Actor state
+
+        :return: New Actor state
+        :rtype:  powerapi.State
+
+        :raises UnknowMessageTypeException: If the msg is not a Report
         """
-        FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(Report, FormulaHandler())
+        if not isinstance(msg, Report):
+            raise UnknowMessageTypeException(type(msg))
+
+        results = state.model.estimate(msg)
+        for actor_pusher in state.pusher_actors:
+            for result in results:
+                actor_pusher.send_data(result)
+        return state
+

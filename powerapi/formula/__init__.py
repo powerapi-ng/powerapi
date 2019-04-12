@@ -29,6 +29,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.formula.formula_actor import FormulaActor, FormulaState, BasicFormulaHandler
-from powerapi.formula.dummy.dummy_formula_actor import DummyFormulaActor
+from powerapi.formula.formula_actor import FormulaActor, FormulaState
 from powerapi.formula.dummy.dummy_model import DummyModel
+from powerapi.formula.dummy.dummy_formula_actor import DummyFormulaActor

@@ -39,6 +39,6 @@ class Model:
         """
         Method that estimate the power consumption from an input report
         :param report: Input Report
-        :return: PowerReport
+        :return: List of PowerReport
         """
         raise NotImplementedError()

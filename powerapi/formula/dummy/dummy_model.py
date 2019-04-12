@@ -42,8 +42,8 @@ class DummyModel(Model):
         """
         Method that estimate the power consumption from an input report
         :param report: Input Report
-        :return: PowerReport
+        :return: List of PowerReport
         """
         result_msg = PowerReport(report.timestamp, report.sensor,
                                  report.target, {}, 42)
-        return result_msg
+        return [result_msg]

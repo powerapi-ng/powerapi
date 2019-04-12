@@ -30,39 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import re
-from functools import reduce
 
 from powerapi.actor import Actor, State, SocketInterface
-from powerapi.handler import Handler
-from powerapi.report import Report
-from powerapi.message import UnknowMessageTypeException
-
-
-class BasicFormulaHandler(Handler):
-    """
-    Basic handler behaviour for a kind of Report
-    """
-
-    def handle(self, msg, state):
-        """
-        Process a report and send the result to the pusher actor
-
-        :param powerapi.Report msg:  Received message
-        :param powerapi.State state: Actor state
-
-        :return: New Actor state
-        :rtype:  powerapi.State
-
-        :raises UnknowMessageTypeException: If the msg is not a Report
-        """
-        if not isinstance(msg, Report):
-            raise UnknowMessageTypeException(type(msg))
-
-        result = state.model.estimate(msg)
-        for actor_pusher in state.pusher_actors:
-            actor_pusher.send_data(result)
-        return state
 
 
 class FormulaState(State):
@@ -86,14 +55,12 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, pusher_actors, model,
+    def __init__(self, name, pusher_actors,
                  level_logger=logging.WARNING, timeout=None):
         """
         :param str name:                            Actor name
         :param powerapi.PusherActor pusher_actors:  Pusher actors whom send
                                                     results
-        :param powerapi.Model model:                Model that allow to estimate
-                                                    the power consumption
         :param int level_logger:                    Define logger level
         :param bool timeout:                        Time in millisecond to wait
                                                     for a message before called
@@ -101,12 +68,11 @@ class FormulaActor(Actor):
         """
         Actor.__init__(self, name, level_logger, timeout)
 
-        formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
-
         #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(Actor._initial_behaviour,
                                   SocketInterface(name, timeout),
-                                  self.logger, formula_id, pusher_actors, model)
+                                  self.logger, None, pusher_actors,
+                                  None)
 
     def setup(self):
         """
