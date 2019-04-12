@@ -51,12 +51,12 @@ jobs:
           command: |
             go get github.com/tcnksm/ghr
             VERSION=$(python <<EOF
-import powerapi
-print(powerapi.__version__)
-EOF
-	    )
-	    mkdir artifacts
-	    tar czvf artifacts/powerapi.tar.gz powerapi/*
+            import powerapi
+            print(powerapi.__version__)
+            EOF
+            )
+            mkdir artifacts
+            tar czvf artifacts/powerapi.tar.gz powerapi/*
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
 
 workflows:
