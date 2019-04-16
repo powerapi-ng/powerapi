@@ -30,9 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from powerapi.handler import InitHandler, Handler, StartHandler
-from powerapi.report import PowerReport
 from powerapi.message import ErrorMessage
-from powerapi.message import OKMessage, StartMessage
 from powerapi.database import DBError
 
 
@@ -57,9 +55,9 @@ class PusherStartHandler(StartHandler):
         return state
 
 
-class PowerHandler(InitHandler):
+class ReportHandler(InitHandler):
     """
-    Allow to save the PowerReport received.
+    Allow to save the Report received.
     """
 
     def handle(self, msg, state):
@@ -69,9 +67,6 @@ class PowerHandler(InitHandler):
         :param powerapi.PowerReport msg: PowerReport to save.
         :param powerapi.State state: State of the actor.
         """
-        if not isinstance(msg, PowerReport):
-            return state
-
         state.buffer.append(msg.serialize())
 
         return state

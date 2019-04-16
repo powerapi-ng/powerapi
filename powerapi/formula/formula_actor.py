@@ -58,13 +58,13 @@ class FormulaActor(Actor):
     def __init__(self, name, pusher_actors,
                  level_logger=logging.WARNING, timeout=None):
         """
-        :param str name:                            Actor name
-        :param powerapi.PusherActor pusher_actors:  Pusher actors whom send
-                                                    results
-        :param int level_logger:                    Define logger level
-        :param bool timeout:                        Time in millisecond to wait
-                                                    for a message before called
-                                                    timeout_handler.
+        :param str name:                                   Actor name
+        :param Dict[powerapi.PusherActor] pusher_actors:  Pusher actors whom send
+                                                          results
+        :param int level_logger:                          Define logger level
+        :param bool timeout:                              Time in millisecond to wait
+                                                          for a message before called
+                                                          timeout_handler.
         """
         Actor.__init__(self, name, level_logger, timeout)
 
@@ -78,12 +78,12 @@ class FormulaActor(Actor):
         """
         Formula basic setup, Connect the formula to the pusher
         """
-        for actor_pusher in self.state.pusher_actors:
+        for _, actor_pusher in self.state.pusher_actors.items():
             actor_pusher.connect_data()
 
     def terminated_behaviour(self):
         """
         Allow to close actor_pusher socket
         """
-        for actor_pusher in self.state.pusher_actors:
+        for _, actor_pusher in self.state.pusher_actors.items():
             actor_pusher.state.socket_interface.close()

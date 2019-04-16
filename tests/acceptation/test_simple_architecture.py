@@ -98,6 +98,7 @@ def check_db():
             {'timestamp': report['timestamp'], 'sensor': report['sensor'],
              'target': report['target']}) == 2
 
+
 def test_run(database, supervisor):
     # Pusher
     output_mongodb = MongoDB(DB_URI,
@@ -108,7 +109,7 @@ def test_run(database, supervisor):
 
     # Formula
     formula_factory = (lambda name, verbose:
-                       DummyFormulaActor(name, [pusher], level_logger=verbose))
+                       DummyFormulaActor(name, {'my_pusher': pusher}, level_logger=verbose))
 
     # Dispatcher
     route_table = RouteTable()

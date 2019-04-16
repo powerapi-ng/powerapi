@@ -56,7 +56,7 @@ class FormulaHandler(Handler):
             raise UnknowMessageTypeException(type(msg))
 
         results = state.model.estimate(msg)
-        for actor_pusher in state.pusher_actors:
+        for _, actor_pusher in state.pusher_actors.items():
             for result in results:
                 actor_pusher.send_data(result)
         return state
