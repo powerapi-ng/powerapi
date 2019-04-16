@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
 from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import PowerHandler, PusherStartHandler, TimeoutBasicHandler, PusherPoisonPillHandler
+from powerapi.pusher import ReportHandler, PusherStartHandler, TimeoutBasicHandler, PusherPoisonPillHandler
 from powerapi.message import PoisonPillMessage, StartMessage
 
 
@@ -92,7 +92,7 @@ class PusherActor(Actor):
         each report type
         """
         self.add_handler(PoisonPillMessage, PusherPoisonPillHandler())
-        self.add_handler(self.report_type, PowerHandler())
+        self.add_handler(self.report_type, ReportHandler())
         self.add_handler(StartMessage, PusherStartHandler())
         self.set_timeout_handler(TimeoutBasicHandler())
 
