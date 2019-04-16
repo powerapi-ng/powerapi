@@ -28,3 +28,22 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
+from powerapi.report import PowerReport
+from powerapi.model import Model
+
+
+class DummyModel(Model):
+    """
+    DummyModel for testing
+    """
+
+    def estimate(self, report):
+        """
+        Method that estimate the power consumption from an input report
+        :param report: Input Report
+        :return: List of PowerReport
+        """
+        result_msg = PowerReport(report.timestamp, report.sensor,
+                                 report.target, {}, 42)
+        return [result_msg]

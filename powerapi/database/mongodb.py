@@ -133,9 +133,6 @@ class MongoDB(BaseDB):
         except StopIteration:
             raise StopIteration()
 
-        # Re arrange the json before return it by removing '_id' field
-        json.pop('_id', None)
-
         return self.report_model.from_mongodb(json)
 
     def save(self, json):

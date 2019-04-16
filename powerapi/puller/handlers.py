@@ -33,7 +33,8 @@ import logging
 from powerapi.handler import InitHandler, StartHandler
 from powerapi.database import DBError
 from powerapi.message import ErrorMessage, OKMessage, StartMessage
-from powerapi.message import PoisonPillMessage
+from powerapi.report.report import DeserializationFail
+from powerapi.report_model.report_model import BadInputData
 
 
 class NoReportExtractedException(Exception):
@@ -95,11 +96,10 @@ class TimeoutHandler(InitHandler):
         # report in the database, just pass
         try:
             data = next(state.database_it)
-        except StopIteration:
+            # Deserialization
+            report = state.database.report_model.get_type().deserialize(data)
+        except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
-
-        # Deserialization
-        report = state.database.report_model.get_type().deserialize(data)
 
         # Filter the report
         dispatchers = state.report_filter.route(report)

@@ -29,7 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.report_model import ReportModel, KEYS_CSV_COMMON, KEYS_COMMON
+from powerapi.report_model import ReportModel, KEYS_CSV_COMMON, KEYS_COMMON, BadInputData
 from powerapi.report import HWPCReport
 
 
@@ -51,31 +51,40 @@ class HWPCModel(ReportModel):
         """
         Get HWPCReport from a MongoDB database.
         """
+        # Re arrange the json before return it by removing '_id' field
+        json.pop('_id', None)
+
         return json
 
     def from_csvdb(self, file_name, row):
         """
         Get HWPCReport from a few csv files.
         """
-        final_dict = {key: row[key] for key in KEYS_COMMON}
-        final_dict['groups'] = {}
+        final_dict = {}
 
-        # If group doesn't exist, create it
-        if file_name not in final_dict:
-            final_dict['groups'][file_name] = {}
+        try:
+            final_dict = {key: row[key] for key in KEYS_COMMON}
+            final_dict['groups'] = {}
 
-        # If socket doesn't exist, create it
-        if row['socket'] not in final_dict['groups'][file_name]:
-            final_dict['groups'][file_name][row['socket']] = {}
+            # If group doesn't exist, create it
+            if file_name not in final_dict:
+                final_dict['groups'][file_name] = {}
 
-        # If cpu doesn't exist, create it
-        if row['cpu'] not in final_dict['groups'][file_name][row['socket']]:
-            final_dict['groups'][file_name][row['socket']][row['cpu']] = {}
+            # If socket doesn't exist, create it
+            if row['socket'] not in final_dict['groups'][file_name]:
+                final_dict['groups'][file_name][row['socket']] = {}
 
-        # Add events
-        for key, value in row.items():
-            if key not in KEYS_CSV_COMMON:
-                final_dict['groups'][file_name][
-                    row['socket']][row['cpu']][key] = int(value)
+            # If cpu doesn't exist, create it
+            if row['cpu'] not in final_dict['groups'][file_name][row['socket']]:
+                final_dict['groups'][file_name][row['socket']][row['cpu']] = {}
+
+            # Add events
+            for key, value in row.items():
+                if key not in KEYS_CSV_COMMON:
+                    final_dict['groups'][file_name][
+                        row['socket']][row['cpu']][key] = int(value)
+
+        except KeyError:
+            raise BadInputData()
 
         return final_dict

@@ -29,6 +29,55 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.formula.formula_actor import FormulaActor, FormulaState
-from powerapi.formula.dummy.dummy_model import DummyModel
-from powerapi.formula.dummy.dummy_formula_actor import DummyFormulaActor
+import pytest
+import datetime
+from powerapi.report.report import DeserializationFail
+from powerapi.report.hwpc_report import HWPCReport
+
+
+##############################################################################
+#                                Tests                                       #
+##############################################################################
+
+
+@pytest.mark.parametrize("json_input", [
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "target": "fake-target",
+      "groups": {}})
+]
+)
+def test_hwpc_report_deserialize_work(json_input):
+    """
+    Test working input for HWPCReport deserialize
+    :param json_input: Data in input
+    """
+    HWPCReport.deserialize(json_input)
+    assert True
+
+
+@pytest.mark.parametrize("json_input", [
+    ({"sensor": "fake-sensor",
+      "target": "fake-target",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "target": "fake-target",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "groups": {}}),
+    ({"timestamp": datetime.datetime.now(),
+      "sensor": "fake-sensor",
+      "target": "fake-target"})
+]
+)
+def test_hwpc_report_deserialize_fail(json_input):
+    """
+    Test failure input for HWPCReport deserialize
+    :param json_input: Data in input
+    """
+    try:
+        HWPCReport.deserialize(json_input)
+        assert False
+    except DeserializationFail:
+        assert True
