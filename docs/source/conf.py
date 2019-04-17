@@ -14,7 +14,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../powerapi'))
 
 
 # -- Project information -----------------------------------------------------
@@ -39,7 +39,7 @@ release = '0.0.1'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'autoapi.extension',
+    'sphinxcontrib.apidoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.autosummary',
@@ -51,6 +51,10 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
 ]
+
+#apidoc
+apidoc_module_dir = '../../powerapi/'
+apidoc_output_dir = './_doc'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
