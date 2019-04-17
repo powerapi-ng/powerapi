@@ -31,9 +31,10 @@ When the image is correctly downloaded, you can run the sensor with the followin
              -c "llc" -e "LLC_MISSES" \
              -c "rapl" -e "RAPL_ENERGY_CORES" -e "RAPL_ENERGY_PKG" -e "RAPL_ENERGY_GPU" -e "RAPL_ENERGY_DRAM"
 
-This command monitors the following hardware performance counters: `INSTRUCTIONS_RETIRED`, `CYCLES`, `LLC_MISSES`, `RAPL_ENERGY_CORES`, `RAPL_ENERGY_PKG`, `RAPL_ENERGY_GPU`, `RAPL_ENERGY_DRAM` when available and uploads the collected metrics into a MongoDB endpoint exposed at `mongodb://MONGO_ADDRESS`, as a collection `COLLECTION_NAME` stored in the database `DATABASE_NAME`.
+This command monitors the following hardware performance counters: ``INSTRUCTIONS_RETIRED``, ``CYCLES``, ``LLC_MISSES``, ``RAPL_ENERGY_CORES``, ``RAPL_ENERGY_PKG``, ``RAPL_ENERGY_GPU``, ``RAPL_ENERGY_DRAM`` when available and uploads the collected metrics into a MongoDB endpoint exposed at ``mongodb://MONGO_ADDRESS``, as a collection ``COLLECTION_NAME`` stored in the database ``DATABASE_NAME``.
 
 The parameters to be specified are:
+
 * **HWPC_DOCKER_IMAGE**:**HWPC-Sensor** docker image name.
 * **SENSOR_NAME**: Sensor name.
 * **MONGO_ADDRESS**: MongoDB server address.
