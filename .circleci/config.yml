@@ -39,3 +39,42 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py test
+            
+  publish-release:
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - checkout
+
+      - run:
+          name: create venv and verify git tag vs. version
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install --upgrade twine
+            python setup.py verify
+
+      - run:
+          name: generate package and upload it
+          command: |
+            python3 setup.py sdist bdist_wheel
+            . venv/bin/activate
+            twine upload -u powerapi -p $PYPI_PASSWORD dist/* 
+        
+
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build:
+          filters:
+            tags:
+              ignore: /v.*/
+      - publish-release:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v.*/
