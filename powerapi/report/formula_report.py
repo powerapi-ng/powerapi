@@ -37,33 +37,31 @@ from typing import Dict, Any
 from powerapi.report import Report
 
 
-class PowerReport(Report):
+class FormulaReport(Report):
     """
-    PowerReport stores the power estimation information.
+    FormulaReport stores information about a formula.
+    This is useful to gather information about a running formula in order to debug or compute statistics.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: Dict[str, Any]):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: Dict[str, Any]):
         """
         Initialize a Power report using the given parameters.
-        :param datetime timestamp: Report timestamp
-        :param str sensor: Sensor name
-        :param str target: Target name
-        :param float power: Power value
-        :param dict metadata: Metadata values, can be anything that add useful information
+        :param timestamp: Report timestamp
+        :param sensor: Sensor name
+        :param target: Target name
+        :param metadata: Metadata values, can be anything that add useful information
         """
         Report.__init__(self, timestamp, sensor, target)
-
         self.metadata = metadata
-        self.power = power
 
     def __repr__(self) -> str:
-        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, self.metadata)
+        return 'FormulaReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.metadata)
 
     @staticmethod
-    def deserialize(data: Dict) -> PowerReport:
+    def deserialize(data: Dict) -> FormulaReport:
         """
         Generate a report using the given data.
-        :param Dict data: Dictionary containing the report attributes
-        :return: The Power report initialized with the given data
+        :param data: Dictionary containing the report attributes
+        :return: The Formula report initialized with the given data
         """
-        return PowerReport(data['timestamp'], data['sensor'], data['target'], data['power'], data['metadata'])
+        return FormulaReport(data['timestamp'], data['sensor'], data['target'], data['metadata'])
