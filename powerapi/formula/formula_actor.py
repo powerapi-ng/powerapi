@@ -30,8 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
+import typing
 
 from powerapi.actor import Actor, State, SocketInterface
+from powerapi.pusher import PusherActor
 
 
 class FormulaState(State):
@@ -55,16 +57,16 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, pusher_actors,
+    def __init__(self, name, pusher_actors: typing.Dict[str, PusherActor],
                  level_logger=logging.WARNING, timeout=None):
         """
-        :param str name:                                   Actor name
-        :param Dict[powerapi.PusherActor] pusher_actors:  Pusher actors whom send
-                                                          results
-        :param int level_logger:                          Define logger level
-        :param bool timeout:                              Time in millisecond to wait
-                                                          for a message before called
-                                                          timeout_handler.
+        :param str name:                                       Actor name
+        :param Dict[str, powerapi.PusherActor] pusher_actors:  Pusher actors whom send
+                                                               results
+        :param int level_logger:                               Define logger level
+        :param bool timeout:                                   Time in millisecond to wait
+                                                               for a message before called
+                                                               timeout_handler.
         """
         Actor.__init__(self, name, level_logger, timeout)
 
