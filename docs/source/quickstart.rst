@@ -5,7 +5,7 @@ Démarrage rapide
 Quickstart
 **********
 
-This part help you to understand how to use **PowerAPI**. It's assumed that you have a MongoDB database containing exploitable data, obtain from :doc:`sensors <sensors>` support by **PowerAPI**. It's recommended to read the :doc:`PowerAPI quick overview <intro>` before.
+This part help you to understand how to use **PowerAPI**. It is assumed that you already have a MongoDB database containing exploitable metrics, obtained from :doc:`sensors <sensors>` supported by **PowerAPI**. It is recommended to read the :doc:`PowerAPI quick overview <intro>` before.
 
 PowerAPI CLI on Docker
 ======================
