@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from typing import Dict, Any
 
@@ -54,10 +53,7 @@ class PowerReport(Report):
         """
         Report.__init__(self, timestamp, sensor, target)
 
-        #: (dict): Metadate values, can be anything that add useful information.
         self.metadata = metadata
-
-        #: (float): Power value.
         self.power = power
 
     def __repr__(self) -> str:
