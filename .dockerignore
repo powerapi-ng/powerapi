@@ -1,0 +1,13 @@
+# Ignore everything by default
+*
+
+# Include the necessary files to install with setuptools
+!powerapi/
+!LICENSE
+!README.md
+!setup.py
+!setup.cfg
+
+# Ignore Byte-compiled / optimized / DLL files
+**/__pycache__
+**/*.py[cod]
