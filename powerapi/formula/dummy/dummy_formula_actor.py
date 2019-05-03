@@ -49,7 +49,7 @@ class DummyFormulaActor(FormulaActor):
                  level_logger=logging.WARNING, timeout=None):
         """
         :param str name: Actor name
-        :param powerapi.PusherActor pusher_actors: Pusher actors whom send results
+        :param Dict[str, powerapi.PusherActor] pusher_actors: Pusher actors whom send results
         :param int level_logger: Define logger level
         :param bool timeout: Time in millisecond to wait for a message before called timeout_handler
         """
