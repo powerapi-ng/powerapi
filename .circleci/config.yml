@@ -26,7 +26,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -e ".[mongodb]"
+            pip3 install -e ".[mongodb]"
 
       - save_cache:
           paths:
@@ -38,8 +38,8 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python setup.py test
-            
+            python3 setup.py test
+
   publish-release:
     docker:
       - image: circleci/python:3.7
@@ -50,23 +50,14 @@ jobs:
       - run:
           name: check git tag with package version
           command: |
-            check_git_tag_with_package_version () {
-                tag_version=${CIRCLE_TAG#*v}
-                pkg_version=$(python3 -c "import powerapi; print(powerapi.__version__)" 2>/dev/null || echo "error")
-            	if [ "$tag_version" = "$pkg_version" ]; then
-                		return 0
-            	fi
-            	return 1
-            }
-            check_git_tag_with_package_version
+            python3 -c "import os, powerapi; exit(os.environ.get('CIRCLE_TAG', '?')[1:] != powerapi.__version__)"
 
       - run:
           name: prepare environment
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install --upgrade pip
-            pip install --upgrade twine
+            pip3 install -U pip twine
 
       - run:
           name: init .pypirc
