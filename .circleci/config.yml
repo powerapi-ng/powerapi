@@ -1,5 +1,5 @@
-# PowerAPI CircleCI 2.0 configuration file
-version: 2
+# PowerAPI CircleCI configuration file
+version: 2.1
 jobs:
   build:
     docker:
@@ -43,38 +43,63 @@ jobs:
   publish-release:
     docker:
       - image: circleci/python:3.7
+
     steps:
       - checkout
 
       - run:
-          name: create venv and verify git tag vs. version
+          name: check git tag with package version
+          command: |
+            check_git_tag_with_package_version () {
+                tag_version=${CIRCLE_TAG#*v}
+                pkg_version=$(python3 -c "import powerapi; print(powerapi.__version__)" 2>/dev/null || echo "error")
+            	if [ "$tag_version" = "$pkg_version" ]; then
+                		return 0
+            	fi
+            	return 1
+            }
+            check_git_tag_with_package_version
+
+      - run:
+          name: prepare environment
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install --upgrade twine
-            python setup.py verify
 
       - run:
-          name: generate package and upload it
+          name: init .pypirc
+          command: |
+            echo -e "[pypi]" >> ~/.pypirc
+            echo -e "username = powerapi" >> ~/.pypirc
+            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+
+      - run:
+          name: generate package
           command: |
             python3 setup.py sdist bdist_wheel
-            . venv/bin/activate
-            twine upload -u powerapi -p $PYPI_PASSWORD dist/* 
-        
 
+      - run:
+          name: upload to pypi
+          command: |
+            . venv/bin/activate
+            twine upload dist/*
 
 workflows:
   version: 2
-  main:
+  build-n-publish:
     jobs:
       - build:
           filters:
             tags:
-              ignore: /v.*/
+              only: /.*/
+
       - publish-release:
+          requires:
+            - build
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /v.*/
+              only: /^v.*/
