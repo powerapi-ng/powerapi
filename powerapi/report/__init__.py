@@ -31,4 +31,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.report.report import Report, DeserializationFail
 from powerapi.report.power_report import PowerReport
+from powerapi.report.formula_report import FormulaReport
 from powerapi.report.hwpc_report import *
