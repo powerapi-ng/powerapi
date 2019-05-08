@@ -43,6 +43,6 @@ PowerAPI is used in a variety of projects to address key challenges of GreenIT:
 * [Greenspector](http://greenspector.com) optimises the power consumption of software by identifying potential energy leaks in the source code.
 
 ## Acknowledgments
-We all stand on the shoulders of giants and get by with a little help from our friends. PowerAPI is written in [Python](https://www.python.org/) (version 3.7 under [PSF license](https://docs.python.org/3/license.html)) and built on top of:
-* [pyzmq](https://github.com/zeromq/pyzmq) (version 17.1 under [3-Clause BSD license](https://opensource.org/licenses/BSD-3-Clause)), for socket communication.
-* [pymongo](https://github.com/mongodb/mongo-python-driver) (version 3.7.2 under [Apache 2 license](https://github.com/mongodb/mongo-python-driver/blob/master/LICENSE)), for using a python API for mongoDB.
+We all stand on the shoulders of giants and get by with a little help from our friends. PowerAPI is written in [Python](https://www.python.org/) (under [PSF license](https://docs.python.org/3/license.html)) and built on top of:
+* [pyzmq](https://github.com/zeromq/pyzmq) (under [3-Clause BSD license](https://opensource.org/licenses/BSD-3-Clause)) for inter-process communication.
+* [pymongo](https://github.com/mongodb/mongo-python-driver) (under [Apache 2 license](https://github.com/mongodb/mongo-python-driver/blob/master/LICENSE)) for the MongoDB database (input/output) support.
