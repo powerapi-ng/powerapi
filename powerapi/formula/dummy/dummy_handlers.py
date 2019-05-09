@@ -29,35 +29,36 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import logging
 from powerapi.handler import Handler
-from powerapi.message import UnknowMessageTypeException
-from powerapi.report import Report
+from powerapi.report import PowerReport
 
 
-class FormulaHandler(Handler):
+class ReportHandler(Handler):
     """
     Basic handler behaviour for a kind of Report
     """
 
+    def _estimate(self, report):
+        """
+        Method that estimate the power consumption from an input report
+        :param report: Input Report
+        :return: List of PowerReport
+        """
+        result_msg = PowerReport(report.timestamp, report.sensor,
+                                 report.target, {}, 42)
+        return [result_msg]
+
     def handle(self, msg, state):
         """
         Process a report and send the result to the pusher actor
-
         :param powerapi.Report msg:  Received message
         :param powerapi.State state: Actor state
-
         :return: New Actor state
         :rtype:  powerapi.State
-
         :raises UnknowMessageTypeException: If the msg is not a Report
         """
-        if not isinstance(msg, Report):
-            raise UnknowMessageTypeException(type(msg))
-
-        results = state.model.estimate(msg)
+        results = self._estimate(msg)
         for _, actor_pusher in state.pusher_actors.items():
             for result in results:
                 actor_pusher.send_data(result)
         return state
-

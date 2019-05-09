@@ -41,11 +41,10 @@ class FormulaState(State):
     Formula Actor State
     """
 
-    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors, model):
+    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors):
         State.__init__(self, behaviour, socket_interface, logger)
         self.formula_id = formula_id
         self.pusher_actors = pusher_actors
-        self.model = model
 
 
 class FormulaActor(Actor):
@@ -73,8 +72,7 @@ class FormulaActor(Actor):
         #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(Actor._initial_behaviour,
                                   SocketInterface(name, timeout),
-                                  self.logger, None, pusher_actors,
-                                  None)
+                                  self.logger, None, pusher_actors)
 
     def setup(self):
         """

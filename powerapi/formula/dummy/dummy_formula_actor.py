@@ -33,11 +33,12 @@ import logging
 import re
 from functools import reduce
 
-from powerapi.formula import FormulaActor, FormulaState, DummyModel
+from powerapi.formula import FormulaActor, FormulaState
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
-from powerapi.handler import PoisonPillMessageHandler, FormulaHandler
+from powerapi.handler import PoisonPillMessageHandler
 from powerapi.actor import Actor, SocketInterface
+from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 
 class DummyFormulaActor(FormulaActor):
@@ -60,8 +61,7 @@ class DummyFormulaActor(FormulaActor):
         #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(Actor._initial_behaviour,
                                   SocketInterface(name, timeout),
-                                  self.logger, formula_id, pusher_actors,
-                                  DummyModel())
+                                  self.logger, formula_id, pusher_actors)
 
     def setup(self):
         """
@@ -69,4 +69,4 @@ class DummyFormulaActor(FormulaActor):
         """
         FormulaActor.setup(self)
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(Report, FormulaHandler())
+        self.add_handler(Report, ReportHandler())
