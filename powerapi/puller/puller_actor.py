@@ -124,4 +124,4 @@ class PullerActor(Actor):
 
         # Close connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:
-            dispatcher.state.socket_interface.close()
+            dispatcher.state.actor.socket_interface.close()
