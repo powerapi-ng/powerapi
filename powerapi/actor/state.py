@@ -75,7 +75,7 @@ class State:
         self.handlers = []
         #: (func): function activated when no message was
         #: received since `timeout` milliseconds
-        self.timeout_handler = TimeoutHandler()
+        self.timeout_handler = TimeoutHandler(self)
         #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
         #: that are handle by this actor
         self.supervisor = Supervisor()

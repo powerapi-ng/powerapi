@@ -60,7 +60,7 @@ class Handler:
 
         :param Object msg: the message received by the actor
         """
-        return self.handle(msg)
+        self.handle(msg)
 
     def handle(self, msg):
         """
@@ -92,6 +92,6 @@ class InitHandler(Handler):
         :param Object msg: the message received by the actor
         """
         if not self.state.initialized:
-            return self.state
+            return
 
-        return self.handle(msg)
+        self.handle(msg)

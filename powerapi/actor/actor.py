@@ -182,6 +182,13 @@ class Actor(multiprocessing.Process):
         """
         self.state.add_handler(message_type, handler)
 
+    def set_behaviour(self, new_behaviour):
+        """
+        Set a new behaviour
+        :param new_behaviour: function
+        """
+        self.behaviour = new_behaviour
+
     def _initial_behaviour(self):
         """
         Initial behaviour of an actor
@@ -195,13 +202,12 @@ class Actor(multiprocessing.Process):
 
         # Timeout
         if msg is None:
-            self.state = self.state.timeout_handler.handle_message(None,
-                                                                   self.state)
+            self.state.timeout_handler.handle_message(None)
         # Message
         else:
             try:
                 handler = self.state.get_corresponding_handler(msg)
-                self.state = handler.handle_message(msg, self.state)
+                handler.handle_message(msg)
             except UnknowMessageTypeException:
                 self.logger.warning("UnknowMessageTypeException: " +
                                     str(msg))

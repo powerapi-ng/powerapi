@@ -44,7 +44,7 @@ class FakeActor(Actor):
 
     def __init__(self):
         Actor.__init__(self, 'test_supervisor')
-        self.state = State(Mock(), SocketInterface('test_supervisor', 0), Mock())
+        self.state = State(Mock())
         self.send_msg = []
         self.alive = False
 
