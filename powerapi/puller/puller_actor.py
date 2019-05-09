@@ -58,7 +58,7 @@ class PullerState(State):
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
         """
-        State.__init__(self, actor)
+        super().__init__(actor)
 
         #: (BaseDB): Allow to interact with a Database
         self.database = database
@@ -68,9 +68,6 @@ class PullerState(State):
 
         #: (Filter): Filter of the puller
         self.report_filter = report_filter
-
-        #: (bool): Puller stream_mode database.
-        self.stream_mode = database.stream_mode
 
         #: (int): Timeout for "basic mode"
         self.timeout_basic = timeout_basic
@@ -97,8 +94,6 @@ class PullerActor(Actor):
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
         :param int level_logger: Define the level of the logger
-        :param bool stream_mode: Puller stream_mode himself when it finish to
-                                 read all the database.
         """
 
         Actor.__init__(self, name, level_logger, timeout)

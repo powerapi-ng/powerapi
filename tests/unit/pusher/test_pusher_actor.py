@@ -30,11 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import mock
-from powerapi.report import Report, create_report_root
-from powerapi.pusher import PusherActor, PusherStartHandler, ReportHandler
+from powerapi.report import create_report_root
+from powerapi.pusher import PusherStartHandler, ReportHandler
 from powerapi.pusher import PusherState
 from powerapi.actor import Actor, SocketInterface
-from powerapi.report import PowerReport
 from powerapi.message import StartMessage, OKMessage, ErrorMessage
 
 ##############################################################################
@@ -77,26 +76,25 @@ class TestHandlerPusher:
         # Define PusherState
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(Actor._initial_behaviour,
-                                   fake_socket_interface,
-                                   fake_database,
-                                   mock.Mock())
+        pusher_state = PusherState(mock.Mock(),
+                                   fake_database)
+        pusher_state.actor.socket_interface = fake_socket_interface
         assert pusher_state.initialized is False
 
         # Define StartHandler
-        start_handler = PusherStartHandler()
+        start_handler = PusherStartHandler(pusher_state)
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
                    create_report_root({})]
         for msg in to_send:
-            start_handler.handle(msg, pusher_state)
+            start_handler.handle(msg)
             assert fake_database.method_calls == []
             assert fake_socket_interface.method_calls == []
             assert pusher_state.initialized is False
 
         # Try to initialize the state
-        start_handler.handle(StartMessage(), pusher_state)
+        start_handler.handle(StartMessage())
         assert pusher_state.initialized is True
 
 
@@ -108,20 +106,19 @@ class TestHandlerPusher:
         # Define PusherState
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(Actor._initial_behaviour,
-                                   fake_socket_interface,
-                                   fake_database,
-                                   mock.Mock())
+        pusher_state = PusherState(mock.Mock(),
+                                   fake_database)
+        pusher_state.actor.socket_interface = fake_socket_interface
         assert pusher_state.initialized is False
 
         # Define PowerHandler
-        power_handler = ReportHandler()
+        power_handler = ReportHandler(pusher_state)
         
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
                    create_report_root({})]
         for msg in to_send:
-            power_handler.handle_message(msg, pusher_state)
+            power_handler.handle_message(msg)
             assert pusher_state.database.method_calls == []
             assert pusher_state.initialized is False
 

@@ -60,7 +60,6 @@ class PullerStartHandler(StartHandler):
         except DBError as error:
             self.state.socket_interface.send_control(ErrorMessage(error.msg))
             self.state.alive = False
-            return self.state
 
         # Connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:
@@ -111,14 +110,14 @@ class TimeoutHandler(InitHandler):
             # for sleeping mode
             self.state.socket_interface.timeout = self.state.timeout_basic
         except NoReportExtractedException:
-            if not self.state.stream_mode:
+            if not self.state.database.stream_mode:
                 self.state.alive = False
             # for sleeping mode
             if self.state.counter < 10:
                 self.state.counter += 1
             else:
                 self.state.socket_interface.timeout = self.state.timeout_sleeping
-            return self.state
+            return
 
         # Send to the dispatcher if it's not None
         for dispatcher in dispatchers:
