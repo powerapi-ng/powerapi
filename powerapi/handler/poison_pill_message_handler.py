@@ -38,20 +38,14 @@ class PoisonPillMessageHandler(Handler):
     Generic handler for PoisonPillMessage
     """
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Set the :attr:`alive <powerapi.actor.state.State.alive>`
         attribute of the actor state to False
 
         :param Object msg: the message received by the actor
-        :param state: The current actor's state
-        :type state: powerapi.actor.state.State
-
-        :return: The new actor's state
-        :rtype: powerapi.actor.state.State
         """
         if not isinstance(msg, PoisonPillMessage):
             raise UnknowMessageTypeException(type(msg))
 
-        state.alive = False
-        return state
+        self.state.alive = False

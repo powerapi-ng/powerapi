@@ -38,35 +38,30 @@ class StartHandler(Handler):
     Initialize the received state
     """
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Allow to initialize the state of the actor, then reply to the control
         socket.
 
         :param powerapi.StartMessage msg: Message that initialize the actor
-        :param powerapi.State state: State of the actor
-        :rtype powerapi.State: the new state of the actor
         """
-        if state.initialized:
-            state.socket_interface.send_control(
+        if self.state.initialized:
+            self.state.socket_interface.send_control(
                 ErrorMessage('Actor already initialized'))
-            return state
+            return self.state
 
         if not isinstance(msg, StartMessage):
-            return state
+            return self.state
 
-        state = self.initialization(state)
+        self.state = self.initialization()
 
-        state.initialized = True
-        state.socket_interface.send_control(OKMessage())
+        self.state.initialized = True
+        self.state.socket_interface.send_control(OKMessage())
 
-        return state
+        return self.state
 
-    def initialization(self, state):
+    def initialization(self):
         """
         Abstract method that initialize the actor after receiving a start msg
-
-        :param powerapi.State state: State of the actor
-        :rtype powerapi.State: the new state of the actor
         """
-        return state
+        raise NotImplementedError()
