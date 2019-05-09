@@ -62,4 +62,4 @@ class StartHandler(Handler):
         """
         Abstract method that initialize the actor after receiving a start msg
         """
-        raise NotImplementedError()
+        pass

@@ -1,7 +1,5 @@
-"""
-Copyright (c) 2018, INRIA
-Copyright (c) 2018, University of Lille
-All rights reserved.
+"""Copyright (c) 2018, INRIA Copyright (c) 2018, University of Lille All rights
+reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -27,6 +25,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 
 import pytest
@@ -171,6 +170,11 @@ SPLITED_REPORT_1_B2 = Report1('a', 'b2')
 SPLITED_REPORT_2_C2 = Report2('a', 'c2')
 
 
+def init_state():
+    """ return a fresh dispatcher state """
+    return DispatcherState(Mock(), lambda formula_id: Mock(), RouteTable())
+
+
 class TestExtractReportFunction:
     """Test handle function of the formula dispatcher handler
 
@@ -186,13 +190,13 @@ class TestExtractReportFunction:
     """
 
     def gen_test_get_formula_id(self, primary_dispatch_rule, dispatch_rule,
-                                input_report, validation_id):
+                                input_report, validation_id, state):
         """instanciate the handler whit given route table and primary dispatch
         rule, test if the handle function application on *input_report* return
         the same reports as in *validation_reports*
 
         """
-        handler = FormulaDispatcherReportHandler()
+        handler = FormulaDispatcherReportHandler(state)
 
         formula_ids = handler._extract_formula_id(input_report, dispatch_rule,
                                                   primary_dispatch_rule)
@@ -214,13 +218,13 @@ class TestExtractReportFunction:
 
         """
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
-                                     REPORT_1, [('a',)])
+                                     REPORT_1, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2A(),
-                                     REPORT_2, [('a',)])
+                                     REPORT_2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
-                                     REPORT_1_B2, [('a',)])
+                                     REPORT_1_B2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2A(),
-                                     REPORT_2_C2, [('a',)])
+                                     REPORT_2_C2, [('a',)], init_state())
 
     def test_get_formula_id_pgb_DispatchRule1A_gb_DispatchRule2AC(self):
         """test get_formula_id function for a DispatchRule1A rule for Report1 as
@@ -236,13 +240,13 @@ class TestExtractReportFunction:
 
         """
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
-                                     REPORT_1, [('a',)])
+                                     REPORT_1, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
-                                     REPORT_2, [('a',)])
+                                     REPORT_2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule1A(),
-                                     REPORT_1_B2, [('a',)])
+                                     REPORT_1_B2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
-                                     REPORT_2_C2, [('a',)])
+                                     REPORT_2_C2, [('a',)], init_state())
 
     def test_get_formula_id_pgb_DispatchRule1AB_gb_DispatchRule2A(self):
         """
@@ -257,13 +261,14 @@ class TestExtractReportFunction:
 
         """
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
-                                     REPORT_1, [('a', 'b')])
+                                     REPORT_1, [('a', 'b')], init_state())
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2A(),
-                                     REPORT_2, [('a',)])
+                                     REPORT_2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
-                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
+                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')],
+                                     init_state)
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2A(),
-                                     REPORT_2_C2, [('a',)])
+                                     REPORT_2_C2, [('a',)], init_state())
 
     def test_get_formula_id_pgb_DispatchRule1AB_gb_DispatchRule2AC(self):
         """
@@ -277,20 +282,14 @@ class TestExtractReportFunction:
         - REPORT_2_C2 : [('a',)]
         """
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
-                                     REPORT_1, [('a', 'b')])
+                                     REPORT_1, [('a', 'b')], init_state())
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule2AC(),
-                                     REPORT_2, [('a',)])
+                                     REPORT_2, [('a',)], init_state())
         self.gen_test_get_formula_id(DispatchRule1AB(), DispatchRule1AB(),
-                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
+                                     REPORT_1_B2, [('a', 'b'), ('a', 'b2')],
+                                     init_state)
         self.gen_test_get_formula_id(DispatchRule1A(), DispatchRule2AC(),
-                                     REPORT_2_C2, [('a',)])
-
-
-def init_state():
-    """ return a fresh dispatcher state """
-    return DispatcherState(None, Mock(), Mock(),
-                           lambda formula_id: Mock(),
-                           RouteTable())
+                                     REPORT_2_C2, [('a',)], init_state())
 
 
 class TestHandlerFunction:
@@ -303,10 +302,10 @@ class TestHandlerFunction:
         in the handler's route table
 
         """
-        handler = FormulaDispatcherReportHandler()
+        handler = FormulaDispatcherReportHandler(init_state())
 
         with pytest.raises(UnknowMessageTypeException):
-            handler.handle(REPORT_1, init_state())
+            handler.handle(REPORT_1)
 
     def gen_test_handle(self, input_report, init_formula_id_list,
                         formula_id_validation_list, init_state):
@@ -317,14 +316,14 @@ class TestHandlerFunction:
         """
         init_state.route_table.dispatch_rule(Report1, DispatchRule1AB(True))
         init_state.route_table.dispatch_rule(Report2, DispatchRule2AC())
-        handler = FormulaDispatcherReportHandler()
+        handler = FormulaDispatcherReportHandler(init_state)
 
         for formula_id in init_formula_id_list:
             init_state.add_formula(formula_id)
 
-        result_state = handler.handle(input_report, init_state)
+        handler.handle(input_report)
         formula_id_result_list = list(map(lambda x: x[0],
-                                          result_state.get_all_formula()))
+                                          init_state.get_all_formula()))
         formula_id_result_list.sort(key=lambda result_tuple: result_tuple[0])
 
         formula_id_result_list.sort()
@@ -396,26 +395,21 @@ class TestHandlerFunction:
         """
 
         # Define DispatcherState
-        fake_socket_interface = get_fake_socket_interface()
-        dispatcher_state = DispatcherState(Actor._initial_behaviour,
-                                           fake_socket_interface,
-                                           Mock(),
-                                           None, None)
+        dispatcher_state = DispatcherState(Mock(), None, None)
         assert dispatcher_state.initialized is False
 
         # Define StartHandler
-        start_handler = StartHandler()
+        start_handler = StartHandler(dispatcher_state)
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
                    HWPCReport("test", "test", "test", {})]
         for msg in to_send:
-            start_handler.handle(msg, dispatcher_state)
-            assert fake_socket_interface.method_calls == []
+            start_handler.handle(msg)
             assert dispatcher_state.initialized is False
 
         # Try to initialize the state
-        start_handler.handle(StartMessage(), dispatcher_state)
+        start_handler.handle(StartMessage())
         assert dispatcher_state.initialized is True
 
 

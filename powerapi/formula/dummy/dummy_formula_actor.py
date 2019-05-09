@@ -59,14 +59,12 @@ class DummyFormulaActor(FormulaActor):
         formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(Actor._initial_behaviour,
-                                  SocketInterface(name, timeout),
-                                  self.logger, formula_id, pusher_actors)
+        self.state = FormulaState(self, formula_id, pusher_actors)
 
     def setup(self):
         """
         Initialize Handler
         """
         FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(Report, ReportHandler())
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(Report, ReportHandler(self.state))

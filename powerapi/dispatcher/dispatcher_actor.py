@@ -70,10 +70,7 @@ class DispatcherActor(Actor):
         self.formula_init_function = formula_init_function
 
         # (powerapi.DispatcherState): Actor state
-        self.state = DispatcherState(Actor._initial_behaviour,
-                                     SocketInterface(name, timeout),
-                                     self.logger,
-                                     self._create_factory(), route_table)
+        self.state = DispatcherState(self, self._create_factory(), route_table)
 
     def setup(self):
         """
@@ -84,9 +81,9 @@ class DispatcherActor(Actor):
         if self.state.route_table.primary_dispatch_rule is None:
             raise NoPrimaryDispatchRuleRuleException()
 
-        self.add_handler(Report, FormulaDispatcherReportHandler())
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(StartMessage, StartHandler())
+        self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartHandler(self.state))
 
     def terminated_behaviour(self):
         """
