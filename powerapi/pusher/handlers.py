@@ -39,20 +39,14 @@ class PusherStartHandler(StartHandler):
     Handle Start Message
     """
 
-    def initialization(self, state):
+    def initialization(self):
         """
         Initialize the output database
-
-        :param powerapi.State state: State of the actor.
-        :rtype powerapi.State: the new state of the actor
         """
         try:
-            state.database.connect()
+            self.state.database.connect()
         except DBError as error:
-            state.socket_interface.send_control(ErrorMessage(error.msg))
-            return state
-
-        return state
+            self.state.socket_interface.send_control(ErrorMessage(error.msg))
 
 
 class ReportHandler(InitHandler):
@@ -60,16 +54,13 @@ class ReportHandler(InitHandler):
     Allow to save the Report received.
     """
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Save the msg in the database
 
         :param powerapi.PowerReport msg: PowerReport to save.
-        :param powerapi.State state: State of the actor.
         """
-        state.buffer.append(msg.serialize())
-
-        return state
+        self.state.buffer.append(msg.serialize())
 
 
 class PusherPoisonPillHandler(Handler):
@@ -77,15 +68,12 @@ class PusherPoisonPillHandler(Handler):
     Set a timeout for the pusher for the timeout_handler. If he didn't
     read any input during the timeout, the actor end.
     """
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
-        :param powerapi.pusher.PusherState state: State of the actor.
-        :return powerapi.State: new State
         """
-        state.timeout_handler = TimeoutKillHandler()
-        state.socket_interface.timeout = 2000
-        return state
+        self.state.timeout_handler = TimeoutKillHandler(self.state)
+        self.state.socket_interface.timeout = 2000
 
 
 class TimeoutBasicHandler(InitHandler):
@@ -93,29 +81,23 @@ class TimeoutBasicHandler(InitHandler):
     Pusher timeout flush the buffer
     """
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Flush the buffer in the database
         :param msg: None
-        :param state: State of the actor
-        :return powerapi.PusherState: new State
         """
-        if len(state.buffer) > 0:
-            state.database.save_many(state.buffer)
-        state.buffer = []
-        return state
+        if len(self.state.buffer) > 0:
+            self.state.database.save_many(self.state.buffer)
+        self.state.buffer = []
 
 
 class TimeoutKillHandler(InitHandler):
     """
     Pusher timeout kill the actor
     """
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Kill the actor by setting alive to False
         :param msg: None
-        :param state: State of the actor
-        :return powerapi.PusherState: new State
         """
-        state.alive = False
-        return state
+        self.state.alive = False

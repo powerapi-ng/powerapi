@@ -112,7 +112,7 @@ class Actor(multiprocessing.Process):
         #self.logger.addHandler(handlerf)
 
         #: (powerapi.State): Actor context
-        self.state = State(self, self.logger)
+        self.state = State(self)
 
         #: (powerapi.SocketInterface): Actor's SocketInterface
         self.socket_interface = SocketInterface(name, timeout)

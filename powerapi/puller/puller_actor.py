@@ -52,18 +52,13 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, behaviour, socket_interface, logger,
-                 database, report_filter,
+    def __init__(self, actor, database, report_filter,
                  timeout_basic=0, timeout_sleeping=100):
         """
-        :param func behaviour: Function that define the initial_behaviour
-        :param SocketInterface socket_interface: Communication interface of the
-                                                 actor
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
-        :param bool stream_mode: Puller stream_mode database.
         """
-        State.__init__(self, behaviour, socket_interface, logger)
+        State.__init__(self, actor)
 
         #: (BaseDB): Allow to interact with a Database
         self.database = database
@@ -108,9 +103,7 @@ class PullerActor(Actor):
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(Actor._initial_behaviour,
-                                 SocketInterface(name, timeout),
-                                 self.logger,
+        self.state = PullerState(self,
                                  database,
                                  report_filter,
                                  timeout, timeout_sleeping)
@@ -119,9 +112,9 @@ class PullerActor(Actor):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
-        self.add_handler(StartMessage, PullerStartHandler())
-        self.set_timeout_handler(TimeoutHandler())
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, PullerStartHandler(self.state))
+        self.set_timeout_handler(TimeoutHandler(self.state))
 
     def terminated_behaviour(self):
         """

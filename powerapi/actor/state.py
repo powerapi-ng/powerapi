@@ -60,11 +60,9 @@ class State:
     :attr:`supervisor <powerapi.actor.state.State.supervisor>`
     """
 
-    def __init__(self, actor, logger):
+    def __init__(self, actor):
         """
         :param powerapi.Actor actor: Actor
-        :param logger: Logger
-        :type logger: logging.Logger
         """
         #: (bool): True if the actor is initialized and can handle all
         #: message, False otherwise
@@ -83,8 +81,6 @@ class State:
         self.supervisor = Supervisor()
         #: (powerapi.Actor): Actor
         self.actor = actor
-        #: (logging.Logger): Logger
-        self.logger = logger
 
     def get_corresponding_handler(self, msg):
         """
