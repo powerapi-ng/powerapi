@@ -29,10 +29,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import logging
+from powerapi.filter import FilterUselessError
 from powerapi.handler import InitHandler, StartHandler
 from powerapi.database import DBError
-from powerapi.message import ErrorMessage, OKMessage, StartMessage
+from powerapi.message import ErrorMessage
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model.report_model import BadInputData
 
@@ -117,6 +117,10 @@ class TimeoutHandler(InitHandler):
                 self.state.counter += 1
             else:
                 self.state.actor.socket_interface.timeout = self.state.timeout_sleeping
+            return
+        except FilterUselessError:
+            self.state.alive = False
+            self.state.actor.send_control(ErrorMessage("FilterUselessError"))
             return
 
         # Send to the dispatcher if it's not None

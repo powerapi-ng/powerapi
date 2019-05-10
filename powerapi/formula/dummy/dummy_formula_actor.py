@@ -58,7 +58,7 @@ class DummyFormulaActor(FormulaActor):
         formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(self, formula_id, pushers)
+        self.state = FormulaState(self, pushers, formula_id)
 
     def setup(self):
         """
