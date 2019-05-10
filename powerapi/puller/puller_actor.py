@@ -111,7 +111,7 @@ class PullerActor(Actor):
         self.add_handler(StartMessage, PullerStartHandler(self.state))
         self.set_timeout_handler(TimeoutHandler(self.state))
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Allow to end some socket connection properly
         """

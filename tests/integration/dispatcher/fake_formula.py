@@ -47,6 +47,7 @@ class HWPCReportHandler(Handler):
     def handle(self, msg):
         self.push_socket.send(pickle.dumps(msg))
 
+
 class FakeFormulaActor(Actor):
     """
     Formula abstract class. A Formula is an Actor which use data
@@ -84,5 +85,5 @@ class FakeFormulaActor(Actor):
         self.push_socket.send(pickle.dumps('created'))
 
 
-    def terminated_behaviour(self):
+    def teardown(self):
         self.push_socket.send(pickle.dumps('terminated'))

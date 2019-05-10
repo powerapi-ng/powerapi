@@ -68,7 +68,7 @@ class Actor(multiprocessing.Process):
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`terminated_behaviour <powerapi.actor.actor.Actor.terminated_behaviour>`             |
+    |                                 | :meth:`teardown <powerapi.actor.actor.Actor.teardown>`                                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -218,9 +218,9 @@ class Actor(multiprocessing.Process):
         """
         Kill the actor (close sockets)
         """
-        self.terminated_behaviour()
+        self.teardown()
         self.socket_interface.close()
-        self.logger.info(self.name + " terminated")
+        self.logger.info(self.name + " teardown")
 
     def set_timeout_handler(self, new_timeout_handler):
         """
@@ -228,7 +228,7 @@ class Actor(multiprocessing.Process):
         """
         self.state.timeout_handler = new_timeout_handler
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Function called before closing sockets
 

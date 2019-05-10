@@ -58,6 +58,6 @@ class ReportHandler(Handler):
         :raises UnknowMessageTypeException: If the msg is not a Report
         """
         results = self._estimate(msg)
-        for _, actor_pusher in self.state.pusher_actors.items():
+        for _, actor_pusher in self.state.pushers.items():
             for result in results:
                 actor_pusher.send_data(result)

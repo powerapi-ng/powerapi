@@ -37,7 +37,6 @@ from powerapi.formula import FormulaActor, FormulaState
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
 from powerapi.handler import PoisonPillMessageHandler
-from powerapi.actor import Actor, SocketInterface
 from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 
@@ -46,7 +45,7 @@ class DummyFormulaActor(FormulaActor):
     A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
     """
-    def __init__(self, name, pusher_actors,
+    def __init__(self, name, pushers,
                  level_logger=logging.WARNING, timeout=None):
         """
         :param str name: Actor name
@@ -54,12 +53,12 @@ class DummyFormulaActor(FormulaActor):
         :param int level_logger: Define logger level
         :param bool timeout: Time in millisecond to wait for a message before called timeout_handler
         """
-        FormulaActor.__init__(self, name, pusher_actors, level_logger, timeout)
+        FormulaActor.__init__(self, name, pushers, level_logger, timeout)
 
         formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(self, formula_id, pusher_actors)
+        self.state = FormulaState(self, formula_id, pushers)
 
     def setup(self):
         """

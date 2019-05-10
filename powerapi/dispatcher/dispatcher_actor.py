@@ -85,7 +85,7 @@ class DispatcherActor(Actor):
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(StartMessage, StartHandler(self.state))
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Override from Actor.
 
