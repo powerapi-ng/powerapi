@@ -29,10 +29,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import logging
+from powerapi.filter import FilterUselessError
 from powerapi.handler import InitHandler, StartHandler
 from powerapi.database import DBError
-from powerapi.message import ErrorMessage, OKMessage, StartMessage
+from powerapi.message import ErrorMessage
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model.report_model import BadInputData
 
@@ -49,27 +49,21 @@ class PullerStartHandler(StartHandler):
     Initialize the database interface
     """
 
-    def initialization(self, state):
+    def initialization(self):
         """
         Initialize the database and connect all dispatcher to the
         socket_interface
-
-        :param State state: State of the actor.
-        :rtype powerapi.State: the new state of the actor
         """
         try:
-            state.database.connect()
-            state.database_it = iter(state.database)
+            self.state.database.connect()
+            self.state.database_it = iter(self.state.database)
         except DBError as error:
-            state.socket_interface.send_control(ErrorMessage(error.msg))
-            state.alive = False
-            return state
+            self.state.actor.send_control(ErrorMessage(error.msg))
+            self.state.alive = False
 
         # Connect to all dispatcher
-        for _, dispatcher in state.report_filter.filters:
+        for _, dispatcher in self.state.report_filter.filters:
             dispatcher.connect_data()
-
-        return state
 
 
 class TimeoutHandler(InitHandler):
@@ -77,15 +71,12 @@ class TimeoutHandler(InitHandler):
     Puller timeout, read the database.
     """
 
-    def get_report_dispatcher(self, state):
+    def _get_report_dispatcher(self):
         """
         read one report of the database and filter it,
         then return the tuple (report, dispatcher).
 
-        Return:
-            (Report, DispatcherActor): (extracted_report,
-                                        dispatcher to sent
-                                        this report)
+        :return (Report, DispatcherActor): extracted report and dispatcher to sent this report
 
         Raise:
             NoReportExtractedException : if the database doesn't contains
@@ -95,17 +86,17 @@ class TimeoutHandler(InitHandler):
         # Read one input, if it's None, it means there is not more
         # report in the database, just pass
         try:
-            data = next(state.database_it)
+            data = next(self.state.database_it)
             # Deserialization
-            report = state.database.report_model.get_type().deserialize(data)
+            report = self.state.database.report_model.get_type().deserialize(data)
         except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
 
         # Filter the report
-        dispatchers = state.report_filter.route(report)
+        dispatchers = self.state.report_filter.route(report)
         return (report, dispatchers)
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Read data from Database and send it to the dispatchers.
         If there is no more data, send a kill message to every
@@ -113,25 +104,26 @@ class TimeoutHandler(InitHandler):
         If stream mode is disable, kill the actor.
 
         :param None msg: None.
-        :param smartwatts.State state: State of the actor.
         """
         try:
-            (report, dispatchers) = self.get_report_dispatcher(state)
+            (report, dispatchers) = self._get_report_dispatcher()
             # for sleeping mode
-            state.socket_interface.timeout = state.timeout_basic
+            self.state.actor.socket_interface.timeout = self.state.timeout_basic
         except NoReportExtractedException:
-            if not state.stream_mode:
-                state.alive = False
+            if not self.state.database.stream_mode:
+                self.state.alive = False
             # for sleeping mode
-            if state.counter < 10:
-                state.counter += 1
+            if self.state.counter < 10:
+                self.state.counter += 1
             else:
-                state.socket_interface.timeout = state.timeout_sleeping
-            return state
+                self.state.actor.socket_interface.timeout = self.state.timeout_sleeping
+            return
+        except FilterUselessError:
+            self.state.alive = False
+            self.state.actor.send_control(ErrorMessage("FilterUselessError"))
+            return
 
         # Send to the dispatcher if it's not None
         for dispatcher in dispatchers:
             if dispatcher is not None:
                 dispatcher.send_data(report)
-
-        return state

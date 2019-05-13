@@ -42,14 +42,11 @@ class PusherState(State):
     Contains in addition to State values :
       - The database interface
     """
-    def __init__(self, behaviour, socket_interface, database, logger):
+    def __init__(self, actor, database):
         """
-        :param func behaviour: Function that define the initial_behaviour.
-        :param SocketInterface socket_interface: Communication interface of the
-                                                 actor.
         :param BaseDB database: Database for saving data.
         """
-        State.__init__(self, behaviour, socket_interface, logger)
+        State.__init__(self, actor)
 
         #: (BaseDB): Database for saving data.
         self.database = database
@@ -81,22 +78,20 @@ class PusherActor(Actor):
         self.report_type = report_type
 
         #: (State): State of the actor.
-        self.state = PusherState(Actor._initial_behaviour,
-                                 SocketInterface(name, timeout),
-                                 database,
-                                 self.logger)
+        self.state = PusherState(self,
+                                 database)
 
     def setup(self):
         """
         Define StartMessage, PoisonPillMessage handlers and a handler for
         each report type
         """
-        self.add_handler(PoisonPillMessage, PusherPoisonPillHandler())
-        self.add_handler(self.report_type, ReportHandler())
-        self.add_handler(StartMessage, PusherStartHandler())
-        self.set_timeout_handler(TimeoutBasicHandler())
+        self.add_handler(PoisonPillMessage, PusherPoisonPillHandler(self.state))
+        self.add_handler(self.report_type, ReportHandler(self.state))
+        self.add_handler(StartMessage, PusherStartHandler(self.state))
+        self.set_timeout_handler(TimeoutBasicHandler(self.state))
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Allow to save the buffer before Pusher death
         """

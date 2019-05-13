@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import typing
+from typing import Dict
 
 from powerapi.actor import Actor, State, SocketInterface
 from powerapi.pusher import PusherActor
@@ -41,10 +41,10 @@ class FormulaState(State):
     Formula Actor State
     """
 
-    def __init__(self, behaviour, socket_interface, logger, formula_id, pusher_actors):
-        State.__init__(self, behaviour, socket_interface, logger)
+    def __init__(self, actor, pushers, formula_id=None):
+        State.__init__(self, actor)
         self.formula_id = formula_id
-        self.pusher_actors = pusher_actors
+        self.pushers = pushers
 
 
 class FormulaActor(Actor):
@@ -56,34 +56,31 @@ class FormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, pusher_actors: typing.Dict[str, PusherActor],
-                 level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
         """
-        :param str name:                                       Actor name
-        :param Dict[str, powerapi.PusherActor] pusher_actors:  Pusher actors whom send
-                                                               results
-        :param int level_logger:                               Define logger level
-        :param bool timeout:                                   Time in millisecond to wait
-                                                               for a message before called
-                                                               timeout_handler.
+        :param str name:                                 Actor name
+        :param Dict[str, powerapi.PusherActor] pushers:  Pusher actors whom send
+                                                         results
+        :param int level_logger:                         Define logger level
+        :param bool timeout:                             Time in millisecond to wait
+                                                         for a message before called
+                                                         timeout_handler.
         """
         Actor.__init__(self, name, level_logger, timeout)
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(Actor._initial_behaviour,
-                                  SocketInterface(name, timeout),
-                                  self.logger, None, pusher_actors)
+        self.state = FormulaState(self, pushers)
 
     def setup(self):
         """
         Formula basic setup, Connect the formula to the pusher
         """
-        for _, actor_pusher in self.state.pusher_actors.items():
-            actor_pusher.connect_data()
+        for _, pusher in self.state.pushers.items():
+            pusher.connect_data()
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Allow to close actor_pusher socket
         """
-        for _, actor_pusher in self.state.pusher_actors.items():
-            actor_pusher.state.socket_interface.close()
+        for _, pusher in self.state.pushers.items():
+            pusher.state.socket_interface.close()

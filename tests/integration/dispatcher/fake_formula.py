@@ -40,12 +40,12 @@ from powerapi.actor import Actor, State, SocketInterface, SafeContext
 
 class HWPCReportHandler(Handler):
 
-    def __init__(self, push_socket):
+    def __init__(self, state, push_socket):
+        Handler.__init__(self, state)
         self.push_socket = push_socket
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         self.push_socket.send(pickle.dumps(msg))
-        return state
 
 
 class FakeFormulaActor(Actor):
@@ -69,23 +69,21 @@ class FakeFormulaActor(Actor):
         Actor.__init__(self, name, level_logger, timeout)
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = State(Actor._initial_behaviour,
-                           SocketInterface(name, timeout),
-                           self.logger)
+        self.state = State(self)
 
         self.addr = push_socket_addr
         self.push_socket = None
 
 
     def setup(self):
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler())
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.connect(self.addr)
 
-        self.add_handler(Report, HWPCReportHandler(self.push_socket))
+        self.add_handler(Report, HWPCReportHandler(self.state, self.push_socket))
 
         self.push_socket.send(pickle.dumps('created'))
 
 
-    def terminated_behaviour(self):
+    def teardown(self):
         self.push_socket.send(pickle.dumps('terminated'))

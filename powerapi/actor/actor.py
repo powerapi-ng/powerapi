@@ -68,7 +68,7 @@ class Actor(multiprocessing.Process):
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
     |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`terminated_behaviour <powerapi.actor.actor.Actor.terminated_behaviour>`             |
+    |                                 | :meth:`teardown <powerapi.actor.actor.Actor.teardown>`                                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -111,10 +111,14 @@ class Actor(multiprocessing.Process):
         self.logger.addHandler(handler)
         #self.logger.addHandler(handlerf)
 
-        #: (smartwatts.actor.state.State): actor's state
-        self.state = State(self._initial_behaviour,
-                           SocketInterface(name, timeout),
-                           self.logger)
+        #: (powerapi.State): Actor context
+        self.state = State(self)
+
+        #: (powerapi.SocketInterface): Actor's SocketInterface
+        self.socket_interface = SocketInterface(name, timeout)
+
+        #: (func): Actor behaviour
+        self.behaviour = Actor._initial_behaviour
 
     def run(self):
         """
@@ -123,7 +127,7 @@ class Actor(multiprocessing.Process):
         self._setup()
 
         while self.state.alive:
-            self.state.behaviour(self)
+            self.behaviour(self)
 
         self._kill_process()
 
@@ -152,7 +156,7 @@ class Actor(multiprocessing.Process):
         # Name process
         setproctitle.setproctitle(self.name)
 
-        self.state.socket_interface.setup()
+        self.socket_interface.setup()
 
         self.logger.info(self.name + ' process created.')
 
@@ -178,6 +182,13 @@ class Actor(multiprocessing.Process):
         """
         self.state.add_handler(message_type, handler)
 
+    def set_behaviour(self, new_behaviour):
+        """
+        Set a new behaviour
+        :param new_behaviour: function
+        """
+        self.behaviour = new_behaviour
+
     def _initial_behaviour(self):
         """
         Initial behaviour of an actor
@@ -191,13 +202,12 @@ class Actor(multiprocessing.Process):
 
         # Timeout
         if msg is None:
-            self.state = self.state.timeout_handler.handle_message(None,
-                                                                   self.state)
+            self.state.timeout_handler.handle_message(None)
         # Message
         else:
             try:
                 handler = self.state.get_corresponding_handler(msg)
-                self.state = handler.handle_message(msg, self.state)
+                handler.handle_message(msg)
             except UnknowMessageTypeException:
                 self.logger.warning("UnknowMessageTypeException: " +
                                     str(msg))
@@ -208,9 +218,9 @@ class Actor(multiprocessing.Process):
         """
         Kill the actor (close sockets)
         """
-        self.terminated_behaviour()
-        self.state.socket_interface.close()
-        self.logger.info(self.name + " terminated")
+        self.teardown()
+        self.socket_interface.close()
+        self.logger.info(self.name + " teardown")
 
     def set_timeout_handler(self, new_timeout_handler):
         """
@@ -218,7 +228,7 @@ class Actor(multiprocessing.Process):
         """
         self.state.timeout_handler = new_timeout_handler
 
-    def terminated_behaviour(self):
+    def teardown(self):
         """
         Function called before closing sockets
 
@@ -230,14 +240,14 @@ class Actor(multiprocessing.Process):
         Open a canal that can be use for unidirectional communication to this
         actor
         """
-        self.state.socket_interface.connect_data()
+        self.socket_interface.connect_data()
 
     def set_context(self, context):
         """
         set the context of the actor
         :param zmq.Context context: the context to set
         """
-        self.state.socket_interface.set_context(context)
+        self.socket_interface.set_context(context)
 
     def connect_control(self):
         """
@@ -245,7 +255,7 @@ class Actor(multiprocessing.Process):
         control open at the same time. Open a pair socket on the process
         that want to control this actor
         """
-        self.state.socket_interface.connect_control()
+        self.socket_interface.connect_control()
 
     def send_control(self, msg):
         """
@@ -253,7 +263,7 @@ class Actor(multiprocessing.Process):
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send_control(msg)
+        self.socket_interface.send_control(msg)
         self.logger.info('send control [' + str(msg) + '] to ' + self.name)
 
     def receive_control(self, timeout=None):
@@ -261,9 +271,9 @@ class Actor(multiprocessing.Process):
         Receive a message from this actor on the control canal
         """
         if timeout is None:
-            timeout = self.state.socket_interface.timeout
+            timeout = self.socket_interface.timeout
 
-        msg = self.state.socket_interface.receive_control(timeout)
+        msg = self.socket_interface.receive_control(timeout)
         self.logger.info("receive control : [" + str(msg) + "]")
         return msg
 
@@ -273,7 +283,7 @@ class Actor(multiprocessing.Process):
 
         :param Object msg: the message to send to this actor
         """
-        self.state.socket_interface.send_data(msg)
+        self.socket_interface.send_data(msg)
         self.logger.info('send data [' + str(msg) + '] to ' + self.name)
 
     def receive(self):
@@ -284,7 +294,7 @@ class Actor(multiprocessing.Process):
         :return: the list of received messages or an empty list if timeout
         :rtype: a list of Object
         """
-        msg = self.state.socket_interface.receive()
+        msg = self.socket_interface.receive()
         self.logger.info("receive data : [" + str(msg) + "]")
         return msg
 
@@ -301,4 +311,4 @@ class Actor(multiprocessing.Process):
             self.send_data(PoisonPillMessage())
         else:
             self.send_control(PoisonPillMessage())
-        self.state.socket_interface.close()
+        self.socket_interface.close()

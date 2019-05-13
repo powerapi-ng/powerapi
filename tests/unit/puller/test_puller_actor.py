@@ -30,11 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import mock
-from powerapi.database import BaseDB
-from powerapi.report import Report, HWPCReport, create_report_root
+from powerapi.report import Report, create_report_root
 from powerapi.puller import PullerActor, PullerState
 from powerapi.puller import PullerStartHandler
-from powerapi.actor import Actor, State, SocketInterface, Supervisor
+from powerapi.actor import SocketInterface, Supervisor
 from powerapi.message import OKMessage, ErrorMessage, StartMessage
 
 #########################################
@@ -124,27 +123,25 @@ class TestHandlerPuller:
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         fake_filter = get_fake_filter()
-        puller_state = PullerState(Actor._initial_behaviour,
-                                   fake_socket_interface,
-                                   mock.Mock(),
+        puller_state = PullerState(mock.Mock(),
                                    fake_database,
                                    fake_filter)
 
         assert puller_state.initialized is False
 
         # Define StartHandler
-        start_handler = PullerStartHandler()
+        start_handler = PullerStartHandler(puller_state)
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),
                    create_report_root({})]
         for msg in to_send:
-            start_handler.handle(msg, puller_state)
+            start_handler.handle(msg)
             assert fake_database.method_calls == []
             assert fake_socket_interface.method_calls == []
             assert fake_filter.method_calls == []
             assert puller_state.initialized is False
 
         # Try to initialize the state
-        start_handler.handle(StartMessage(), puller_state)
+        start_handler.handle(StartMessage())
         assert puller_state.initialized is True

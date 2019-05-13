@@ -45,8 +45,13 @@ class Handler:
     """
     Class that handle a message of a given type
     """
+    def __init__(self, state):
+        """
+        :param state: Actor state
+        """
+        self.state = state
 
-    def handle_message(self, msg, state):
+    def handle_message(self, msg):
         """
         Handle a message and return a the new state value of the actor
 
@@ -54,26 +59,16 @@ class Handler:
         this method call :meth:`Handler.handle <powerapi.handler.abstract_handler.Handler.handle>`
 
         :param Object msg: the message received by the actor
-        :param state: The current actor's state
-        :type state: powerapi.actor.state.State
-
-        :return: The new actor's state
-        :rtype: powerapi.actor.state.State
         """
-        return self.handle(msg, state)
+        self.handle(msg)
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         Handle a message and return a the new state value of the actor
 
         Override this method to implement the handler behaviour
 
         :param Object msg: the message received by the actor
-        :param state: The current actor's state
-        :type state: powerapi.actor.state.State
-
-        :return: The new actor's state
-        :rtype: powerapi.actor.state.State
         """
         raise NotImplementedError()
 
@@ -83,7 +78,7 @@ class InitHandler(Handler):
     Class that handle a message of a given type if the actor is initialized
     """
 
-    def handle_message(self, msg, state):
+    def handle_message(self, msg):
         """
         Handle a message and return a the new state value of the actor
 
@@ -95,13 +90,8 @@ class InitHandler(Handler):
         method to handle the message
 
         :param Object msg: the message received by the actor
-        :param state: The current actor's state
-        :type state: powerapi.actor.state.State
-
-        :return: The new actor's state
-        :rtype: powerapi.actor.state.State
         """
-        if not state.initialized:
-            return state
+        if not self.state.initialized:
+            return
 
-        return self.handle(msg, state)
+        self.handle(msg)

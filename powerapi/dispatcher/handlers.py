@@ -53,8 +53,8 @@ class FormulaDispatcherReportHandler(InitHandler):
     Split received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses reports.
     """
-
-    def handle(self, msg, state):
+    
+    def handle(self, msg):
         """
         Split the received report into sub-reports (if needed) and send them to
         their corresponding formula.
@@ -69,22 +69,20 @@ class FormulaDispatcherReportHandler(InitHandler):
                  that identitfy the formula_actor
         :rtype:  list(tuple(formula_id, report))
         """
-        dispatch_rule = state.route_table.get_dispatch_rule(msg)
-        primary_dispatch_rule = state.route_table.primary_dispatch_rule
+        dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
+        primary_dispatch_rule = self.state.route_table.primary_dispatch_rule
 
         for formula_id in self._extract_formula_id(msg, dispatch_rule,
                                                    primary_dispatch_rule):
             primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
-                formula = state.get_direct_formula(formula_id)
+                formula = self.state.get_direct_formula(formula_id)
                 formula.send_data(msg)
 
             else:
-                for formula in state.get_corresponding_formula(
+                for formula in self.state.get_corresponding_formula(
                         list(formula_id)):
                     formula.send(msg)
-
-        return state
 
     def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
         """

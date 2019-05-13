@@ -60,34 +60,27 @@ class State:
     :attr:`supervisor <powerapi.actor.state.State.supervisor>`
     """
 
-    def __init__(self, behaviour, socket_interface, logger):
+    def __init__(self, actor):
         """
-        :param behaviour: function that implement the basic behaviour
-        :type behaviour: (fun (actor) -> None)
-        :param socket_interface: communication interface of the actor
-        :type socket_interface: powerapi.actor.socket_interface.SocketInterface
+        :param powerapi.Actor actor: Actor
         """
         #: (bool): True if the actor is initialized and can handle all
         #: message, False otherwise
         self.initialized = False
         #: (bool): True if the actor is alive, False otherwise
         self.alive = True
-        #: (powerapi.SocketInterface): Communication interface of the actor
-        self.socket_interface = socket_interface
-        #: (func): Function that implement the current behaviour
-        self.behaviour = behaviour
         #: ([(type, powerapi.handler.abstract_handler.AbstractHandler)]):
         #: mapping between message type and handler that the mapped handler
         #: must handle
         self.handlers = []
         #: (func): function activated when no message was
         #: received since `timeout` milliseconds
-        self.timeout_handler = TimeoutHandler()
+        self.timeout_handler = TimeoutHandler(self)
         #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
         #: that are handle by this actor
         self.supervisor = Supervisor()
-        #: (logging.Logger): Logger
-        self.logger = logger
+        #: (powerapi.Actor): Actor
+        self.actor = actor
 
     def get_corresponding_handler(self, msg):
         """

@@ -147,7 +147,7 @@ def initialized_dispatcher(dispatcher):
     supervisor = Supervisor()
     supervisor.launch_actor(dispatcher)
     yield dispatcher
-    dispatcher.state.socket_interface.close()
+    dispatcher.socket_interface.close()
     dispatcher.terminate()
     dispatcher.join()
 
@@ -166,7 +166,7 @@ def dispatcher2(request, route_table):
         route_table,
         level_logger=LOG_LEVEL)
     yield dispatcher_actor
-    dispatcher_actor.state.socket_interface.close()
+    dispatcher_actor.socket_interface.close()
     dispatcher_actor.terminate()
     dispatcher_actor.join()
 
@@ -185,7 +185,7 @@ def dispatcher3(request, route_table):
         route_table,
         level_logger=LOG_LEVEL)
     yield dispatcher_actor
-    dispatcher_actor.state.socket_interface.close()
+    dispatcher_actor.socket_interface.close()
     dispatcher_actor.terminate()
     dispatcher_actor.join()
 

@@ -101,8 +101,7 @@ class DispatcherState(State):
     :attr:`formula_factory
     <powerapi.dispatcher.dispatcher_actor.DispatcherState.formula_factory>`
     """
-    def __init__(self, initial_behaviour, socket_interface, logger,
-                 formula_factory, route_table):
+    def __init__(self, actor, formula_factory, route_table):
         """
         :param func initial_behaviour: Function that define
                                        the initial_behaviour
@@ -115,7 +114,7 @@ class DispatcherState(State):
         :param route_table: initialized route table
         :type route_table: powerapi.dispatcher.state.RouteTable
         """
-        State.__init__(self, initial_behaviour, socket_interface, logger)
+        State.__init__(self, actor)
 
         #: (dict): Store the formula by id
         self.formula_dict = {}
