@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import csv
+import os
 
 from powerapi.database.base_db import BaseDB
 from powerapi.report_model.report_model import KEYS_COMMON
@@ -51,6 +52,12 @@ class CsvBadCommonKeysError(Error):
     """
 
 
+class HeaderAreNotTheSameError(Error):
+    """
+    Error raised when the header read in a file doesn't fit the input data
+    """
+
+
 class CsvDB(BaseDB):
     """
     CsvDB class herited from BaseDB
@@ -58,9 +65,10 @@ class CsvDB(BaseDB):
     This class define the behaviour for reading some csv file.
     """
 
-    def __init__(self, report_model, files_name):
+    def __init__(self, report_model, files_name=[], current_path="/tmp/csvdbtest"):
         """
         :param list files_name: list of file name .csv
+        :param current_path: Current path where read/write files
         :param report_model: object that herit from ReportModel and define
                              the type of Report
         :type report_model: martwatts.ReportModel
@@ -70,8 +78,11 @@ class CsvDB(BaseDB):
         #: (list): list of file name .csv
         self.files_name = files_name
 
-        # intern memory
-        self.tmp = {
+        #: (str): current path
+        self.current_path = current_path if current_path[-1] == '/' else current_path + '/'
+
+        # intern memory for reading
+        self.tmp_read = {
             path_file: {
                 'next_line': [],
                 'reader': None,
@@ -91,7 +102,7 @@ class CsvDB(BaseDB):
         :param str path_file: file name we want to read
         """
         try:
-            return self.tmp[path_file]['reader'].__next__()
+            return self.tmp_read[path_file]['reader'].__next__()
         except StopIteration:
             return None
 
@@ -119,7 +130,7 @@ class CsvDB(BaseDB):
             while True:
 
                 # Get the next line
-                row = self.tmp[path_file]['next_line']
+                row = self.tmp_read[path_file]['next_line']
 
                 # If nothing more, break
                 if row is None:
@@ -143,7 +154,7 @@ class CsvDB(BaseDB):
                                                      row))
 
                 # Next line
-                self.tmp[path_file]['next_line'] = self._next(path_file)
+                self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
         if not json:
             raise StopIteration()
@@ -158,24 +169,76 @@ class CsvDB(BaseDB):
         """
         # Close file if already opened
         for path_file in self.files_name:
-            if self.tmp[path_file]['file'] is not None:
-                self.tmp[path_file]['file'].close()
+            if self.tmp_read[path_file]['file'] is not None:
+                self.tmp_read[path_file]['file'].close()
 
         # Open all files with csv and read first line
         for path_file in self.files_name:
             try:
-                self.tmp[path_file]['file'] = open(path_file)
-                self.tmp[path_file]['reader'] = csv.DictReader(
-                    self.tmp[path_file]['file'])
+                self.tmp_read[path_file]['file'] = open(path_file)
+                self.tmp_read[path_file]['reader'] = csv.DictReader(
+                    self.tmp_read[path_file]['file'])
             except FileNotFoundError as error:
                 raise CsvBadFilePathError(error)
-            self.tmp[path_file]['next_line'] = self._next(path_file)
+            self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
             # Check common key
             for key in KEYS_COMMON:
-                if key not in self.tmp[path_file]['next_line']:
+                if key not in self.tmp_read[path_file]['next_line']:
                     raise CsvBadCommonKeysError("Wrong columns keys")
 
         # Save the first timestamp
-        self.saved_timestamp = utils.timestamp_to_datetime(
-            int(self.tmp[self.files_name[0]]['next_line']['timestamp']))
+        if self.files_name:
+            self.saved_timestamp = utils.timestamp_to_datetime(
+                int(self.tmp_read[self.files_name[0]]['next_line']['timestamp']))
+
+    def save(self, serialized_report):
+        """
+        Allow to save a serialized_report in the db
+
+        :param dict serialized_report: serialized Report
+        """
+        data = self.report_model.to_csvdb(serialized_report)
+
+        # Si le répertoire n'existe pas, le créer
+        rep_path = self.current_path + serialized_report['sensor'] + "-" + serialized_report['target']
+        try:
+            os.makedirs(rep_path)
+        except FileExistsError:
+            pass
+
+        for filename, values in data.items():
+            rep_path_with_file = rep_path + '/' + filename + '.csv'
+
+            # Get the header and check if it's ok
+            header = KEYS_COMMON + sorted(list(set([event_key for event_key, _ in values.items()]) - set(KEYS_COMMON)))
+            header_exist = False
+            try:
+                with open(rep_path_with_file) as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    if reader.fieldnames:
+                        header_exist = True
+
+                    if header != reader.fieldnames:
+                        raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
+                    csvfile.close()
+            except FileNotFoundError:
+                pass
+
+            # Write
+            with open(rep_path_with_file, 'a') as csvfile:
+                writer = csv.DictWriter(csvfile, header)
+                if not header_exist:
+                    writer.writeheader()
+                writer.writerow(values)
+                csvfile.close()
+
+    def save_many(self, serialized_reports):
+        """
+        Allow to save a batch of data
+
+        :param [Dict] serialized_reports: Batch of data.
+        """
+        # TODO: Inefficient
+        for serialized_report in serialized_reports:
+            self.save(serialized_report)

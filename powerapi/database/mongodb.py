@@ -135,19 +135,19 @@ class MongoDB(BaseDB):
 
         return self.report_model.from_mongodb(json)
 
-    def save(self, json):
+    def save(self, serialized_report):
         """
         Override from BaseDB
 
-        :param dict json: data JSON to save
+        :param dict serialized_report: data JSON to save
         """
         # TODO: Check if json is valid with the report_model
-        self.collection.insert_one(json)
+        self.collection.insert_one(serialized_report)
 
-    def save_many(self, tab_json):
+    def save_many(self, serialized_reports):
         """
         Allow to save a batch of data
 
-        :param [Dict] tab_json: Batch of data.
+        :param [Dict] serialized_reports: Batch of data.
         """
-        self.collection.insert_many(tab_json)
+        self.collection.insert_many(serialized_reports)

@@ -29,9 +29,57 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.database.stdoutdb import StdoutDB
-from powerapi.database.base_db import BaseDB
-from powerapi.database.mongodb import MongoDB, MongoBadDBError
-from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
-from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
-from powerapi.database.base_db import DBError
+from powerapi.report import PowerReport
+from powerapi.report_model import ReportModel, BadInputData
+from powerapi.report_model import KEYS_COMMON
+
+
+class PowerModel(ReportModel):
+    """
+    PowerModel class.
+
+    It define all the function that need to be override if we want
+    to format the raw data read in different kind of database.
+    """
+
+    def get_type(self):
+        """
+        Return the type of report
+        """
+        return PowerReport
+
+    def to_csvdb(self, serialized_report):
+        """
+        Return raw data from serialized report
+        """
+        final_dict = {}
+        try:
+            for field in ['timestamp', 'sensor', 'target', 'power']:
+                final_dict[field] = serialized_report[field]
+
+            for key, val in serialized_report['metadata'].items():
+                final_dict[key] = val
+
+        except KeyError:
+            raise BadInputData()
+
+        final_dict = {self.get_type().__name__: final_dict}
+        return final_dict
+
+    def from_csvdb(self, file_name, row):
+        """
+        Get the csvdb report
+        """
+        final_dict = {}
+
+        try:
+            final_dict = {key: row[key] for key in KEYS_COMMON}
+            final_dict['power'] = float(row['power'])
+            final_dict['metadata'] = {}
+            for key in row.keys():
+                if key not in KEYS_COMMON + ["power"]:
+                    final_dict['metadata'][key] = row[key]
+        except KeyError:
+            raise BadInputData()
+
+        return final_dict

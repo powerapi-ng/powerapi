@@ -88,20 +88,20 @@ class BaseDB:
         """
         raise NotImplementedError()
 
-    def save(self, json):
+    def save(self, serialized_report):
         """
         Allow to save a json input in the db
 
-        :param dict json: JSON from Report serialize function
+        :param dict serialized_report: Serialized Report
 
         .. note:: Need to be overrided
         """
         raise NotImplementedError()
 
-    def save_many(self, tab_json):
+    def save_many(self, serialized_reports):
         """
         Allow to save a batch of data
 
-        :param [Dict] tab_json: Batch of data.
+        :param [Dict] serialized_reports: Batch of Serialized Report
         """
         raise NotImplementedError()

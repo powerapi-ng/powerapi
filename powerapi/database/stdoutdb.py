@@ -61,7 +61,7 @@ class StdoutDB(BaseDB):
         """
         pass
 
-    def save(self, json):
+    def save(self, serialized_report):
         """
         Override from BaseDB
         """

@@ -65,3 +65,15 @@ class ReportModel:
         Get the csvdb report
         """
         raise NotImplementedError()
+
+    def to_mongodb(self, serialized_report):
+        """
+        Return raw data from serialized report
+        """
+        raise NotImplementedError()
+
+    def to_csvdb(self, serialized_report):
+        """
+        Return raw data from serialized report
+        """
+        raise NotImplementedError()
