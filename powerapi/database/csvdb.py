@@ -65,9 +65,8 @@ class CsvDB(BaseDB):
     This class define the behaviour for reading some csv file.
     """
 
-    def __init__(self, report_model, files_name=[], current_path="/tmp/csvdbtest"):
+    def __init__(self, report_model, current_path="/tmp/csvdbtest"):
         """
-        :param list files_name: list of file name .csv
         :param current_path: Current path where read/write files
         :param report_model: object that herit from ReportModel and define
                              the type of Report
@@ -76,24 +75,26 @@ class CsvDB(BaseDB):
         BaseDB.__init__(self, report_model, False)
 
         #: (list): list of file name .csv
-        self.files_name = files_name
+        self.filenames = []
 
         #: (str): current path
         self.current_path = current_path if current_path[-1] == '/' else current_path + '/'
 
         # intern memory for reading
-        self.tmp_read = {
-            path_file: {
-                'next_line': [],
-                'reader': None,
-                'file': None
-            }
-            for path_file in self.files_name
-        }
+        # path_file: {
+        #     'next_line': [],
+        #     'reader': None,
+        #     'file': None
+        # }
+        self.tmp_read = {}
 
         #: (int): allow to know if we read a new report, or the same
         #: current timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(0)
+
+    ###########################################################################
+    # Specific CsvDB
+    ###########################################################################
 
     def _next(self, path_file):
         """
@@ -105,6 +106,44 @@ class CsvDB(BaseDB):
             return self.tmp_read[path_file]['reader'].__next__()
         except StopIteration:
             return None
+
+    def add_file(self, filename):
+        """
+        Add a file in the filenames list (it can be relative or absolute path)
+        :param filename: Path to file
+        """
+        # If absolute path
+        if filename[0] == '/':
+            self.filenames.append(filename)
+        else:
+            filename = self.current_path + filename
+            self.filenames.append(filename)
+
+        # Add it in the tmp
+        self.tmp_read[filename] = {
+            'next_line': [],
+            'reader': None,
+            'file': None
+        }
+
+    def add_files(self, filenames):
+        """
+        Add list of files in the filenames list (it can be relative or absolute path)
+        :param filenames: List of path to file
+        """
+        for filename in filenames:
+            self.add_file(filename)
+
+    def clean_files(self):
+        """
+        Clean the filenames list
+        """
+        self.filenames.clear()
+        self.tmp_read.clear()
+
+    ###########################################################################
+    # Override from BaseDB
+    ###########################################################################
 
     def __iter__(self):
         """
@@ -124,7 +163,7 @@ class CsvDB(BaseDB):
         current_timestamp = self.saved_timestamp
 
         # For all files
-        for path_file in self.files_name:
+        for path_file in self.filenames:
 
             # While timestamp is lower or equal
             while True:
@@ -142,7 +181,7 @@ class CsvDB(BaseDB):
 
                 # If timestamp is higher, we stop here
                 if row_timestamp > current_timestamp:
-                    if path_file == self.files_name[0]:
+                    if path_file == self.filenames[0]:
                         self.saved_timestamp = row_timestamp
                     break
 
@@ -168,12 +207,12 @@ class CsvDB(BaseDB):
         Read first line of all the .csv file and check if the pattern is good.
         """
         # Close file if already opened
-        for path_file in self.files_name:
+        for path_file in self.filenames:
             if self.tmp_read[path_file]['file'] is not None:
                 self.tmp_read[path_file]['file'].close()
 
         # Open all files with csv and read first line
-        for path_file in self.files_name:
+        for path_file in self.filenames:
             try:
                 self.tmp_read[path_file]['file'] = open(path_file)
                 self.tmp_read[path_file]['reader'] = csv.DictReader(
@@ -188,9 +227,9 @@ class CsvDB(BaseDB):
                     raise CsvBadCommonKeysError("Wrong columns keys")
 
         # Save the first timestamp
-        if self.files_name:
+        if self.filenames:
             self.saved_timestamp = utils.timestamp_to_datetime(
-                int(self.tmp_read[self.files_name[0]]['next_line']['timestamp']))
+                int(self.tmp_read[self.filenames[0]]['next_line']['timestamp']))
 
     def save(self, serialized_report):
         """
