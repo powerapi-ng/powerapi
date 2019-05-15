@@ -40,6 +40,31 @@ class PowerModel(ReportModel):
 
     It define all the function that need to be override if we want
     to format the raw data read in different kind of database.
+
+    to:
+    {
+        'PowerReport' : {
+            'timestamp': ...
+            'sensor': ...
+            'target': ...
+            'power': ...
+            'metadata': {
+                ...
+            }
+        }
+    }
+
+    from:
+    {
+        'timestamp': ...
+        'sensor': ...
+        'target': ...
+        'power': ...
+        'metadata': {
+            ...
+        }
+    }
+
     """
 
     def get_type(self):
@@ -83,3 +108,18 @@ class PowerModel(ReportModel):
             raise BadInputData()
 
         return final_dict
+
+    def to_mongodb(self, serialized_report):
+        """
+        Return raw data from serialized report
+        """
+        return serialized_report
+
+    def from_mongodb(self, json):
+        """
+        Get the mongodb report
+        """
+        # Re arrange the json before return it by removing '_id' field
+        json.pop('_id', None)
+
+        return json

@@ -138,3 +138,6 @@ def test_mongodb_save_basic_db(database):
     for _ in range(2):
         mongodb.save({'test': 'json'})
     assert mongodb.collection.count_documents({}) == basic_count + 2
+
+
+# TODO: Test every save/read for each kind of database / report

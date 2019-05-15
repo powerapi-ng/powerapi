@@ -63,6 +63,7 @@ class CsvDB(BaseDB):
     CsvDB class herited from BaseDB
 
     This class define the behaviour for reading some csv file.
+    a CsvDB instance can be define by his ReportModel and its current path
     """
 
     def __init__(self, report_model, current_path="/tmp/csvdbtest"):
@@ -239,7 +240,7 @@ class CsvDB(BaseDB):
         """
         data = self.report_model.to_csvdb(serialized_report)
 
-        # Si le répertoire n'existe pas, le créer
+        # If the repository doesn't exist, create it
         rep_path = self.current_path + serialized_report['sensor'] + "-" + serialized_report['target']
         try:
             os.makedirs(rep_path)
