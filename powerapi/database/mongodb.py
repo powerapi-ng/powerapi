@@ -142,7 +142,7 @@ class MongoDB(BaseDB):
         :param dict serialized_report: data JSON to save
         """
         # TODO: Check if json is valid with the report_model
-        self.collection.insert_one(serialized_report)
+        self.collection.insert_one(self.report_model.to_mongodb(serialized_report))
 
     def save_many(self, serialized_reports):
         """
@@ -150,4 +150,5 @@ class MongoDB(BaseDB):
 
         :param [Dict] serialized_reports: Batch of data.
         """
+        serialized_reports = list(map(lambda r: self.report_model.to_mongodb(r), serialized_reports))
         self.collection.insert_many(serialized_reports)

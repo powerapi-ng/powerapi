@@ -56,6 +56,13 @@ class HWPCModel(ReportModel):
 
         return json
 
+    def to_mongodb(self, serialized_report):
+        """
+
+        :param serialized_report: Serialized report
+        """
+        return serialized_report
+
     def from_csvdb(self, file_name, row):
         """
         Get HWPCReport from a few csv files.

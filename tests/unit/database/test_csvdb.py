@@ -34,7 +34,7 @@ import shutil
 import os
 import csv
 
-from powerapi.report import HWPCReport, create_core_report, create_group_report, create_report_root,\
+from powerapi.report import create_core_report, create_group_report, create_report_root,\
     create_socket_report
 from powerapi.report import PowerReport
 from powerapi.report_model import PowerModel, HWPCModel, KEYS_COMMON
@@ -91,7 +91,8 @@ TARGET = "target"
 # Report Creation #
 ###################
 
-def gen_good_report():
+
+def gen_hwpc_report():
     """
     Return a well formated HWPCReport
     """
@@ -341,3 +342,29 @@ class TestCsvDB():
         for i in range(4):
             if power_reports[i] != reading_power_reports[i]:
                 assert False
+
+
+def test_csvdb_all_reports(clean_csv_files):
+    """
+    Test create/save/read all kind of reports
+    """
+    all_reports = [(PowerModel(), gen_power_report)]
+
+    for model, generator in all_reports:
+        # Load DB
+        csvdb = CsvDB(model, current_path=PATH_TO_SAVE)
+        csvdb.connect()
+
+        # Create report
+        report = generator()
+
+        # Save report
+        csvdb.save(report.serialize())
+
+        # Read report
+        csvdb.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/" + model.get_type().__name__ + ".csv")
+        csvdb_iter = iter(csvdb)
+        read_report = model.get_type().deserialize(next(csvdb_iter))
+
+        # Compare
+        assert read_report == report

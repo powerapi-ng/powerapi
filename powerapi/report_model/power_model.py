@@ -41,7 +41,6 @@ class PowerModel(ReportModel):
     It define all the function that need to be override if we want
     to format the raw data read in different kind of database.
 
-    to:
     {
         'PowerReport' : {
             'timestamp': ...
@@ -51,17 +50,6 @@ class PowerModel(ReportModel):
             'metadata': {
                 ...
             }
-        }
-    }
-
-    from:
-    {
-        'timestamp': ...
-        'sensor': ...
-        'target': ...
-        'power': ...
-        'metadata': {
-            ...
         }
     }
 
