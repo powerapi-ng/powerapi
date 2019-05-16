@@ -174,6 +174,10 @@ def initialized_pusher_plus_supervisor(pusher, supervisor):
 #    return filt
 
 
+def gen_power_report():
+    return PowerReport(1, "sensor", "target", 0.11, {"metadata1": "truc", "metadata2": "oui"})
+
+
 def mongodb_database(uri, database_name, collection_name, stream_mode):
     """
     Return MongoDB database
@@ -266,7 +270,7 @@ def test_pusher_kill_without_init(started_pusher):
     """
     started_pusher.connect_control()
     started_pusher.send_kill()
-    assert not is_actor_alive(started_pusher, 10)
+    assert not is_actor_alive(started_pusher, 5)
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
@@ -279,15 +283,29 @@ def test_pusher_kill_after_init(generate_mongodb_data, initialized_pusher_plus_s
     assert not is_actor_alive(initialized_pusher_plus_supervisor[0])
 
 
-#def test_puller_reading_ok():
-#    """
-#    Create a PullerActor and read some data in database with good data
-#    """
-#    assert False
-#
-#
-#def test_puller_reading_bad_data():
-#    """
-#    Create a PullerActor and read some data from a db with corrupted data
-#    """
-#    assert False
+# TODO: Test with different config:
+# - Type of report
+# - Stream mode or not
+# - Type of database
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb_pr", True))
+@define_report_type(PowerReport)
+def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
+    """
+    Create a PusherActor, send him a PowerReport, kill him and check it from database
+    """
+    # Connect data and send a PowerReport
+    initialized_pusher.connect_data()
+    saved_report = gen_power_report()
+    initialized_pusher.send_data(saved_report)
+
+    # Kill it
+    initialized_pusher.send_kill(by_data=True)
+    assert not is_actor_alive(initialized_pusher, 5)
+
+    # Open a database for read the saved report
+    mongodb = initialized_pusher.state.database
+    mongodb.connect()
+    mongodb_iter = iter(mongodb)
+    new_report = initialized_pusher.report_type.deserialize(next(mongodb_iter))
+
+    assert saved_report == new_report
