@@ -72,7 +72,7 @@ class PusherPoisonPillHandler(Handler):
         """
         :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
         """
-        self.state.timeout_handler = TimeoutKillHandler(self.state)
+        self.state.actor.set_timeout_handler(TimeoutKillHandler(self.state))
         self.state.actor.socket_interface.timeout = 2000
 
 
@@ -91,7 +91,7 @@ class TimeoutBasicHandler(InitHandler):
         self.state.buffer = []
 
 
-class TimeoutKillHandler(InitHandler):
+class TimeoutKillHandler(Handler):
     """
     Pusher timeout kill the actor
     """
