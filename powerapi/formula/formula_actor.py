@@ -38,49 +38,45 @@ from powerapi.pusher import PusherActor
 
 class FormulaState(State):
     """
-    Formula Actor State
+    State of the Formula actor.
     """
 
-    def __init__(self, actor, pushers, formula_id=None):
+    def __init__(self, actor, pushers):
+        """
+        Initialize a new Formula actor state.
+        :param actor: Actor linked to the state
+        :param pushers: Pushers available for the actor
+        """
         State.__init__(self, actor)
-        self.formula_id = formula_id
         self.pushers = pushers
 
 
 class FormulaActor(Actor):
     """
-    Formula abstract class. A Formula is an Actor which use data
-    for computing some new useful power estimation.
-
-    A Formula is design to be handle by a Dispatcher, and to send
-    result to a Pusher.
+    Formula actor abstract class.
     """
 
     def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
         """
-        :param str name:                                 Actor name
-        :param Dict[str, powerapi.PusherActor] pushers:  Pusher actors whom send
-                                                         results
-        :param int level_logger:                         Define logger level
-        :param bool timeout:                             Time in millisecond to wait
-                                                         for a message before called
-                                                         timeout_handler.
+        Initialize a new Formula actor.
+        :param name: Actor name
+        :param pushers: Pusher actors
+        :param level_logger: Level of the logger
+        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
         """
         Actor.__init__(self, name, level_logger, timeout)
-
-        #: (powerapi.State): Basic state of the Formula.
         self.state = FormulaState(self, pushers)
 
     def setup(self):
         """
-        Formula basic setup, Connect the formula to the pusher
+        Setup the Formula actor.
         """
         for _, pusher in self.state.pushers.items():
             pusher.connect_data()
 
     def teardown(self):
         """
-        Allow to close actor_pusher socket
+        Teardown the Formula actor.
         """
         for _, pusher in self.state.pushers.items():
             pusher.state.socket_interface.close()
