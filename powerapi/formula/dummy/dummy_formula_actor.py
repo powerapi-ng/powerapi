@@ -45,20 +45,18 @@ class DummyFormulaActor(FormulaActor):
     A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
     """
-    def __init__(self, name, pushers,
-                 level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name, pushers, level_logger=logging.WARNING, timeout=None):
         """
-        :param str name: Actor name
-        :param Dict[str, powerapi.PusherActor] pusher_actors: Pusher actors whom send results
-        :param int level_logger: Define logger level
-        :param bool timeout: Time in millisecond to wait for a message before called timeout_handler
+        Initialize a new Dummy Formula actor.
+        :param name: Actor name
+        :param pusher_actors: Pusher actors
+        :param level_logger: Level of the logger
+        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
         """
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
 
-        formula_id = reduce(lambda acc, x: acc + (re.search(r'^\(? ?\'(.*)\'\)?', x).group(1),), name.split(','), ())
-
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(self, pushers, formula_id)
+        self.state = FormulaState(self, pushers)
 
     def setup(self):
         """
