@@ -199,10 +199,8 @@ class TestCsvDB():
         csvdb_iter = iter(csvdb)
         for _ in range(2):
             report = next(csvdb_iter)
-            for key in CSV_HEADER_COMMON:
-                assert key in report
             for group in group_name:
-                assert group in report['groups']
+                assert group in report.groups
 
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
@@ -218,11 +216,9 @@ class TestCsvDB():
 
         csvdb_iter = iter(csvdb)
         report = next(csvdb_iter)
-        for key in CSV_HEADER_COMMON:
-            assert key in report
         for group in group_name:
-            assert group in report['groups']
-        assert report['timestamp'] == timestamp_to_datetime(1539260665189)
+            assert group in report.groups
+        assert report.timestamp == timestamp_to_datetime(1539260665189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -237,11 +233,9 @@ class TestCsvDB():
 
         csvdb_iter = iter(csvdb)
         report = next(csvdb_iter)
-        for key in CSV_HEADER_COMMON:
-            assert key in report
         for group in group_name:
-            assert group in report['groups']
-        assert report['timestamp'] == timestamp_to_datetime(1539260664189)
+            assert group in report.groups
+        assert report.timestamp == timestamp_to_datetime(1539260664189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -257,13 +251,11 @@ class TestCsvDB():
         csvdb_iter = iter(csvdb)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in CSV_HEADER_COMMON:
-                assert key in report
             for group in group_name:
                 if i == 0 and "rapl" in group:
-                    assert group not in report['groups']
+                    assert group not in report.groups
                 else:
-                    assert group in report['groups']
+                    assert group in report.groups
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -280,13 +272,11 @@ class TestCsvDB():
         csvdb_iter = iter(csvdb)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in CSV_HEADER_COMMON:
-                assert key in report
             for group in group_name:
                 if i == 1 and "rapl" in group:
-                    assert group not in report['groups']
+                    assert group not in report.groups
                 else:
-                    assert group in report['groups']
+                    assert group in report.groups
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -305,7 +295,7 @@ class TestCsvDB():
         # Try to save one PowerReport
         power_report = gen_power_report()
         with pytest.raises(HeaderAreNotTheSameError) as pytest_wrapped:
-            csvdb.save(power_report.serialize())
+            csvdb.save(power_report)
         assert pytest_wrapped.type == HeaderAreNotTheSameError
 
 
@@ -320,12 +310,12 @@ class TestCsvDB():
 
         # Save one time with a file that doesn't exist
         power_reports.append(gen_power_report())
-        csvdb.save(power_reports[0].serialize())
+        csvdb.save(power_reports[0])
 
         # Save three time
         for _ in range(3):
             power_reports.append(gen_power_report())
-            csvdb.save(power_reports[-1].serialize())
+            csvdb.save(power_reports[-1])
 
         # Read the the csvdb and compare the data
         reading_power_reports = []
@@ -335,7 +325,7 @@ class TestCsvDB():
         csvdb_read_iter = iter(csvdb_read)
 
         for _ in range(4):
-            reading_power_reports.append(csvdb_read.report_model.get_type().deserialize(next(csvdb_read_iter)))
+            reading_power_reports.append(next(csvdb_read_iter))
 
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_read_iter)
@@ -361,7 +351,7 @@ def test_csvdb_all_reports(clean_csv_files):
         report = generator()
 
         # Save report
-        csvdb.save(report.serialize())
+        csvdb.save(report)
 
         # Read report
         for r, d, f in os.walk(PATH_TO_SAVE + report.sensor + "-" + report.target + "/"):
@@ -369,7 +359,7 @@ def test_csvdb_all_reports(clean_csv_files):
                 if '.csv' in file:
                     csvdb.add_file(os.path.join(r, file))
         csvdb_iter = iter(csvdb)
-        read_report = model.get_type().deserialize(next(csvdb_iter))
+        read_report = next(csvdb_iter)
 
         # Compare
         assert read_report == report

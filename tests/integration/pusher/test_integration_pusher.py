@@ -31,10 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
 import pytest
-from mock import Mock
 
-from powerapi.report_model import HWPCModel
-from powerapi.dispatcher import DispatcherActor
+from powerapi.report_model import PowerModel
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport
@@ -183,7 +181,7 @@ def mongodb_database(uri, database_name, collection_name, stream_mode):
     Return MongoDB database
     """
     database = MongoDB(uri, database_name, collection_name,
-                       HWPCModel(), stream_mode=stream_mode)
+                       PowerModel(), stream_mode=stream_mode)
     return database
 
 
@@ -268,8 +266,8 @@ def test_pusher_kill_without_init(started_pusher):
     """
     Create a PusherActor and kill him with a PoisonPillMessage before initialization
     """
-    started_pusher.connect_control()
-    started_pusher.send_kill()
+    started_pusher.connect_data()
+    started_pusher.send_kill(by_data=True)
     assert not is_actor_alive(started_pusher, 5)
 
 
@@ -306,6 +304,6 @@ def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
     mongodb = initialized_pusher.state.database
     mongodb.connect()
     mongodb_iter = iter(mongodb)
-    new_report = initialized_pusher.report_type.deserialize(next(mongodb_iter))
+    new_report = next(mongodb_iter)
 
     assert saved_report == new_report

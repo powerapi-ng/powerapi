@@ -82,13 +82,13 @@ class TestFilter:
 
         mongodb_it = iter(mongodb)
         for _ in range(2):
-            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
+            hwpc_report = next(mongodb_it)
             assert hwpc_filter.route(hwpc_report) == [1, 2]
 
         for _ in range(2):
-            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
+            hwpc_report = next(mongodb_it)
             assert hwpc_filter.route(hwpc_report) == [1, 3]
 
         for _ in range(2):
-            hwpc_report = HWPCReport.deserialize(next(mongodb_it))
+            hwpc_report = next(mongodb_it)
             assert hwpc_filter.route(hwpc_report) == [1]

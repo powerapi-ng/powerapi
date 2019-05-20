@@ -148,6 +148,7 @@ def test_mongodb_read_capped_db(database):
     mongodb.connect()
     mongodb_iter = iter(mongodb)
 
+    report = None
     for _ in range(mongodb.collection.count_documents({})):
         report = next(mongodb_iter)
         assert report is not None
@@ -158,9 +159,8 @@ def test_mongodb_read_capped_db(database):
     assert pytest_wrapped.type == StopIteration
 
     # Add data in the collection
-    for _ in range(2):
-        report.pop('_id', None)
-        mongodb.collection.insert_one(report)
+    for _ in range(1):
+        mongodb.save(report)
 
     # Check if there is nothing after
     with pytest.raises(StopIteration) as pytest_wrapped:
@@ -181,7 +181,7 @@ def test_mongodb_save_basic_db(database):
     # Check if save work
     basic_count = mongodb.collection.count_documents({})
     for _ in range(2):
-        mongodb.save({'test': 'json'})
+        mongodb.save(gen_hwpc_report())
     assert mongodb.collection.count_documents({}) == basic_count + 2
 
 
@@ -202,11 +202,11 @@ def test_mongodb_all_reports(database):
         report = generator()
 
         # Save report
-        mongodb.save(report.serialize())
+        mongodb.save(report)
 
         # Read report
         mongodb_iter = iter(mongodb)
-        read_report = model.get_type().deserialize(next(mongodb_iter))
+        read_report = next(mongodb_iter)
 
         # Compare
         assert read_report == report

@@ -60,7 +60,7 @@ class ReportHandler(InitHandler):
 
         :param powerapi.PowerReport msg: PowerReport to save.
         """
-        self.state.buffer.append(msg.serialize())
+        self.state.buffer.append(msg)
 
 
 class PusherPoisonPillHandler(Handler):

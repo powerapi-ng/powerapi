@@ -29,6 +29,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from typing import List
+from powerapi.report import Report
 from powerapi.utils import Error
 
 
@@ -82,26 +84,24 @@ class BaseDB:
         """
         raise NotImplementedError()
 
-    def __next__(self):
+    def __next__(self) -> Report:
         """
         Allow to get the next data
         """
         raise NotImplementedError()
 
-    def save(self, serialized_report):
+    def save(self, report: Report):
         """
         Allow to save a json input in the db
 
-        :param dict serialized_report: Serialized Report
-
-        .. note:: Need to be overrided
+        :param report: Report
         """
         raise NotImplementedError()
 
-    def save_many(self, serialized_reports):
+    def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
 
-        :param [Dict] serialized_reports: Batch of Serialized Report
+        :param reports: Batch of Serialized Report
         """
         raise NotImplementedError()

@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import csv
 import os
 
+from typing import List
+from powerapi.report import Report
 from powerapi.database.base_db import BaseDB
 from powerapi.report_model.report_model import CSV_HEADER_COMMON
 from powerapi.utils import utils, Error
@@ -153,7 +155,7 @@ class CsvDB(BaseDB):
         self.connect()
         return self
 
-    def __next__(self):
+    def __next__(self) -> Report:
         """
         Allow to get the next data
         """
@@ -198,7 +200,8 @@ class CsvDB(BaseDB):
 
         if not json:
             raise StopIteration()
-        return json
+
+        return self.report_model.get_type().deserialize(json)
 
     def connect(self):
         """
@@ -232,12 +235,13 @@ class CsvDB(BaseDB):
             self.saved_timestamp = utils.timestamp_to_datetime(
                 int(self.tmp_read[self.filenames[0]]['next_line']['timestamp']))
 
-    def save(self, serialized_report):
+    def save(self, report: Report):
         """
         Allow to save a serialized_report in the db
 
-        :param dict serialized_report: serialized Report
+        :param report: Report
         """
+        serialized_report = report.serialize()
         csv_header, data = self.report_model.to_csvdb(serialized_report)
 
         # If the repository doesn't exist, create it
@@ -275,12 +279,12 @@ class CsvDB(BaseDB):
                     writer.writerow(value)
                     csvfile.close()
 
-    def save_many(self, serialized_reports):
+    def save_many(self, reports: List[Report]):
         """
-        Allow to save a batch of data
+        Allow to save a batch of report
 
-        :param [Dict] serialized_reports: Batch of data.
+        :param reports: Batch of report.
         """
         # TODO: Inefficient
-        for serialized_report in serialized_reports:
-            self.save(serialized_report)
+        for report in reports:
+            self.save(report)

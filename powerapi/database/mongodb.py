@@ -30,7 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import pymongo
+
+from typing import List
 from powerapi.database.base_db import BaseDB, DBError
+from powerapi.report import Report
 
 
 class MongoBadDBError(DBError):
@@ -119,7 +122,7 @@ class MongoDB(BaseDB):
             self.cursor = self.collection.find({})
         return self
 
-    def __next__(self):
+    def __next__(self) -> Report:
         """
         Allow to get the next data
         """
@@ -133,21 +136,21 @@ class MongoDB(BaseDB):
         except StopIteration:
             raise StopIteration()
 
-        return self.report_model.from_mongodb(json)
+        return self.report_model.get_type().deserialize(self.report_model.from_mongodb(json))
 
-    def save(self, serialized_report):
+    def save(self, report: Report):
         """
         Override from BaseDB
 
-        :param dict serialized_report: data JSON to save
+        :param report: Report to save
         """
-        self.collection.insert_one(self.report_model.to_mongodb(serialized_report))
+        self.collection.insert_one(self.report_model.to_mongodb(report.serialize()))
 
-    def save_many(self, serialized_reports):
+    def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
 
-        :param [Dict] serialized_reports: Batch of data.
+        :param reports: Batch of data.
         """
-        serialized_reports = list(map(lambda r: self.report_model.to_mongodb(r), serialized_reports))
+        serialized_reports = list(map(lambda r: self.report_model.to_mongodb(r.serialize()), reports))
         self.collection.insert_many(serialized_reports)

@@ -86,9 +86,7 @@ class TimeoutHandler(InitHandler):
         # Read one input, if it's None, it means there is not more
         # report in the database, just pass
         try:
-            data = next(self.state.database_it)
-            # Deserialization
-            report = self.state.database.report_model.get_type().deserialize(data)
+            report = next(self.state.database_it)
         except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
 

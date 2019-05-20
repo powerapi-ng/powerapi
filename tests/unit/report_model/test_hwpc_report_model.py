@@ -57,7 +57,7 @@ def hwpc_model():
 
 @pytest.mark.parametrize("json_input", [
     ({"_id": "fake-id",
-      "timestamp": datetime.datetime.now(),
+      "timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor",
       "target": "fake-target",
       "groups": {}})
@@ -81,14 +81,14 @@ def test_hwpc_report_from_mongodb_work(hwpc_model, json_input):
 
 
 @pytest.mark.parametrize("json_input", [
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor",
       "target": "fake-target",
       "socket": 0,
       "cpu": 0,
       "event1": 1000,
       "event2": 2000}),
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor",
       "target": "fake-target",
       "socket": 0,
@@ -109,18 +109,18 @@ def test_hwpc_report_from_csvdb_work(hwpc_model, json_input):
 @pytest.mark.parametrize("json_input", [
     ({"sensor": "fake-sensor",
       "target": "fake-target"}),
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "target": "fake-target"}),
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor"}),
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor",
       "target": "fake-target"}),
-    ({"timestamp": datetime.datetime.now(),
+    ({"timestamp": datetime.datetime.now().timestamp(),
       "sensor": "fake-sensor",
       "target": "fake-target",
       "socket": 0}),
-     ({"timestamp": datetime.datetime.now(),
+     ({"timestamp": datetime.datetime.now().timestamp(),
        "sensor": "fake-sensor",
        "target": "fake-target",
        "cpu": 0}),
