@@ -141,7 +141,6 @@ class MongoDB(BaseDB):
 
         :param dict serialized_report: data JSON to save
         """
-        # TODO: Check if json is valid with the report_model
         self.collection.insert_one(self.report_model.to_mongodb(serialized_report))
 
     def save_many(self, serialized_reports):

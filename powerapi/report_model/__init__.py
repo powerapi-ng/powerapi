@@ -30,6 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from powerapi.report_model.report_model import ReportModel, BadInputData
-from powerapi.report_model.report_model import KEYS_COMMON, KEYS_CSV_COMMON
+from powerapi.report_model.report_model import CSV_HEADER_COMMON, CSV_HEADER_HWPC, CSV_HEADER_POWER
 from powerapi.report_model.hwpc_model import HWPCModel
 from powerapi.report_model.power_model import PowerModel

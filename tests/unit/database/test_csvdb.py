@@ -36,10 +36,11 @@ import csv
 
 from powerapi.report import create_core_report, create_group_report, create_report_root,\
     create_socket_report
-from powerapi.report import PowerReport
-from powerapi.report_model import PowerModel, HWPCModel, KEYS_COMMON
+from powerapi.report import PowerReport, HWPCReport
+from powerapi.report_model import PowerModel, HWPCModel, CSV_HEADER_COMMON
 from powerapi.database import CsvDB
 from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError, HeaderAreNotTheSameError
+from powerapi.utils import timestamp_to_datetime
 
 PATH_TO_TEST = "tests/unit/environment/csv/"
 
@@ -96,22 +97,22 @@ def gen_hwpc_report():
     """
     Return a well formated HWPCReport
     """
-    cpua = create_core_report('1', 'e0', '0')
-    cpub = create_core_report('2', 'e0', '1')
-    cpuc = create_core_report('1', 'e0', '2')
-    cpud = create_core_report('2', 'e0', '3')
-    cpue = create_core_report('1', 'e1', '0')
-    cpuf = create_core_report('2', 'e1', '1')
-    cpug = create_core_report('1', 'e1', '2')
-    cpuh = create_core_report('2', 'e1', '3')
+    cpua0 = create_core_report('1', 'e0', '0')
+    cpub0 = create_core_report('2', 'e0', '1')
+    cpuc0 = create_core_report('3', 'e0', '2')
+    cpud0 = create_core_report('4', 'e0', '3')
+    cpua1 = create_core_report('1', 'e1', '0')
+    cpub1 = create_core_report('2', 'e1', '1')
+    cpuc1 = create_core_report('3', 'e1', '2')
+    cpud1 = create_core_report('4', 'e1', '3')
 
-    socketa = create_socket_report('1', [cpua, cpub])
-    socketb = create_socket_report('2', [cpuc, cpud])
-    socketc = create_socket_report('1', [cpue, cpuf])
-    socketd = create_socket_report('2', [cpug, cpuh])
+    socketa0 = create_socket_report('1', [cpua0, cpub0])
+    socketb0 = create_socket_report('2', [cpuc0, cpud0])
+    socketa1 = create_socket_report('1', [cpua1, cpub1])
+    socketb1 = create_socket_report('2', [cpuc1, cpud1])
 
-    groupa = create_group_report('1', [socketa, socketb])
-    groupb = create_group_report('2', [socketc, socketd])
+    groupa = create_group_report('group1', [socketa0, socketb0])
+    groupb = create_group_report('group2', [socketa1, socketb1])
 
     return create_report_root([groupa, groupb])
 
@@ -119,7 +120,7 @@ def gen_hwpc_report():
 def gen_power_report():
     global CPT
     CPT += 1
-    return PowerReport(CPT, SENSOR, TARGET, 0.11, {"metadata1": "truc", "metadata2": "oui"})
+    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 ##################
 #    FIXTURES    #
@@ -127,6 +128,7 @@ def gen_power_report():
 
 @pytest.fixture
 def clean_csv_files():
+
     """
     setup: remove repository in current path
     """
@@ -192,12 +194,12 @@ class TestCsvDB():
         """
         csvdb.add_files(BASIC_FILES)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in BASIC_FILES]
+        group_name = [path.split('/')[-1][:-4] for path in BASIC_FILES]
 
         csvdb_iter = iter(csvdb)
         for _ in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
+            for key in CSV_HEADER_COMMON:
                 assert key in report
             for group in group_name:
                 assert group in report['groups']
@@ -212,15 +214,15 @@ class TestCsvDB():
         """
         csvdb.add_files(FIRST_PRIMARY_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in FIRST_PRIMARY_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in FIRST_PRIMARY_MISSING]
 
         csvdb_iter = iter(csvdb)
         report = next(csvdb_iter)
-        for key in KEYS_COMMON:
+        for key in CSV_HEADER_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
-        assert report['timestamp'] == "1539260665189"
+        assert report['timestamp'] == timestamp_to_datetime(1539260665189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -231,15 +233,15 @@ class TestCsvDB():
         """
         csvdb.add_files(SECOND_PRIMARY_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in SECOND_PRIMARY_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in SECOND_PRIMARY_MISSING]
 
         csvdb_iter = iter(csvdb)
         report = next(csvdb_iter)
-        for key in KEYS_COMMON:
+        for key in CSV_HEADER_COMMON:
             assert key in report
         for group in group_name:
             assert group in report['groups']
-        assert report['timestamp'] == "1539260664189"
+        assert report['timestamp'] == timestamp_to_datetime(1539260664189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
@@ -250,12 +252,12 @@ class TestCsvDB():
         """
         csvdb.add_files(FIRST_RAPL_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in FIRST_RAPL_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in FIRST_RAPL_MISSING]
 
         csvdb_iter = iter(csvdb)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
+            for key in CSV_HEADER_COMMON:
                 assert key in report
             for group in group_name:
                 if i == 0 and "rapl" in group:
@@ -273,12 +275,12 @@ class TestCsvDB():
         """
         csvdb.add_files(SECOND_RAPL_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in SECOND_RAPL_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in SECOND_RAPL_MISSING]
 
         csvdb_iter = iter(csvdb)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
+            for key in CSV_HEADER_COMMON:
                 assert key in report
             for group in group_name:
                 if i == 1 and "rapl" in group:
@@ -325,7 +327,7 @@ class TestCsvDB():
             power_reports.append(gen_power_report())
             csvdb.save(power_reports[-1].serialize())
 
-        # Read the the csvdv and compare the data
+        # Read the the csvdb and compare the data
         reading_power_reports = []
         csvdb_read = CsvDB(PowerModel())
         csvdb_read.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/PowerReport.csv")
@@ -340,15 +342,15 @@ class TestCsvDB():
         assert pytest_wrapped.type == StopIteration
 
         for i in range(4):
-            if power_reports[i] != reading_power_reports[i]:
-                assert False
+            assert power_reports[i] == reading_power_reports[i]
 
 
 def test_csvdb_all_reports(clean_csv_files):
     """
     Test create/save/read all kind of reports
     """
-    all_reports = [(PowerModel(), gen_power_report)]
+    all_reports = [(PowerModel(), gen_power_report),
+                   (HWPCModel(), gen_hwpc_report)]
 
     for model, generator in all_reports:
         # Load DB
@@ -362,7 +364,10 @@ def test_csvdb_all_reports(clean_csv_files):
         csvdb.save(report.serialize())
 
         # Read report
-        csvdb.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/" + model.get_type().__name__ + ".csv")
+        for r, d, f in os.walk(PATH_TO_SAVE + report.sensor + "-" + report.target + "/"):
+            for file in f:
+                if '.csv' in file:
+                    csvdb.add_file(os.path.join(r, file))
         csvdb_iter = iter(csvdb)
         read_report = model.get_type().deserialize(next(csvdb_iter))
 

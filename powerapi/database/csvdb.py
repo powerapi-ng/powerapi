@@ -33,7 +33,7 @@ import csv
 import os
 
 from powerapi.database.base_db import BaseDB
-from powerapi.report_model.report_model import KEYS_COMMON
+from powerapi.report_model.report_model import CSV_HEADER_COMMON
 from powerapi.utils import utils, Error
 
 # Array of field that will not be considered as a group
@@ -223,7 +223,7 @@ class CsvDB(BaseDB):
             self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
             # Check common key
-            for key in KEYS_COMMON:
+            for key in CSV_HEADER_COMMON:
                 if key not in self.tmp_read[path_file]['next_line']:
                     raise CsvBadCommonKeysError("Wrong columns keys")
 
@@ -238,7 +238,7 @@ class CsvDB(BaseDB):
 
         :param dict serialized_report: serialized Report
         """
-        data = self.report_model.to_csvdb(serialized_report)
+        csv_header, data = self.report_model.to_csvdb(serialized_report)
 
         # If the repository doesn't exist, create it
         rep_path = self.current_path + serialized_report['sensor'] + "-" + serialized_report['target']
@@ -251,27 +251,29 @@ class CsvDB(BaseDB):
             rep_path_with_file = rep_path + '/' + filename + '.csv'
 
             # Get the header and check if it's ok
-            header = KEYS_COMMON + sorted(list(set([event_key for event_key, _ in values.items()]) - set(KEYS_COMMON)))
-            header_exist = False
-            try:
-                with open(rep_path_with_file) as csvfile:
-                    reader = csv.DictReader(csvfile)
-                    if reader.fieldnames:
-                        header_exist = True
+            # TODO: inefficient
+            for value in values:
+                header = csv_header + sorted(list(set([event_key for event_key, _ in value.items()]) - set(csv_header)))
+                header_exist = False
+                try:
+                    with open(rep_path_with_file) as csvfile:
+                        reader = csv.DictReader(csvfile)
+                        if reader.fieldnames:
+                            header_exist = True
 
-                    if header != reader.fieldnames:
-                        raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
+                        if header != reader.fieldnames:
+                            raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
+                        csvfile.close()
+                except FileNotFoundError:
+                    pass
+
+                # Write
+                with open(rep_path_with_file, 'a') as csvfile:
+                    writer = csv.DictWriter(csvfile, header)
+                    if not header_exist:
+                        writer.writeheader()
+                    writer.writerow(value)
                     csvfile.close()
-            except FileNotFoundError:
-                pass
-
-            # Write
-            with open(rep_path_with_file, 'a') as csvfile:
-                writer = csv.DictWriter(csvfile, header)
-                if not header_exist:
-                    writer.writeheader()
-                writer.writerow(values)
-                csvfile.close()
 
     def save_many(self, serialized_reports):
         """

@@ -29,9 +29,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from typing import Dict, List
 from powerapi.report import PowerReport
 from powerapi.report_model import ReportModel, BadInputData
-from powerapi.report_model import KEYS_COMMON
+from powerapi.report_model import CSV_HEADER_POWER
+from powerapi.utils import timestamp_to_datetime, datetime_to_timestamp
 
 
 class PowerModel(ReportModel):
@@ -61,14 +63,28 @@ class PowerModel(ReportModel):
         """
         return PowerReport
 
-    def to_csvdb(self, serialized_report):
+    def to_csvdb(self, serialized_report) -> (List[str], Dict):
         """
         Return raw data from serialized report
+
+        {
+            'PowerReport' : [{
+                'timestamp': ...
+                'sensor': ...
+                'target': ...
+                'power': ...
+                'metadata': {
+                    ...
+                }
+            }]
+        }
         """
         final_dict = {}
         try:
-            for field in ['timestamp', 'sensor', 'target', 'power']:
+            for field in CSV_HEADER_POWER:
                 final_dict[field] = serialized_report[field]
+
+            final_dict['timestamp'] = datetime_to_timestamp(serialized_report['timestamp'])
 
             for key, val in serialized_report['metadata'].items():
                 final_dict[key] = val
@@ -76,36 +92,67 @@ class PowerModel(ReportModel):
         except KeyError:
             raise BadInputData()
 
-        final_dict = {self.get_type().__name__: final_dict}
-        return final_dict
+        final_dict = {self.get_type().__name__: [final_dict]}
+        return CSV_HEADER_POWER, final_dict
 
-    def from_csvdb(self, file_name, row):
+    def from_csvdb(self, file_name, row) -> Dict:
         """
         Get the csvdb report
+
+        {
+            'timestamp': ...
+            'sensor': ...
+            'target': ...
+            'power': ...
+            'metadata': {
+                ...
+            }
+        }
         """
         final_dict = {}
 
         try:
-            final_dict = {key: row[key] for key in KEYS_COMMON}
+            final_dict = {key: row[key] for key in CSV_HEADER_POWER}
+            final_dict['timestamp'] = timestamp_to_datetime(int(row['timestamp']))
             final_dict['power'] = float(row['power'])
             final_dict['metadata'] = {}
             for key in row.keys():
-                if key not in KEYS_COMMON + ["power"]:
+                if key not in CSV_HEADER_POWER:
                     final_dict['metadata'][key] = row[key]
         except KeyError:
             raise BadInputData()
 
         return final_dict
 
-    def to_mongodb(self, serialized_report):
+    def to_mongodb(self, serialized_report) -> Dict:
         """
         Return raw data from serialized report
+
+        {
+            'timestamp': ...
+            'sensor': ...
+            'target': ...
+            'power': ...
+            'metadata': {
+                ...
+            }
+        }
         """
         return serialized_report
 
-    def from_mongodb(self, json):
+    def from_mongodb(self, json) -> Dict:
         """
         Get the mongodb report
+
+        {
+            'timestamp': ...
+            'sensor': ...
+            'target': ...
+            'power': ...
+            'metadata': {
+                ...
+            }
+        }
         """
         # Re arrange the json before return it by removing '_id' field
         json.pop('_id', None)
