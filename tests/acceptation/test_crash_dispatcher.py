@@ -65,10 +65,9 @@ from powerapi.formula import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
-from powerapi.report import HWPCReport, PowerReport
-from powerapi.report_model import HWPCModel
+from powerapi.report import HWPCReport
+from powerapi.report_model import HWPCModel, PowerModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.report import create_report_root
 
 
 from tests.mongo_utils import gen_base_db_test
@@ -118,11 +117,8 @@ class MainProcess(Process):
         supervisor = BackendSupervisor(stream_mode)
 
         # Pusher
-        output_mongodb = MongoDB(DB_URI,
-                                 'MongoDB1', 'test_result',
-                                 HWPCModel())
-        pusher = PusherActor("pusher_mongodb", PowerReport, output_mongodb,
-                             level_logger=LOG_LEVEL)
+        output_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_result')
+        pusher = PusherActor("pusher_mongodb", PowerModel(), output_mongodb, level_logger=LOG_LEVEL)
 
         # Formula
         formula_factory = (lambda name, verbose:
@@ -130,20 +126,17 @@ class MainProcess(Process):
 
         # Dispatcher
         route_table = RouteTable()
-        route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(
-            getattr(HWPCDepthLevel, 'ROOT'), primary=True))
+        route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
 
         dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,
                                      level_logger=LOG_LEVEL)
 
         # Puller
-        input_mongodb = MongoDB(DB_URI,
-                                'MongoDB1', 'test_hwrep',
-                                HWPCModel(), stream_mode=stream_mode)
+        input_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_hwrep')
         report_filter = Filter()
         report_filter.filter(lambda msg: True, dispatcher)
         puller = PullerActor("puller_mongodb", input_mongodb,
-                             report_filter, level_logger=LOG_LEVEL)
+                             report_filter, HWPCModel(), stream_mode=stream_mode, level_logger=LOG_LEVEL)
 
         supervisor.launch_actor(pusher)
         supervisor.launch_actor(dispatcher)

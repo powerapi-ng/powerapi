@@ -29,8 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.database.stdoutdb import StdoutDB
-from powerapi.database.base_db import BaseDB
+from powerapi.database.base_db import BaseDB, IterDB
 from powerapi.database.mongodb import MongoDB, MongoBadDBError
 from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
 from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError

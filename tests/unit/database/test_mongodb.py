@@ -100,8 +100,7 @@ def test_mongodb_bad_hostname(database):
     Test if the database doesn't exist (hostname/port error)
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
-        MongoDB("mongodb://lel:27017/", "error", "error",
-                HWPCModel()).connect()
+        MongoDB("mongodb://lel:27017/", "error", "error").connect()
     assert pytest_wrapped.type == MongoBadDBError
 
 
@@ -110,8 +109,7 @@ def test_mongodb_bad_port(database):
     Test if the database doesn't exist (hostname/port error)
     """
     with pytest.raises(MongoBadDBError) as pytest_wrapped:
-        MongoDB("mongodb://localhost:1", "error", "error",
-                HWPCModel()).connect()
+        MongoDB("mongodb://localhost:1", "error", "error").connect()
     assert pytest_wrapped.type == MongoBadDBError
 
 
@@ -120,14 +118,13 @@ def test_mongodb_read_basic_db(database):
     Test read mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(URI, "test_mongodb",
-                      "test_mongodb1", HWPCModel())
+    mongodb = MongoDB(URI, "test_mongodb", "test_mongodb1")
 
     # Check if we can reload after reading
     mongodb.connect()
 
     for _ in range(2):
-        mongodb_iter = iter(mongodb)
+        mongodb_iter = mongodb.iter(HWPCModel(), False)
         for _ in range(10):
             assert next(mongodb_iter) is not None
 
@@ -141,12 +138,11 @@ def test_mongodb_read_capped_db(database):
     Test read mongodb capped collection
     """
     # Load DB
-    mongodb = MongoDB(URI, "test_mongodb",
-                      "test_mongodb2", HWPCModel())
+    mongodb = MongoDB(URI, "test_mongodb", "test_mongodb2")
 
     # Check if we can read one time
     mongodb.connect()
-    mongodb_iter = iter(mongodb)
+    mongodb_iter = mongodb.iter(HWPCModel(), False)
 
     report = None
     for _ in range(mongodb.collection.count_documents({})):
@@ -160,7 +156,7 @@ def test_mongodb_read_capped_db(database):
 
     # Add data in the collection
     for _ in range(1):
-        mongodb.save(report)
+        mongodb.save(report, HWPCModel())
 
     # Check if there is nothing after
     with pytest.raises(StopIteration) as pytest_wrapped:
@@ -173,15 +169,14 @@ def test_mongodb_save_basic_db(database):
     Test save mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(URI, "test_mongodb",
-                      "test_mongodb3", HWPCModel())
+    mongodb = MongoDB(URI, "test_mongodb", "test_mongodb3")
 
     mongodb.connect()
 
     # Check if save work
     basic_count = mongodb.collection.count_documents({})
     for _ in range(2):
-        mongodb.save(gen_hwpc_report())
+        mongodb.save(gen_hwpc_report(), HWPCModel())
     assert mongodb.collection.count_documents({}) == basic_count + 2
 
 
@@ -195,17 +190,17 @@ def test_mongodb_all_reports(database):
     for model, generator in all_reports:
         # Load DB
         mongodb = MongoDB(URI, "test_reports"+model.get_type().__name__,
-                          "test_reports"+model.get_type().__name__, model)
+                          "test_reports"+model.get_type().__name__)
         mongodb.connect()
 
         # Create report
         report = generator()
 
         # Save report
-        mongodb.save(report)
+        mongodb.save(report, model)
 
         # Read report
-        mongodb_iter = iter(mongodb)
+        mongodb_iter = mongodb.iter(model, False)
         read_report = next(mongodb_iter)
 
         # Compare

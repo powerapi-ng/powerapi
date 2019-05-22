@@ -66,8 +66,7 @@ class TestFilter:
         - 2 next report return first and second dispatcher
         - 2 next report return None
         """
-        mongodb = MongoDB(URI, "test_filter",
-                          "test_filter1", report_model=HWPCModel())
+        mongodb = MongoDB(URI, "test_filter", "test_filter1")
         mongodb.connect()
         hwpc_filter = Filter()
         hwpc_filter.filter(lambda msg:
@@ -80,7 +79,7 @@ class TestFilter:
                            True if msg.sensor == "sensor_test2" else False,
                            3)
 
-        mongodb_it = iter(mongodb)
+        mongodb_it = mongodb.iter(HWPCModel(), False)
         for _ in range(2):
             hwpc_report = next(mongodb_it)
             assert hwpc_filter.route(hwpc_report) == [1, 2]

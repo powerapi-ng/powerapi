@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import mock
 from powerapi.report import Report, create_report_root
+from powerapi.report_model import HWPCModel
 from powerapi.puller import PullerActor, PullerState
 from powerapi.puller import PullerStartHandler
 from powerapi.actor import SocketInterface, Supervisor
@@ -125,7 +126,9 @@ class TestHandlerPuller:
         fake_filter = get_fake_filter()
         puller_state = PullerState(mock.Mock(),
                                    fake_database,
-                                   fake_filter)
+                                   fake_filter,
+                                   HWPCModel(),
+                                   False)
 
         assert puller_state.initialized is False
 

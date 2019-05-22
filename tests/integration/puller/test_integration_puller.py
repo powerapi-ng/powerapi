@@ -100,16 +100,16 @@ def generate_mongodb_data():
 
 
 @pytest.fixture()
-def supervisor(database):
+def supervisor(database, stream_mode):
     """
     Create a supervisor
     """
-    supervisor = BackendSupervisor(database.stream_mode)
+    supervisor = BackendSupervisor(stream_mode)
     yield supervisor
 
 
 @pytest.fixture()
-def puller(request, database, filt):
+def puller(request, database, filt, stream_mode):
     """
     Setup and Teardown for managing a PullerActor
 
@@ -120,6 +120,8 @@ def puller(request, database, filt):
         "test_puller_" + str(request.node.name),
         database,
         filt,
+        HWPCModel(),
+        stream_mode=stream_mode,
         level_logger=LOG_LEVEL)
 
     yield puller_actor
@@ -208,12 +210,11 @@ def empty_filt():
     return filt
 
 
-def mongodb_database(uri, database_name, collection_name, stream_mode):
+def mongodb_database(uri, database_name, collection_name):
     """
     Return MongoDB database
     """
-    database = MongoDB(uri, database_name, collection_name,
-                       HWPCModel(), stream_mode=stream_mode)
+    database = MongoDB(uri, database_name, collection_name)
     return database
 
 
@@ -232,8 +233,8 @@ def pytest_generate_tests(metafunc):
         database = getattr(metafunc.function, '_database', None)
         if isinstance(database, list):
             metafunc.parametrize('database',
-                                 [mongodb_database(arg1, arg2, arg3, arg4)
-                                  for arg1, arg2, arg3, arg4 in database])
+                                 [mongodb_database(arg1, arg2, arg3)
+                                  for arg1, arg2, arg3 in database])
         else:
             metafunc.parametrize('database', [database])
 
@@ -241,13 +242,15 @@ def pytest_generate_tests(metafunc):
         filt = getattr(metafunc.function, '_filt', None)
         metafunc.parametrize('filt', [filt])
 
+    metafunc.parametrize('stream_mode', [True])
+
 
 ##############################################################################
 #                                Tests                                       #
 ##############################################################################
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(basic_filt())
 def test_puller_create_ok(started_puller):
     """
@@ -257,8 +260,8 @@ def test_puller_create_ok(started_puller):
 
 
 @define_database([
-    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1", True),
-    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1", True),
+    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1"),
+    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
 ])
 @define_filt(basic_filt())
 def test_puller_create_bad_db(puller, supervisor):
@@ -271,7 +274,7 @@ def test_puller_create_bad_db(puller, supervisor):
     puller.join()
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(empty_filt())
 def test_puller_create_empty_filter(generate_mongodb_data, supervisor, puller):
     """
@@ -282,7 +285,7 @@ def test_puller_create_empty_filter(generate_mongodb_data, supervisor, puller):
     assert isinstance(puller.receive_control(), ErrorMessage)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(basic_filt())
 def test_puller_init_ok(initialized_puller_with_dispatcher):
     """
@@ -291,7 +294,7 @@ def test_puller_init_ok(initialized_puller_with_dispatcher):
     assert is_actor_alive(initialized_puller_with_dispatcher)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(basic_filt())
 def test_puller_init_already_init(initialized_puller_with_dispatcher):
     """
@@ -302,7 +305,7 @@ def test_puller_init_already_init(initialized_puller_with_dispatcher):
     assert isinstance(initialized_puller_with_dispatcher.receive_control(), ErrorMessage)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(basic_filt())
 def test_puller_kill_without_init(started_puller):
     """
@@ -313,7 +316,7 @@ def test_puller_kill_without_init(started_puller):
     assert not is_actor_alive(started_puller)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_filt(basic_filt())
 def test_puller_kill_after_init(generate_mongodb_data, initialized_puller_with_dispatcher_plus_supervisor):
     """

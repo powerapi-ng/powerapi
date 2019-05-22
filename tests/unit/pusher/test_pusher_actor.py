@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import mock
 from powerapi.report import create_report_root
+from powerapi.report_model import HWPCModel
 from powerapi.pusher import PusherStartHandler, ReportHandler
 from powerapi.pusher import PusherState
 from powerapi.actor import Actor, SocketInterface
@@ -77,7 +78,8 @@ class TestHandlerPusher:
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(mock.Mock(),
-                                   fake_database)
+                                   fake_database,
+                                   HWPCModel())
         pusher_state.actor.socket_interface = fake_socket_interface
         assert pusher_state.initialized is False
 
@@ -107,7 +109,8 @@ class TestHandlerPusher:
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         pusher_state = PusherState(mock.Mock(),
-                                   fake_database)
+                                   fake_database,
+                                   HWPCModel())
         pusher_state.actor.socket_interface = fake_socket_interface
         assert pusher_state.initialized is False
 

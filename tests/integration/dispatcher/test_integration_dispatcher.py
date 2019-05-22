@@ -30,11 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import pickle
-from datetime import datetime
 
 import pytest
-import zmq
 
 from powerapi.actor import NotConnectedException, ActorInitError, Supervisor
 from powerapi.dispatcher import DispatcherActor, RouteTable

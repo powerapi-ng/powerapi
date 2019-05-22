@@ -64,13 +64,13 @@ def define_database(database):
     return wrap
 
 
-def define_report_type(report_type):
+def define_report_model(report_model):
     """
-    Decorator to set the _report_type
+    Decorator to set the _report_model
     attribute for individuel tests.
     """
     def wrap(func):
-        setattr(func, '_report_type', report_type)
+        setattr(func, '_report_model', report_model)
         return func
     return wrap
 
@@ -95,12 +95,12 @@ def supervisor(database):
     """
     Create a supervisor
     """
-    supervisor = BackendSupervisor(database.stream_mode)
+    supervisor = BackendSupervisor(True)
     yield supervisor
 
 
 @pytest.fixture()
-def pusher(request, database, report_type):
+def pusher(request, database, report_model):
     """
     Setup and Teardown for managing a PusherActor
 
@@ -109,7 +109,7 @@ def pusher(request, database, report_type):
     """
     pusher_actor = PusherActor(
         "test_pusher_" + str(request.node.name),
-        report_type,
+        report_model,
         database,
         level_logger=LOG_LEVEL)
 
@@ -176,12 +176,11 @@ def gen_power_report():
     return PowerReport(1, "sensor", "target", 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 
-def mongodb_database(uri, database_name, collection_name, stream_mode):
+def mongodb_database(uri, database_name, collection_name):
     """
     Return MongoDB database
     """
-    database = MongoDB(uri, database_name, collection_name,
-                       PowerModel(), stream_mode=stream_mode)
+    database = MongoDB(uri, database_name, collection_name)
     return database
 
 
@@ -200,15 +199,15 @@ def pytest_generate_tests(metafunc):
         database = getattr(metafunc.function, '_database', None)
         if isinstance(database, list):
             metafunc.parametrize('database',
-                                 [mongodb_database(arg1, arg2, arg3, arg4)
-                                  for arg1, arg2, arg3, arg4 in database])
+                                 [mongodb_database(arg1, arg2, arg3)
+                                  for arg1, arg2, arg3 in database])
         else:
             metafunc.parametrize('database', [database])
 
-    if 'report_type' in metafunc.fixturenames:
-        report_type = getattr(metafunc.function, '_report_type', None)
-        metafunc.parametrize('report_type',
-                              [report_type])
+    if 'report_model' in metafunc.fixturenames:
+        report_model= getattr(metafunc.function, '_report_model', None)
+        metafunc.parametrize('report_model',
+                              [report_model])
 
 
 ##############################################################################
@@ -216,8 +215,8 @@ def pytest_generate_tests(metafunc):
 ##############################################################################
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
+@define_report_model(PowerModel())
 def test_pusher_create_ok(started_pusher):
     """
     Create a PusherActor with a good configuration
@@ -226,10 +225,10 @@ def test_pusher_create_ok(started_pusher):
 
 
 @define_database([
-    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1", True),
-    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1", True),
+    ("mongodb://toto:27017", "test_mongodb", "test_mongodb1"),
+    ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
 ])
-@define_report_type(PowerReport)
+@define_report_model(PowerModel())
 def test_pusher_create_bad_db(pusher, supervisor):
     """
     Create a PusherActor with a bad database
@@ -240,8 +239,8 @@ def test_pusher_create_bad_db(pusher, supervisor):
     pusher.join()
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
+@define_report_model(PowerModel())
 def test_pusher_init_ok(initialized_pusher):
     """
     Create a PusherActor and send a StartMessage
@@ -249,8 +248,8 @@ def test_pusher_init_ok(initialized_pusher):
     assert is_actor_alive(initialized_pusher)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
+@define_report_model(PowerModel())
 def test_pusher_init_already_init(initialized_pusher):
     """
     Create a PusherActor and send a StartMessage to an already initialized Actor
@@ -260,8 +259,8 @@ def test_pusher_init_already_init(initialized_pusher):
     assert isinstance(initialized_pusher.receive_control(), ErrorMessage)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
+@define_report_model(PowerModel())
 def test_pusher_kill_without_init(started_pusher):
     """
     Create a PusherActor and kill him with a PoisonPillMessage before initialization
@@ -271,8 +270,8 @@ def test_pusher_kill_without_init(started_pusher):
     assert not is_actor_alive(started_pusher, 5)
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
+@define_report_model(PowerModel())
 def test_pusher_kill_after_init(generate_mongodb_data, initialized_pusher_plus_supervisor):
     """
     Create a PusherActor and kill him with a PoisonPillMessage
@@ -285,8 +284,8 @@ def test_pusher_kill_after_init(generate_mongodb_data, initialized_pusher_plus_s
 # - Type of report
 # - Stream mode or not
 # - Type of database
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb_pr", True))
-@define_report_type(PowerReport)
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb_pr"))
+@define_report_model(PowerModel())
 def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
     """
     Create a PusherActor, send him a PowerReport, kill him and check it from database
@@ -303,7 +302,7 @@ def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
     # Open a database for read the saved report
     mongodb = initialized_pusher.state.database
     mongodb.connect()
-    mongodb_iter = iter(mongodb)
+    mongodb_iter = mongodb.iter(PowerModel(), False)
     new_report = next(mongodb_iter)
 
     assert saved_report == new_report

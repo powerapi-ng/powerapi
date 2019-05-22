@@ -32,8 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pymongo
 
 from typing import List
-from powerapi.database.base_db import BaseDB, DBError
+from powerapi.database.base_db import BaseDB, DBError, IterDB
 from powerapi.report import Report
+from powerapi.report_model import ReportModel
 
 
 class MongoBadDBError(DBError):
@@ -41,8 +42,49 @@ class MongoBadDBError(DBError):
     Error raised when hostname/port fail
     """
     def __init__(self, hostname):
-        DBError.__init__(self, 'Mongo DB error : can\'t connect to ' +
-                         hostname)
+        DBError.__init__(self, 'Mongo DB error : can\'t connect to ' + hostname)
+
+
+class MongoIterDB(IterDB):
+    """
+    MongoIterDB class
+
+    Class for iterating in a MongoDB class
+    """
+
+    def __init__(self, db, report_model, stream_mode):
+        """
+        """
+        super().__init__(db, report_model, stream_mode)
+
+        #: (pymongo.Cursor): Cursor which return data
+        self.cursor = None
+
+        self.__iter__()
+
+    def __iter__(self):
+        """
+        Create the iterator for get the data
+        """
+        if not self.stream_mode:
+            self.cursor = self.db.collection.find({})
+        return self
+
+    def __next__(self) -> Report:
+        """
+        Allow to get the next data
+        """
+        try:
+            if not self.stream_mode:
+                json = self.cursor.next()
+            else:
+                json = self.db.collection.find_one_and_delete({})
+                if json is None:
+                    raise StopIteration()
+        except StopIteration:
+            raise StopIteration()
+
+        return self.report_model.get_type().deserialize(self.report_model.from_mongodb(json))
 
 
 class MongoDB(BaseDB):
@@ -52,23 +94,17 @@ class MongoDB(BaseDB):
     Allow to handle a MongoDB database in reading or writing.
     """
 
-    def __init__(self,
-                 uri, db_name, collection_name, report_model, stream_mode=False):
+    def __init__(self, uri: str, db_name: str, collection_name: str):
         """
-        :param str uri:             URI of the MongoDB server
+        :param uri:             URI of the MongoDB server
 
-        :param str db_name:         database name in the mongodb
-                                    (ex: "powerapi")
+        :param db_name:         database name in the mongodb
+                                (ex: "powerapi")
 
-        :param str collection_name: collection name in the mongodb
+        :param collection_name: collection name in the mongodb
                                     (ex: "sensor")
-
-        :param report_model:        XXXModel object. Allow to read specific
-                                    report with a specific format in a database
-        :type report_model:         powerapi.ReportModel
-
         """
-        BaseDB.__init__(self, report_model, stream_mode)
+        BaseDB.__init__(self)
 
         #: (str): URI of the mongodb server
         self.uri = uri
@@ -86,9 +122,6 @@ class MongoDB(BaseDB):
         #: targeted collection
         self.collection = None
 
-        #: (pymongo.Cursor): Cursor which return data
-        self.cursor = None
-
     def connect(self):
         """
         Override from BaseDB.
@@ -102,11 +135,9 @@ class MongoDB(BaseDB):
         if self.mongo_client is not None:
             self.mongo_client.close()
 
-        self.mongo_client = pymongo.MongoClient(self.uri,
-                                                serverSelectionTimeoutMS=5)
+        self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
 
-        self.collection = self.mongo_client[self.db_name][
-            self.collection_name]
+        self.collection = self.mongo_client[self.db_name][self.collection_name]
 
         # Check if hostname:port work
         try:
@@ -114,43 +145,27 @@ class MongoDB(BaseDB):
         except pymongo.errors.ServerSelectionTimeoutError:
             raise MongoBadDBError(self.uri)
 
-    def __iter__(self):
+    def iter(self, report_model: ReportModel, stream_mode: bool) -> MongoIterDB:
         """
         Create the iterator for get the data
         """
-        if not self.stream_mode:
-            self.cursor = self.collection.find({})
-        return self
+        return MongoIterDB(self, report_model, stream_mode)
 
-    def __next__(self) -> Report:
-        """
-        Allow to get the next data
-        """
-        try:
-            if not self.stream_mode:
-                json = self.cursor.next()
-            else:
-                json = self.collection.find_one_and_delete({})
-                if json is None:
-                    raise StopIteration()
-        except StopIteration:
-            raise StopIteration()
-
-        return self.report_model.get_type().deserialize(self.report_model.from_mongodb(json))
-
-    def save(self, report: Report):
+    def save(self, report: Report, report_model: ReportModel):
         """
         Override from BaseDB
 
         :param report: Report to save
+        :param report_model: ReportModel
         """
-        self.collection.insert_one(self.report_model.to_mongodb(report.serialize()))
+        self.collection.insert_one(report_model.to_mongodb(report.serialize()))
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: List[Report], report_model: ReportModel):
         """
         Allow to save a batch of data
 
         :param reports: Batch of data.
+        :param report_model: ReportModel
         """
-        serialized_reports = list(map(lambda r: self.report_model.to_mongodb(r.serialize()), reports))
+        serialized_reports = list(map(lambda r: report_model.to_mongodb(r.serialize()), reports))
         self.collection.insert_many(serialized_reports)

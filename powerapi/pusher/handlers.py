@@ -87,7 +87,7 @@ class TimeoutBasicHandler(InitHandler):
         :param msg: None
         """
         if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer)
+            self.state.database.save_many(self.state.buffer, self.state.report_model)
         self.state.buffer = []
 
 

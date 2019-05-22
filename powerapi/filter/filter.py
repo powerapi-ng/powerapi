@@ -47,16 +47,6 @@ class Filter:
     def __init__(self):
         self.filters = []
 
-    def get_type(self):
-        """
-        Return the report type for a filter.
-
-        .. note::
-
-            Need to be overrided
-        """
-        raise NotImplementedError()
-
     def filter(self, rule, dispatcher):
         """
         Define a rule for a kind of report, and send it to the dispatcher

@@ -42,7 +42,7 @@ class PusherState(State):
     Contains in addition to State values :
       - The database interface
     """
-    def __init__(self, actor, database):
+    def __init__(self, actor, database, report_model):
         """
         :param BaseDB database: Database for saving data.
         """
@@ -50,6 +50,9 @@ class PusherState(State):
 
         #: (BaseDB): Database for saving data.
         self.database = database
+
+        #: (Report): Type of the report that the pusher handle.
+        self.report_model = report_model
 
         #: (Dict): Buffer data.
         self.buffer = []
@@ -62,24 +65,21 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_type, database,
+    def __init__(self, name, report_model, database,
                  level_logger=logging.WARNING,
                  timeout=1000):
         """
         :param str name: Pusher name.
-        :param Report report_type: Type of the report that the pusher
-                                   handle.
+        :param Report report_model: ReportModel
         :param BaseDB database: Database use for saving data.
         :param int level_logger: Define the level of the logger
         """
         Actor.__init__(self, name, level_logger, timeout)
 
-        #: (Report): Type of the report that the pusher handle.
-        self.report_type = report_type
-
         #: (State): State of the actor.
         self.state = PusherState(self,
-                                 database)
+                                 database,
+                                 report_model)
 
     def setup(self):
         """
@@ -87,7 +87,7 @@ class PusherActor(Actor):
         each report type
         """
         self.add_handler(PoisonPillMessage, PusherPoisonPillHandler(self.state))
-        self.add_handler(self.report_type, ReportHandler(self.state))
+        self.add_handler(self.state.report_model.get_type(), ReportHandler(self.state))
         self.add_handler(StartMessage, PusherStartHandler(self.state))
         self.set_timeout_handler(TimeoutBasicHandler(self.state))
 
@@ -97,4 +97,4 @@ class PusherActor(Actor):
         """
         # Flush buffer
         if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer)
+            self.state.database.save_many(self.state.buffer, self.state.report_model)

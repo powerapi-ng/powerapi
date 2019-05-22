@@ -156,7 +156,7 @@ def corrupted_csvdb():
 
 @pytest.fixture()
 def csvdb():
-    return CsvDB(HWPCModel(), current_path=os.getcwd())
+    return CsvDB(current_path=os.getcwd())
 
 ##################
 #     TESTS      #
@@ -174,6 +174,7 @@ class TestCsvDB():
         with pytest.raises(CsvBadFilePathError) as pytest_wrapped:
             csvdb.add_file("/tmp/unknowfile.csv")
             csvdb.connect()
+            csvdb.iter(PowerModel(), False)
         assert pytest_wrapped.type == CsvBadFilePathError
 
     def test_csvdb_bad_common(self, csvdb):
@@ -185,6 +186,7 @@ class TestCsvDB():
             with pytest.raises(CsvBadCommonKeysError) as pytest_wrapped:
                 csvdb.add_files(csv_files)
                 csvdb.connect()
+                csvdb.iter(PowerModel(), False)
             assert pytest_wrapped.type == CsvBadCommonKeysError
             csv_files = csv_files[1:]
 
@@ -196,7 +198,7 @@ class TestCsvDB():
         csvdb.connect()
         group_name = [path.split('/')[-1][:-4] for path in BASIC_FILES]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for _ in range(2):
             report = next(csvdb_iter)
             for group in group_name:
@@ -214,7 +216,7 @@ class TestCsvDB():
         csvdb.connect()
         group_name = [path.split('/')[-1][:-4] for path in FIRST_PRIMARY_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         report = next(csvdb_iter)
         for group in group_name:
             assert group in report.groups
@@ -231,7 +233,7 @@ class TestCsvDB():
         csvdb.connect()
         group_name = [path.split('/')[-1][:-4] for path in SECOND_PRIMARY_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         report = next(csvdb_iter)
         for group in group_name:
             assert group in report.groups
@@ -248,7 +250,7 @@ class TestCsvDB():
         csvdb.connect()
         group_name = [path.split('/')[-1][:-4] for path in FIRST_RAPL_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for i in range(2):
             report = next(csvdb_iter)
             for group in group_name:
@@ -269,7 +271,7 @@ class TestCsvDB():
         csvdb.connect()
         group_name = [path.split('/')[-1][:-4] for path in SECOND_RAPL_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for i in range(2):
             report = next(csvdb_iter)
             for group in group_name:
@@ -289,13 +291,13 @@ class TestCsvDB():
         """
         Try to save a PowerReport with an existent file and a corrupted header
         """
-        csvdb = CsvDB(PowerModel(), current_path=PATH_TO_SAVE)
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
         csvdb.connect()
 
         # Try to save one PowerReport
         power_report = gen_power_report()
         with pytest.raises(HeaderAreNotTheSameError) as pytest_wrapped:
-            csvdb.save(power_report)
+            csvdb.save(power_report, PowerModel())
         assert pytest_wrapped.type == HeaderAreNotTheSameError
 
 
@@ -303,26 +305,26 @@ class TestCsvDB():
         """
         Save a PowerReport from an basic object
         """
-        csvdb = CsvDB(PowerModel(), current_path=PATH_TO_SAVE)
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
         csvdb.connect()
 
         power_reports = list()
 
         # Save one time with a file that doesn't exist
         power_reports.append(gen_power_report())
-        csvdb.save(power_reports[0])
+        csvdb.save(power_reports[0], PowerModel())
 
         # Save three time
         for _ in range(3):
             power_reports.append(gen_power_report())
-            csvdb.save(power_reports[-1])
+            csvdb.save(power_reports[-1], PowerModel())
 
         # Read the the csvdb and compare the data
         reading_power_reports = []
-        csvdb_read = CsvDB(PowerModel())
+        csvdb_read = CsvDB(current_path=PATH_TO_SAVE)
         csvdb_read.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/PowerReport.csv")
         csvdb_read.connect()
-        csvdb_read_iter = iter(csvdb_read)
+        csvdb_read_iter = csvdb_read.iter(PowerModel(), False)
 
         for _ in range(4):
             reading_power_reports.append(next(csvdb_read_iter))
@@ -344,21 +346,21 @@ def test_csvdb_all_reports(clean_csv_files):
 
     for model, generator in all_reports:
         # Load DB
-        csvdb = CsvDB(model, current_path=PATH_TO_SAVE)
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
         csvdb.connect()
 
         # Create report
         report = generator()
 
         # Save report
-        csvdb.save(report)
+        csvdb.save(report, model)
 
         # Read report
         for r, d, f in os.walk(PATH_TO_SAVE + report.sensor + "-" + report.target + "/"):
             for file in f:
                 if '.csv' in file:
                     csvdb.add_file(os.path.join(r, file))
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(model, False)
         read_report = next(csvdb_iter)
 
         # Compare
