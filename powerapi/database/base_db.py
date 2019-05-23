@@ -29,6 +29,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from typing import List
+from powerapi.report_model import ReportModel
+from powerapi.report import Report
 from powerapi.utils import Error
 
 
@@ -42,7 +45,31 @@ class DBError(Error):
         :param str msg: Message of the error
         """
         super().__init__(msg)
-        self.msg = msg
+
+
+class IterDB:
+    """
+    IterDB class
+
+    This class allows to browse a database as an iterable
+    """
+
+    def __init__(self, db, report_model, stream_mode):
+        """
+        """
+        self.db = db
+        self.stream_mode = stream_mode
+        self.report_model = report_model
+
+    def __iter__(self):
+        """
+        """
+        raise NotImplementedError()
+
+    def __next__(self) -> Report:
+        """
+        """
+        raise NotImplementedError()
 
 
 class BaseDB:
@@ -54,19 +81,6 @@ class BaseDB:
     For example, Mongodb, influxdb, csv are different kind of BDD.
     """
 
-    def __init__(self, report_model, stream_mode):
-        """
-        :param report_model: object that herit from ReportModel and define
-                             the type of Report
-        :type report_model: powerapi.ReportModel
-        """
-        #: (powerapi.ReportModel): Object that herit from ReportModel and
-        #: define the type of Report
-        self.report_model = report_model
-
-        #: (bool): Stream mode
-        self.stream_mode = stream_mode
-
     def connect(self):
         """
         Function that allow to load the database. Depending of the type,
@@ -76,32 +90,29 @@ class BaseDB:
         """
         raise NotImplementedError()
 
-    def __iter__(self):
+    def iter(self, report_model: ReportModel, stream_mode: bool) -> IterDB:
         """
         Create the iterator for get the data
+        :param report_model: Object that herit from ReportModel and define
+                             the type of Report
+        :param stream_mode: Define if we read in stream mode
         """
         raise NotImplementedError()
 
-    def __next__(self):
-        """
-        Allow to get the next data
-        """
-        raise NotImplementedError()
-
-    def save(self, json):
+    def save(self, report: Report, report_model: ReportModel):
         """
         Allow to save a json input in the db
 
-        :param dict json: JSON from Report serialize function
-
-        .. note:: Need to be overrided
+        :param report: Report
+        :param report_model: ReportModel
         """
         raise NotImplementedError()
 
-    def save_many(self, tab_json):
+    def save_many(self, reports: List[Report], report_model: ReportModel):
         """
         Allow to save a batch of data
 
-        :param [Dict] tab_json: Batch of data.
+        :param reports: Batch of Serialized Report
+        :param report_model: ReportModel
         """
         raise NotImplementedError()

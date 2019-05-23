@@ -60,7 +60,7 @@ class ReportHandler(InitHandler):
 
         :param powerapi.PowerReport msg: PowerReport to save.
         """
-        self.state.buffer.append(msg.serialize())
+        self.state.buffer.append(msg)
 
 
 class PusherPoisonPillHandler(Handler):
@@ -72,7 +72,7 @@ class PusherPoisonPillHandler(Handler):
         """
         :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
         """
-        self.state.timeout_handler = TimeoutKillHandler(self.state)
+        self.state.actor.set_timeout_handler(TimeoutKillHandler(self.state))
         self.state.actor.socket_interface.timeout = 2000
 
 
@@ -87,11 +87,11 @@ class TimeoutBasicHandler(InitHandler):
         :param msg: None
         """
         if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer)
+            self.state.database.save_many(self.state.buffer, self.state.report_model)
         self.state.buffer = []
 
 
-class TimeoutKillHandler(InitHandler):
+class TimeoutKillHandler(Handler):
     """
     Pusher timeout kill the actor
     """

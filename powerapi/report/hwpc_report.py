@@ -79,7 +79,7 @@ class HWPCReport(Report):
         self.groups = groups
 
     def __repr__(self) -> str:
-        return 'HWCPReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.groups.keys())
+        return 'HWCPReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
 
     @staticmethod
     def deserialize(data: Dict) -> HWPCReport:

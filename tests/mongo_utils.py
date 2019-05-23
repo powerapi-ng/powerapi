@@ -117,9 +117,11 @@ def clean_base_test_unit_mongo(uri):
     drop test_mongodb1, test_mongodb2 and test_mongodb3 collections
     """
     mongo = pymongo.MongoClient(uri)
-    db = mongo['test_mongodb']
-    for col_name in ['test_mongodb1', 'test_mongodb2', 'test_mongodb3']:
-        db[col_name].drop()
+    db_names = mongo.list_database_names()
+    for name in db_names:
+        if "test_" in name:
+            for col in mongo[name].list_collection_names():
+                mongo[name][col].drop()
     mongo.close()
 
 

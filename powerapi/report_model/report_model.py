@@ -29,8 +29,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-KEYS_COMMON = ['timestamp', 'sensor', 'target']
-KEYS_CSV_COMMON = KEYS_COMMON + ['socket', 'cpu']
+from typing import Dict, List
+
+
+CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
+CSV_HEADER_HWPC = CSV_HEADER_COMMON + ['socket', 'cpu']
+CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power']
 
 
 class BadInputData(Exception):
@@ -54,14 +58,26 @@ class ReportModel:
         """
         raise NotImplementedError()
 
-    def from_mongodb(self, json):
+    def from_mongodb(self, json) -> Dict:
         """
         Get the mongodb report
         """
         raise NotImplementedError()
 
-    def from_csvdb(self, file_name, row):
+    def from_csvdb(self, file_name, row) -> Dict:
         """
         Get the csvdb report
+        """
+        raise NotImplementedError()
+
+    def to_mongodb(self, serialized_report) -> Dict:
+        """
+        Return raw data from serialized report
+        """
+        raise NotImplementedError()
+
+    def to_csvdb(self, serialized_report) -> (List[str], Dict):
+        """
+        Return raw data from serialized report
         """
         raise NotImplementedError()

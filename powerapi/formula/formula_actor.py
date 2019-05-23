@@ -47,7 +47,7 @@ class FormulaState(State):
         :param actor: Actor linked to the state
         :param pushers: Pushers available for the actor
         """
-        State.__init__(self, actor)
+        super().__init__(actor)
         self.pushers = pushers
 
 
@@ -79,4 +79,4 @@ class FormulaActor(Actor):
         Teardown the Formula actor.
         """
         for _, pusher in self.state.pushers.items():
-            pusher.state.socket_interface.close()
+            pusher.socket_interface.close()

@@ -30,9 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import csv
+import os
 
-from powerapi.database.base_db import BaseDB
-from powerapi.report_model.report_model import KEYS_COMMON
+from typing import List
+from powerapi.report import Report
+from powerapi.database.base_db import BaseDB, IterDB
+from powerapi.report_model.report_model import CSV_HEADER_COMMON, ReportModel
 from powerapi.utils import utils, Error
 
 # Array of field that will not be considered as a group
@@ -51,58 +54,78 @@ class CsvBadCommonKeysError(Error):
     """
 
 
-class CsvDB(BaseDB):
+class HeaderAreNotTheSameError(Error):
     """
-    CsvDB class herited from BaseDB
-
-    This class define the behaviour for reading some csv file.
+    Error raised when the header read in a file doesn't fit the input data
     """
 
-    def __init__(self, report_model, files_name):
-        """
-        :param list files_name: list of file name .csv
-        :param report_model: object that herit from ReportModel and define
-                             the type of Report
-        :type report_model: martwatts.ReportModel
-        """
-        BaseDB.__init__(self, report_model, False)
 
-        #: (list): list of file name .csv
-        self.files_name = files_name
+class CsvIterDB(IterDB):
+    """
+    IterDB class
 
-        # intern memory
-        self.tmp = {
-            path_file: {
+    This class allows to browse a database as an iterable
+    """
+
+    def __init__(self, db, filenames, report_model, stream_mode):
+        """
+        """
+        super().__init__(db, report_model, stream_mode)
+
+        self.filenames = filenames
+
+        # intern memory for reading
+        # path_file: {
+        #     'next_line': [],
+        #     'reader': None,
+        #     'file': None
+        # }
+        self.tmp_read = {}
+
+        # Add it in the tmp
+        for filename in filenames:
+            self.tmp_read[filename] = {
                 'next_line': [],
                 'reader': None,
                 'file': None
             }
-            for path_file in self.files_name
-        }
 
-        #: (int): allow to know if we read a new report, or the same
-        #: current timestamp
-        self.saved_timestamp = utils.timestamp_to_datetime(0)
+        # Open all files with csv and read first line
+        for filename in self.filenames:
+            try:
+                self.tmp_read[filename]['file'] = open(filename)
+                self.tmp_read[filename]['reader'] = csv.DictReader(self.tmp_read[filename]['file'])
+            except FileNotFoundError as error:
+                raise CsvBadFilePathError(error)
+            self.tmp_read[filename]['next_line'] = self._next(filename)
 
-    def _next(self, path_file):
-        """
-        Get next row, None otherwise
+            # Check common key
+            for key in CSV_HEADER_COMMON:
+                if key not in self.tmp_read[filename]['next_line']:
+                    raise CsvBadCommonKeysError("Wrong columns keys")
 
-        :param str path_file: file name we want to read
-        """
-        try:
-            return self.tmp[path_file]['reader'].__next__()
-        except StopIteration:
-            return None
+        # Save the first timestamp
+        if self.filenames:
+            self.saved_timestamp = utils.timestamp_to_datetime(
+                int(self.tmp_read[self.filenames[0]]['next_line']['timestamp']))
 
     def __iter__(self):
         """
-        Create the iterator for get the data
         """
-        self.connect()
         return self
 
-    def __next__(self):
+    def _next(self, filename):
+        """
+        Get next row, None otherwise
+
+        :param str filename: file name we want to read
+        """
+        try:
+            return self.tmp_read[filename]['reader'].__next__()
+        except StopIteration:
+            return None
+
+    def __next__(self) -> Report:
         """
         Allow to get the next data
         """
@@ -113,13 +136,13 @@ class CsvDB(BaseDB):
         current_timestamp = self.saved_timestamp
 
         # For all files
-        for path_file in self.files_name:
+        for path_file in self.filenames:
 
             # While timestamp is lower or equal
             while True:
 
                 # Get the next line
-                row = self.tmp[path_file]['next_line']
+                row = self.tmp_read[path_file]['next_line']
 
                 # If nothing more, break
                 if row is None:
@@ -131,7 +154,7 @@ class CsvDB(BaseDB):
 
                 # If timestamp is higher, we stop here
                 if row_timestamp > current_timestamp:
-                    if path_file == self.files_name[0]:
+                    if path_file == self.filenames[0]:
                         self.saved_timestamp = row_timestamp
                     break
 
@@ -143,39 +166,142 @@ class CsvDB(BaseDB):
                                                      row))
 
                 # Next line
-                self.tmp[path_file]['next_line'] = self._next(path_file)
+                self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
         if not json:
+            # Close files
+            for filename in self.filenames:
+                if self.tmp_read[filename]['file'] is not None:
+                    self.tmp_read[filename]['file'].close()
             raise StopIteration()
-        return json
+
+        return self.report_model.get_type().deserialize(json)
+
+
+class CsvDB(BaseDB):
+    """
+    CsvDB class herited from BaseDB
+
+    This class define the behaviour for reading some csv file.
+    a CsvDB instance can be define by his ReportModel and its current path
+    """
+
+    def __init__(self, current_path="/tmp/csvdbtest"):
+        """
+        :param current_path: Current path where read/write files
+        """
+        super().__init__()
+
+        #: (list): list of file name .csv
+        self.filenames = []
+
+        #: (str): current path
+        self.current_path = current_path if current_path[-1] == '/' else current_path + '/'
+
+        #: (int): allow to know if we read a new report, or the same
+        #: current timestamp
+        self.saved_timestamp = utils.timestamp_to_datetime(0)
+
+    ###########################################################################
+    # Specific CsvDB
+    ###########################################################################
+
+    def add_file(self, filename):
+        """
+        Add a file in the filenames list (it can be relative or absolute path)
+        :param filename: Path to file
+        """
+        # If absolute path
+        if filename[0] == '/':
+            self.filenames.append(filename)
+        else:
+            filename = self.current_path + filename
+            self.filenames.append(filename)
+
+    def add_files(self, filenames):
+        """
+        Add list of files in the filenames list (it can be relative or absolute path)
+        :param filenames: List of path to file
+        """
+        for filename in filenames:
+            self.add_file(filename)
+
+    def clean_files(self):
+        """
+        Clean the filenames list
+        """
+        self.filenames.clear()
+
+    ###########################################################################
+    # Override from BaseDB
+    ###########################################################################
+
+    def iter(self, report_model: ReportModel, stream_mode: bool) -> CsvIterDB:
+        """
+        Create the iterator for get the data
+        """
+        return CsvIterDB(self, self.filenames, report_model, stream_mode)
 
     def connect(self):
         """
         Override from BaseDB.
 
-        Close file if already open
-        Read first line of all the .csv file and check if the pattern is good.
+        Nothing to do with CSV, because it's just files operations.
         """
-        # Close file if already opened
-        for path_file in self.files_name:
-            if self.tmp[path_file]['file'] is not None:
-                self.tmp[path_file]['file'].close()
+        pass
 
-        # Open all files with csv and read first line
-        for path_file in self.files_name:
-            try:
-                self.tmp[path_file]['file'] = open(path_file)
-                self.tmp[path_file]['reader'] = csv.DictReader(
-                    self.tmp[path_file]['file'])
-            except FileNotFoundError as error:
-                raise CsvBadFilePathError(error)
-            self.tmp[path_file]['next_line'] = self._next(path_file)
+    def save(self, report: Report, report_model: ReportModel):
+        """
+        Allow to save a serialized_report in the db
 
-            # Check common key
-            for key in KEYS_COMMON:
-                if key not in self.tmp[path_file]['next_line']:
-                    raise CsvBadCommonKeysError("Wrong columns keys")
+        :param report: Report
+        :param report_model: ReportModel
+        """
+        serialized_report = report.serialize()
+        csv_header, data = report_model.to_csvdb(serialized_report)
 
-        # Save the first timestamp
-        self.saved_timestamp = utils.timestamp_to_datetime(
-            int(self.tmp[self.files_name[0]]['next_line']['timestamp']))
+        # If the repository doesn't exist, create it
+        rep_path = self.current_path + serialized_report['sensor'] + "-" + serialized_report['target']
+        try:
+            os.makedirs(rep_path)
+        except FileExistsError:
+            pass
+
+        for filename, values in data.items():
+            rep_path_with_file = rep_path + '/' + filename + '.csv'
+
+            # Get the header and check if it's ok
+            # TODO: inefficient
+            for value in values:
+                header = csv_header + sorted(list(set([event_key for event_key, _ in value.items()]) - set(csv_header)))
+                header_exist = False
+                try:
+                    with open(rep_path_with_file) as csvfile:
+                        reader = csv.DictReader(csvfile)
+                        if reader.fieldnames:
+                            header_exist = True
+
+                        if header != reader.fieldnames:
+                            raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
+                        csvfile.close()
+                except FileNotFoundError:
+                    pass
+
+                # Write
+                with open(rep_path_with_file, 'a') as csvfile:
+                    writer = csv.DictWriter(csvfile, header)
+                    if not header_exist:
+                        writer.writeheader()
+                    writer.writerow(value)
+                    csvfile.close()
+
+    def save_many(self, reports: List[Report], report_model: ReportModel):
+        """
+        Allow to save a batch of report
+
+        :param reports: Batch of report.
+        :param report_model: ReportModel
+        """
+        # TODO: Inefficient
+        for report in reports:
+            self.save(report)

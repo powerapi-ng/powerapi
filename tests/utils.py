@@ -34,11 +34,11 @@ import zmq
 from powerapi.actor import SafeContext
 
 
-def is_actor_alive(actor):
+def is_actor_alive(actor, time=0.5):
     """
     wait the actor to terminate or 0.5 secondes and return its is_alive value
     """
-    actor.join(0.5)
+    actor.join(time)
     return actor.is_alive()
 
 #######################

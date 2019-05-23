@@ -56,7 +56,7 @@ class PullerStartHandler(StartHandler):
         """
         try:
             self.state.database.connect()
-            self.state.database_it = iter(self.state.database)
+            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(error.msg))
             self.state.alive = False
@@ -86,9 +86,7 @@ class TimeoutHandler(InitHandler):
         # Read one input, if it's None, it means there is not more
         # report in the database, just pass
         try:
-            data = next(self.state.database_it)
-            # Deserialization
-            report = self.state.database.report_model.get_type().deserialize(data)
+            report = next(self.state.database_it)
         except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
 
@@ -110,7 +108,7 @@ class TimeoutHandler(InitHandler):
             # for sleeping mode
             self.state.actor.socket_interface.timeout = self.state.timeout_basic
         except NoReportExtractedException:
-            if not self.state.database.stream_mode:
+            if not self.state.stream_mode:
                 self.state.alive = False
             # for sleeping mode
             if self.state.counter < 10:

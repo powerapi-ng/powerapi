@@ -30,23 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import pickle
 import pytest
-import random
-import zmq
-from mock import patch, Mock
 
-from powerapi.filter import Filter, FilterUselessError
-from powerapi.report_model import HWPCModel
-from powerapi.dispatcher import DispatcherActor
-from powerapi.database import BaseDB, MongoDB
-from powerapi.puller import PullerActor
-from powerapi.report import HWPCReport
+from powerapi.report_model import PowerModel
+from powerapi.database import MongoDB
+from powerapi.pusher import PusherActor
+from powerapi.report import PowerReport
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.actor import SafeContext, ActorInitError
+from powerapi.actor import ActorInitError
 from powerapi.message import StartMessage, ErrorMessage
-from tests.utils import gen_side_effect
-from tests.utils import is_log_ok
 from tests.utils import is_actor_alive
 from tests.mongo_utils import gen_base_test_unit_mongo
 from tests.mongo_utils import clean_base_test_unit_mongo
@@ -72,16 +64,15 @@ def define_database(database):
     return wrap
 
 
-def define_filt(filt):
+def define_report_model(report_model):
     """
-    Decorator to set the _filt
-    attribute for individual tests.
+    Decorator to set the _report_model
+    attribute for individuel tests.
     """
     def wrap(func):
-        setattr(func, '_filt', filt)
+        setattr(func, '_report_model', report_model)
         return func
     return wrap
-
 
 ##############################################################################
 #                                Fixtures                                    #
@@ -100,114 +91,89 @@ def generate_mongodb_data():
 
 
 @pytest.fixture()
-def supervisor(database, stream_mode):
+def supervisor(database):
     """
     Create a supervisor
     """
-    supervisor = BackendSupervisor(stream_mode)
+    supervisor = BackendSupervisor(True)
     yield supervisor
 
 
 @pytest.fixture()
-def puller(request, database, filt, stream_mode):
+def pusher(request, database, report_model):
     """
-    Setup and Teardown for managing a PullerActor
+    Setup and Teardown for managing a PusherActor
 
-    setup: create a PullerActor and start its process
-    teardown: terminate the PullerActor process
+    setup: create a PusherActor and start its process
+    teardown: terminate the PusherActor process
     """
-    puller_actor = PullerActor(
-        "test_puller_" + str(request.node.name),
+    pusher_actor = PusherActor(
+        "test_pusher_" + str(request.node.name),
+        report_model,
         database,
-        filt,
-        HWPCModel(),
-        stream_mode=stream_mode,
         level_logger=LOG_LEVEL)
 
-    yield puller_actor
+    yield pusher_actor
 
 
 @pytest.fixture()
-def started_puller(puller):
+def started_pusher(pusher):
     """
-    Return a started PullerActor
+    Return a started PusherActor
     """
-    puller.start()
-    yield puller
-    puller.terminate()
-    puller.join()
+    pusher.start()
+    yield pusher
+    pusher.terminate()
+    pusher.join()
 
 
 @pytest.fixture()
-def initialized_puller(puller, supervisor):
+def initialized_pusher(pusher, supervisor):
     """
-    Setup PullerActor, send a StartMessage
+    Setup PusherActor, send a StartMessage
     """
-    supervisor.launch_actor(puller)
-    yield puller
-    puller.terminate()
-    puller.join()
+    supervisor.launch_actor(pusher)
+    yield pusher
+    pusher.terminate()
+    pusher.join()
 
 
 @pytest.fixture()
-def initialized_puller_with_dispatcher(puller, supervisor):
+def initialized_pusher_plus_supervisor(pusher, supervisor):
     """
-    Setup PullerActor, send a StartMessage and handle Dispatcher
+    Setup PusherActor, send a StartMessage
     """
-    for _, disp in puller.state.report_filter.filters:
-        supervisor.launch_actor(disp)
-
-    supervisor.launch_actor(puller)
-    yield puller
-
-    for _, disp in puller.state.report_filter.filters:
-        disp.terminate()
-        disp.join()
-
-    puller.terminate()
-    puller.join()
-
-
-@pytest.fixture()
-def initialized_puller_with_dispatcher_plus_supervisor(puller, supervisor):
-    """
-    Setup PullerActor, send a StartMessage and handle Dispatcher
-    """
-    for _, disp in puller.state.report_filter.filters:
-        supervisor.launch_actor(disp)
-
-    supervisor.launch_actor(puller)
-    yield puller, supervisor
-
-    for _, disp in puller.state.report_filter.filters:
-        disp.terminate()
-        disp.join()
-
-    puller.terminate()
-    puller.join()
+    supervisor.launch_actor(pusher)
+    yield pusher, supervisor
+    pusher.terminate()
+    pusher.join()
 
 
 ##############################################################################
 #                          objects creations                                 #
 ##############################################################################
+#
+#
+#def basic_filt():
+#    """
+#    Return a basic filter
+#    """
+#    dispatcher = DispatcherActor('dispatcher__', Mock(), Mock())
+#    filt = Filter()
+#    filt.filter(lambda msg: True, dispatcher)
+#    return filt
+#
+#
+#def empty_filt():
+#    """
+#    Return an empty filter
+#    """
+#    filt = Filter()
+#    return filt
 
 
-def basic_filt():
-    """
-    Return a basic filter
-    """
-    dispatcher = DispatcherActor('dispatcher__', Mock(), Mock())
-    filt = Filter()
-    filt.filter(lambda msg: True, dispatcher)
-    return filt
-
-
-def empty_filt():
-    """
-    Return an empty filter
-    """
-    filt = Filter()
-    return filt
+def gen_power_report():
+    return PowerReport(1, "sensor", "target", 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 
 def mongodb_database(uri, database_name, collection_name):
@@ -238,11 +204,10 @@ def pytest_generate_tests(metafunc):
         else:
             metafunc.parametrize('database', [database])
 
-    if 'filt' in metafunc.fixturenames:
-        filt = getattr(metafunc.function, '_filt', None)
-        metafunc.parametrize('filt', [filt])
-
-    metafunc.parametrize('stream_mode', [True])
+    if 'report_model' in metafunc.fixturenames:
+        report_model= getattr(metafunc.function, '_report_model', None)
+        metafunc.parametrize('report_model',
+                              [report_model])
 
 
 ##############################################################################
@@ -251,90 +216,93 @@ def pytest_generate_tests(metafunc):
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_create_ok(started_puller):
+@define_report_model(PowerModel())
+def test_pusher_create_ok(started_pusher):
     """
-    Create a PullerActor with a good configuration
+    Create a PusherActor with a good configuration
     """
-    assert is_actor_alive(started_puller)
+    assert is_actor_alive(started_pusher)
 
 
 @define_database([
     ("mongodb://toto:27017", "test_mongodb", "test_mongodb1"),
     ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
 ])
-@define_filt(basic_filt())
-def test_puller_create_bad_db(puller, supervisor):
+@define_report_model(PowerModel())
+def test_pusher_create_bad_db(pusher, supervisor):
     """
-    Create a PullerActor with a bad database
+    Create a PusherActor with a bad database
     """
     with pytest.raises(ActorInitError):
-        supervisor.launch_actor(puller)
-    puller.terminate()
-    puller.join()
+        supervisor.launch_actor(pusher)
+    pusher.terminate()
+    pusher.join()
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(empty_filt())
-def test_puller_create_empty_filter(generate_mongodb_data, supervisor, puller):
+@define_report_model(PowerModel())
+def test_pusher_init_ok(initialized_pusher):
     """
-    Create a PullerActor with an empty filter
+    Create a PusherActor and send a StartMessage
     """
-    supervisor.launch_actor(puller)
-    assert not is_actor_alive(puller)
-    assert isinstance(puller.receive_control(), ErrorMessage)
+    assert is_actor_alive(initialized_pusher)
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_init_ok(initialized_puller_with_dispatcher):
+@define_report_model(PowerModel())
+def test_pusher_init_already_init(initialized_pusher):
     """
-    Create a PullerActor and send a StartMessage
+    Create a PusherActor and send a StartMessage to an already initialized Actor
     """
-    assert is_actor_alive(initialized_puller_with_dispatcher)
+    initialized_pusher.send_control(StartMessage())
+    assert is_actor_alive(initialized_pusher)
+    assert isinstance(initialized_pusher.receive_control(), ErrorMessage)
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_init_already_init(initialized_puller_with_dispatcher):
+@define_report_model(PowerModel())
+def test_pusher_kill_without_init(started_pusher):
     """
-    Create a PullerActor and send a StartMessage to an already initialized Actor
+    Create a PusherActor and kill him with a PoisonPillMessage before initialization
     """
-    initialized_puller_with_dispatcher.send_control(StartMessage())
-    assert is_actor_alive(initialized_puller_with_dispatcher)
-    assert isinstance(initialized_puller_with_dispatcher.receive_control(), ErrorMessage)
+    started_pusher.connect_data()
+    started_pusher.send_kill(by_data=True)
+    assert not is_actor_alive(started_pusher, 5)
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_kill_without_init(started_puller):
+@define_report_model(PowerModel())
+def test_pusher_kill_after_init(generate_mongodb_data, initialized_pusher_plus_supervisor):
     """
-    Create a PullerActor and kill him with a PoisonPillMessage before initialization
+    Create a PusherActor and kill him with a PoisonPillMessage
     """
-    started_puller.connect_control()
-    started_puller.send_kill()
-    assert not is_actor_alive(started_puller)
+    initialized_pusher_plus_supervisor[1].kill_actors()
+    assert not is_actor_alive(initialized_pusher_plus_supervisor[0])
 
 
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_kill_after_init(generate_mongodb_data, initialized_puller_with_dispatcher_plus_supervisor):
+# TODO: Test with different config:
+# - Type of report
+# - Stream mode or not
+# - Type of database
+@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb_pr"))
+@define_report_model(PowerModel())
+def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
     """
-    Create a PullerActor and kill him with a PoisonPillMessage
+    Create a PusherActor, send him a PowerReport, kill him and check it from database
     """
-    initialized_puller_with_dispatcher_plus_supervisor[1].kill_actors()
-    assert not is_actor_alive(initialized_puller_with_dispatcher_plus_supervisor[0])
+    # Connect data and send a PowerReport
+    initialized_pusher.connect_data()
+    saved_report = gen_power_report()
+    initialized_pusher.send_data(saved_report)
 
+    # Kill it
+    initialized_pusher.send_kill(by_data=True)
+    assert not is_actor_alive(initialized_pusher, 5)
 
-#def test_puller_reading_ok():
-#    """
-#    Create a PullerActor and read some data in database with good data
-#    """
-#    assert False
-#
-#
-#def test_puller_reading_bad_data():
-#    """
-#    Create a PullerActor and read some data from a db with corrupted data
-#    """
-#    assert False
+    # Open a database for read the saved report
+    mongodb = initialized_pusher.state.database
+    mongodb.connect()
+    mongodb_iter = mongodb.iter(PowerModel(), False)
+    new_report = next(mongodb_iter)
+
+    assert saved_report == new_report

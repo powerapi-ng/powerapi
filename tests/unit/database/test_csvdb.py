@@ -30,12 +30,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import pytest
+import shutil
+import os
+import csv
 
-from powerapi.report_model import HWPCModel, KEYS_COMMON
+from powerapi.report import create_core_report, create_group_report, create_report_root,\
+    create_socket_report
+from powerapi.report import PowerReport, HWPCReport
+from powerapi.report_model import PowerModel, HWPCModel, CSV_HEADER_COMMON
 from powerapi.database import CsvDB
-from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError
+from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError, HeaderAreNotTheSameError
+from powerapi.utils import timestamp_to_datetime
 
-PATH_TO_TEST = "./tests/unit/environment/csv/"
+PATH_TO_TEST = "tests/unit/environment/csv/"
 
 # All this file raise error
 BAD_COMMON = [PATH_TO_TEST + "bad_common_miss_sensor.csv",
@@ -68,129 +75,293 @@ SECOND_RAPL_MISSING = [PATH_TO_TEST + "core2.csv",
                        PATH_TO_TEST + "pcu2.csv"]
 
 
+######### For CsvDB saving
+
+# Cpt
+CPT = 1
+
+# Path where save files
+PATH_TO_SAVE = "/tmp/csvdb_test/"
+
+# Sensor and target
+SENSOR = "sensor"
+TARGET = "target"
+
+
+###################
+# Report Creation #
+###################
+
+
+def gen_hwpc_report():
+    """
+    Return a well formated HWPCReport
+    """
+    cpua0 = create_core_report('1', 'e0', '0')
+    cpub0 = create_core_report('2', 'e0', '1')
+    cpuc0 = create_core_report('3', 'e0', '2')
+    cpud0 = create_core_report('4', 'e0', '3')
+    cpua1 = create_core_report('1', 'e1', '0')
+    cpub1 = create_core_report('2', 'e1', '1')
+    cpuc1 = create_core_report('3', 'e1', '2')
+    cpud1 = create_core_report('4', 'e1', '3')
+
+    socketa0 = create_socket_report('1', [cpua0, cpub0])
+    socketb0 = create_socket_report('2', [cpuc0, cpud0])
+    socketa1 = create_socket_report('1', [cpua1, cpub1])
+    socketb1 = create_socket_report('2', [cpuc1, cpud1])
+
+    groupa = create_group_report('group1', [socketa0, socketb0])
+    groupb = create_group_report('group2', [socketa1, socketb1])
+
+    return create_report_root([groupa, groupb])
+
+
+def gen_power_report():
+    global CPT
+    CPT += 1
+    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11, {"metadata1": "truc", "metadata2": "oui"})
+
+##################
+#    FIXTURES    #
+##################
+
+@pytest.fixture
+def clean_csv_files():
+
+    """
+    setup: remove repository in current path
+    """
+    shutil.rmtree(PATH_TO_SAVE, ignore_errors=True)
+    yield
+
+
+@pytest.fixture()
+def corrupted_csvdb():
+    """
+    Create a corrupted csvdb file
+    """
+    full_path = PATH_TO_SAVE + SENSOR + "-" + TARGET + "/"
+    try:
+        os.makedirs(full_path)
+    except FileExistsError:
+        pass
+
+    with open(full_path + "PowerReport.csv", "w") as csvfile:
+        writer = csv.DictWriter(csvfile, ["fake_field", "fake_field2"])
+        writer.writeheader()
+        writer.writerow({"fake_field": "One", "fake_field2": "Two"})
+        csvfile.close()
+
+
+@pytest.fixture()
+def csvdb():
+    return CsvDB(current_path=os.getcwd())
+
+##################
+#     TESTS      #
+##################
+
 class TestCsvDB():
     """
     Test class of CsvDB class
     """
 
-    def test_csvdb_bad_filepath(self):
+    def test_csvdb_bad_filepath(self, csvdb):
         """
         Test with bad filepath
         """
         with pytest.raises(CsvBadFilePathError) as pytest_wrapped:
-            CsvDB(HWPCModel(), ["/tmp/unknowfile"]).connect()
+            csvdb.add_file("/tmp/unknowfile.csv")
+            csvdb.connect()
+            csvdb.iter(PowerModel(), False)
         assert pytest_wrapped.type == CsvBadFilePathError
 
-    def test_csvdb_bad_common(self):
+    def test_csvdb_bad_common(self, csvdb):
         """
         Test when file miss some common column
         """
         csv_files = BAD_COMMON
         while csv_files:
             with pytest.raises(CsvBadCommonKeysError) as pytest_wrapped:
-                CsvDB(HWPCModel(), csv_files).connect()
+                csvdb.add_files(csv_files)
+                csvdb.connect()
+                csvdb.iter(PowerModel(), False)
             assert pytest_wrapped.type == CsvBadCommonKeysError
             csv_files = csv_files[1:]
 
-    def test_csvdb_two_reports(self):
+    def test_csvdb_two_reports(self, csvdb):
         """
         Create two full HWPCReport, then return None
         """
-        csvdb = CsvDB(HWPCModel(), BASIC_FILES)
+        csvdb.add_files(BASIC_FILES)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in BASIC_FILES]
+        group_name = [path.split('/')[-1][:-4] for path in BASIC_FILES]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for _ in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
-                assert key in report
             for group in group_name:
-                assert group in report['groups']
+                assert group in report.groups
 
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
 
-    def test_csvdb_first_primary_missing(self):
+    def test_csvdb_first_primary_missing(self, csvdb):
         """
         Create one full HWPCReport (the second), then return None
         """
-        csvdb = CsvDB(HWPCModel(), FIRST_PRIMARY_MISSING)
+        csvdb.add_files(FIRST_PRIMARY_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in FIRST_PRIMARY_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in FIRST_PRIMARY_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         report = next(csvdb_iter)
-        for key in KEYS_COMMON:
-            assert key in report
         for group in group_name:
-            assert group in report['groups']
-        assert report['timestamp'] == "1539260665189"
+            assert group in report.groups
+        assert report.timestamp == timestamp_to_datetime(1539260665189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
 
-    def test_csvdb_second_primary_missing(self):
+    def test_csvdb_second_primary_missing(self, csvdb):
         """
         Create one full HWPCReport (the first), then return None
         """
-        csvdb = CsvDB(HWPCModel(), SECOND_PRIMARY_MISSING)
+        csvdb.add_files(SECOND_PRIMARY_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in SECOND_PRIMARY_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in SECOND_PRIMARY_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         report = next(csvdb_iter)
-        for key in KEYS_COMMON:
-            assert key in report
         for group in group_name:
-            assert group in report['groups']
-        assert report['timestamp'] == "1539260664189"
+            assert group in report.groups
+        assert report.timestamp == timestamp_to_datetime(1539260664189)
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
 
-    def test_csvdb_first_rapl_missing(self):
+    def test_csvdb_first_rapl_missing(self, csvdb):
         """
         Create two reports, one without rapl, second is full, then return None
         """
-        csvdb = CsvDB(HWPCModel(), FIRST_RAPL_MISSING)
+        csvdb.add_files(FIRST_RAPL_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in FIRST_RAPL_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in FIRST_RAPL_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
-                assert key in report
             for group in group_name:
                 if i == 0 and "rapl" in group:
-                    assert group not in report['groups']
+                    assert group not in report.groups
                 else:
-                    assert group in report['groups']
+                    assert group in report.groups
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
 
 
-    def test_csvdb_second_rapl_missing(self):
+    def test_csvdb_second_rapl_missing(self, csvdb):
         """
         Create two reports, one is full, second without rapl, then return None
         """
-        csvdb = CsvDB(HWPCModel(), SECOND_RAPL_MISSING)
+        csvdb.add_files(SECOND_RAPL_MISSING)
         csvdb.connect()
-        group_name = [path.split('/')[-1] for path in SECOND_RAPL_MISSING]
+        group_name = [path.split('/')[-1][:-4] for path in SECOND_RAPL_MISSING]
 
-        csvdb_iter = iter(csvdb)
+        csvdb_iter = csvdb.iter(HWPCModel(), False)
         for i in range(2):
             report = next(csvdb_iter)
-            for key in KEYS_COMMON:
-                assert key in report
             for group in group_name:
                 if i == 1 and "rapl" in group:
-                    assert group not in report['groups']
+                    assert group not in report.groups
                 else:
-                    assert group in report['groups']
+                    assert group in report.groups
         with pytest.raises(StopIteration) as pytest_wrapped:
             next(csvdb_iter)
         assert pytest_wrapped.type == StopIteration
+
+    ############
+    #   Save   #
+    ############
+
+    def test_csvdb_save_header_error(self, corrupted_csvdb):
+        """
+        Try to save a PowerReport with an existent file and a corrupted header
+        """
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
+        csvdb.connect()
+
+        # Try to save one PowerReport
+        power_report = gen_power_report()
+        with pytest.raises(HeaderAreNotTheSameError) as pytest_wrapped:
+            csvdb.save(power_report, PowerModel())
+        assert pytest_wrapped.type == HeaderAreNotTheSameError
+
+
+    def test_csvdb_save_on(self, clean_csv_files):
+        """
+        Save a PowerReport from an basic object
+        """
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
+        csvdb.connect()
+
+        power_reports = list()
+
+        # Save one time with a file that doesn't exist
+        power_reports.append(gen_power_report())
+        csvdb.save(power_reports[0], PowerModel())
+
+        # Save three time
+        for _ in range(3):
+            power_reports.append(gen_power_report())
+            csvdb.save(power_reports[-1], PowerModel())
+
+        # Read the the csvdb and compare the data
+        reading_power_reports = []
+        csvdb_read = CsvDB(current_path=PATH_TO_SAVE)
+        csvdb_read.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/PowerReport.csv")
+        csvdb_read.connect()
+        csvdb_read_iter = csvdb_read.iter(PowerModel(), False)
+
+        for _ in range(4):
+            reading_power_reports.append(next(csvdb_read_iter))
+
+        with pytest.raises(StopIteration) as pytest_wrapped:
+            next(csvdb_read_iter)
+        assert pytest_wrapped.type == StopIteration
+
+        for i in range(4):
+            assert power_reports[i] == reading_power_reports[i]
+
+
+def test_csvdb_all_reports(clean_csv_files):
+    """
+    Test create/save/read all kind of reports
+    """
+    all_reports = [(PowerModel(), gen_power_report),
+                   (HWPCModel(), gen_hwpc_report)]
+
+    for model, generator in all_reports:
+        # Load DB
+        csvdb = CsvDB(current_path=PATH_TO_SAVE)
+        csvdb.connect()
+
+        # Create report
+        report = generator()
+
+        # Save report
+        csvdb.save(report, model)
+
+        # Read report
+        for r, d, f in os.walk(PATH_TO_SAVE + report.sensor + "-" + report.target + "/"):
+            for file in f:
+                if '.csv' in file:
+                    csvdb.add_file(os.path.join(r, file))
+        csvdb_iter = csvdb.iter(model, False)
+        read_report = next(csvdb_iter)
+
+        # Compare
+        assert read_report == report

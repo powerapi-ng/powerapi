@@ -51,7 +51,7 @@ def timestamp_to_datetime(timestamp):
     :param int timestamp:
     :rtype: datetime.datetime
     """
-    return datetime.datetime.utcfromtimestamp(timestamp/1000)
+    return datetime.datetime.fromtimestamp(timestamp/1000)
 
 
 def datetime_to_timestamp(date):
