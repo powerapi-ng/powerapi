@@ -30,23 +30,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import pickle
 import pytest
-import random
-import zmq
-from mock import patch, Mock
+from mock import Mock
 
-from powerapi.filter import Filter, FilterUselessError
+from powerapi.filter import Filter
 from powerapi.report_model import HWPCModel
 from powerapi.dispatcher import DispatcherActor
-from powerapi.database import BaseDB, MongoDB
+from powerapi.database import MongoDB
 from powerapi.puller import PullerActor
-from powerapi.report import HWPCReport
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.actor import SafeContext, ActorInitError
 from powerapi.message import StartMessage, ErrorMessage
-from tests.utils import gen_side_effect
-from tests.utils import is_log_ok
+from powerapi.actor import FailConfigureError
 from tests.utils import is_actor_alive
 from tests.mongo_utils import gen_base_test_unit_mongo
 from tests.mongo_utils import clean_base_test_unit_mongo
@@ -268,7 +262,7 @@ def test_puller_create_bad_db(puller, supervisor):
     """
     Create a PullerActor with a bad database
     """
-    with pytest.raises(ActorInitError):
+    with pytest.raises(FailConfigureError):
         supervisor.launch_actor(puller)
     puller.terminate()
     puller.join()

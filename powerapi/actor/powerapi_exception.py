@@ -34,3 +34,4 @@ class PowerAPIException(Exception):
     """
     PowerAPIException base class
     """
+    pass
