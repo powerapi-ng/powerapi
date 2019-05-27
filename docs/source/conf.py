@@ -41,6 +41,7 @@ release = '0.0.1'
 extensions = [
     'sphinxcontrib.apidoc',
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.doctest',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',

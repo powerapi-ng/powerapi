@@ -29,7 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from powerapi.report import PowerReport
 from powerapi.report_model import ReportModel, BadInputData
 from powerapi.report_model import CSV_HEADER_POWER
@@ -63,7 +63,7 @@ class PowerModel(ReportModel):
         """
         return PowerReport
 
-    def to_csvdb(self, serialized_report) -> (List[str], Dict):
+    def to_csvdb(self, serialized_report) -> Tuple[List[str], Dict]:
         """
         Return raw data from serialized report
 
@@ -109,7 +109,7 @@ class PowerModel(ReportModel):
             }
         }
         """
-        final_dict = {}
+        final_dict: Dict = {}
 
         try:
             final_dict = {key: row[key] for key in CSV_HEADER_POWER}
