@@ -29,7 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from powerapi.report_model import ReportModel, CSV_HEADER_COMMON, CSV_HEADER_HWPC, BadInputData
 from powerapi.report import HWPCReport
 from powerapi.utils import datetime_to_timestamp, timestamp_to_datetime
@@ -117,7 +117,7 @@ class HWPCModel(ReportModel):
 
         return final_dict
 
-    def to_csvdb(self, serialized_report) -> (List[str], Dict):
+    def to_csvdb(self, serialized_report) -> Tuple[List[str], Dict]:
         """
         Return raw data from serialized report
         :return: Header, Dict(str, List(Dict))

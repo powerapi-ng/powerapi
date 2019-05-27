@@ -29,7 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
@@ -76,7 +76,7 @@ class ReportModel:
         """
         raise NotImplementedError()
 
-    def to_csvdb(self, serialized_report) -> (List[str], Dict):
+    def to_csvdb(self, serialized_report) -> Tuple[List[str], Dict]:
         """
         Return raw data from serialized report
         """
