@@ -29,4 +29,23 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-__version__ = "0.3.3"
+from powerapi.cli.parser import MainParser, ComponentSubParser
+from powerapi.cli.parser import store_true
+
+class CommonCLIParser(MainParser):
+
+    def __init__(self):
+        MainParser.__init__(self)
+
+        self.add_argument('v', 'verbose', flag=True, action=store_true, default=False, help='enable verbose mode')
+        self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
+
+        subparser_mongo = ComponentSubParser('mongodb')
+        subparser_mongo.add_argument('u', 'uri', help='sepcify MongoDB output uri')
+        subparser_mongo.add_argument('d', 'db', help='specify MongoDB database name')
+        subparser_mongo.add_argument('c', 'collection', help='specify MongoDB database collection')
+
+        self.add_component_subparser('output', subparser_mongo, help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
+        self.add_component_subparser('input', subparser_mongo, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
+        

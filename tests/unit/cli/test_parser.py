@@ -36,6 +36,7 @@ from powerapi.cli.parser import Parser, MainParser, ComponentSubParser
 from powerapi.cli.parser import store_true
 from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
 from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException
+from powerapi.cli.parser import TooManyArgumentNamesException, BadValueException
 
 
 ###############
@@ -64,7 +65,7 @@ def test_add_argument_short():
 
     Test if the argument was added to the short_arg string
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     assert parser.short_arg == ''
     parser.add_argument('a')
     assert parser.short_arg == 'a:'
@@ -76,7 +77,7 @@ def test_add_argument_flag():
 
     Test if the argument was added to the short_arg string
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     assert parser.short_arg == ''
     parser.add_argument('a', flag=True)
     assert parser.short_arg == 'a'
@@ -88,7 +89,7 @@ def test_add_argument_2_short():
 
     Test if the arguments was added to the short_arg string
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     assert parser.short_arg == ''
     parser.add_argument('a', flag=True)
     assert parser.short_arg == 'a'
@@ -102,7 +103,7 @@ def test_add_argument_long():
 
     Test if the argument was added to the long_arg list
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     assert parser.long_arg == []
     parser.add_argument('aaa')
     assert parser.long_arg == ['aaa=']
@@ -113,13 +114,13 @@ def test_add_flag_long():
 
     Test if the argument was added to the long_arg list
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     assert parser.long_arg == []
     parser.add_argument('aaa', flag=True)
     assert parser.long_arg == ['aaa']
 
 
-
+# full parsing test #
 def check_parsing_result(parser, input_str, outputs):
 
     result = parser.parse(input_str.split())
@@ -143,7 +144,7 @@ def test_empty_parser():
     - base parser arguments : None
     - subparser toto binded to the argument sub with sub arguments : None
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
 
     check_parsing_result(parser, '', {})
 
@@ -175,7 +176,7 @@ def test_main_parser():
     - base parser arguments : -a
     - subparser toto binded to the argument sub with sub arguments : None
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a', flag=True, action=store_true)
 
     check_parsing_result(parser, '', {})
@@ -207,7 +208,7 @@ def test_subparser():
     - base parser arguments : -a
     - subparser toto binded to the argument sub with sub arguments : -b
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a', flag=True, action=store_true)
 
     subparser = ComponentSubParser('toto')
@@ -239,13 +240,61 @@ def test_argument_with_val():
 
     - base parser arguments : -c (not flag)
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('c')
 
     with pytest.raises(MissingValueException):
         check_parsing_result(parser, '-c', None)
 
     check_parsing_result(parser, '-c 1', {'c': '1'})
+
+
+# multi name tests #
+def test_short_and_long_name_val():
+    """
+    Add an argument to a parser with two name long and short and test if the
+    value is only bind to the long name in the parsing result
+
+    """
+    parser = MainParser(help_arg=False)
+    parser.add_argument('c', 'coco')
+
+    check_parsing_result(parser, '-c 1', {'coco': '1'})
+
+def test_add_two_short_name():
+    """
+    Add an argument to a parser with two short name and test if the
+    parser raise an exception TooManyArgumentNamesException
+
+    """
+    parser = MainParser(help_arg=False)
+    with pytest.raises(TooManyArgumentNamesException):
+        parser.add_argument('c', 'd')
+
+
+def test_add_two_short_name():
+    """
+    Add an argument to a parser with two long name and test if the
+    parser raise an exception TooManyArgumentNamesException
+
+    """
+    parser = MainParser(help_arg=False)
+    with pytest.raises(TooManyArgumentNamesException):
+        parser.add_argument('coco', 'dodo')
+
+
+# check tests #
+def test_add_two_short_name():
+    """
+    Parse an argument with a value that doesn't respect the check function of
+    this argument. Test if a BadValueException is raised
+
+    """
+    parser = MainParser(help_arg=False)
+    parser.add_argument('coco', type=int, check=lambda x: x > 2)
+
+    with pytest.raises(BadValueException):
+        parser.parse('--coco 1'.split())
 
 
 # Type tests #
@@ -256,7 +305,7 @@ def test_default_type():
     result is a string
 
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a')
     result = parser.parse('-a 1'.split())
     assert len(result) == 1
@@ -271,7 +320,7 @@ def test_other_type():
     an int
 
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a', type=int)
     result = parser.parse('-a 1'.split())
     assert len(result) == 1
@@ -284,7 +333,7 @@ def test_cant_convert_to_type():
     add an argument that must catch an int value, Parse a string that
     contains only this argument with a value that is not an int test if an
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a', type=int)
 
     with pytest.raises(BadTypeException):
@@ -297,7 +346,7 @@ def test_add_component_subparser_that_aldready_exists():
     Add a component_subparser that already exists to a parser and test if an
     AlreadyAddedArgumentException is raised
     """
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     subparser = ComponentSubParser('titi')
     parser.add_component_subparser('toto', subparser)
     subparser2 = ComponentSubParser('titi')
@@ -305,8 +354,21 @@ def test_add_component_subparser_that_aldready_exists():
     with pytest.raises(AlreadyAddedArgumentException):
         parser.add_component_subparser('toto', subparser2)
 
+
+def test_add_component_subparser_with_two_name():
+    """
+    add a component subparser with one short name and one long name
+    parse a string and test if the value is only bind to the long name
+    """
+    parser = MainParser(help_arg=False)
+    subparser = ComponentSubParser('titi')
+    subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
+    parser.add_component_subparser('sub', subparser)
+    check_parsing_result(parser, '--sub titi -a', {'sub': [{'type': 'titi', 'aaa': True}]})
+
+
 def test_parse_empty_string_default_value():
-    parser = MainParser()
+    parser = MainParser(help_arg=False)
     parser.add_argument('a', default=1)
     result = parser.parse(''.split())
     assert len(result) == 1
