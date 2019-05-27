@@ -45,6 +45,18 @@ class ActorInitError(PowerAPIException):
         self.message = message
 
 
+class FailConfigureError(PowerAPIException):
+    """
+    Exception raised when an error occured during the actor setup process
+    """
+
+
+class CrashConfigureError(PowerAPIException):
+    """
+    Exception raised when an actor crash during initialisation
+    """
+
+
 class ActorAlreadySupervisedException(PowerAPIException):
     """
     Exception raised when trying to supervise with a supervisor that already
@@ -94,9 +106,9 @@ class Supervisor:
             elif msg is None:
                 if actor.is_alive():
                     actor.terminate()
-                    raise ActorInitError('Unable to configure the ' + actor.name)
+                    raise FailConfigureError("Unable to configure the " + actor.name)
                 else:
-                    raise ActorInitError('The ' + actor.name + ' crash during initialisation process')
+                    raise CrashConfigureError("The " + actor.name + " crash during initialisation process")
         self.supervised_actors.append(actor)
 
     def join(self):
