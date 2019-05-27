@@ -29,12 +29,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.actor import State
+from powerapi.actor import State, PowerAPIException
 from powerapi.utils.tree import Tree
 from powerapi.message import UnknowMessageTypeException
 
 
-class PrimaryDispatchRuleRuleAlreadyDefinedException(Exception):
+class PrimaryDispatchRuleRuleAlreadyDefinedException(PowerAPIException):
     """
     Exception raised when user want to add a primary dispatch_rule rule on a
     formula dispatcher that already have one

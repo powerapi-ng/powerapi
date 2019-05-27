@@ -29,29 +29,30 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from powerapi.actor import PowerAPIException
 from powerapi.message import StartMessage, ErrorMessage
 
 
-class ActorInitError(Exception):
+class ActorInitError(PowerAPIException):
     """
     Exception raised when an error occuried during the actor initialisation
     process
     """
     def __init__(self, message):
-        Exception.__init__(self)
+        super().__init__()
 
         #: (str): error description
         self.message = message
 
 
-class ActorAlreadySupervisedException(Exception):
+class ActorAlreadySupervisedException(PowerAPIException):
     """
     Exception raised when trying to supervise with a supervisor that already
     supervise this actor
     """
 
 
-class ActorAlreadyLaunchedException(Exception):
+class ActorAlreadyLaunchedException(PowerAPIException):
     """
     Exception raised when trying to supervise with a supervisor that already
     supervise this actor
@@ -93,10 +94,9 @@ class Supervisor:
             elif msg is None:
                 if actor.is_alive():
                     actor.terminate()
-                    raise ActorInitError('Unable to configure the actor')
+                    raise ActorInitError('Unable to configure the ' + actor.name)
                 else:
-                    raise ActorInitError(
-                        'The actor crash during initialisation process')
+                    raise ActorInitError('The ' + actor.name + ' crash during initialisation process')
         self.supervised_actors.append(actor)
 
     def join(self):

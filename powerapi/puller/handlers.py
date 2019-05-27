@@ -29,6 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from powerapi.actor import PowerAPIException
 from powerapi.filter import FilterUselessError
 from powerapi.handler import InitHandler, StartHandler
 from powerapi.database import DBError
@@ -37,7 +38,7 @@ from powerapi.report.report import DeserializationFail
 from powerapi.report_model.report_model import BadInputData
 
 
-class NoReportExtractedException(Exception):
+class NoReportExtractedException(PowerAPIException):
     """
     Exception raised when the handler can't extract a report from the given
     database

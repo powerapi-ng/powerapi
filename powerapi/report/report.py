@@ -33,10 +33,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict
+from powerapi.actor import PowerAPIException
 from powerapi.message import Message
 
 
-class DeserializationFail(Exception):
+class DeserializationFail(PowerAPIException):
     """
     Exception raised when the
     in the good format

@@ -29,52 +29,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from powerapi.actor import PowerAPIException
 
-
-class FilterUselessError(PowerAPIException):
+class PowerAPIException(Exception):
     """
-    Exception raised when a filter route with 0 filters
+    PowerAPIException base class
     """
-
-
-class Filter:
-    """
-    Filter class
-
-    A filter allow the Puller to route Report of the database to Dispatchers
-    by fixing some rules.
-    """
-
-    def __init__(self):
-        self.filters = []
-
-    def filter(self, rule, dispatcher):
-        """
-        Define a rule for a kind of report, and send it to the dispatcher
-        if the rule accept it.
-
-        :param (func(report) -> bool) rule:      Function which return if
-                                                 the report has to be send to
-                                                 this dispatcher
-        :param powerapi.Dispatcher dispatcher: Dispatcher we want to send the
-                                                 report
-        """
-        self.filters.append((rule, dispatcher))
-
-    def route(self, report):
-        """
-        Get the list of dispatchers to whom send the report, or None
-
-        :param powerapi.Report report: Message to send
-        """
-        # Error if filters is empty
-        if not self.filters:
-            raise FilterUselessError()
-
-        dispatchers = []
-        for rule, dispatcher in self.filters:
-            if rule(report):
-                dispatchers.append(dispatcher)
-
-        return dispatchers

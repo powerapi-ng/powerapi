@@ -28,8 +28,11 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
 import getopt
 from copy import deepcopy
+
+from powerapi.actor import PowerAPIException
 
 
 def _extract_minus(arg):
@@ -60,9 +63,9 @@ def _find_longest_name(names):
 #############
 # EXCEPTION #
 #############
-class ParserException(Exception):
+class ParserException(PowerAPIException):
     def __init__(self, argument_name):
-        Exception.__init__(self)
+        super().__init__()
         self.argument_name = argument_name
 
 
@@ -92,7 +95,7 @@ class AlreadyAddedArgumentException(ParserException):
 
     """
     def __init__(self, argument_name):
-        ParserException.__init__(self, argument_name)
+        super().__init__(argument_name)
         self.msg = 'Parser already contain an argument ' + argument_name
 
 
@@ -103,7 +106,7 @@ class MissingValueException(ParserException):
 
     """
     def __init__(self, argument_name):
-        ParserException.__init__(self, argument_name)
+        super().__init__(argument_name)
         self.msg = 'Argument ' + argument_name + ' require a value'
 
 
@@ -113,7 +116,7 @@ class UnknowArgException(ParserException):
 
     """
     def __init__(self, argument_name):
-        ParserException.__init__(self, argument_name)
+        super().__init__(argument_name)
         self.msg = 'Unknow argument ' + argument_name
 
 
@@ -124,7 +127,7 @@ class BadTypeException(ParserException):
 
     """
     def __init__(self, argument_name, type):
-        ParserException.__init__(self, argument_name)
+        super().__init__(argument_name)
         self.type_name = type.__name__
         self.article = 'an' if self.type_name in ('a', 'e', 'i', 'o', 'u', 'y') else 'a'
 
@@ -135,7 +138,7 @@ class BadContextException(ParserException):
     the current context
     """
     def __init__(self, argument_name, context_list):
-        ParserException.__init__(self, argument_name)
+        super().__init__(argument_name)
         self.context_list = context_list
         self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
         for main_arg_name, context_name in context_list:

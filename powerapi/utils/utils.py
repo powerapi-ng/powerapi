@@ -31,9 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import collections.abc as collections
 import datetime
+from powerapi.actor import PowerAPIException
 
 
-class Error(Exception):
+class Error(PowerAPIException):
     """
     Error class for more understandable Error class
     """

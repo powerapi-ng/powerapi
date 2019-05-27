@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from typing import Dict, List, Tuple
+from powerapi.actor import PowerAPIException
 
 
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
@@ -37,7 +38,7 @@ CSV_HEADER_HWPC = CSV_HEADER_COMMON + ['socket', 'cpu']
 CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power']
 
 
-class BadInputData(Exception):
+class BadInputData(PowerAPIException):
     """
     Exception raised when the data read in input are not
     in the good format
