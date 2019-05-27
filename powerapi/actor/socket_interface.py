@@ -36,11 +36,12 @@ import ctypes
 
 import zmq
 from powerapi.actor import SafeContext
+from powerapi.actor import PowerAPIException
 
 LOCAL_ADDR = 'tcp://127.0.0.1'
 
 
-class NotConnectedException(Exception):
+class NotConnectedException(PowerAPIException):
     """
     Exception raised when attempting to send/receinve a message on a socket
     that is not conected

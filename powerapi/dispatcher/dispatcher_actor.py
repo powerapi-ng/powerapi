@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-from powerapi.actor import Actor, SocketInterface
+from powerapi.actor import Actor, PowerAPIException
 from powerapi.handler import PoisonPillMessageHandler
 from powerapi.report import Report
 from powerapi.message import PoisonPillMessage, StartMessage
@@ -38,7 +38,7 @@ from powerapi.dispatcher import StartHandler, DispatcherState
 from powerapi.dispatcher import FormulaDispatcherReportHandler
 
 
-class NoPrimaryDispatchRuleRuleException(Exception):
+class NoPrimaryDispatchRuleRuleException(PowerAPIException):
     """
     Exception raised when user want to get the primary dispatch_rule rule on a
     formula dispatcher that doesn't have one

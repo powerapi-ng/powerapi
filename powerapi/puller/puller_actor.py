@@ -30,14 +30,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-from powerapi.actor import Actor, State, SocketInterface
+from powerapi.actor import Actor, State, PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.handler import PoisonPillMessageHandler
 from powerapi.puller import PullerStartHandler, TimeoutHandler
 from powerapi.actor import NotConnectedException
 
 
-class NoReportExtractedException(Exception):
+class NoReportExtractedException(PowerAPIException):
     """
     Exception raised when we can't extract a report from the given
     database

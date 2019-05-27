@@ -29,8 +29,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from powerapi.actor import PowerAPIException
 
-class HandlerException(Exception):
+
+class HandlerException(PowerAPIException):
     """
     Exception raised when a problem appear in a handler
     """
