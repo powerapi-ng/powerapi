@@ -35,6 +35,7 @@ from powerapi.actor import Supervisor
 from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
 
+
 class BackendSupervisor(Supervisor):
 
     def __init__(self, stream_mode):
@@ -75,10 +76,10 @@ class BackendSupervisor(Supervisor):
         Supervisor behaviour when stream mode is on.
         When end raise (for exemple by CRTL+C)
         -> Kill all actor in the following order (Puller - Dispatcher/Formula - Pusher)
-            1. Send SIGTERM
-            2. Join X seconds
-            3. If still alive, send SIGKILL
-            4. Join
+        1. Send SIGTERM
+        2. Join X seconds
+        3. If still alive, send SIGKILL
+        4. Join
         """
         def kill_behaviour(actor):
             actor.terminate()
