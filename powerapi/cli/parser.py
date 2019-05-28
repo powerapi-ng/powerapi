@@ -125,8 +125,8 @@ class BadTypeException(ParserException):
     """
     def __init__(self, argument_name, type):
         ParserException.__init__(self, argument_name)
-        self.context_name = type
-        self.msg = 'argument ' + argument_name + 'can\'t been casted to ' + type.__name__
+        self.type_name = type.__name__
+        self.article = 'an' if self.type_name in ('a', 'e', 'i', 'o', 'u', 'y') else 'a'
 
 
 class BadContextException(ParserException):
@@ -157,7 +157,7 @@ def store_val(arg, val, args, acc):
     return args, acc
 
 
-def store_true(arg, val, args, acc):
+def store_true(arg, _, args, acc):
     """
     lambda that store a True boolean value on the parser result
 
@@ -376,9 +376,9 @@ class MainParser(Parser):
             args, _ = getopt.getopt(args, self.short_arg, self.long_arg)
         except getopt.GetoptError as exn:
             if 'recognized' in exn.msg:
-                raise UnknowArgException(exn.opt[:1])
+                raise UnknowArgException(exn.opt)
             elif 'requires' in exn.msg:
-                raise MissingValueException(exn.opt[:1])
+                raise MissingValueException(exn.opt)
 
         # retirer les moins
         args = list(map(lambda x: (_extract_minus(x[0]), x[1]), args))
