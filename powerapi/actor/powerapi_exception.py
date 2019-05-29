@@ -32,4 +32,5 @@ class PowerAPIException(Exception):
     """
     PowerAPIException base class
     """
-    pass
+    def __init__(self, msg=""):
+        self.msg = msg
