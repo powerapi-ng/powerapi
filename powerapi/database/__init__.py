@@ -27,8 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.database.mongodb import MongoDB, MongoBadDBError
+import logging
+from powerapi.database.base_db import BaseDB, IterDB, DBError
 from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
 from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
-from powerapi.database.base_db import DBError
+
+try:
+    from powerapi.database.mongodb import MongoDB, MongoBadDBError
+except ImportError:
+    logging.getLogger().info("PyMongo is not installed.")
