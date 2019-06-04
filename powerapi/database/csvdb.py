@@ -186,7 +186,7 @@ class CsvDB(BaseDB):
     a CsvDB instance can be define by his ReportModel and its current path
     """
 
-    def __init__(self, current_path="/tmp/csvdbtest"):
+    def __init__(self, current_path="/tmp/csvdbtest", files=[]):
         """
         :param current_path: Current path where read/write files
         """
@@ -201,6 +201,8 @@ class CsvDB(BaseDB):
         #: (int): allow to know if we read a new report, or the same
         #: current timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(0)
+
+        self.add_files(files)
 
     ###########################################################################
     # Specific CsvDB
@@ -304,4 +306,4 @@ class CsvDB(BaseDB):
         """
         # TODO: Inefficient
         for report in reports:
-            self.save(report)
+            self.save(report, report_model)
