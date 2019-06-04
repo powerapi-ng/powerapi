@@ -33,14 +33,13 @@ import logging
 
 import pytest
 
-from powerapi.actor import NotConnectedException, ActorInitError, Supervisor
+from powerapi.actor import NotConnectedException, Supervisor, CrashConfigureError
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.message import StartMessage, OKMessage, ErrorMessage, UnknowMessageTypeException
+from powerapi.message import StartMessage, ErrorMessage, UnknowMessageTypeException
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
 from powerapi.report import *
 from tests.utils import *
 from tests.integration.dispatcher.fake_formula import FakeFormulaActor
-from powerapi.dispatcher import NoPrimaryDispatchRuleRuleException
 
 
 FORMULA_SOCKET_ADDR = 'ipc://@test_formula_socket'
@@ -344,7 +343,7 @@ def test_create_dispatcher_without_primary(dispatcher2):
 
     Test if the actor actor initialisation raise an ActorInitError
     """
-    with pytest.raises(ActorInitError):
+    with pytest.raises(CrashConfigureError):
         Supervisor().launch_actor(dispatcher2)
 
 

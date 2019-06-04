@@ -37,8 +37,8 @@ from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.actor import ActorInitError
 from powerapi.message import StartMessage, ErrorMessage
+from powerapi.actor import ActorInitError
 from tests.utils import is_actor_alive
 from tests.mongo_utils import gen_base_test_unit_mongo
 from tests.mongo_utils import clean_base_test_unit_mongo

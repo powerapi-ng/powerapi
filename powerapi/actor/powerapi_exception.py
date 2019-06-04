@@ -27,38 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.message import OKMessage, StartMessage, ErrorMessage
-from powerapi.handler import Handler
 
-
-class StartHandler(Handler):
+class PowerAPIException(Exception):
     """
-    Initialize the received state
+    PowerAPIException base class
     """
-
-    def handle(self, msg):
-        """
-        Allow to initialize the state of the actor, then reply to the control
-        socket.
-
-        :param powerapi.StartMessage msg: Message that initialize the actor
-        """
-        if self.state.initialized:
-            self.state.actor.send_control(
-                ErrorMessage('Actor already initialized'))
-            return
-
-        if not isinstance(msg, StartMessage):
-            return
-
-        self.initialization()
-
-        if self.state.alive:
-            self.state.initialized = True
-            self.state.actor.send_control(OKMessage())
-
-    def initialization(self):
-        """
-        Abstract method that initialize the actor after receiving a start msg
-        """
-        pass
+    def __init__(self, msg=""):
+        self.msg = msg

@@ -30,23 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import pickle
 import pytest
-import random
-import zmq
-from mock import patch, Mock
+import time
+from mock import Mock
 
-from powerapi.filter import Filter, FilterUselessError
+from powerapi.filter import Filter
 from powerapi.report_model import HWPCModel
 from powerapi.dispatcher import DispatcherActor
-from powerapi.database import BaseDB, MongoDB
+from powerapi.database import MongoDB
 from powerapi.puller import PullerActor
-from powerapi.report import HWPCReport
 from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.actor import SafeContext, ActorInitError
 from powerapi.message import StartMessage, ErrorMessage
-from tests.utils import gen_side_effect
-from tests.utils import is_log_ok
+from powerapi.actor import ActorInitError
 from tests.utils import is_actor_alive
 from tests.mongo_utils import gen_base_test_unit_mongo
 from tests.mongo_utils import clean_base_test_unit_mongo
@@ -312,6 +307,13 @@ def test_puller_kill_without_init(started_puller):
     Create a PullerActor and kill him with a PoisonPillMessage before initialization
     """
     started_puller.connect_control()
+    # There is one more important thing to know about PUB-SUB sockets: you do not
+    # know precisely when a subscriber starts to get messages. Even if you start
+    # a subscriber, wait a while, and then start the publisher, the subscriber will
+    # always miss the first messages that the publisher sends. This is because as
+    # the subscriber connects to the publisher (something that takes a small but
+    # non-zero time), the publisher may already be sending messages out.
+    time.sleep(0.1)
     started_puller.send_kill()
     assert not is_actor_alive(started_puller)
 
