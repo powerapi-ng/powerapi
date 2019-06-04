@@ -45,7 +45,7 @@ class ReportHandler(Handler):
         :return: List of PowerReport
         """
         result_msg = PowerReport(report.timestamp, report.sensor,
-                                 report.target, {}, 42)
+                                 report.target, 42, {})
         return [result_msg]
 
     def handle(self, msg):
