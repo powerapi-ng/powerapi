@@ -45,6 +45,8 @@ class PusherStartHandler(StartHandler):
             self.state.database.connect()
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(error.msg))
+            self.state.alive = False
+            return
 
 
 class ReportHandler(InitHandler):

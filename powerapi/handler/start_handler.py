@@ -53,8 +53,9 @@ class StartHandler(Handler):
 
         self.initialization()
 
-        self.state.initialized = True
-        self.state.actor.send_control(OKMessage())
+        if self.state.alive:
+            self.state.initialized = True
+            self.state.actor.send_control(OKMessage())
 
     def initialization(self):
         """

@@ -59,6 +59,7 @@ class PullerStartHandler(StartHandler):
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(error.msg))
             self.state.alive = False
+            return
 
         # Connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:

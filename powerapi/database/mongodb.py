@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pymongo
+from pymongo.errors import ConnectionFailure
 
 from typing import List
 from powerapi.database.base_db import BaseDB, DBError, IterDB
@@ -135,13 +136,13 @@ class MongoDB(BaseDB):
 
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
 
-        self.collection = self.mongo_client[self.db_name][self.collection_name]
-
         # Check if hostname:port work
         try:
             self.mongo_client.admin.command('ismaster')
         except pymongo.errors.ServerSelectionTimeoutError:
             raise MongoBadDBError(self.uri)
+
+        self.collection = self.mongo_client[self.db_name][self.collection_name]
 
     def iter(self, report_model: ReportModel, stream_mode: bool) -> MongoIterDB:
         """
