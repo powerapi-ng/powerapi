@@ -8,6 +8,7 @@ jobs:
 
       # Service image for integration tests
       - image: circleci/mongo:4.0
+      - image: influxdb:1.5
 
     working_directory: ~/repo
 
@@ -26,7 +27,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip3 install -e ".[mongodb]"
+            pip3 install -e ".[mongodb, influxdb]"
 
       - save_cache:
           paths:
