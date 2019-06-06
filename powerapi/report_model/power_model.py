@@ -61,6 +61,41 @@ class PowerModel(ReportModel):
         """
         return PowerReport
 
+    def to_influxdb(self, serialized_report) -> Dict:
+        """
+        Return raw data from serialized report
+
+        {
+            'measurement' : 'power_consumption'
+                'timestamp': ...
+                'tags' : { ... }
+                'fields': {
+                    'power': ...
+                }
+        }
+        """
+
+        if ('sensor' not in serialized_report or 'target' not in
+            serialized_report or 'metadata' not in serialized_report or
+            'timestamp' not in serialized_report or 'power' not in
+            serialized_report):
+            raise BadInputData()
+
+        tags = {'sensor': serialized_report['sensor'],
+                'target': serialized_report['target']}
+
+        for name in serialized_report['metadata'].keys():
+            tags[name] = serialized_report['metadata'][name]
+
+        return {
+            'measurement': 'power_consumption',
+            'tags': tags,
+            'time': str(serialized_report['timestamp']),
+            'fields': {
+                'power': serialized_report['power']
+            }
+        }
+
     def to_csvdb(self, serialized_report) -> Tuple[List[str], Dict]:
         """
         Return raw data from serialized report
