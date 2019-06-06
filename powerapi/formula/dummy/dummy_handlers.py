@@ -42,8 +42,9 @@ class ReportHandler(Handler):
         :param report: Input Report
         :return: List of PowerReport
         """
+        metadata = {'formula_name': self.state.actor.name}
         result_msg = PowerReport(report.timestamp, report.sensor,
-                                 report.target, 42, {})
+                                 report.target, 42, metadata)
         return [result_msg]
 
     def handle(self, msg):
