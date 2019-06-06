@@ -38,7 +38,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel
-from powerapi.database import MongoDB, CsvDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -88,7 +88,12 @@ class CommonCLIParser(MainParser):
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database', default='power_report')
         self.add_component_subparser('output', subparser_csv_output, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
-
+        subparser_influx_output = ComponentSubParser('influxdb')
+        subparser_influx_output.add_argument('u', 'uri', help='sepcify InfluxDB uri')
+        subparser_influx_output.add_argument('d', 'db', help='specify InfluxDB database name')
+        subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
+        subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database', default='power_report')
+        self.add_component_subparser('output', subparser_influx_output, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
 
     def parse_argv(self):
@@ -124,7 +129,8 @@ class CommonCLIParser(MainParser):
 
 DB_FACTORY = {
     'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
-    'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'], files=[] if 'files' not in db_config else db_config['files'])
+    'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'], files=[] if 'files' not in db_config else db_config['files']),
+    'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
 }
 
 
