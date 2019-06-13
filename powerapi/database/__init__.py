@@ -31,7 +31,6 @@ import logging
 from powerapi.database.base_db import BaseDB, IterDB, DBError
 from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
 from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
-from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 try:
     from powerapi.database.mongodb import MongoDB, MongoBadDBError
 
@@ -39,7 +38,6 @@ except ImportError:
     logging.getLogger().info("PyMongo is not installed.")
 
 try:
-    from influxdb import InfluxDBClient
-    from influxdb.exceptions import InfluxDBClientError, InfluxDBServerError
+    from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")
