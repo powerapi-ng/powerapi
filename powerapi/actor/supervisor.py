@@ -98,7 +98,7 @@ class Supervisor:
 
         if start_message:
             actor.send_control(StartMessage())
-            msg = actor.receive_control(1000)
+            msg = actor.receive_control(2000)
             if isinstance(msg, ErrorMessage):
                 raise ActorInitError(msg.error_message)
             elif msg is None:
