@@ -61,40 +61,54 @@ class CommonCLIParser(MainParser):
     def __init__(self):
         MainParser.__init__(self)
 
-        self.add_argument('v', 'verbose', flag=True, action=enable_log,default=logging.NOTSET, help='enable verbose mode')
+        self.add_argument('v', 'verbose', flag=True, action=enable_log, default=logging.NOTSET,
+                          help='enable verbose mode')
         self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
 
         subparser_mongo_input = ComponentSubParser('mongodb')
         subparser_mongo_input.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name')
         subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection')
-        subparser_mongo_input.add_argument('m', 'model', help='specify data type that will be storen in the database', default='hwpc_report')
-        self.add_component_subparser('input', subparser_mongo_input, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+        subparser_mongo_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                           default='hwpc_report')
+        self.add_component_subparser('input', subparser_mongo_input,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_csv_input = ComponentSubParser('csv')
-        subparser_csv_input.add_argument('f', 'files', help='specify input csv files with this format : file1,file2,file3', action=extract_file_names, default=[], check=check_csv_files, check_msg='one or more csv files couldn\'t be read')
-        subparser_csv_input.add_argument('m', 'model', help='specify data type that will be storen in the database', default='hwpc_report')
-        self.add_component_subparser('input', subparser_csv_input, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+        subparser_csv_input.add_argument('f', 'files',
+                                         help='specify input csv files with this format : file1,file2,file3',
+                                         action=extract_file_names, default=[], check=check_csv_files,
+                                         check_msg='one or more csv files couldn\'t be read')
+        subparser_csv_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                         default='hwpc_report')
+        self.add_component_subparser('input', subparser_csv_input,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
         
         subparser_mongo_output = ComponentSubParser('mongodb')
         subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
         subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
-        subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database', default='power_report')
-        self.add_component_subparser('output', subparser_mongo_output, help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
+        subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                            default='power_report')
+        self.add_component_subparser('output', subparser_mongo_output,
+                                     help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_csv_output = ComponentSubParser('csv')
-        subparser_csv_output.add_argument('d', 'directory', help='specify directory where where output  csv files will be writen')
-        subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database', default='power_report')
-        self.add_component_subparser('output', subparser_csv_output, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+        subparser_csv_output.add_argument('d', 'directory',
+                                          help='specify directory where where output  csv files will be writen')
+        subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                          default='power_report')
+        self.add_component_subparser('output', subparser_csv_output,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_influx_output = ComponentSubParser('influxdb')
         subparser_influx_output.add_argument('u', 'uri', help='sepcify InfluxDB uri')
         subparser_influx_output.add_argument('d', 'db', help='specify InfluxDB database name')
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
-        subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database', default='power_report')
-        self.add_component_subparser('output', subparser_influx_output, help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
-
+        subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                             default='power_report')
+        self.add_component_subparser('output', subparser_influx_output,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
     def parse_argv(self):
         try:
@@ -129,7 +143,8 @@ class CommonCLIParser(MainParser):
 
 DB_FACTORY = {
     'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
-    'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'], files=[] if 'files' not in db_config else db_config['files']),
+    'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+                                   files=[] if 'files' not in db_config else db_config['files']),
     'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
 }
 
@@ -147,8 +162,7 @@ def generate_pullers(config, report_filter):
         model = HWPCModel()
         name = 'csv_puller'
         db_config = {'files': ['core.csv', 'rapl.csv', 'pcu.csv']}
-        puller = PullerActor(name, factory(db_config), report_filter, model,
-                             stream_mode=config['stream'],
+        puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
                              level_logger=config['verbose'])
         return {name: puller}
 
@@ -158,8 +172,7 @@ def generate_pullers(config, report_filter):
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
             name = 'puller_' + db_config['type']
-            puller = PullerActor(name, factory(db_config), report_filter, model,
-                                 stream_mode=config['stream'],
+            puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
                                  level_logger=config['verbose'])
             pullers[name] = puller
         except KeyError as exn:
@@ -177,8 +190,7 @@ def generate_pushers(config):
         factory = DB_FACTORY['csv']
         model = PowerModel()
         name = 'csv_pusher'
-        pusher = PusherActor(name, model, factory({}),
-                             level_logger=config['verbose'])
+        pusher = PusherActor(name, model, factory({}), level_logger=config['verbose'])
         return {name: pusher}
 
     pushers = {}
@@ -188,8 +200,7 @@ def generate_pushers(config):
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
             name = 'pusher_' + db_config['type']
-            pusher = PusherActor(name, model, factory(db_config),
-                                 level_logger=config['verbose'])
+            pusher = PusherActor(name, model, factory(db_config), level_logger=config['verbose'])
 
             pushers[name] = pusher
 

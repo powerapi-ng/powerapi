@@ -51,8 +51,7 @@ class DispatcherActor(Actor):
     if no Formula exist for this message.
     """
 
-    def __init__(self, name, formula_init_function, route_table,
-                 level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name, formula_init_function, route_table, level_logger=logging.WARNING, timeout=None):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
@@ -101,8 +100,7 @@ class DispatcherActor(Actor):
         formula_init_function = self.formula_init_function
 
         def factory(formula_id):
-            formula = formula_init_function(str((self.name,) + formula_id),
-                                            self.logger.getEffectiveLevel())
+            formula = formula_init_function(str((self.name,) + formula_id), self.logger.getEffectiveLevel())
             self.state.supervisor.launch_actor(formula, start_message=False)
             return formula
 

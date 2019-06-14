@@ -50,8 +50,8 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, actor, database, report_filter, report_model, stream_mode,
-                 timeout_basic=0, timeout_sleeping=100):
+    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_basic=0,
+                 timeout_sleeping=100):
         """
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
@@ -91,8 +91,8 @@ class PullerActor(Actor):
     to many Dispatcher depending of some rules.
     """
 
-    def __init__(self, name, database, report_filter, report_model, stream_mode=False,
-                 level_logger=logging.WARNING, timeout=0, timeout_sleeping=100):
+    def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
+                 timeout=0, timeout_sleeping=100):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.

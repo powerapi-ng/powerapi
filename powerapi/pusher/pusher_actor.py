@@ -63,9 +63,7 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_model, database,
-                 level_logger=logging.WARNING,
-                 timeout=1000):
+    def __init__(self, name, report_model, database, level_logger=logging.WARNING, timeout=1000):
         """
         :param str name: Pusher name.
         :param Report report_model: ReportModel
@@ -75,9 +73,7 @@ class PusherActor(Actor):
         Actor.__init__(self, name, level_logger, timeout)
 
         #: (State): State of the actor.
-        self.state = PusherState(self,
-                                 database,
-                                 report_model)
+        self.state = PusherState(self, database, report_model)
 
     def setup(self):
         """

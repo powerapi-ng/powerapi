@@ -75,10 +75,9 @@ class PowerModel(ReportModel):
         }
         """
 
-        if ('sensor' not in serialized_report or 'target' not in
-            serialized_report or 'metadata' not in serialized_report or
-            'timestamp' not in serialized_report or 'power' not in
-            serialized_report):
+        if ('sensor' not in serialized_report or 'target' not in serialized_report
+            or 'metadata' not in serialized_report or 'timestamp' not in serialized_report
+            or 'power' not in serialized_report):
             raise BadInputData()
 
         tags = {'sensor': serialized_report['sensor'],

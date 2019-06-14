@@ -128,18 +128,18 @@ class Node:
     def get_childs(self):
         """
         Return all (path, value) under this node
-        
+
         :rtype: list
         """
         if self.is_leaf:
             return [([self.label], self.val)]
-        
+
         result = []
         for node in self.childs:
             for path, val in node.get_childs():
                 result.append(([self.label] + path, val))
         return result
-        
+
     def add_leaf(self, path, val):
         """
         Add a leaf to the tree
@@ -190,8 +190,7 @@ class Node:
                 return node._get_leafs()
 
             # go down in all child nodes
-            return reduce(lambda acc, child: acc + aux(child, depth + 1),
-                          node.childs, [])
+            return reduce(lambda acc, child: acc + aux(child, depth + 1), node.childs, [])
         return aux(self, 0)
 
     def _get_leafs(self):
@@ -207,8 +206,7 @@ class Node:
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
-        if (self.label != other.label or self.val != other.val or
-            self.is_leaf != other.is_leaf):
+        if (self.label != other.label or self.val != other.val or self.is_leaf != other.is_leaf):
             return False
         sorted_child = deepcopy(self.childs)
         sorted_child.sort(key=lambda node: node.label)
