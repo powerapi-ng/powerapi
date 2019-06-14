@@ -160,8 +160,7 @@ class CsvIterDB(IterDB):
                 elif row_timestamp == current_timestamp:
                     utils.dict_merge(
                         json,
-                        self.report_model.from_csvdb(path_file.split('/')[-1],
-                                                     row))
+                        self.report_model.from_csvdb(path_file.split('/')[-1], row))
 
                 # Next line
                 self.tmp_read[path_file]['next_line'] = self._next(path_file)
@@ -202,9 +201,9 @@ class CsvDB(BaseDB):
 
         self.add_files(files)
 
-    ###########################################################################
-    # Specific CsvDB
-    ###########################################################################
+    ##################
+    # Specific CsvDB #
+    ##################
 
     def add_file(self, filename):
         """
@@ -232,9 +231,9 @@ class CsvDB(BaseDB):
         """
         self.filenames.clear()
 
-    ###########################################################################
-    # Override from BaseDB
-    ###########################################################################
+    ########################
+    # Override from BaseDB #
+    ########################
 
     def iter(self, report_model: ReportModel, stream_mode: bool) -> CsvIterDB:
         """

@@ -207,8 +207,7 @@ class Actor(multiprocessing.Process):
                 handler = self.state.get_corresponding_handler(msg)
                 handler.handle_message(msg)
             except UnknowMessageTypeException:
-                self.logger.warning("UnknowMessageTypeException: " +
-                                    str(msg))
+                self.logger.warning("UnknowMessageTypeException: " + str(msg))
             except HandlerException:
                 self.logger.warning("HandlerException")
 

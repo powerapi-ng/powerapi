@@ -81,8 +81,7 @@ class InfluxDB(BaseDB):
         if self.client is not None:
             self.client.close()
 
-        self.client = InfluxDBClient(host=self.uri, port=self.port,
-                                     database=self.db_name)
+        self.client = InfluxDBClient(host=self.uri, port=self.port, database=self.db_name)
         try:
             self.client.ping()
         except ConnectionError:
@@ -113,6 +112,5 @@ class InfluxDB(BaseDB):
         :param report_model: ReportModel
         """
 
-        data_list = list(map(lambda r: report_model.to_influxdb(r.serialize()),
-                             reports))
+        data_list = list(map(lambda r: report_model.to_influxdb(r.serialize()), reports))
         self.client.write_points(data_list)

@@ -51,7 +51,7 @@ class FormulaDispatcherReportHandler(InitHandler):
     Split received report into sub-reports (if needed) and return the sub
     reports and formulas ids to send theses reports.
     """
-    
+
     def handle(self, msg):
         """
         Split the received report into sub-reports (if needed) and send them to
@@ -70,16 +70,14 @@ class FormulaDispatcherReportHandler(InitHandler):
         dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
         primary_dispatch_rule = self.state.route_table.primary_dispatch_rule
 
-        for formula_id in self._extract_formula_id(msg, dispatch_rule,
-                                                   primary_dispatch_rule):
+        for formula_id in self._extract_formula_id(msg, dispatch_rule, primary_dispatch_rule):
             primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = self.state.get_direct_formula(formula_id)
                 formula.send_data(msg)
 
             else:
-                for formula in self.state.get_corresponding_formula(
-                        list(formula_id)):
+                for formula in self.state.get_corresponding_formula(list(formula_id)):
                     formula.send(msg)
 
     def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
@@ -106,12 +104,10 @@ class FormulaDispatcherReportHandler(InitHandler):
         if dispatch_rule.is_primary:
             return id_list
 
-        return _clean_list(list(map(
-            lambda id: (self._match_report_id(id, dispatch_rule,
-                                              primary_dispatch_rule)),
-            id_list)))
+        def f(id):
+            return self._match_report_id(id, dispatch_rule, primary_dispatch_rule)
 
-
+        return _clean_list(list(map(f, id_list)))
 
     def _match_report_id(self, report_id, dispatch_rule, primary_rule):
         """
