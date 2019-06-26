@@ -38,7 +38,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -110,6 +110,16 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('output', subparser_influx_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+        subparser_opentsdb_output = ComponentSubParser('opentsdb')
+        subparser_opentsdb_output.add_argument('u', 'uri', help='sepcify openTSDB host')
+        subparser_opentsdb_output.add_argument('p', 'port', help='specify openTSDB connection port', type=int)
+        subparser_opentsdb_output.add_argument('metric_name', help='specify metric name')
+
+        subparser_opentsdb_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                             default='power_report')
+        self.add_component_subparser('output', subparser_opentsdb_output,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
     def parse_argv(self):
         try:
             return self.parse(sys.argv[1:])
@@ -146,6 +156,7 @@ DB_FACTORY = {
     'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
                                    files=[] if 'files' not in db_config else db_config['files']),
     'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
+    'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
 }
 
 
