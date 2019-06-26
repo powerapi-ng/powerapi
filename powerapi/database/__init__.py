@@ -38,6 +38,11 @@ except ImportError:
     logging.getLogger().info("PyMongo is not installed.")
 
 try:
+    from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
+except ImportError:
+    logging.getLogger().info("opentsdb-py is not installed.")
+
+try:
     from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")

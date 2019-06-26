@@ -27,6 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import time
+
 from powerapi.handler import InitHandler, Handler, StartHandler
 from powerapi.message import ErrorMessage
 from powerapi.database import DBError
@@ -51,8 +53,20 @@ class PusherStartHandler(StartHandler):
 
 class ReportHandler(InitHandler):
     """
-    Allow to save the Report received.
+    Put the received report in a buffer
+
+    the buffer is empty every *delay* ms or if its size exceed *max_size*
+
+    :param int delay: number of ms before message containing in the buffer will be writen in database
+    :param int max_size: maximum of message that the buffer can store before write them in database
     """
+
+    def __init__(self, state, delay=100, max_size=50):
+        InitHandler.__init__(self, state)
+
+        self.last_database_write_time = time.time()
+        self.delay = delay
+        self.max_size = max_size
 
     def handle(self, msg):
         """
@@ -60,7 +74,11 @@ class ReportHandler(InitHandler):
 
         :param powerapi.PowerReport msg: PowerReport to save.
         """
+
         self.state.buffer.append(msg)
+        if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
+            self.state.database.save_many(self.state.buffer, self.state.report_model)
+            self.state.buffer = []
 
 
 class PusherPoisonPillHandler(Handler):
@@ -74,21 +92,6 @@ class PusherPoisonPillHandler(Handler):
         """
         self.state.actor.set_timeout_handler(TimeoutKillHandler(self.state))
         self.state.actor.socket_interface.timeout = 2000
-
-
-class TimeoutBasicHandler(InitHandler):
-    """
-    Pusher timeout flush the buffer
-    """
-
-    def handle(self, msg):
-        """
-        Flush the buffer in the database
-        :param msg: None
-        """
-        if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer, self.state.report_model)
-        self.state.buffer = []
 
 
 class TimeoutKillHandler(Handler):
