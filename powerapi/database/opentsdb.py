@@ -26,10 +26,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+try:
+    from opentsdb import TSDBClient
+except ImportError:
+    logging.getLogger().info("opentsdb-py is not installed.")
+
 from typing import List
 
-import logging
-from opentsdb import TSDBClient
 from powerapi.report import PowerReport, Report
 from powerapi.report_model import ReportModel
 from powerapi.database import BaseDB, DBError
