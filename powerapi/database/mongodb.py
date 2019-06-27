@@ -27,8 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pymongo
-from pymongo.errors import ConnectionFailure
+import logging
+try:
+    import pymongo
+except ImportError:
+    logging.getLogger().info("PyMongo is not installed.")
 
 from typing import List
 from powerapi.database.base_db import BaseDB, DBError, IterDB

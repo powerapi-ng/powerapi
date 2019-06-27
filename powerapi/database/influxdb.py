@@ -27,12 +27,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+import logging
+try:
+    from influxdb import InfluxDBClient
+except ImportError:
+    logging.getLogger().info("influx-client is not installed.")
+
 from typing import List
 
-from influxdb.exceptions import InfluxDBClientError, InfluxDBServerError
 from requests.exceptions import ConnectionError
 from powerapi.database import BaseDB, DBError
-from influxdb import InfluxDBClient
+
 from powerapi.report import Report
 from powerapi.report_model import ReportModel
 
