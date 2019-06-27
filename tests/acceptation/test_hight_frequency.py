@@ -121,7 +121,7 @@ def test_run(database, supervisor):
 
     number_of_output_reports = 0
     for i in range(3):
-        time.sleep(0.05)
+        time.sleep(0.07)
         current = get_number_of_output_reports()
         assert current > number_of_output_reports
         number_of_output_reports = current
