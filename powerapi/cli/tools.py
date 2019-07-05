@@ -190,7 +190,7 @@ def generate_pullers(config, report_filter):
         try:
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
-            name = db_config[name]
+            name = db_config['name']
             puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
                                  level_logger=config['verbose'])
             pullers[name] = puller
@@ -218,7 +218,7 @@ def generate_pushers(config):
         try:
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
-            name = db_config[name]
+            name = db_config['name']
             pusher = PusherActor(name, model, factory(db_config), level_logger=config['verbose'])
 
             pushers[name] = pusher

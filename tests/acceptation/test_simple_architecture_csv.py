@@ -117,8 +117,9 @@ def test_run(files, supervisor):
               'stream': False,
               'input': [{'files': FILES,
                          'model': 'hwpc_report',
+                         'name': 'puller',
                          'type': 'csv'}],
-              'output': [{'model': 'power_report', 'type': 'csv', 'directory': ROOT_PATH}]}
+              'output': [{'model': 'power_report', 'name': 'pusher','type': 'csv', 'directory': ROOT_PATH}]}
 
     # Pusher
     pushers = generate_pushers(config)
