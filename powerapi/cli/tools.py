@@ -67,8 +67,10 @@ class CommonCLIParser(MainParser):
 
         subparser_mongo_input = ComponentSubParser('mongodb')
         subparser_mongo_input.add_argument('u', 'uri', help='sepcify MongoDB uri')
-        subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name')
-        subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection')
+        subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name', )
+        subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection',
+                                           default='sensor')
+        subparser_mongo_input.add_argument('n', 'name', help='specify puller name', default='puller_mongodb')
         subparser_mongo_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                            default='hwpc_report')
         self.add_component_subparser('input', subparser_mongo_input,
@@ -81,15 +83,18 @@ class CommonCLIParser(MainParser):
                                          check_msg='one or more csv files couldn\'t be read')
         subparser_csv_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                          default='hwpc_report')
+        subparser_csv_input.add_argument('n', 'name', help='specify puller name', default='puller_csv')
         self.add_component_subparser('input', subparser_csv_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
         
         subparser_mongo_output = ComponentSubParser('mongodb')
         subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
-        subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
+        subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection',
+                                            default='powermeter')
         subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='power_report')
+        subparser_mongo_output.add_argument('n', 'name', help='specify puller name', default='pusher_mongodb')
         self.add_component_subparser('output', subparser_mongo_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
@@ -98,6 +103,7 @@ class CommonCLIParser(MainParser):
                                           help='specify directory where where output  csv files will be writen')
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                           default='power_report')
+        subparser_csv_output.add_argument('n', 'name', help='specify puller name', default='pusher_csv')
         self.add_component_subparser('output', subparser_csv_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
@@ -107,6 +113,7 @@ class CommonCLIParser(MainParser):
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
         subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='power_report')
+        subparser_influx_output.add_argument('n', 'name', help='specify puller name', default='pusher_influxdb')
         self.add_component_subparser('output', subparser_influx_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
@@ -117,6 +124,7 @@ class CommonCLIParser(MainParser):
 
         subparser_opentsdb_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='power_report')
+        subparser_opentsdb_output.add_argument('n', 'name', help='specify puller name', default='pusher_opentsdb')
         self.add_component_subparser('output', subparser_opentsdb_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
@@ -182,7 +190,7 @@ def generate_pullers(config, report_filter):
         try:
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
-            name = 'puller_' + db_config['type']
+            name = db_config[name]
             puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
                                  level_logger=config['verbose'])
             pullers[name] = puller
@@ -210,7 +218,7 @@ def generate_pushers(config):
         try:
             factory = DB_FACTORY[db_config['type']]
             model = MODEL_FACTORY[db_config['model']]
-            name = 'pusher_' + db_config['type']
+            name = db_config[name]
             pusher = PusherActor(name, model, factory(db_config), level_logger=config['verbose'])
 
             pushers[name] = pusher
