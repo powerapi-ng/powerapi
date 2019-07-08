@@ -30,7 +30,7 @@
 import getopt
 from copy import deepcopy
 
-from powerapi.actor import PowerAPIException
+from powerapi.exception import PowerAPIException
 
 
 def _extract_minus(arg):

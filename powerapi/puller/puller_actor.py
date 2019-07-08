@@ -28,7 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from powerapi.actor import Actor, State, PowerAPIException
+from powerapi.actor import Actor, State
+from powerapi.exception import PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.handler import PoisonPillMessageHandler
 from powerapi.puller import PullerStartHandler, TimeoutHandler

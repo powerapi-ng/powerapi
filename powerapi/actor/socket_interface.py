@@ -34,7 +34,7 @@ import ctypes
 
 import zmq
 from powerapi.actor import SafeContext
-from powerapi.actor import PowerAPIException
+from powerapi.exception import PowerAPIException
 
 LOCAL_ADDR = 'tcp://127.0.0.1'
 

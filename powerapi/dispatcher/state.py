@@ -27,7 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor import State, PowerAPIException
+from powerapi.actor import State
+from powerapi.exception import PowerAPIException
 from powerapi.utils.tree import Tree
 from powerapi.message import UnknowMessageTypeException
 

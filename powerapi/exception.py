@@ -27,59 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor import PowerAPIException
 
-
-class UnknowMessageTypeException(PowerAPIException):
+class PowerAPIException(Exception):
     """
-    Exception happen when we don't know the message type
+    PowerAPIException base class
     """
-
-
-class Message:
-    """
-    Abstract class message. Each object that is used by zmq
-    need to be a Message.
-    """
-    def __str__(self):
-        raise NotImplementedError()
-
-
-class PoisonPillMessage(Message):
-    """
-    Message which allow to kill an actor
-    """
-    def __str__(self):
-        return "PoisonPillMessage"
-
-
-class StartMessage(Message):
-    """
-    Message that ask the actor to launch its initialisation process
-    """
-    def __str__(self):
-        return "StartMessage"
-
-
-class OKMessage(Message):
-    """
-    Message used in synchron communication to answer that the actor
-    completed the task previously asked
-    """
-    def __str__(self):
-        return "OKMessage"
-
-
-class ErrorMessage(Message):
-    """
-    Message used to indicate that an error as occuried
-    """
-
-    def __init__(self, error_message):
-        """
-        :param str error_code: message associated to the error
-        """
-        self.error_message = error_message
-
-    def __str__(self):
-        return "ErrorMessage"
+    def __init__(self, msg=""):
+        self.msg = msg

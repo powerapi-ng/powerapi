@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor.powerapi_exception import PowerAPIException
 from powerapi.actor.safe_context import SafeContext
 from powerapi.actor.socket_interface import SocketInterface, NotConnectedException
 from powerapi.actor.supervisor import Supervisor, ActorInitError, ActorAlreadySupervisedException
