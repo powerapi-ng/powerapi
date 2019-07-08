@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict
-from powerapi.actor import PowerAPIException
+from powerapi.exception import PowerAPIException
 from powerapi.message import Message
 
 

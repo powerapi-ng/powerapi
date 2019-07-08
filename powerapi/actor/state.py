@@ -37,11 +37,11 @@ class TimeoutHandler(Handler):
     Handler used when a timeout occurs
     """
 
-    def handle(self, msg, state):
+    def handle(self, msg):
         """
         ignore the timeout and return the actual actor state
         """
-        return state
+        pass
 
 
 

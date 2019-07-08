@@ -29,7 +29,7 @@
 
 import collections.abc as collections
 import datetime
-from powerapi.actor import PowerAPIException
+from powerapi.exception import PowerAPIException
 
 
 class Error(PowerAPIException):

@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from typing import Dict, List, Tuple
-from powerapi.actor import PowerAPIException
+from powerapi.exception import PowerAPIException
 
 
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
