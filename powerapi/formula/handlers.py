@@ -27,39 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-import re
-from functools import reduce
-
-from powerapi.formula import FormulaActor, FormulaState, FormulaPoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
-from powerapi.report import Report
-
-from powerapi.formula.dummy.dummy_handlers import ReportHandler
+from powerapi.handler import PoisonPillMessageHandler
 
 
-class DummyFormulaActor(FormulaActor):
-    """
-    A fake Formula that simulate data processing by waiting 1s and send a
-    power report containing 42
-    """
-    def __init__(self, name, pushers, level_logger=logging.WARNING, timeout=None):
-        """
-        Initialize a new Dummy Formula actor.
-        :param name: Actor name
-        :param pusher_actors: Pusher actors
-        :param level_logger: Level of the logger
-        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
-        """
-        FormulaActor.__init__(self, name, pushers, level_logger, timeout)
-
-        #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(self, pushers)
-
-    def setup(self):
-        """
-        Initialize Handler
-        """
-        FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
-        self.add_handler(Report, ReportHandler(self.state))
+class FormulaPoisonPillMessageHandler(PoisonPillMessageHandler):
+    def teardown(self):
+        for _, pusher in self.state.pushers.items():
+            pusher.socket_interface.close()

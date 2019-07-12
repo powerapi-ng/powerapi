@@ -71,10 +71,3 @@ class FormulaActor(Actor):
         """
         for _, pusher in self.state.pushers.items():
             pusher.connect_data()
-
-    def teardown(self):
-        """
-        Teardown the Formula actor.
-        """
-        for _, pusher in self.state.pushers.items():
-            pusher.socket_interface.close()
