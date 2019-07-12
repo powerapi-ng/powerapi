@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import InitHandler, Handler, StartHandler
+from powerapi.handler import InitHandler, Handler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import OKMessage, StartMessage
 
 
@@ -45,6 +45,10 @@ def _clean_list(id_list):
             last_element = x
     return r_list
 
+
+class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
+    def teardown(self):
+        self.state.supervisor.kill_actors()
 
 class FormulaDispatcherReportHandler(InitHandler):
     """
