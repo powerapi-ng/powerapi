@@ -29,9 +29,8 @@
 
 import logging
 from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import ReportHandler, PusherStartHandler, PusherPoisonPillHandler
+from powerapi.pusher import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 from powerapi.message import PoisonPillMessage, StartMessage
-
 
 class PusherState(State):
     """
@@ -84,14 +83,6 @@ class PusherActor(Actor):
         Define StartMessage, PoisonPillMessage handlers and a handler for
         each report type
         """
-        self.add_handler(PoisonPillMessage, PusherPoisonPillHandler(self.state))
+        self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
         self.add_handler(self.state.report_model.get_type(), ReportHandler(self.state, self.delay, self.max_size))
         self.add_handler(StartMessage, PusherStartHandler(self.state))
-
-    def teardown(self):
-        """
-        Allow to save the buffer before Pusher death
-        """
-        # Flush buffer
-        if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer, self.state.report_model)

@@ -29,7 +29,7 @@
 
 import time
 
-from powerapi.handler import InitHandler, Handler, StartHandler
+from powerapi.handler import InitHandler, Handler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import ErrorMessage
 from powerapi.database import DBError
 
@@ -51,6 +51,12 @@ class PusherStartHandler(StartHandler):
             return
 
 
+class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
+    def teardown(self):
+        if len(self.state.buffer) > 0:
+            self.state.database.save_many(self.state.buffer, self.state.report_model)
+
+
 class ReportHandler(InitHandler):
     """
     Put the received report in a buffer
@@ -65,7 +71,7 @@ class ReportHandler(InitHandler):
         InitHandler.__init__(self, state)
 
         self.last_database_write_time = time.time()
-        self.delay = delay
+        self.delay = delay / 1000
         self.max_size = max_size
 
     def handle(self, msg):
@@ -74,33 +80,9 @@ class ReportHandler(InitHandler):
 
         :param powerapi.PowerReport msg: PowerReport to save.
         """
-
         self.state.buffer.append(msg)
         if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
+            self.last_database_write_time = time.time()
+            self.state.actor.logger.info('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.database.save_many(self.state.buffer, self.state.report_model)
             self.state.buffer = []
-
-
-class PusherPoisonPillHandler(Handler):
-    """
-    Set a timeout for the pusher for the timeout_handler. If he didn't
-    read any input during the timeout, the actor end.
-    """
-    def handle(self, msg):
-        """
-        :param powerapi.PoisonPillMessage msg: PoisonPillMessage.
-        """
-        self.state.actor.set_timeout_handler(TimeoutKillHandler(self.state))
-        self.state.actor.socket_interface.timeout = 2000
-
-
-class TimeoutKillHandler(Handler):
-    """
-    Pusher timeout kill the actor
-    """
-    def handle(self, msg):
-        """
-        Kill the actor by setting alive to False
-        :param msg: None
-        """
-        self.state.alive = False
