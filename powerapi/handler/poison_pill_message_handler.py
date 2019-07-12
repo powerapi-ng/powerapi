@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import Handler
+from powerapi.handler import Handler, HandlerException
 from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
 
 
@@ -35,6 +35,31 @@ class PoisonPillMessageHandler(Handler):
     """
     Generic handler for PoisonPillMessage
     """
+
+    def teardown(self):
+        """
+        function called before terminating the actor process
+        could be redefined
+        """
+
+    def handle_msg(self, msg):
+        try:
+            handler = self.state.get_corresponding_handler(msg)
+            handler.handle_message(msg)
+        except UnknowMessageTypeException:
+            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
+        except HandlerException:
+            self.state.actor.logger.warning("HandlerException")
+
+    def _empty_mail_box(self):
+        while True:
+            self.state.actor.socket_interface.timeout = 0.1
+            msg = self.state.actor.socket_interface.receive()
+
+            if msg is not None:
+                self.handle_msg(msg)
+            else:
+                return
 
     def handle(self, msg):
         """
@@ -45,5 +70,9 @@ class PoisonPillMessageHandler(Handler):
         """
         if not isinstance(msg, PoisonPillMessage):
             raise UnknowMessageTypeException(type(msg))
+
+        if msg.is_soft:
+            self._empty_mail_box()
+        self.teardown()
 
         self.state.alive = False

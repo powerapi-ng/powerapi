@@ -49,8 +49,17 @@ class PoisonPillMessage(Message):
     """
     Message which allow to kill an actor
     """
+    def __init__(self, soft=True):
+        self.is_soft = soft
+        self.is_hard = not soft
+
     def __str__(self):
         return "PoisonPillMessage"
+
+    def __eq__(self, other):
+        if isinstance(other, PoisonPillMessage):
+            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
+        return False
 
 
 class StartMessage(Message):
