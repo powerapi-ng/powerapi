@@ -32,19 +32,6 @@ from powerapi.handler import Handler
 from powerapi.actor import Supervisor
 
 
-class TimeoutHandler(Handler):
-    """
-    Handler used when a timeout occurs
-    """
-
-    def handle(self, msg):
-        """
-        ignore the timeout and return the actual actor state
-        """
-        pass
-
-
-
 class State:
     """
     A basic state class that encapsulate basic actor values :
@@ -52,9 +39,7 @@ class State:
     :attr:`initialized <powerapi.actor.state.State.initialized>`
     :attr:`alive <powerapi.actor.state.State.alive>`
     :attr:`behaviour <powerapi.actor.state.State.behaviour>`
-    :attr:`socket_interface <powerapi.actor.state.State.socket_interface>`
     :attr:`handlers <powerapi.actor.state.State.handlers>`
-    :attr:`timeout_handler <powerapi.actor.state.State.timeout_handler>`
     :attr:`supervisor <powerapi.actor.state.State.supervisor>`
     """
 
@@ -71,9 +56,6 @@ class State:
         #: mapping between message type and handler that the mapped handler
         #: must handle
         self.handlers = []
-        #: (func): function activated when no message was
-        #: received since `timeout` milliseconds
-        self.timeout_handler = TimeoutHandler(self)
         #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
         #: that are handle by this actor
         self.supervisor = Supervisor()
