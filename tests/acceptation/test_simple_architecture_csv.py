@@ -73,7 +73,7 @@ LOG_LEVEL = logging.NOTSET
 def files():
     os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
     yield None
-    # os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
+    os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
 
 
 @pytest.fixture
