@@ -31,8 +31,8 @@ import logging
 from powerapi.actor import Actor, State
 from powerapi.exception import PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.handler import PoisonPillMessageHandler
-from powerapi.puller import PullerStartHandler, TimeoutHandler
+from powerapi.puller import PullerPoisonPillMessageHandler
+from powerapi.puller import PullerStartHandler
 from powerapi.actor import NotConnectedException
 
 
@@ -103,32 +103,11 @@ class PullerActor(Actor):
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self,
-                                 database,
-                                 report_filter,
-                                 report_model,
-                                 stream_mode,
-                                 timeout, timeout_sleeping)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout, timeout_sleeping)
 
     def setup(self):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
-        self.add_handler(StartMessage, PullerStartHandler(self.state))
-        self.set_timeout_handler(TimeoutHandler(self.state))
-
-    def teardown(self):
-        """
-        Allow to end some socket connection properly
-        """
-        # Send kill to dispatcher
-        for _, dispatcher in self.state.report_filter.filters:
-            try:
-                dispatcher.send_kill(by_data=True)
-            except NotConnectedException:
-                pass
-
-        # Close connect to all dispatcher
-        for _, dispatcher in self.state.report_filter.filters:
-            dispatcher.state.actor.socket_interface.close()
+        self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, PullerStartHandler(self.state, 0.1))
