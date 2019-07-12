@@ -76,15 +76,13 @@ class MongoIterDB(IterDB):
         """
         Allow to get the next data
         """
-        try:
-            if not self.stream_mode:
-                json = self.cursor.next()
-            else:
-                json = self.db.collection.find_one_and_delete({})
-                if json is None:
-                    raise StopIteration()
-        except StopIteration:
-            raise StopIteration()
+        if not self.stream_mode:
+            json = self.cursor.next()
+        else:
+            json = self.db.collection.find_one_and_delete({})
+            if json is None:
+                raise StopIteration()
+
 
         return self.report_model.get_type().deserialize(self.report_model.from_mongodb(json))
 

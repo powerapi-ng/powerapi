@@ -113,7 +113,7 @@ def check_output_file():
 
 def test_run(files, supervisor):
 
-    config = {'verbose': 0,
+    config = {'verbose': LOG_LEVEL,
               'stream': False,
               'input': [{'files': FILES,
                          'model': 'hwpc_report',

@@ -27,68 +27,52 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIException
+import pytest
+from mock import Mock
 
+from powerapi.handler import PoisonPillMessageHandler
+from powerapi.message import PoisonPillMessage
 
-class UnknowMessageTypeException(PowerAPIException):
+############
+# Fixtures #
+############
+@pytest.fixture()
+def mocked_ppHandler():
     """
-    Exception happen when we don't know the message type
-    """
-
-
-class Message:
-    """
-    Abstract class message. Each object that is used by zmq
-    need to be a Message.
-    """
-    def __str__(self):
-        raise NotImplementedError()
-
-
-class PoisonPillMessage(Message):
-    """
-    Message which allow to kill an actor
-    """
-    def __init__(self, soft=True):
-        self.is_soft = soft
-        self.is_hard = not soft
-
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
-        if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
-        return False
-
-
-class StartMessage(Message):
-    """
-    Message that ask the actor to launch its initialisation process
-    """
-    def __str__(self):
-        return "StartMessage"
-
-
-class OKMessage(Message):
-    """
-    Message used in synchron communication to answer that the actor
-    completed the task previously asked
-    """
-    def __str__(self):
-        return "OKMessage"
-
-
-class ErrorMessage(Message):
-    """
-    Message used to indicate that an error as occuried
+    return a mocked PoisonPillMessageHandler
     """
 
-    def __init__(self, error_message):
-        """
-        :param str error_code: message associated to the error
-        """
-        self.error_message = error_message
+    state = Mock()
+    state.actor = Mock()
+    state.actor.socket_interface = Mock()
+    state.actor.socket_interface.receive = Mock(return_value=None)
 
-    def __str__(self):
-        return "ErrorMessage"
+    handler = PoisonPillMessageHandler(state)
+    handler.teardown = Mock()
+    return handler
+
+
+def test_PoisonPillMessageHandler_soft(mocked_ppHandler):
+    """
+    handle a soft PoisonPillMessage with the handler
+
+    Test if:
+      - the receive method was called
+      - the handler teardown method was called
+    """
+
+    mocked_ppHandler.handle(PoisonPillMessage(soft=True))
+    assert mocked_ppHandler.state.actor.socket_interface.receive.called
+    assert mocked_ppHandler.teardown.called
+
+
+def test_PoisonPillMessageHandler_hard(mocked_ppHandler):
+    """
+    handle a hard PoisonPillMessage with the handler
+
+    Test if:
+      - the handler teardown method was called
+    """
+
+    mocked_ppHandler.handle(PoisonPillMessage(soft=False))
+    assert mocked_ppHandler.teardown.called

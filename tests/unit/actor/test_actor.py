@@ -58,6 +58,7 @@ def dummy_actor_mocked():
     actor._signal_handler_setup = Mock()
     actor.state = Mock()
     actor.socket_interface = Mock()
+    actor.socket_interface.send_control = Mock()
     return actor
 
 
@@ -102,6 +103,32 @@ def test_kill_process(dummy_actor_mocked):
     dummy_actor_mocked.setup()
     dummy_actor_mocked._kill_process()
     assert len(dummy_actor_mocked.socket_interface.close.mock_calls) == 1
+
+
+def test_hard_kill_method(dummy_actor_mocked):
+    """
+    Call the hard_kill method of and actor
+
+    Test if:
+      - a hard PoisonPillMessage was sent to the actor on the control socket
+    """
+    dummy_actor_mocked.hard_kill()
+    assert dummy_actor_mocked.socket_interface.send_control.called
+    msg = dummy_actor_mocked.socket_interface.send_control.call_args[0][0]
+    assert msg == PoisonPillMessage(soft=False)
+
+
+def test_soft_kill_method(dummy_actor_mocked):
+    """
+    Call the soft_kill method of and actor
+
+    Test if:
+      - a soft PoisonPillMessage was sent to the actor on the control socket
+    """
+    dummy_actor_mocked.soft_kill()
+    assert dummy_actor_mocked.socket_interface.send_control.called
+    msg = dummy_actor_mocked.socket_interface.send_control.call_args[0][0]
+    assert msg == PoisonPillMessage(soft=True)
 
 
 def test_get_handler_unknow_message_type(initialized_dummy_actor):

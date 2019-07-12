@@ -48,7 +48,7 @@ from tests.mongo_utils import clean_base_test_unit_mongo
 
 
 URI = "mongodb://localhost:27017"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.NOTSET
 
 
 ##############################################################################
@@ -155,12 +155,14 @@ def initialized_puller_with_dispatcher(puller, supervisor):
     supervisor.launch_actor(puller)
     yield puller
 
+    puller.terminate()
+    puller.join()
+
     for _, disp in puller.state.report_filter.filters:
         disp.terminate()
         disp.join()
 
-    puller.terminate()
-    puller.join()
+
 
 
 @pytest.fixture()
@@ -290,14 +292,14 @@ def test_puller_init_ok(initialized_puller_with_dispatcher):
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_filt(basic_filt())
-def test_puller_init_already_init(initialized_puller_with_dispatcher):
+@define_filt(Filter())
+def test_puller_init_already_init(initialized_puller):
     """
     Create a PullerActor and send a StartMessage to an already initialized Actor
     """
-    initialized_puller_with_dispatcher.send_control(StartMessage())
-    assert is_actor_alive(initialized_puller_with_dispatcher)
-    assert isinstance(initialized_puller_with_dispatcher.receive_control(), ErrorMessage)
+    initialized_puller.send_control(StartMessage())
+    assert is_actor_alive(initialized_puller)
+    assert isinstance(initialized_puller.receive_control(), ErrorMessage)
 
 
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
@@ -314,7 +316,7 @@ def test_puller_kill_without_init(started_puller):
     # the subscriber connects to the publisher (something that takes a small but
     # non-zero time), the publisher may already be sending messages out.
     time.sleep(0.1)
-    started_puller.send_kill()
+    started_puller.hard_kill()
     assert not is_actor_alive(started_puller)
 
 

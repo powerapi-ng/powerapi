@@ -28,4 +28,5 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.formula.formula_actor import FormulaActor, FormulaState
+from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
 from powerapi.formula.dummy.dummy_formula_actor import DummyFormulaActor

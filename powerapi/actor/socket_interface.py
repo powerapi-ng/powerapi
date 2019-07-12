@@ -169,7 +169,7 @@ class SocketInterface:
         Block until a message was received on the control canal (client side)
         (or until timeout) an return the received messages
 
-        :return: the list of received messages or an empty list if timeout
+        :return: the received message or an None if timeout
         :rtype: a list of Object
 
         """
@@ -179,7 +179,7 @@ class SocketInterface:
         event = self.control_socket.poll(timeout)
 
         if event == 0:
-            return None
+            return  None
 
         return self._recv_serialized(self.control_socket)
 
@@ -187,6 +187,7 @@ class SocketInterface:
         """
         Close all socket handle by this interface
         """
+
         if self.push_socket is not None:
             self.push_socket.close()
 
@@ -263,6 +264,7 @@ class SocketInterface:
 
         :param Object msg: message to send
         """
+
         if self.control_socket is None:
             raise NotConnectedException()
         self._send_serialized(self.control_socket, msg)

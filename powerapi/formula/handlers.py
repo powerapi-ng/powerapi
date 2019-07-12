@@ -27,68 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIException
+from powerapi.handler import PoisonPillMessageHandler
 
 
-class UnknowMessageTypeException(PowerAPIException):
-    """
-    Exception happen when we don't know the message type
-    """
-
-
-class Message:
-    """
-    Abstract class message. Each object that is used by zmq
-    need to be a Message.
-    """
-    def __str__(self):
-        raise NotImplementedError()
-
-
-class PoisonPillMessage(Message):
-    """
-    Message which allow to kill an actor
-    """
-    def __init__(self, soft=True):
-        self.is_soft = soft
-        self.is_hard = not soft
-
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
-        if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
-        return False
-
-
-class StartMessage(Message):
-    """
-    Message that ask the actor to launch its initialisation process
-    """
-    def __str__(self):
-        return "StartMessage"
-
-
-class OKMessage(Message):
-    """
-    Message used in synchron communication to answer that the actor
-    completed the task previously asked
-    """
-    def __str__(self):
-        return "OKMessage"
-
-
-class ErrorMessage(Message):
-    """
-    Message used to indicate that an error as occuried
-    """
-
-    def __init__(self, error_message):
-        """
-        :param str error_code: message associated to the error
-        """
-        self.error_message = error_message
-
-    def __str__(self):
-        return "ErrorMessage"
+class FormulaPoisonPillMessageHandler(PoisonPillMessageHandler):
+    def teardown(self):
+        for _, pusher in self.state.pushers.items():
+            pusher.socket_interface.close()

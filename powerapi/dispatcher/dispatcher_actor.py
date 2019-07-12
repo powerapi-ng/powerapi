@@ -30,10 +30,9 @@
 import logging
 from powerapi.actor import Actor
 from powerapi.exception  import PowerAPIException
-from powerapi.handler import PoisonPillMessageHandler
 from powerapi.report import Report
 from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.dispatcher import StartHandler, DispatcherState
+from powerapi.dispatcher import StartHandler, DispatcherState, DispatcherPoisonPillMessageHandler
 from powerapi.dispatcher import FormulaDispatcherReportHandler
 
 
@@ -80,16 +79,8 @@ class DispatcherActor(Actor):
             raise NoPrimaryDispatchRuleRuleException()
 
         self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
         self.add_handler(StartMessage, StartHandler(self.state))
-
-    def teardown(self):
-        """
-        Override from Actor.
-
-        Kill each formula before terminate
-        """
-        self.state.supervisor.kill_actors(by_data=True)
 
     def _create_factory(self):
         """

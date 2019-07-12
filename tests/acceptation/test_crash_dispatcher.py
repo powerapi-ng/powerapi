@@ -105,9 +105,9 @@ class MainProcess(Process):
     def run(self):
         # Setup signal handler
         def term_handler(_, __):
-            puller.send_kill()
-            dispatcher.send_kill()
-            pusher.send_kill()
+            puller.hard_kill()
+            dispatcher.hard_kill()
+            pusher.hard_kill()
             exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)

@@ -31,10 +31,10 @@ import logging
 import re
 from functools import reduce
 
-from powerapi.formula import FormulaActor, FormulaState
+from powerapi.formula import FormulaActor, FormulaState, FormulaPoisonPillMessageHandler
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
-from powerapi.handler import PoisonPillMessageHandler
+
 from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 
@@ -61,5 +61,5 @@ class DummyFormulaActor(FormulaActor):
         Initialize Handler
         """
         FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
         self.add_handler(Report, ReportHandler(self.state))

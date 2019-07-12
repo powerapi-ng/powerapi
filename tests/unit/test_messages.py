@@ -1,21 +1,21 @@
 # Copyright (c) 2018, INRIA
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
-#
+
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-#
+
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-#
+
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-#
+
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-#
+
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,68 +27,31 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIException
+"""
+Messages unit test
+"""
+import pytest
 
+from powerapi.message import PoisonPillMessage
 
-class UnknowMessageTypeException(PowerAPIException):
+#####################
+# PoisonPillMessage #
+#####################
+def test_soft_PoisonPillMessage_attr():
     """
-    Exception happen when we don't know the message type
+    Create a soft PoisonPillMessage instance and test its attribute value
     """
+    msg = PoisonPillMessage(soft=True)
+
+    assert msg.is_soft
+    assert not msg.is_hard
 
 
-class Message:
+def test_hard_PoisonPillMessage_attr():
     """
-    Abstract class message. Each object that is used by zmq
-    need to be a Message.
+    Create a hard PoisonPillMessage instance and test its attribute value
     """
-    def __str__(self):
-        raise NotImplementedError()
+    msg = PoisonPillMessage(soft=False)
 
-
-class PoisonPillMessage(Message):
-    """
-    Message which allow to kill an actor
-    """
-    def __init__(self, soft=True):
-        self.is_soft = soft
-        self.is_hard = not soft
-
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
-        if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
-        return False
-
-
-class StartMessage(Message):
-    """
-    Message that ask the actor to launch its initialisation process
-    """
-    def __str__(self):
-        return "StartMessage"
-
-
-class OKMessage(Message):
-    """
-    Message used in synchron communication to answer that the actor
-    completed the task previously asked
-    """
-    def __str__(self):
-        return "OKMessage"
-
-
-class ErrorMessage(Message):
-    """
-    Message used to indicate that an error as occuried
-    """
-
-    def __init__(self, error_message):
-        """
-        :param str error_code: message associated to the error
-        """
-        self.error_message = error_message
-
-    def __str__(self):
-        return "ErrorMessage"
+    assert not msg.is_soft
+    assert msg.is_hard

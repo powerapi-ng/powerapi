@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
 import pytest
+import time
 
 from powerapi.report_model import PowerModel
 from powerapi.database import MongoDB
@@ -45,7 +46,7 @@ from tests.mongo_utils import clean_base_test_unit_mongo
 
 
 URI = "mongodb://localhost:27017"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.NOTSET
 
 
 ##############################################################################
@@ -265,8 +266,10 @@ def test_pusher_kill_without_init(started_pusher):
     """
     Create a PusherActor and kill him with a PoisonPillMessage before initialization
     """
-    started_pusher.connect_data()
-    started_pusher.send_kill(by_data=True)
+    started_pusher.connect_control()
+    # wait for the main process to connect the pusher before sending the message
+    time.sleep(0.5)
+    started_pusher.hard_kill()
     assert not is_actor_alive(started_pusher, 5)
 
 
@@ -295,8 +298,11 @@ def test_pusher_save_power_report(generate_mongodb_data, initialized_pusher):
     saved_report = gen_power_report()
     initialized_pusher.send_data(saved_report)
 
+    # wait for the message is sending to the pusher
+    time.sleep(0.5)
+
     # Kill it
-    initialized_pusher.send_kill(by_data=True)
+    initialized_pusher.soft_kill()
     assert not is_actor_alive(initialized_pusher, 5)
 
     # Open a database for read the saved report

@@ -119,11 +119,9 @@ class Supervisor:
     def kill_actors(self, by_data=False):
         """
         Kill all the supervised actors
-
-        :param bool by_data: Define if the kill msg is send in the control
-                             socket or the data socket
         """
+
         for actor in self.supervised_actors:
             if actor.is_alive():
-                actor.send_kill(by_data=by_data)
+                actor.hard_kill()
                 actor.join()

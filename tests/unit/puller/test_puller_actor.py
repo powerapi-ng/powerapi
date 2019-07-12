@@ -28,8 +28,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+import time
+from threading import Thread
+from mock import Mock
 
-import mock
 from powerapi.report import Report, create_report_root
 from powerapi.report_model import HWPCModel
 from powerapi.puller import PullerActor, PullerState
@@ -61,19 +63,24 @@ class FakeReport(Report):
 
 def get_fake_db():
     """ Return a fake DB """
-    fake_mongo = mock.Mock(stream_mode=False)
-    values = [2, 3]
 
-    def fake_next():
+
+
+    values = [2, 3]
+    fake_iter = Mock()
+    def _next(_):
         if not values:
-            return None
+            raise StopIteration()
         return values.pop()
 
-    def fake_iter(_):
+    def _iter(_):
         return iter([])
 
-    fake_mongo.__next__ = fake_next
-    fake_mongo.__iter__ = fake_iter
+    fake_iter.__next__ = _next
+    fake_iter.__iter__ = _iter
+
+    fake_mongo = Mock(stream_mode=False)
+    fake_mongo.iter = Mock(return_value=fake_iter)
     return fake_mongo
 
 
@@ -84,16 +91,16 @@ def get_fake_filter():
     .route()    => return 10
     .get_type() => return FakeReport
     """
-    fake_filter = mock.Mock()
+    fake_filter = Mock()
     fake_filter.filters = []
-    fake_filter.route = mock.Mock(return_value=mock.Mock())
-    fake_filter.get_type = mock.Mock(return_value=FakeReport)
+    fake_filter.route = Mock(return_value=[])
+    fake_filter.get_type = Mock(return_value=FakeReport)
     return fake_filter
 
 
 def get_fake_socket_interface():
     """ Return a fake SockerInterface """
-    return mock.Mock(spec_set=SocketInterface)
+    return Mock(spec_set=SocketInterface)
 
 
 #########################################
@@ -115,6 +122,37 @@ class TestPullerActor:
 class TestHandlerPuller:
     """ TestHandlerPuller class """
 
+    def test_puller_start_handler_ctrl_socket_access(self):
+        """
+        handle a StartMessage with a Mocked PullerStartHandler in an other thread
+
+        Test if :
+          - each 500 ms, the handler check the control socket for message
+        """
+
+        state = PullerState(Mock(),get_fake_db(), get_fake_filter(), Mock(), True)
+        # state.actor.socket_interface = Mock()
+        state.actor.receive_control = Mock(return_value=None)
+        handler = PullerStartHandler(state, 0.1)
+
+        class TestThread(Thread):
+            def run(self):
+                handler.handle(StartMessage())
+
+        nb_call = state.actor.socket_interface.receive_control.call_count
+        assert nb_call == 0
+
+        thread = TestThread()
+        thread.start()
+
+        for i in range(4):
+            time.sleep(0.5)
+            new_nb_call = handler.state.actor.receive_control.call_count
+            assert new_nb_call > nb_call
+            nb_call = new_nb_call
+
+        state.alive = False
+
     def test_puller_start_handler(self):
         """
         Test the StartHandler of PullerActor
@@ -124,16 +162,17 @@ class TestHandlerPuller:
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
         fake_filter = get_fake_filter()
-        puller_state = PullerState(mock.Mock(),
+        puller_state = PullerState(Mock(),
                                    fake_database,
                                    fake_filter,
                                    HWPCModel(),
                                    False)
+        puller_state.actor.receive_control = Mock(return_value=None)
 
         assert puller_state.initialized is False
 
         # Define StartHandler
-        start_handler = PullerStartHandler(puller_state)
+        start_handler = PullerStartHandler(puller_state, 0.1)
 
         # Test Random message when state is not initialized
         to_send = [OKMessage(), ErrorMessage("Error"),

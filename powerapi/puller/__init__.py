@@ -27,5 +27,5 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.puller.handlers import PullerStartHandler, TimeoutHandler
+from powerapi.puller.handlers import PullerStartHandler, PullerPoisonPillMessageHandler
 from powerapi.puller.puller_actor import PullerActor, PullerState

@@ -26,12 +26,17 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
+from threading import Thread
 
+from powerapi.actor import NotConnectedException
+from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage
+from powerapi.handler import HandlerException
 from powerapi.exception import PowerAPIException
 from powerapi.filter import FilterUselessError
-from powerapi.handler import InitHandler, StartHandler
+from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.database import DBError
-from powerapi.message import ErrorMessage
+from powerapi.message import ErrorMessage, PoisonPillMessage
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model.report_model import BadInputData
 
@@ -42,59 +47,23 @@ class NoReportExtractedException(PowerAPIException):
     database
     """
 
+class DBPullerThread(Thread):
 
-class PullerStartHandler(StartHandler):
-    """
-    Initialize the database interface
-    """
+    def __init__(self, state, timeout):
+        Thread.__init__(self)
+        self.timeout = timeout
+        self.state = state
 
-    def initialization(self):
-        """
-        Initialize the database and connect all dispatcher to the
-        socket_interface
-        """
+    def _pull_database(self):
         try:
-            self.state.database.connect()
-            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
-        except DBError as error:
-            self.state.actor.send_control(ErrorMessage(error.msg))
-            self.state.alive = False
-            return
-
-        # Connect to all dispatcher
-        for _, dispatcher in self.state.report_filter.filters:
-            dispatcher.connect_data()
-
-
-class TimeoutHandler(InitHandler):
-    """
-    Puller timeout, read the database.
-    """
-
-    def _get_report_dispatcher(self):
-        """
-        read one report of the database and filter it,
-        then return the tuple (report, dispatcher).
-
-        :return (Report, DispatcherActor): extracted report and dispatcher to sent this report
-
-        Raise:
-            NoReportExtractedException : if the database doesn't contains
-                                         report anymore
-
-        """
-        # Read one input, if it's None, it means there is not more
-        # report in the database, just pass
-        try:
-            report = next(self.state.database_it)
+            return next(self.state.database_it)
         except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
 
-        # Filter the report
-        dispatchers = self.state.report_filter.route(report)
-        return (report, dispatchers)
+    def _get_dispatchers(self, report):
+        return self.state.report_filter.route(report)
 
-    def handle(self, msg):
+    def run(self):
         """
         Read data from Database and send it to the dispatchers.
         If there is no more data, send a kill message to every
@@ -103,25 +72,98 @@ class TimeoutHandler(InitHandler):
 
         :param None msg: None.
         """
+
+        while self.state.alive:
+            # time.sleep(self.timeout)
+            try:
+                report = self._pull_database()
+                dispatchers = self._get_dispatchers(report)
+                for dispatcher in dispatchers:
+                    dispatcher.send_data(report)
+
+            except NoReportExtractedException:
+                if not self.state.stream_mode:
+                    return
+
+            except FilterUselessError:
+                self.state.actor.send_control(ErrorMessage("FilterUselessError"))
+                return
+
+
+
+class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
+    def teardown(self):
+        for _, dispatcher in self.state.report_filter.filters:
+            dispatcher.socket_interface.close()
+
+
+class PullerStartHandler(StartHandler):
+    """
+    Initialize the database interface
+    """
+
+    def __init__(self, state, timeout):
+        StartHandler.__init__(self, state)
+
+        self.timeout = timeout
+
+    def handle_internal_msg(self, msg):
         try:
-            (report, dispatchers) = self._get_report_dispatcher()
-            # for sleeping mode
-            self.state.actor.socket_interface.timeout = self.state.timeout_basic
-        except NoReportExtractedException:
-            if not self.state.stream_mode:
-                self.state.alive = False
-            # for sleeping mode
-            if self.state.counter < 10:
-                self.state.counter += 1
-            else:
-                self.state.actor.socket_interface.timeout = self.state.timeout_sleeping
-            return
-        except FilterUselessError:
-            self.state.alive = False
-            self.state.actor.send_control(ErrorMessage("FilterUselessError"))
+            handler = self.state.get_corresponding_handler(msg)
+            handler.handle_message(msg)
+        except UnknowMessageTypeException:
+            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
+        except HandlerException:
+            self.state.actor.logger.warning("HandlerException")
+
+    def initialization(self):
+
+        self._database_connection()
+        # Connect to all dispatcher
+        for _, dispatcher in self.state.report_filter.filters:
+            dispatcher.connect_data()
+
+    def handle(self, msg):
+        if self.state.initialized:
+            self.state.actor.send_control(
+                ErrorMessage('Actor already initialized'))
             return
 
-        # Send to the dispatcher if it's not None
-        for dispatcher in dispatchers:
-            if dispatcher is not None:
-                dispatcher.send_data(report)
+        if not isinstance(msg, StartMessage):
+            return
+
+        self.initialization()
+
+        if self.state.alive:
+            self.state.initialized = True
+            self.state.actor.send_control(OKMessage())
+
+        self.pull_db()
+
+    def pull_db(self):
+        """
+        Initialize the database and connect all dispatcher to the
+        socket_interface
+        """
+
+
+        db_puller_thread = DBPullerThread(self.state, self.timeout)
+        db_puller_thread.start()
+
+        while db_puller_thread.is_alive() and self.state.alive:
+            time.sleep(0.4)
+            msg = self.state.actor.receive_control(0.1)
+            if msg is not None:
+                self.handle_internal_msg(msg)
+
+        self.handle_internal_msg(PoisonPillMessage(soft=False))
+
+
+    def _database_connection(self):
+        try:
+            self.state.database.connect()
+            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
+
+        except DBError as error:
+            self.state.actor.send_control(ErrorMessage(error.msg))
+            self.state.alive = False
