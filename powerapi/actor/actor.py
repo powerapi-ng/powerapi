@@ -59,14 +59,10 @@ class Actor(multiprocessing.Process):
     |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_kill <powerapi.actor.actor.Actor.send_kill>`                                   |
     +---------------------------------+--------------------------------------------------------------------------------------------+
     | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
     |                                 +--------------------------------------------------------------------------------------------+
     |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`teardown <powerapi.actor.actor.Actor.teardown>`                                     |
     +---------------------------------+--------------------------------------------------------------------------------------------+
 
     :Attributes Interface:
@@ -135,6 +131,8 @@ class Actor(multiprocessing.Process):
         """
         def term_handler(_, __):
             self.logger.info("Term handler")
+            pp_handler = self.state.get_corresponding_handler(PoisonPillMessage())
+            pp_handler.handle(PoisonPillMessage(soft=False))
             self._kill_process()
             sys.exit(0)
 
@@ -196,11 +194,11 @@ class Actor(multiprocessing.Process):
         If the message is None, call the timout_handler otherwise find the
         handler correponding to the message type and call it on the message.
         """
-        msg = self.receive()
 
+        msg = self.receive()
         # Timeout
         if msg is None:
-            self.state.timeout_handler.handle_message(None)
+            return
         # Message
         else:
             try:
@@ -215,22 +213,8 @@ class Actor(multiprocessing.Process):
         """
         Kill the actor (close sockets)
         """
-        self.teardown()
         self.socket_interface.close()
         self.logger.info(self.name + " teardown")
-
-    def set_timeout_handler(self, new_timeout_handler):
-        """
-        Set the timeout_handler
-        """
-        self.state.timeout_handler = new_timeout_handler
-
-    def teardown(self):
-        """
-        Function called before closing sockets
-
-        Can be overriden to use personal actor termination behaviour
-        """
 
     def connect_data(self):
         """
@@ -238,13 +222,6 @@ class Actor(multiprocessing.Process):
         actor
         """
         self.socket_interface.connect_data()
-
-    def set_context(self, context):
-        """
-        set the context of the actor
-        :param zmq.Context context: the context to set
-        """
-        self.socket_interface.set_context(context)
 
     def connect_control(self):
         """
@@ -295,17 +272,18 @@ class Actor(multiprocessing.Process):
         self.logger.info("receive data : [" + str(msg) + "]")
         return msg
 
-    def send_kill(self, by_data=False):
-        """
-        Kill this actor by sending a
-        :class:`PoisonPillMessage
+    def soft_kill(self):
+        """Kill this actor by sending a soft :class:`PoisonPillMessage
         <powerapi.message.message.PoisonPillMessage>`
 
-        :param bool by_data: Define if the kill msg is send in the control
-                             socket or the data socket
         """
-        if by_data:
-            self.send_data(PoisonPillMessage())
-        else:
-            self.send_control(PoisonPillMessage())
+        self.send_control(PoisonPillMessage(soft=True))
+        self.socket_interface.close()
+
+    def hard_kill(self):
+        """Kill this actor by sending a hard :class:`PoisonPillMessage
+        <powerapi.message.message.PoisonPillMessage>`
+
+        """
+        self.send_control(PoisonPillMessage(soft=False))
         self.socket_interface.close()

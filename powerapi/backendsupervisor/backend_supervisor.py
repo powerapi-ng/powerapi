@@ -86,24 +86,14 @@ class BackendSupervisor(Supervisor):
                 actor.kill()
                 actor.join()
 
-        # Setup signal handler
-        def term_handler(_, __):
-            pass
-
-        signal.signal(signal.SIGTERM, term_handler)
-        signal.signal(signal.SIGINT, term_handler)
-
-        # Wait for signal
-        signal.pause()
-
         for puller in self.pullers:
-            kill_behaviour(puller)
+            puller.join()
 
         for dispatcher in self.dispatchers:
-            kill_behaviour(dispatcher)
+            dispatcher.join()
 
         for pusher in self.pushers:
-            kill_behaviour(pusher)
+            pusher.join()
 
     def join_stream_mode_off(self):
         """
@@ -117,10 +107,9 @@ class BackendSupervisor(Supervisor):
             puller.join()
 
         for dispatcher in self.dispatchers:
+            dispatcher.soft_kill()
             dispatcher.join()
 
         for pusher in self.pushers:
-            pusher.send_kill(by_data=True)
-
-        for pusher in self.pushers:
+            pusher.soft_kill()
             pusher.join()
