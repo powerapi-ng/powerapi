@@ -223,3 +223,22 @@ def test_kill_actor(supervisor):
 
     for actor in supervisor.supervised_actors:
         assert not actor.is_alive()
+
+def test_kill_actor_right_method():
+    """
+    create a supervisor that supervise one actor. Use the test the kill_actors method
+
+    Test if:
+      - the hard_kill method of the supervised actor was used
+    """
+    supervisor = Supervisor()
+    actor = FakeActor()
+    actor.hard_kill = Mock()
+    actor.soft_kill = Mock()
+    actor.alive = True
+    supervisor.supervised_actors = [actor]
+
+    supervisor.kill_actors()
+
+    assert actor.hard_kill.call_count == 1
+    assert not actor.soft_kill.called

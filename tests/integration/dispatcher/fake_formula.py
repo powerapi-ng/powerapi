@@ -36,6 +36,7 @@ from powerapi.handler import Handler, PoisonPillMessageHandler
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report
 from powerapi.actor import Actor, State, SocketInterface, SafeContext
+from powerapi.formula import FormulaPoisonPillMessageHandler
 
 
 class HWPCReportHandler(Handler):
@@ -46,6 +47,11 @@ class HWPCReportHandler(Handler):
 
     def handle(self, msg):
         self.push_socket.send(pickle.dumps(msg))
+
+
+class FakePoisonPillMessageHandler(FormulaPoisonPillMessageHandler):
+    def teardown(self):
+        self.state.actor.push_socket.send(pickle.dumps('terminated'))
 
 
 class FakeFormulaActor(Actor):
@@ -76,14 +82,10 @@ class FakeFormulaActor(Actor):
 
 
     def setup(self):
-        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, FakePoisonPillMessageHandler(self.state))
         self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
         self.push_socket.connect(self.addr)
 
         self.add_handler(Report, HWPCReportHandler(self.state, self.push_socket))
 
         self.push_socket.send(pickle.dumps('created'))
-
-
-    def teardown(self):
-        self.push_socket.send(pickle.dumps('terminated'))

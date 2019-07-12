@@ -73,7 +73,7 @@ LOG_LEVEL = logging.NOTSET
 def files():
     os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
     yield None
-    os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
+    # os.system('rm -Rf ' + ROOT_PATH + 'grvingt-12-system')
 
 
 @pytest.fixture
@@ -113,7 +113,7 @@ def check_output_file():
 
 def test_run(files, supervisor):
 
-    config = {'verbose': 0,
+    config = {'verbose': LOG_LEVEL,
               'stream': False,
               'input': [{'files': FILES,
                          'model': 'hwpc_report',

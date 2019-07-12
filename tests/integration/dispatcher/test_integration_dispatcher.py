@@ -143,10 +143,9 @@ def initialized_dispatcher(dispatcher):
     supervisor = Supervisor()
     supervisor.launch_actor(dispatcher)
     yield dispatcher
-    dispatcher.socket_interface.close()
     dispatcher.terminate()
     dispatcher.join()
-
+    dispatcher.socket_interface.close()
 
 @pytest.fixture()
 def dispatcher2(request, route_table):
@@ -181,9 +180,9 @@ def dispatcher3(request, route_table):
         route_table,
         level_logger=LOG_LEVEL)
     yield dispatcher_actor
-    dispatcher_actor.socket_interface.close()
     dispatcher_actor.terminate()
     dispatcher_actor.join()
+    dispatcher_actor.socket_interface.close()
 
 
 @pytest.fixture()
@@ -440,7 +439,7 @@ def test_kill_non_init_dispatcher(dispatcher):
       - if the actor is terminated
     """
     with pytest.raises(NotConnectedException):
-        dispatcher.send_kill()
+        dispatcher.hard_kill()
 
 
 @define_route_table(route_table_with_primary_rule())
@@ -451,7 +450,7 @@ def test_kill_init_dispatcher(initialized_dispatcher):
     Test :
       - if the actor is terminated
     """
-    initialized_dispatcher.send_kill()
+    initialized_dispatcher.hard_kill()
     assert not is_actor_alive(initialized_dispatcher)
 
 
@@ -465,7 +464,7 @@ def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
       - if the actor is terminated
       - if the created formula was terminated
     """
-    dispatcher_with_formula.send_kill()
+    dispatcher_with_formula.hard_kill()
     assert not is_actor_alive(dispatcher_with_formula)
     assert receive(formula_socket) == 'terminated'
 

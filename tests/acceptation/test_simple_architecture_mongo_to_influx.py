@@ -67,7 +67,7 @@ from tests.mongo_utils import clean_base_db_test
 from tests.influx_utils import create_empty_db, delete_db, get_all_reports
 
 DB_URI = "mongodb://localhost:27017/"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.NOTSET
 
 INFLUX_URI = 'localhost'
 INFLUX_PORT = 8086

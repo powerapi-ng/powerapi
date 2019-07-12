@@ -70,12 +70,12 @@ from tests.mongo_utils import gen_base_db_test
 from tests.mongo_utils import clean_base_db_test
 
 DB_URI = "mongodb://localhost:27017/"
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.NOTSET
 
 
 @pytest.fixture
 def database():
-    db = gen_base_db_test(DB_URI, 3000)
+    db = gen_base_db_test(DB_URI, 6000)
     yield db
     clean_base_db_test(DB_URI)
 
@@ -119,8 +119,9 @@ def test_run(database, supervisor):
     supervisor.launch_actor(puller)
 
 
+    t = time.time()
     number_of_output_reports = 0
-    for i in range(3):
+    for i in range(5):
         time.sleep(0.1)
         current = get_number_of_output_reports()
         assert current > number_of_output_reports
