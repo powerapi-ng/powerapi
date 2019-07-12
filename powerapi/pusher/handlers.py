@@ -83,6 +83,9 @@ class ReportHandler(InitHandler):
         self.state.buffer.append(msg)
         if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
             self.last_database_write_time = time.time()
-            self.state.actor.logger.info('save ' + str(len(self.state.buffer)) + ' reports in database')
+
+            self.state.buffer.sort(key=lambda x: x.timestamp)
+
             self.state.database.save_many(self.state.buffer, self.state.report_model)
+            self.state.actor.logger.info('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.buffer = []

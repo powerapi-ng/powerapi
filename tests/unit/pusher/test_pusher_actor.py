@@ -29,11 +29,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import mock
-from powerapi.report import create_report_root
+from mock import Mock
+from datetime import datetime
+from powerapi.report import create_report_root, HWPCReport
 from powerapi.report_model import HWPCModel
 from powerapi.pusher import PusherStartHandler, ReportHandler
-from powerapi.pusher import PusherState
+from powerapi.pusher import PusherState, ReportHandler
 from powerapi.actor import Actor, SocketInterface
 from powerapi.message import StartMessage, OKMessage, ErrorMessage
 
@@ -42,7 +43,7 @@ from powerapi.message import StartMessage, OKMessage, ErrorMessage
 
 def get_fake_db():
     """ Return a fake MongoDB """
-    fake_mongo = mock.Mock(stream_mode=False)
+    fake_mongo = Mock(stream_mode=False)
     values = [2, 3]
 
     def fake_next():
@@ -60,7 +61,7 @@ def get_fake_db():
 
 def get_fake_socket_interface():
     """ Return a fake SockerInterface """
-    return mock.Mock(spec_set=SocketInterface)
+    return Mock(spec_set=SocketInterface)
 
 
 ##############################################################################
@@ -77,7 +78,7 @@ class TestHandlerPusher:
         # Define PusherState
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(mock.Mock(),
+        pusher_state = PusherState(Mock(),
                                    fake_database,
                                    HWPCModel())
         pusher_state.actor.socket_interface = fake_socket_interface
@@ -108,7 +109,7 @@ class TestHandlerPusher:
         # Define PusherState
         fake_database = get_fake_db()
         fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(mock.Mock(),
+        pusher_state = PusherState(Mock(),
                                    fake_database,
                                    HWPCModel())
         pusher_state.actor.socket_interface = fake_socket_interface
@@ -139,3 +140,39 @@ class TestHandlerPusher:
         #    power_handler.handle_message(PowerReport("10", "test", "test", "test", "test"),
         #                                 pusher_state)
         #assert len(pusher_state.buffer) == 101
+
+
+def test_ReportHandler_message_saving_order():
+    """
+    Handle 3 HWPCReport with a pusher.ReportHandler
+    The maximum size of the handler buffer is 2
+    This 3 reports are not sent in their chronological order
+
+    First report : timestamp = 0
+    Second report : timestamp = 2
+    Third report : timestamp = 1
+
+    When the handler save the received reports test if the reports are saved in
+    their chronological order
+
+    """
+
+    fake_database = get_fake_db()
+    fake_database.save_many = Mock()
+
+    pusher_state = PusherState(Mock(), fake_database, HWPCModel())
+    report_handler = ReportHandler(pusher_state, delay=10000, max_size=2)
+
+    report0 = HWPCReport(datetime.fromtimestamp(0), None, None, None)
+    report1 = HWPCReport(datetime.fromtimestamp(2), None, None, None)
+    report2 = HWPCReport(datetime.fromtimestamp(1), None, None, None)
+
+    report_handler.handle(report0)
+    report_handler.handle(report1)
+    report_handler.handle(report2)
+
+    buffer = fake_database.save_many.call_args[0][0]
+
+    assert len(buffer) == 3
+    assert buffer[0].timestamp < buffer[1].timestamp
+    assert buffer[1].timestamp < buffer[2].timestamp
