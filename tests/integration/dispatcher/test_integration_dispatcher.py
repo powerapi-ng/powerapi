@@ -76,7 +76,7 @@ def receive(socket):
     wait for a message reception on a given socket and return it
     return None if no message was receive until 500ms
     """
-    event = socket.poll(500)
+    event = socket.poll(1000)
     if event == 0:
         return None
     return pickle.loads(socket.recv())

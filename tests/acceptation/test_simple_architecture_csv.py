@@ -103,8 +103,26 @@ def check_output_file():
     output_file.readline()
     input_file.readline()
 
+    # split socket0 report from socket1 report
+    output_socket0 = []
+    output_socket1 = []
+
+    for output_line in map(lambda x: x.split(','), output_file):
+        if output_line[5] == '\'0\')"':
+            output_socket0.append(output_line)
+        else:
+            output_socket1.append(output_line)
+
+    input_socket0 = []
+    input_socket1 = []
+    for input_line in map(lambda x: x.split(','), input_file):
+        if input_line[3] == '0':
+            input_socket0.append(input_line)
+        else:
+            input_socket1.append(input_line)
+
     # check value
-    for input_line, output_line in [(x.split(','), y.split(',')) for x, y in zip(input_file, output_file)]:
+    for input_line, output_line in zip(input_socket0 + input_socket1, output_socket0, output_socket1):
         for i in range(3):
             assert input_line[i] == output_line[i]
 
