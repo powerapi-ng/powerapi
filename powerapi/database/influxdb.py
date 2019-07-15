@@ -31,12 +31,13 @@
 import logging
 try:
     from influxdb import InfluxDBClient
+    from requests.exceptions import ConnectionError
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")
 
 from typing import List
 
-from requests.exceptions import ConnectionError
+
 from powerapi.database import BaseDB, DBError
 
 from powerapi.report import Report
