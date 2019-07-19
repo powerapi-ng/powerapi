@@ -52,7 +52,7 @@ import os
 import logging
 import pytest
 
-from powerapi.cli.tools import CommonCLIParser, generate_pushers, generate_pullers
+from powerapi.cli.tools import CommonCLIParser, PusherGenerator, PullerGenerator
 from powerapi.backendsupervisor import BackendSupervisor
 from powerapi.formula import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
@@ -133,14 +133,15 @@ def test_run(files, supervisor):
 
     config = {'verbose': LOG_LEVEL,
               'stream': False,
-              'input': [{'files': FILES,
-                         'model': 'hwpc_report',
-                         'name': 'puller',
-                         'type': 'csv'}],
-              'output': [{'model': 'power_report', 'name': 'pusher','type': 'csv', 'directory': ROOT_PATH}]}
+              'input': { 'csv' : {'files': FILES,
+                                  'model': 'hwpc_report',
+                                  'name': 'puller',
+                                  }},
+              'output': {'csv': {'model': 'power_report', 'name': 'pusher', 'directory': ROOT_PATH}}}
 
     # Pusher
-    pushers = generate_pushers(config)
+    pusher_generator = PusherGenerator()
+    pushers = pusher_generator.generate(config)
 
     # Formula
     formula_factory = (lambda name,
@@ -157,7 +158,8 @@ def test_run(files, supervisor):
     # Puller
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
-    pullers = generate_pullers(config, report_filter)
+    puller_generator = PullerGenerator(report_filter)
+    pullers = puller_generator.generate(config)
 
     for _, pusher in pushers.items():
         supervisor.launch_actor(pusher)
