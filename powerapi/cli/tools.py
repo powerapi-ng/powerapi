@@ -159,72 +159,96 @@ class CommonCLIParser(MainParser):
         sys.exit()
 
 
-DB_FACTORY = {
-    'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
-    'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
-                                   files=[] if 'files' not in db_config else db_config['files']),
-    'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
-    'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
-}
+class Generator:
 
+    def __init__(self, component_group_name):
+        self.component_group_name = component_group_name
 
-MODEL_FACTORY = {
-    'hwpc_report': HWPCModel(),
-    'power_report': PowerModel(),
-}
-
-
-def generate_pullers(config, report_filter):
-    # default mode if no input are specified
-    if 'input' not in config:
-        print('CLI error : no input specified', file=sys.stderr)
-        sys.exit()
-
-    pullers = {}
-    for db_config in config['input']:
-        try:
-            factory = DB_FACTORY[db_config['type']]
-            model = MODEL_FACTORY[db_config['model']]
-            name = db_config['name']
-            puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
-                                 level_logger=config['verbose'])
-            pullers[name] = puller
-        except KeyError as exn:
-            msg = 'CLI error : argument ' + exn.args[0]
-            msg += ' needed with --output ' + db_config['type']
-            print(msg, file=sys.stderr)
+    def generate(self, config):
+        if self.component_group_name not in config:
+            print('CLI error : no ' + self.component_group_name + ' specified', file=sys.stderr)
             sys.exit()
 
-    return pullers
+        actors = {}
+
+        for component_name, component_config in config[self.component_group_name].items():
+            try:
+                actors[component_config['name']] = self._gen_actor(component_name, component_config, config)
+            except KeyError as exn:
+                msg = 'CLI error : argument ' + exn.args[0]
+                msg += ' needed with --output ' + component_name
+                print(msg, file=sys.stderr)
+                sys.exit()
+
+        return actors
+
+    def _gen_actor(self, component_name, component_config, main_config):
+        raise NotImplementedError()
 
 
-def generate_pushers(config):
-    # default mode if no output are specified
-    if 'output' not in config:
-        print('CLI error : no output specified', file=sys.stderr)
-        sys.exit()
+class DBActorGenerator(Generator):
 
-    pushers = {}
+    def __init__(self, component_group_name):
+        Generator.__init__(self, component_group_name)
+        self.model_factory = {
+            'hwpc_report': HWPCModel(),
+            'power_report': PowerModel(),
+        }
 
-    for db_config in config['output']:
+        self.db_factory = {
+            'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
+            'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+                                           files=[] if 'files' not in db_config else db_config['files']),
+            'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
+            'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
+        }
+
+    def _generate_db(self, db_name, db_config, main_config):
         try:
-            factory = DB_FACTORY[db_config['type']]
-            model = MODEL_FACTORY[db_config['model']]
-            name = db_config['name']
-            pusher = PusherActor(name, model, factory(db_config), level_logger=config['verbose'])
-
-            pushers[name] = pusher
-
+            return self.db_factory[db_name](db_config)
         except KeyError as exn:
-            msg = 'CLI error : '
+            arg = exn.args[0]
 
-            if 'type' not in db_config:
-                msg += 'output type not specified'
+            # if an argument is missing, look if it exist in another component group
+            for group_name, group in main_config.items():
+                if group_name == self.component_group_name:
+                    pass
 
-            else:
-                msg += 'argument ' + exn.args[0]
-                msg += ' needed with --output ' + db_config['type']
-            print(msg, file=sys.stderr)
-            sys.exit()
+                elif not isinstance(group, dict):
+                    pass
 
-    return pushers
+                elif db_name not in group:
+                    pass
+
+                elif arg in group[db_name]:
+                    db_config[arg] = group[db_name][arg]
+                    return self._generate_db(db_name, db_config, main_config)
+            raise exn
+
+    def _gen_actor(self, db_name, db_config, main_config):
+        db = self._generate_db(db_name, db_config, main_config)
+        model = self.model_factory[db_config['model']]
+        name = db_config['name']
+        return self._actor_factory(name, db, model, main_config['stream'], main_config['verbose'])
+
+    def _actor_factory(self, name, db, model, stream_mode, level_logger):
+        raise NotImplementedError()
+
+
+class PullerGenerator(DBActorGenerator):
+
+    def __init__(self, report_filter):
+        DBActorGenerator.__init__(self, 'input')
+        self.report_filter = report_filter
+
+    def _actor_factory(self, name, db, model, stream_mode, level_logger):
+        return PullerActor(name, db, self.report_filter, model, stream_mode, level_logger)
+
+
+class PusherGenerator(DBActorGenerator):
+
+    def __init__(self):
+        DBActorGenerator.__init__(self, 'output')
+
+    def _actor_factory(self, name, db, model, stream_mode, level_logger):
+        return PusherActor(name, model, db, level_logger)
