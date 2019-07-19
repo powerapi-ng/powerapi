@@ -177,13 +177,8 @@ MODEL_FACTORY = {
 def generate_pullers(config, report_filter):
     # default mode if no input are specified
     if 'input' not in config:
-        factory = DB_FACTORY['csv']
-        model = HWPCModel()
-        name = 'csv_puller'
-        db_config = {'files': ['core.csv', 'rapl.csv', 'pcu.csv']}
-        puller = PullerActor(name, factory(db_config), report_filter, model, stream_mode=config['stream'],
-                             level_logger=config['verbose'])
-        return {name: puller}
+        print('CLI error : no input specified', file=sys.stderr)
+        sys.exit()
 
     pullers = {}
     for db_config in config['input']:
@@ -206,11 +201,8 @@ def generate_pullers(config, report_filter):
 def generate_pushers(config):
     # default mode if no output are specified
     if 'output' not in config:
-        factory = DB_FACTORY['csv']
-        model = PowerModel()
-        name = 'csv_pusher'
-        pusher = PusherActor(name, model, factory({}), level_logger=config['verbose'])
-        return {name: pusher}
+        print('CLI error : no output specified', file=sys.stderr)
+        sys.exit()
 
     pushers = {}
 
