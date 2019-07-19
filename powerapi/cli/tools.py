@@ -68,8 +68,7 @@ class CommonCLIParser(MainParser):
         subparser_mongo_input = ComponentSubParser('mongodb')
         subparser_mongo_input.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name', )
-        subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection',
-                                           default='sensor')
+        subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection')
         subparser_mongo_input.add_argument('n', 'name', help='specify puller name', default='puller_mongodb')
         subparser_mongo_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                            default='hwpc_report')
@@ -86,12 +85,12 @@ class CommonCLIParser(MainParser):
         subparser_csv_input.add_argument('n', 'name', help='specify puller name', default='puller_csv')
         self.add_component_subparser('input', subparser_csv_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
-        
+
         subparser_mongo_output = ComponentSubParser('mongodb')
         subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
-        subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection',
-                                            default='powermeter')
+        subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
+                                            
         subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='power_report')
         subparser_mongo_output.add_argument('n', 'name', help='specify puller name', default='pusher_mongodb')
