@@ -322,12 +322,9 @@ class ComponentSubParser(Parser):
                               parsed argument and the result of the parsing
 
         """
-        # print(vars(self.actions))
         local_result = deepcopy(self.default_values)
         if token_list == []:
             return token_list, local_result
-
-        local_result['type'] = self.name
 
         return self._parse(token_list, local_result)
 
@@ -453,11 +450,11 @@ class MainParser(Parser):
         """
         def _action(arg, val, args, acc):
             if arg not in acc:
-                acc[arg] = []
+                acc[arg] = {}
 
             subparser = self.subparsers_group[arg].get_subparser(val)
             args, subparse_result = subparser.subparse(args)
-            acc[arg].append(subparse_result)
+            acc[arg][subparser.name] = subparse_result
             return args, acc
 
         if component_name not in self.subparsers_group:

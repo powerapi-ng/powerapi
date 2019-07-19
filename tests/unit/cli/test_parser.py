@@ -200,7 +200,7 @@ def test_subparser():
     - "" : {}
     - "-z" : UnknowArgException(z)
     - "-a" : {a: True}
-    - "-a --sub toto -b" : {a:True, sub: [{type : toto, b: True}]}
+    - "-a --sub toto -b" : {a:True, sub: {'toto' : {b: True}}}
     - "-b" : BadContextException(b, [toto])
 
     Parser description :
@@ -223,7 +223,7 @@ def test_subparser():
     check_parsing_result(parser, '-a', {'a': True})
 
     check_parsing_result(parser, '-a --sub toto -b',
-                         {'a': True, 'sub': [{'type': 'toto', 'b': True}]})
+                         {'a': True, 'sub': {'toto': { 'b': True}}})
 
     with pytest.raises(BadContextException):
         check_parsing_result(parser, '-b', None)
@@ -364,7 +364,7 @@ def test_add_component_subparser_with_two_name():
     subparser = ComponentSubParser('titi')
     subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
     parser.add_component_subparser('sub', subparser)
-    check_parsing_result(parser, '--sub titi -a', {'sub': [{'type': 'titi', 'aaa': True}]})
+    check_parsing_result(parser, '--sub titi -a', {'sub': {'titi': {'aaa': True}}})
 
 
 def test_parse_empty_string_default_value():
@@ -404,12 +404,11 @@ def test_component_subparser_normal_token_list(component_subparser):
     test component_subparser, parse a token list which contain only subparser
     argument [('a', '')].
 
-    must return return a  dictionary {'type': 'test', 'a':''} as parse result
+    must return return a  dictionary {'a':''} as parse result
     and a empty token list
 
     """
-    assert component_subparser.subparse([('a', '')]) == ([], {'type': 'test',
-                                                              'a': None})
+    assert component_subparser.subparse([('a', '')]) == ([], {'a': None})
 
 
 def test_component_subparser_full_token_list(component_subparser):
@@ -417,12 +416,12 @@ def test_component_subparser_full_token_list(component_subparser):
     test component_subparser, parse a token list which contain subparser
     argument and arguments from other parser[('a', ''), ('b', '')].
 
-    must return return a  dictionary {'type': 'test', 'a':''} as parse result
+    must return return a  dictionary {'a':''} as parse result
     and a token list that contains the unparsed arguments : [('b', '')].
 
     """
     assert component_subparser.subparse([('a', ''), ('b', '')]) == ([('b', '')],
-                                                                    {'type': 'test', 'a': None})
+                                                                    {'a': None})
 
 
 def test_subparser_empty_token_list_default_value():
