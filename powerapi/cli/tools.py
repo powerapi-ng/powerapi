@@ -170,14 +170,15 @@ class Generator:
 
         actors = {}
 
-        for component_name, component_config in config[self.component_group_name].items():
-            try:
-                actors[component_config['name']] = self._gen_actor(component_name, component_config, config)
-            except KeyError as exn:
-                msg = 'CLI error : argument ' + exn.args[0]
-                msg += ' needed with --output ' + component_name
-                print(msg, file=sys.stderr)
-                sys.exit()
+        for component_type, components_list in config[self.component_group_name].items():
+            for component_name, component_config in components_list.items():
+                try:
+                    actors[component_name] = self._gen_actor(component_type, component_config, config)
+                except KeyError as exn:
+                    msg = 'CLI error : argument ' + exn.args[0]
+                    msg += ' needed with --output ' + component_type
+                    print(msg, file=sys.stderr)
+                    sys.exit()
 
         return actors
 
@@ -203,26 +204,8 @@ class DBActorGenerator(Generator):
         }
 
     def _generate_db(self, db_name, db_config, main_config):
-        try:
-            return self.db_factory[db_name](db_config)
-        except KeyError as exn:
-            arg = exn.args[0]
+        return self.db_factory[db_name](db_config)
 
-            # if an argument is missing, look if it exist in another component group
-            for group_name, group in main_config.items():
-                if group_name == self.component_group_name:
-                    pass
-
-                elif not isinstance(group, dict):
-                    pass
-
-                elif db_name not in group:
-                    pass
-
-                elif arg in group[db_name]:
-                    db_config[arg] = group[db_name][arg]
-                    return self._generate_db(db_name, db_config, main_config)
-            raise exn
 
     def _gen_actor(self, db_name, db_config, main_config):
         db = self._generate_db(db_name, db_config, main_config)
