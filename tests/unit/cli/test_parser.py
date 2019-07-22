@@ -234,9 +234,34 @@ def test_subparser():
         check_parsing_result(parser, '-b', None)
 
 
+def test_formula_subparser():
+    """
+    test to parse strings with a formula parser and retrieve the following results :
+    - "" : {}
+    - "--sub toto -b" :  {a:True, sub: {'toto' : {b: True}}}
+    - "-b" : BadContextException(b, [toto])
+
+    Parser description :
+
+    - formula subparser toto binded to the argument sub with sub arguments : -b and --name
+    """
+    parser = MainParser(help_arg=False)
+
+    subparser = ComponentSubParser('toto')
+    subparser.add_argument('b', flag=True, action=store_true)
+    parser.add_formula_subparser('sub', subparser)
+
+    check_parsing_result(parser, '', {})
+
+    check_parsing_result(parser, '--sub toto -b', {'sub': {'toto': {'b': True}}})
+
+    with pytest.raises(BadContextException):
+        check_parsing_result(parser, '-b', None)
+
+
 def test_create_two_component():
     """
-    Create two component of the same type with the following cli : 
+    Create two component of the same type with the following cli :
     --sub toto --name titi --sub toto -b --name tutu
 
     test if the result is :
