@@ -63,8 +63,8 @@ def test_no_input_specified():
 def test_generate_puller_from_simple_config():
     """
     generate mongodb puller from this config :
-    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
-                                             'collection': 'tutu'}}}
+    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+                                             'collection': 'tutu'}}}}
 
     Test if :
       - function return a dict containing one actor, its key is 'toto'
@@ -76,8 +76,8 @@ def test_generate_puller_from_simple_config():
       - database collection is tutu
 
     """
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}
+    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
+                                                                   'db': 'tata', 'collection': 'tutu'}}}}
     generator = PullerGenerator(None)
     result = generator.generate(args)
 
@@ -95,39 +95,90 @@ def test_generate_puller_from_simple_config():
     assert db.collection_name == 'tutu'
 
 
-def test_generate_puller_and_pusher_with_same_database():
+def test_generate_two_pusher():
     """
-    generate mongodb puller and pusher from this config :
-    {'verbose': True, 'stream': True, 'input': {'mongodb': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
-                                                'collection': 'tutu'}},
-     'output': {'mongodb': {'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}
-    as the database have the same uri and same database name, this value are not specified on the configuration of the output
+    generate two mongodb puller from this config :
+    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+                                             'collection': 'tutu'},
+                                                             'titi': {'model': 'hwpc_report', 'name': 'titi', 'uri': 'titi', 'db': 'tata',
+                                             'collection': 'huhu'}}}}
 
     Test if :
-      - puller and pusher database uri is titi
-      - puller and pusher database db is tata
-      - puller database collection is tutu
-      - pusher database collection is tete
+      - function return a dict containing two actor, their key are 'toto' and 'titi'
+      - pullers type are PullerActor
+      - pullers name are toto and titi
+      - pullers database type are MongoDB
+      - databases uri are titi
+      - databases db are tata
+      - databases collection are tutu and huhu
 
     """
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}},
-            'output': {'mongodb': {'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}
+    args =     { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto',
+                                                                                 'uri': 'titi', 'db': 'tata', 'collection': 'tutu'},
+                                                                        'titi': {'model': 'hwpc_report', 'name': 'titi',
+                                                                                 'uri': 'titi', 'db': 'tata', 'collection': 'huhu'}}}}
+    generator = PullerGenerator(None)
+    result = generator.generate(args)
 
-    puller_generator = PullerGenerator(None)
-    result = puller_generator.generate(args)
-
+    assert len(result) == 2
+    assert 'toto' in result
     puller = result['toto']
-    puller_db = puller.state.database
+    assert isinstance(puller, PullerActor)
+    assert puller.name == 'toto'
 
-    pusher_generator = PusherGenerator()
-    result = pusher_generator.generate(args)
+    db = puller.state.database
 
-    pusher = result['hoho']
+    assert isinstance(db, MongoDB)
+    assert db.uri == 'titi'
+    assert db.db_name == 'tata'
+    assert db.collection_name == 'tutu'
 
-    pusher_db = pusher.state.database
+    assert 'titi' in result
+    puller = result['titi']
+    assert isinstance(puller, PullerActor)
+    assert puller.name == 'titi'
 
-    assert pusher_db.uri == puller_db.uri
-    assert pusher_db.db_name == puller_db.db_name
-    assert pusher_db.collection_name == 'tete'
-    assert puller_db.collection_name == 'tutu'
+    db = puller.state.database
+
+    assert isinstance(db, MongoDB)
+    assert db.uri == 'titi'
+    assert db.db_name == 'tata'
+    assert db.collection_name == 'huhu'
+
+
+# def test_generate_puller_and_pusher_with_same_database():
+#     """
+#     generate mongodb puller and pusher from this config :
+#     {'verbose': True, 'stream': True, 'input': {'mongodb': 'toto': {{'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+#                                                 'collection': 'tutu'}}},
+#      'output': {'mongodb': 'hoho': {{'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}}
+#     as the database have the same uri and same database name, this value are not specified on the configuration of the output
+
+#     Test if :
+#       - puller and pusher database uri is titi
+#       - puller and pusher database db is tata
+#       - puller database collection is tutu
+#       - pusher database collection is tete
+
+#     """
+#     args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
+#                                                                    'db': 'tata', 'collection': 'tutu'}}},
+#             'output': {'mongodb': {'hoho': {'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}}
+
+#     puller_generator = PullerGenerator(None)
+#     result = puller_generator.generate(args)
+
+#     puller = result['toto']
+#     puller_db = puller.state.database
+
+#     pusher_generator = PusherGenerator()
+#     result = pusher_generator.generate(args)
+
+#     pusher = result['hoho']
+
+#     pusher_db = pusher.state.database
+
+#     assert pusher_db.uri == puller_db.uri
+#     assert pusher_db.db_name == puller_db.db_name
+#     assert pusher_db.collection_name == 'tete'
+#     assert puller_db.collection_name == 'tutu'

@@ -67,6 +67,18 @@ class ParserException(PowerAPIException):
         self.argument_name = argument_name
 
 
+class NoNameSpecifiedForComponentException(ParserException):
+    """
+    Exception raised when attempting to parse substring thant describe a component which not contains the component name
+    """
+
+
+class ComponentAlreadyExistException(ParserException):
+    """
+    Exception raised when attempting to parse a substring to create a component with a name that already exist
+    """
+
+
 class BadValueException(ParserException):
     """
     Exception raised when attempting to parse a value that doens't respect the
@@ -75,6 +87,12 @@ class BadValueException(ParserException):
     def __init__(self, argument_name, msg):
         ParserException.__init__(self, argument_name)
         self.msg = msg
+
+
+class SubParserWithoutNameArgumentException(PowerAPIException):
+    """
+    Exception raised when a subparser without argument name is added to a parser
+    """
 
 
 class TooManyArgumentNamesException(ParserException):
@@ -437,11 +455,11 @@ class MainParser(Parser):
                             type=type)
         self._add_argument_names(names, flag)
 
-    def add_component_subparser(self, component_name, subparser, help_str=''):
+    def add_component_subparser(self, component_type, subparser, help_str=''):
         """
         Add a subparser that will be used by the argument *component_name*
 
-        :param str component_name:
+        :param str component_type:
         :param ComponentSubParser subparser:
 
         :raise AlreadyAddedArgumentException: when attempting to add an
@@ -454,17 +472,31 @@ class MainParser(Parser):
 
             subparser = self.subparsers_group[arg].get_subparser(val)
             args, subparse_result = subparser.subparse(args)
-            acc[arg][subparser.name] = subparse_result
+
+            if 'name' not in subparse_result:
+                raise NoNameSpecifiedForComponentException(component_type)
+
+            component_name = subparse_result['name']
+
+            if subparser.name not in acc[arg]:
+                acc[arg][subparser.name] = {}
+
+            if component_name in acc[arg][subparser.name]:
+                raise ComponentAlreadyExistException(component_name)
+
+            acc[arg][subparser.name][component_name] = subparse_result
             return args, acc
 
-        if component_name not in self.subparsers_group:
-            self.subparsers_group[component_name] = SubParserGroup(component_name, help_str=help_str)
-            self.add_argument(component_name, action=_action, help=help_str)
+        if 'name' not in subparser.actions:
+            raise SubParserWithoutNameArgumentException()
+        if component_type not in self.subparsers_group:
+            self.subparsers_group[component_type] = SubParserGroup(component_type, help_str=help_str)
+            self.add_argument(component_type, action=_action, help=help_str)
         else:
-            if self.subparsers_group[component_name].contains(subparser.name):
+            if self.subparsers_group[component_type].contains(subparser.name):
                 raise AlreadyAddedArgumentException(subparser.name)
 
-        self.subparsers_group[component_name].add_subparser(subparser.name, subparser)
+        self.subparsers_group[component_type].add_subparser(subparser.name, subparser)
 
         for action_name, action in subparser.actions.items():
             self._add_argument_names([action_name], action.is_flag)

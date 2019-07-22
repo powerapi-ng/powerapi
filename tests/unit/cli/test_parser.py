@@ -35,7 +35,8 @@ import pytest
 from powerapi.cli.parser import Parser, MainParser, ComponentSubParser
 from powerapi.cli.parser import store_true
 from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
-from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException
+from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, ComponentAlreadyExistException
+from powerapi.cli.parser import SubParserWithoutNameArgumentException, NoNameSpecifiedForComponentException
 from powerapi.cli.parser import TooManyArgumentNamesException, BadValueException
 
 
@@ -200,19 +201,21 @@ def test_subparser():
     - "" : {}
     - "-z" : UnknowArgException(z)
     - "-a" : {a: True}
-    - "-a --sub toto -b" : {a:True, sub: {'toto' : {b: True}}}
+    - "-a --sub toto -b" : NoNameSpecifiedForComponentException
+    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: {'toto' : {b: True}}}}
     - "-b" : BadContextException(b, [toto])
 
     Parser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b
+    - subparser toto binded to the argument sub with sub arguments : -b and --name
     """
     parser = MainParser(help_arg=False)
     parser.add_argument('a', flag=True, action=store_true)
 
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
     parser.add_component_subparser('sub', subparser)
 
     check_parsing_result(parser, '', {})
@@ -222,12 +225,52 @@ def test_subparser():
 
     check_parsing_result(parser, '-a', {'a': True})
 
-    check_parsing_result(parser, '-a --sub toto -b',
-                         {'a': True, 'sub': {'toto': { 'b': True}}})
+    with pytest.raises(NoNameSpecifiedForComponentException):
+        check_parsing_result(parser, '-a --sub toto -b', {})
+
+    check_parsing_result(parser, '-a --sub toto -b --name titi', {'a': True, 'sub': {'toto': {'titi': {'name': 'titi', 'b': True}}}})
 
     with pytest.raises(BadContextException):
         check_parsing_result(parser, '-b', None)
 
+
+def test_create_two_component():
+    """
+    Create two component of the same type with the following cli : 
+    --sub toto --name titi --sub toto -b --name tutu
+
+    test if the result is :
+    {sub:{'toto' : {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b':False}}}}
+
+    """
+    parser = MainParser(help_arg=False)
+
+    subparser = ComponentSubParser('toto')
+    subparser.add_argument('b', flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
+    parser.add_component_subparser('sub', subparser)
+
+    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'toto': {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b': True}}}})
+
+
+def test_create_component_that_already_exist():
+    """
+    Create two component with the same name with the following cli
+    --sub toto --name titi --sub toto --name titi
+
+    test if an ComponentAlreadyExistException is raised
+
+
+    """
+    parser = MainParser(help_arg=False)
+
+    subparser = ComponentSubParser('toto')
+    subparser.add_argument('b', flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
+    parser.add_component_subparser('sub', subparser)
+
+    with pytest.raises(ComponentAlreadyExistException):
+        check_parsing_result(parser, '--sub toto --name titi --sub toto --name titi', None)
 
 def test_argument_with_val():
     """
@@ -348,9 +391,11 @@ def test_add_component_subparser_that_aldready_exists():
     """
     parser = MainParser(help_arg=False)
     subparser = ComponentSubParser('titi')
+    subparser.add_argument('n', 'name')
     parser.add_component_subparser('toto', subparser)
     subparser2 = ComponentSubParser('titi')
-
+    subparser2.add_argument('n', 'name')
+    
     with pytest.raises(AlreadyAddedArgumentException):
         parser.add_component_subparser('toto', subparser2)
 
@@ -363,8 +408,21 @@ def test_add_component_subparser_with_two_name():
     parser = MainParser(help_arg=False)
     subparser = ComponentSubParser('titi')
     subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
+    subparser.add_argument('n', 'name')
     parser.add_component_subparser('sub', subparser)
-    check_parsing_result(parser, '--sub titi -a', {'sub': {'titi': {'aaa': True}}})
+    check_parsing_result(parser, '--sub titi -a --name tutu', {'sub': {'titi': {'tutu': {'aaa': True, 'name': 'tutu'}}}})
+
+
+def test_add_component_subparser_that_aldready_exists():
+    """
+    Add a component_subparser with no argument 'name'
+    test if a SubParserWithoutNameArgumentException is raised
+    """
+    parser = MainParser(help_arg=False)
+    subparser = ComponentSubParser('titi')
+
+    with pytest.raises(SubParserWithoutNameArgumentException):
+        parser.add_component_subparser('toto', subparser)
 
 
 def test_parse_empty_string_default_value():
