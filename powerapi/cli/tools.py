@@ -32,6 +32,7 @@ import sys
 import logging
 
 from functools import reduce
+from powerapi.exception import PowerAPIException
 from powerapi.cli.parser import MainParser, ComponentSubParser
 from powerapi.cli.parser import store_true
 from powerapi.cli.parser import BadValueException, MissingValueException
