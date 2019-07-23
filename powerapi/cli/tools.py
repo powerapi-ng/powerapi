@@ -186,6 +186,20 @@ class Generator:
         raise NotImplementedError()
 
 
+class ModelNameAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a DBActorGenerator a model factory with a name already bound to another
+    model factory in the DBActorGenerator
+    """
+
+
+class ModelNameAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a DBActorGenerator a database factory with a name already bound to another
+    database factory in the DBActorGenerator
+    """
+
+
 class DBActorGenerator(Generator):
 
     def __init__(self, component_group_name):
@@ -202,6 +216,16 @@ class DBActorGenerator(Generator):
             'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
             'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
         }
+
+    def add_model_factory(self, model_name, model_factory):
+        if model_name in self.model_factory:
+            raise ModelNameAlreadyUsed()
+        self.model_factory[model_name] = model_factory
+
+    def add_db_factory(self, db_name, db_factory):
+        if db_name in self.model_factory:
+            raise ModelNameAlreadyUsed()
+        self.model_factory[db_name] = db_factory
 
     def _generate_db(self, db_name, db_config, main_config):
         return self.db_factory[db_name](db_config)
