@@ -455,17 +455,37 @@ class MainParser(Parser):
                             type=type)
         self._add_argument_names(names, flag)
 
+    def add_config_subparser(self, component_type, subparser, help_str=''):
+        def _action(arg, val, args, acc):
+            if arg not in acc:
+                acc[arg] = {}
+
+            subparser = self.subparsers_group[arg].get_subparser(val)
+            args, subparse_result = subparser.subparse(args)
+
+            if 'name' not in subparse_result:
+                raise NoNameSpecifiedForComponentException(component_type)
+
+            subparse_result['type'] = val
+            acc[arg][subparse_result['name']] = subparse_result
+            return args, acc
+
+        if 'name' not in subparser.actions:
+            raise SubParserWithoutNameArgumentException()
+
+        if component_type not in self.subparsers_group:
+            self.subparsers_group[component_type] = SubParserGroup(component_type, help_str=help_str)
+            self.add_argument(component_type, action=_action, help=help_str)
+        else:
+            if self.subparsers_group[component_type].contains(subparser.name):
+                raise AlreadyAddedArgumentException(subparser.name)
+
+        self.subparsers_group[component_type].add_subparser(subparser.name, subparser)
+
+        for action_name, action in subparser.actions.items():
+            self._add_argument_names([action_name], action.is_flag)
+
     def add_formula_subparser(self, component_type, subparser, help_str=''):
-        """
-        Add a subparser that will be used by the argument *component_name*
-
-        :param str component_type:
-        :param ComponentSubParser subparser:
-
-        :raise AlreadyAddedArgumentException: when attempting to add an
-                                              argument that already have been
-                                              added to this parser
-        """
         def _action(arg, val, args, acc):
             if arg not in acc:
                 acc[arg] = {}

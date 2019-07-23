@@ -57,16 +57,61 @@ def extract_file_names(arg, val, args, acc):
     return args, acc
 
 
+def exit_with_error(msg):
+    print(msg, file=sys.stderr)
+    sys.exit()
+
+
 class CommonCLIParser(MainParser):
 
     def __init__(self):
         MainParser.__init__(self)
 
+        # Main options
+
         self.add_argument('v', 'verbose', flag=True, action=enable_log, default=logging.NOTSET,
                           help='enable verbose mode')
         self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
 
+        # Default Config Options
+
+        subparser_mongo_config = ComponentSubParser('mongodb')
+        subparser_mongo_config.add_argument('u', 'uri', help='sepcify MongoDB uri')
+        subparser_mongo_config.add_argument('d', 'db', help='specify MongoDB database name', )
+        subparser_mongo_config.add_argument('c', 'collection', help='specify MongoDB database collection')
+        subparser_mongo_config.add_argument('n', 'name', help='specify database config name')
+
+        self.add_config_subparser('default_db_config', subparser_mongo_config,
+                                     help_str='specify a database configuration : --default_db_config database_config_name DEFAULT_ARG1 DEFAULT_ARG2 ... ')
+
+        subparser_csv_config = ComponentSubParser('csv')
+        subparser_csv_config.add_argument('f', 'files', help='specify input csv files with this format : file1,file2,file3',
+                                          action=extract_file_names, default=[], check=check_csv_files,
+                                          check_msg='one or more csv files couldn\'t be read')
+        subparser_csv_config.add_argument('d', 'directory', help='specify directory where where output  csv files will be writen')
+        subparser_csv_config.add_argument('n', 'name', help='specify database config name')
+        self.add_config_subparser('default_db_config', subparser_csv_config,
+                                  help_str='specify a database configuration : --default_db_config database_config_name DEFAULT_ARG1 DEFAULT_ARG2 ... ')
+
+        subparser_influx_config = ComponentSubParser('influxdb')
+        subparser_influx_config.add_argument('u', 'uri', help='sepcify InfluxDB uri')
+        subparser_influx_config.add_argument('d', 'db', help='specify InfluxDB database name')
+        subparser_influx_config.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
+        subparser_influx_config.add_argument('n', 'name', help='specify database config name')
+        self.add_config_subparser('default_db_config', subparser_influx_config,
+                                  help_str='specify a database configuration : --default_db_config database_config_name DEFAULT_ARG1 DEFAULT_ARG2 ... ')
+
+        subparser_opentsdb_config = ComponentSubParser('opentsdb')
+        subparser_opentsdb_config.add_argument('u', 'uri', help='sepcify openTSDB host')
+        subparser_opentsdb_config.add_argument('p', 'port', help='specify openTSDB connection port', type=int)
+        subparser_opentsdb_config.add_argument('metric_name', help='specify metric name')
+        subparser_opentsdb_config.add_argument('n', 'name', help='specify database config name', default='pusher_opentsdb')
+        self.add_config_subparser('default_db_config', subparser_opentsdb_config,
+                                  help_str='specify a database configuration : --default_db_config database_config_name DEFAULT_ARG1 DEFAULT_ARG2 ... ')
+        # Input Options
+
         subparser_mongo_input = ComponentSubParser('mongodb')
+        subparser_mongo_input.add_argument('config', help='specify default configuration name')
         subparser_mongo_input.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name', )
         subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection')
@@ -77,6 +122,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_csv_input = ComponentSubParser('csv')
+        subparser_csv_input.add_argument('config', help='specify default configuration name')
         subparser_csv_input.add_argument('f', 'files',
                                          help='specify input csv files with this format : file1,file2,file3',
                                          action=extract_file_names, default=[], check=check_csv_files,
@@ -87,7 +133,10 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('input', subparser_csv_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+        # Output Options
+
         subparser_mongo_output = ComponentSubParser('mongodb')
+        subparser_mongo_output.add_argument('config', help='specify default configuration name')
         subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
         subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
@@ -99,6 +148,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_csv_output = ComponentSubParser('csv')
+        subparser_csv_output.add_argument('config', help='specify default configuration name')
         subparser_csv_output.add_argument('d', 'directory',
                                           help='specify directory where where output  csv files will be writen')
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
@@ -108,6 +158,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_influx_output = ComponentSubParser('influxdb')
+        subparser_influx_output.add_argument('config', help='specify default configuration name')
         subparser_influx_output.add_argument('u', 'uri', help='sepcify InfluxDB uri')
         subparser_influx_output.add_argument('d', 'db', help='specify InfluxDB database name')
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
@@ -118,6 +169,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_opentsdb_output = ComponentSubParser('opentsdb')
+        subparser_opentsdb_output.add_argument('config', help='specify default configuration name')
         subparser_opentsdb_output.add_argument('u', 'uri', help='sepcify openTSDB host')
         subparser_opentsdb_output.add_argument('p', 'port', help='specify openTSDB connection port', type=int)
         subparser_opentsdb_output.add_argument('metric_name', help='specify metric name')
@@ -134,29 +186,27 @@ class CommonCLIParser(MainParser):
 
         except BadValueException as exn:
             msg = 'CLI error : argument ' + exn.argument_name + ' : ' + exn.msg
-            print(msg, file=sys.stderr)
+            exit_with_error(msg)
 
         except MissingValueException as exn:
             msg = 'CLI error : argument ' + exn.argument_name + ' : expect a value'
-            print(msg, file=sys.stderr)
+            exit_with_error(msg)
 
         except BadTypeException as exn:
             msg = 'CLI error : argument ' + exn.argument_name + ' : expect '
             msg += exn.article + ' ' + exn.type_name
-            print(msg, file=sys.stderr)
+            exit_with_error(msg)
 
         except UnknowArgException as exn:
             msg = 'CLI error : unknow argument ' + exn.argument_name
-            print(msg, file=sys.stderr)
+            exit_with_error(msg)
 
         except BadContextException as exn:
             msg = 'CLI error : argument ' + exn.argument_name
             msg += ' not used in the correct context\nUse it with the following arguments :'
             for main_arg_name, context_name in exn.context_list:
                 msg += '\n  --' + main_arg_name + ' ' + context_name
-            print(msg, file=sys.stderr)
-
-        sys.exit()
+            exit_with_error(msg)
 
 
 class Generator:
@@ -178,8 +228,7 @@ class Generator:
                 except KeyError as exn:
                     msg = 'CLI error : argument ' + exn.args[0]
                     msg += ' needed with --output ' + component_type
-                    print(msg, file=sys.stderr)
-                    sys.exit()
+                    exit_with_error(msg)
 
         return actors
 
@@ -226,14 +275,34 @@ class DBActorGenerator(Generator):
     def add_db_factory(self, db_name, db_factory):
         if db_name in self.model_factory:
             raise ModelNameAlreadyUsed()
-        self.model_factory[db_name] = db_factory
+        self.db_factory[db_name] = db_factory
 
     def _generate_db(self, db_name, db_config, main_config):
-        return self.db_factory[db_name](db_config)
+        try:
+            return self.db_factory[db_name](db_config)
+        except KeyError as exn:
+            key = exn.args[0]
+            if 'config' not in db_config or 'default_db_config' not in main_config:
+                raise exn
+
+            elif db_config['config'] in main_config['default_db_config']:
+                default_config = main_config['default_db_config'][db_config['config']]
+                db_config[key] = default_config[key]
+                return self._generate_db(db_name, db_config, main_config)
+
+            else:
+                msg = 'CLI error : no database configuration named ' + db_config['config']
+                exit_with_error(msg)
+
 
 
     def _gen_actor(self, db_name, db_config, main_config):
         db = self._generate_db(db_name, db_config, main_config)
+
+        if db_config['model'] not in self.model_factory:
+            msg = 'CLI error : unknow model ' + db_config['model']
+            exit_with_error(msg)
+
         model = self.model_factory[db_config['model']]
         name = db_config['name']
         return self._actor_factory(name, db, model, main_config['stream'], main_config['verbose'])
