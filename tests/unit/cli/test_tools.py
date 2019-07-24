@@ -63,7 +63,7 @@ def test_no_input_specified():
 def test_generate_puller_from_simple_config():
     """
     generate mongodb puller from this config :
-    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
                                              'collection': 'tutu'}}}}
 
     Test if :
@@ -76,7 +76,7 @@ def test_generate_puller_from_simple_config():
       - database collection is tutu
 
     """
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
+    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
                                                                    'db': 'tata', 'collection': 'tutu'}}}}
     generator = PullerGenerator(None)
     result = generator.generate(args)
@@ -98,9 +98,9 @@ def test_generate_puller_from_simple_config():
 def test_generate_two_pusher():
     """
     generate two mongodb puller from this config :
-    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
                                              'collection': 'tutu'},
-                                                             'titi': {'model': 'hwpc_report', 'name': 'titi', 'uri': 'titi', 'db': 'tata',
+                                                             'titi': {'model': 'HWPCReport', 'name': 'titi', 'uri': 'titi', 'db': 'tata',
                                              'collection': 'huhu'}}}}
 
     Test if :
@@ -113,9 +113,9 @@ def test_generate_two_pusher():
       - databases collection are tutu and huhu
 
     """
-    args =     { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto',
+    args =     { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto',
                                                                                  'uri': 'titi', 'db': 'tata', 'collection': 'tutu'},
-                                                                        'titi': {'model': 'hwpc_report', 'name': 'titi',
+                                                                        'titi': {'model': 'HWPCReport', 'name': 'titi',
                                                                                  'uri': 'titi', 'db': 'tata', 'collection': 'huhu'}}}}
     generator = PullerGenerator(None)
     result = generator.generate(args)
@@ -149,9 +149,9 @@ def test_generate_two_pusher():
 # def test_generate_puller_and_pusher_with_same_database():
 #     """
 #     generate mongodb puller and pusher from this config :
-#     {'verbose': True, 'stream': True, 'input': {'mongodb': 'toto': {{'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+#     {'verbose': True, 'stream': True, 'input': {'mongodb': 'toto': {{'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
 #                                                 'collection': 'tutu'}}},
-#      'output': {'mongodb': 'hoho': {{'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}}
+#      'output': {'mongodb': 'hoho': {{'model': 'HWPCReport', 'name': 'hoho', 'collection': 'tete'}}}}
 #     as the database have the same uri and same database name, this value are not specified on the configuration of the output
 
 #     Test if :
@@ -161,9 +161,9 @@ def test_generate_two_pusher():
 #       - pusher database collection is tete
 
 #     """
-#     args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'hwpc_report', 'name': 'toto', 'uri': 'titi',
+#     args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
 #                                                                    'db': 'tata', 'collection': 'tutu'}}},
-#             'output': {'mongodb': {'hoho': {'model': 'hwpc_report', 'name': 'hoho', 'collection': 'tete'}}}}
+#             'output': {'mongodb': {'hoho': {'model': 'HWPCReport', 'name': 'hoho', 'collection': 'tete'}}}}
 
 #     puller_generator = PullerGenerator(None)
 #     result = puller_generator.generate(args)
