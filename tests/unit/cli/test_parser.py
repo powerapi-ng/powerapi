@@ -458,56 +458,6 @@ def test_parse_empty_string_default_value():
     assert 'a' in result
     assert result['a'] == 1
 
-
-# default config test
-def test_parse_default_config():
-    """
-    parse the following cli with a parser that contain only a default config:
-
-    --default_db_config mongodb --name mongodb_base_config --uri titi --db tata
-
-    test if the following dictionary is returned :
-
-    {'default_db_config': {
-         'mongodb_base_config': {
-             'type': 'mongodb',
-             'uri': 'titi',
-             'name': 'mongodb_base_config',
-             'db': 'tata'}}}
-
-    """
-    input_str = '--default_db_config mongodb --name mongodb_base_config --uri titi --db tata'
-    output_dict = {
-        'default_db_config': {
-            'mongodb_base_config': {
-                'type': 'mongodb',
-                'uri': 'titi',
-                'name': 'mongodb_base_config',
-                'db': 'tata'}}}
-
-
-    parser = MainParser(help_arg=False)
-
-    subparser = ComponentSubParser('mongodb')
-    subparser.add_argument('n', 'name')
-    subparser.add_argument('u', 'uri')
-    subparser.add_argument('d', 'db')
-    parser.add_config_subparser('default_db_config', subparser)
-
-    check_parsing_result(parser, input_str, output_dict)
-
-
-def test_add_config_subparser_without_name():
-    """
-    Add a config_subparser with no argument 'name'
-    test if a SubParserWithoutNameArgumentException is raised
-    """
-    parser = MainParser(help_arg=False)
-    subparser = ComponentSubParser('titi')
-
-    with pytest.raises(SubParserWithoutNameArgumentException):
-        parser.add_config_subparser('toto', subparser)
-
 ############################
 # COMPONENT_SUBPARSER TEST #
 ############################
