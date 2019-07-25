@@ -27,8 +27,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.report_model.report_model import ReportModel, BadInputData
-from powerapi.report_model.report_model import CSV_HEADER_COMMON, CSV_HEADER_HWPC, CSV_HEADER_POWER
-from powerapi.report_model.hwpc_model import HWPCModel
-from powerapi.report_model.power_model import PowerModel
-from powerapi.report_model.formula_model import FormulaModel
+from typing import Dict, List, Tuple
+
+from powerapi.report import Report, FormulaReport
+from powerapi.exception import PowerAPIException
+
+class FormulaModel:
+    """
+    ReportModel class.
+
+    It define all the function that need to be override if we want
+    to format the raw data read in different kind of database.
+    """
+
+    def get_type(self) -> type:
+        """
+        Return the type of report
+        """
+        return FormulaReport
+
+    def from_mongodb(self, json: Dict) -> Dict:
+        """
+        Get the mongodb report
+        """
+        # Re arrange the json before return it by removing '_id' field
+        json.pop('_id', None)
+
+        return json
+
+    def to_mongodb(self, serialized_report: Report) -> Dict:
+        """
+        Return raw data from serialized report
+        """
+        return serialized_report
