@@ -51,8 +51,7 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_basic=0,
-                 timeout_sleeping=100):
+    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_puller):
         """
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
@@ -74,11 +73,8 @@ class PullerState(State):
         #: (bool): Stream mode
         self.stream_mode = stream_mode
 
-        #: (int): Timeout for "basic mode"
-        self.timeout_basic = timeout_basic
-
-        #: (int): Timeout for "sleeping mode" (allow to free the CPU)
-        self.timeout_sleeping = timeout_sleeping
+        #: (require stream mode = True) time (in ms) between two database reading
+        self.timeout_puller = timeout_puller
 
         #: (int): Counter for "sleeping mode"
         self.counter = 0
@@ -93,17 +89,18 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
-                 timeout=0, timeout_sleeping=100):
+                 timeout=0, timeout_puller=100):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
         :param int level_logger: Define the level of the logger
+        :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
         """
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout, timeout_sleeping)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller)
 
     def setup(self):
         """

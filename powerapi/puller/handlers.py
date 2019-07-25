@@ -74,7 +74,6 @@ class DBPullerThread(Thread):
         """
 
         while self.state.alive:
-            # time.sleep(self.timeout)
             try:
                 report = self._pull_database()
                 dispatchers = self._get_dispatchers(report)
@@ -82,6 +81,7 @@ class DBPullerThread(Thread):
                     dispatcher.send_data(report)
 
             except NoReportExtractedException:
+                time.sleep(self.state.timeout_puller/1000)
                 if not self.state.stream_mode:
                     return
 

@@ -130,7 +130,7 @@ class TestHandlerPuller:
           - each 500 ms, the handler check the control socket for message
         """
 
-        state = PullerState(Mock(),get_fake_db(), get_fake_filter(), Mock(), True)
+        state = PullerState(Mock(),get_fake_db(), get_fake_filter(), Mock(), True, 100)
         # state.actor.socket_interface = Mock()
         state.actor.receive_control = Mock(return_value=None)
         handler = PullerStartHandler(state, 0.1)
@@ -166,7 +166,7 @@ class TestHandlerPuller:
                                    fake_database,
                                    fake_filter,
                                    HWPCModel(),
-                                   False)
+                                   False, 100)
         puller_state.actor.receive_control = Mock(return_value=None)
 
         assert puller_state.initialized is False
