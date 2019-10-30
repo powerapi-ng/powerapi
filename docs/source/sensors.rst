@@ -2,7 +2,7 @@
 Sensors
 =======
 
-This page lists the **sensors** which are currently supported by **PowerAPI**. In particular, sensors are in charge of collecting the raw metrics that are further processed to estimate the power consumption of software artefacts.
+This page lists the **sensors**, which are currently supported by **PowerAPI**. In particular, sensors are in charge of collecting the raw metrics that are further processed to estimate the power consumption of software artefacts.
 
 .. note::
 
@@ -35,8 +35,8 @@ This command monitors the following hardware performance counters: ``INSTRUCTION
 
 The parameters to be specified are:
 
-* **HWPC_DOCKER_IMAGE**:**HWPC-Sensor** docker image name.
-* **SENSOR_NAME**: Sensor name.
-* **MONGO_ADDRESS**: MongoDB server address.
-* **DATABASE_NAME**: MongoDB database name.
+* **HWPC_DOCKER_IMAGE**:**HWPC-Sensor** docker image name,
+* **SENSOR_NAME**: Sensor name,
+* **MONGO_ADDRESS**: MongoDB server address,
+* **DATABASE_NAME**: MongoDB database name,
 * **COLLECTION_NAME**: MongoDB collection name.
