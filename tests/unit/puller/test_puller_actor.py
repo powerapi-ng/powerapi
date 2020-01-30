@@ -28,162 +28,77 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import time
-from threading import Thread
+import logging
+
+from multiprocessing import Queue
+
+import pytest
+
 from mock import Mock
+from powerapi.report import Report
+from powerapi.puller import PullerActor
 
-from powerapi.report import Report, create_report_root
-from powerapi.report_model import HWPCModel
-from powerapi.puller import PullerActor, PullerState
-from powerapi.puller import PullerStartHandler
-from powerapi.actor import SocketInterface, Supervisor
-from powerapi.message import OKMessage, ErrorMessage, StartMessage
-
-#########################################
-# Initialization functions
-#########################################
+from ..actor.abstract_test_actor import AbstractTestActor
+from ..db_utils import FakeDB
 
 
-class FakeReport(Report):
-    """ FakeReport for testing """
+def define_database_content(content):
+    def wrap(func):
+        setattr(func, '_content', content)
+        return func
+    return wrap
 
+def pytest_generate_tests(metafunc):
+    """
+    Function called by pytest when collecting a test_XXX function
+
+    define the content fixtures in test environement with collected the
+    value _content if it exist or with an empty content
+
+    :param metafunc: the test context given by pytest
+    """
+    if 'content' in metafunc.fixturenames:
+        content = getattr(metafunc.function, '_content', None)
+        if isinstance(content, list):
+            metafunc.parametrize('content', [content])
+        else:
+            metafunc.parametrize('content', [[]])
+
+class FakeDispatcher:
+    
     def __init__(self):
-        Report.__init__(self, None, None, None)
-        self.value = None
+        self.q = Queue()
 
-    def serialize(self):
-        """ Override """
-        pass
+    def send_data(self, report):
+        self.q.put(report, block=False)
 
-    def deserialize(self, json):
-        """ Override """
-        self.value = json
-        return self.value
+class TestPuller(AbstractTestActor):
+    
+    @pytest.fixture
+    def fake_db(self, content):
+        return FakeDB(content)
 
+    @pytest.fixture
+    def fake_dispatcher(self):
+        return FakeDispatcher()
 
-def get_fake_db():
-    """ Return a fake DB """
+    @pytest.fixture
+    def actor(self, fake_db, fake_dispatcher):
+        fake_filter = Mock()
+        fake_filter.filters = []
+        fake_filter.route = Mock(return_value=[fake_dispatcher])
+        fake_filter.get_type = Mock(return_value=Report)
+        return PullerActor('puller_test', fake_db, fake_filter, 0, level_logger=logging.DEBUG)
 
+    def test_starting_actor_make_it_connect_to_database(self, started_actor, fake_db):
+        assert fake_db.q.get(timeout=2) == 'connected'
 
+    @define_database_content([Report(1, 2, 3), Report(4, 5, 6)])
+    def test_start_actor_with_db_thath_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor, fake_dispatcher, content):
+        for report in content:
+            assert fake_dispatcher.q.get(timeout=2) == report
 
-    values = [2, 3]
-    fake_iter = Mock()
-    def _next(_):
-        if not values:
-            raise StopIteration()
-        return values.pop()
+    def test_starting_actor_in_stream_mode_make_it_termiante_itself_after_empty_db(self, started_actor):
+        started_actor.join(2)
+        assert started_actor.is_alive() is False
 
-    def _iter(_):
-        return iter([])
-
-    fake_iter.__next__ = _next
-    fake_iter.__iter__ = _iter
-
-    fake_mongo = Mock(stream_mode=False)
-    fake_mongo.iter = Mock(return_value=fake_iter)
-    return fake_mongo
-
-
-def get_fake_filter():
-    """
-    Return a fake Filter
-    .filters    => []
-    .route()    => return 10
-    .get_type() => return FakeReport
-    """
-    fake_filter = Mock()
-    fake_filter.filters = []
-    fake_filter.route = Mock(return_value=[])
-    fake_filter.get_type = Mock(return_value=FakeReport)
-    return fake_filter
-
-
-def get_fake_socket_interface():
-    """ Return a fake SockerInterface """
-    return Mock(spec_set=SocketInterface)
-
-
-#########################################
-
-
-class TestPullerActor:
-    """ TestPullerActor class """
-
-    def test_no_stream(self):
-        """ Test if the actor kill himself after reading db """
-        puller = PullerActor("puller_mongo", get_fake_db(),
-                             get_fake_filter(), 0)
-        supervisor = Supervisor()
-        supervisor.launch_actor(puller)
-        puller.join()
-        assert puller.is_alive() is False
-
-
-class TestHandlerPuller:
-    """ TestHandlerPuller class """
-
-    def test_puller_start_handler_ctrl_socket_access(self):
-        """
-        handle a StartMessage with a Mocked PullerStartHandler in an other thread
-
-        Test if :
-          - each 500 ms, the handler check the control socket for message
-        """
-
-        state = PullerState(Mock(),get_fake_db(), get_fake_filter(), Mock(), True, 100)
-        # state.actor.socket_interface = Mock()
-        state.actor.receive_control = Mock(return_value=None)
-        handler = PullerStartHandler(state, 0.1)
-
-        class TestThread(Thread):
-            def run(self):
-                handler.handle(StartMessage())
-
-        nb_call = state.actor.socket_interface.receive_control.call_count
-        assert nb_call == 0
-
-        thread = TestThread()
-        thread.start()
-
-        for i in range(4):
-            time.sleep(0.5)
-            new_nb_call = handler.state.actor.receive_control.call_count
-            assert new_nb_call > nb_call
-            nb_call = new_nb_call
-
-        state.alive = False
-
-    def test_puller_start_handler(self):
-        """
-        Test the StartHandler of PullerActor
-        """
-
-        # Define PullerState
-        fake_database = get_fake_db()
-        fake_socket_interface = get_fake_socket_interface()
-        fake_filter = get_fake_filter()
-        puller_state = PullerState(Mock(),
-                                   fake_database,
-                                   fake_filter,
-                                   HWPCModel(),
-                                   False, 100)
-        puller_state.actor.receive_control = Mock(return_value=None)
-
-        assert puller_state.initialized is False
-
-        # Define StartHandler
-        start_handler = PullerStartHandler(puller_state, 0.1)
-
-        # Test Random message when state is not initialized
-        to_send = [OKMessage(), ErrorMessage("Error"),
-                   create_report_root({})]
-        for msg in to_send:
-            start_handler.handle(msg)
-            assert fake_database.method_calls == []
-            assert fake_socket_interface.method_calls == []
-            assert fake_filter.method_calls == []
-            assert puller_state.initialized is False
-
-        # Try to initialize the state
-        start_handler.handle(StartMessage())
-        assert puller_state.initialized is True
