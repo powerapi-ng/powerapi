@@ -26,10 +26,42 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from powerapi.database import BaseDB
+import pytest
 from multiprocessing import Queue
 
+from powerapi.message import StartMessage
+from powerapi.database import BaseDB
+from powerapi.report import Report
+from .actor.abstract_test_actor import AbstractTestActor
+
+def define_database_content(content):
+    def wrap(func):
+        setattr(func, '_content', content)
+        return func
+    return wrap
+
+class AbstractTestActorWithDB(AbstractTestActor):
+
+    @pytest.fixture
+    def fake_db(self, content):
+        return FakeDB(content)
+
+    @pytest.fixture
+    def started_actor(self, init_actor, fake_db):
+        init_actor.send_control(StartMessage())
+        # remove OkMessage from control socket
+        _ = init_actor.receive_control(2000)
+        # remove 'connected' string from Queue
+        _ = fake_db.q.get(timeout=2)
+        return init_actor
+
+    def test_starting_actor_make_it_connect_to_database(self, init_actor, fake_db):
+        init_actor.send_control(StartMessage())
+        assert fake_db.q.get(timeout=2) == 'connected'
+
+
+REPORT1 = Report(1, 2, 3)
+REPORT2 = Report(3, 4, 5)
 
 class FakeDB(BaseDB):
 
