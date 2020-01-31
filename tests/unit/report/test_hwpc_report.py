@@ -34,12 +34,6 @@ import datetime
 from powerapi.report.report import DeserializationFail
 from powerapi.report.hwpc_report import HWPCReport
 
-
-##############################################################################
-#                                Tests                                       #
-##############################################################################
-
-
 @pytest.mark.parametrize("json_input", [
     ({"timestamp": datetime.datetime.now(),
       "sensor": "fake-sensor",
@@ -47,7 +41,7 @@ from powerapi.report.hwpc_report import HWPCReport
       "groups": {}})
 ]
 )
-def test_hwpc_report_deserialize_work(json_input):
+def test_deserialize_good_hwpc_report_work(json_input):
     """
     Test working input for HWPCReport deserialize
     :param json_input: Data in input
@@ -71,13 +65,6 @@ def test_hwpc_report_deserialize_work(json_input):
       "target": "fake-target"})
 ]
 )
-def test_hwpc_report_deserialize_fail(json_input):
-    """
-    Test failure input for HWPCReport deserialize
-    :param json_input: Data in input
-    """
-    try:
+def test_deserialize_bad_hwpc_report_fail(json_input):
+    with pytest.raises(DeserializationFail):
         HWPCReport.deserialize(json_input)
-        assert False
-    except DeserializationFail:
-        assert True
