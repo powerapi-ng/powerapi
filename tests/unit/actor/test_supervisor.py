@@ -104,6 +104,7 @@ def supervisor(request):
 ###############
 # TEST LAUNCH #
 ###############
+
 def test_launch_actor(supervisor):
     """
     Create a supervisor and launch a FakeActor

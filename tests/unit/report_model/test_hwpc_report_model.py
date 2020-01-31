@@ -33,18 +33,12 @@ import pytest
 import datetime
 from powerapi.report_model.hwpc_model import HWPCModel, BadInputData
 
-##############################################################################
-#                                Fixtures                                    #
-##############################################################################
-
-
 @pytest.fixture()
 def hwpc_model():
     """
     :return: HWPCModel
     """
     return HWPCModel()
-
 
 ##############################################################################
 #                                Tests                                       #
@@ -63,16 +57,13 @@ def hwpc_model():
       "groups": {}})
 ]
 )
-def test_hwpc_report_from_mongodb_work(hwpc_model, json_input):
+def test_convert_hwpc_report_from_mongodb_work(hwpc_model, json_input):
     """
     Test working input for HWPCReport from_mongodb
     :param json_input: Data in input
     """
-    try:
-        hwpc_model.from_mongodb(json_input)
-        assert True
-    except BadInputData:
-        assert False
+    hwpc_model.from_mongodb(json_input)
+    assert True
 
 
 ####################
@@ -95,15 +86,12 @@ def test_hwpc_report_from_mongodb_work(hwpc_model, json_input):
       "cpu": 0}),
 ]
 )
-def test_hwpc_report_from_csvdb_work(hwpc_model, json_input):
+def test_convert_hwpc_report_from_csvdb_work(hwpc_model, json_input):
     """
     :param json_input: Data in input
     """
-    try:
-        hwpc_model.from_mongodb(json_input)
-        assert True
-    except BadInputData:
-        assert False
+    hwpc_model.from_mongodb(json_input)
+    assert True
 
 
 @pytest.mark.parametrize("json_input", [
@@ -130,8 +118,5 @@ def test_hwpc_report_from_csvdb_fail(hwpc_model, json_input):
     """
     :param json_input: Data in input
     """
-    try:
+    with pytest.raises(BadInputData):
         hwpc_model.from_csvdb("fake-name", json_input)
-        assert False
-    except BadInputData:
-        assert True
