@@ -32,6 +32,7 @@ import pytest
 from mock import Mock, patch
 import mock
 
+from ..actor.abstract_test_actor import AbstractTestActor
 from powerapi.dispatcher import FormulaDispatcherReportHandler
 from powerapi.dispatcher import DispatcherState, DispatcherActor
 from powerapi.dispatcher import RouteTable
@@ -43,6 +44,38 @@ from powerapi.actor import Actor, SocketInterface
 from powerapi.dispatcher import StartHandler, NoPrimaryDispatchRuleRuleException
 from powerapi.message import OKMessage, StartMessage, ErrorMessage
 
+
+def define_dispatch_rules(rules):
+    def wrap(func):
+        setattr(func, '_dispatch_rules', rules)
+        return func
+    return wrap
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Function called by pytest when collecting a test_XXX function
+
+    define the dispatch_rules fixtures in test environement with collected the
+    value _dispatch_rules if it exist or with an empty dispatch_rules
+
+    :param metafunc: the test context given by pytest
+    """
+    if 'dispatch_rules' in metafunc.fixturenames:
+        dispatch_rules = getattr(metafunc.function, '_dispatch_rules', None)
+        if isinstance(dispatch_rules, list):
+            metafunc.parametrize('dispatch_rules', [dispatch_rules])
+        else:
+            metafunc.parametrize('dispatch_rules', [[(Report1, DispatchRule1A(primary=True))]])
+
+class TestDispatcher(AbstractTestActor):
+
+    @pytest.fixture
+    def actor(self, dispatch_rules):
+        route_table = RouteTable()
+        for report_type, gbr in dispatch_rules:
+            route_table.dispatch_rule(report_type, gbr)
+        return DispatcherActor('dispatcher_test', Mock(), route_table)
 
 ##############################################################################
 
@@ -415,40 +448,7 @@ class TestHandlerFunction:
 
 ##############################################################################
 
-ACTOR_NAME = 'dispatcher_actor'
 
 
-@patch('powerapi.actor.SocketInterface')
-@pytest.fixture()
-def dispatcher_actor():
-    """ return an uninitialized actor """
-    dispatcher = DispatcherActor(ACTOR_NAME, Mock(), RouteTable())
-    dispatcher.state.socket_interface = Mock()
-    return dispatcher
 
 
-@pytest.fixture()
-def initialized_dispatcher_actor():
-    """ return an uninitialized actor """
-    route_table = RouteTable()
-
-    gbr = DispatchRule1A(primary=True)
-    route_table.dispatch_rule(Report1, gbr)
-    dispatcher = DispatcherActor(ACTOR_NAME, Mock(), route_table)
-    dispatcher.state.socket_interface = Mock()
-    dispatcher.setup()
-    return dispatcher
-
-
-def test_actor_initialisation(dispatcher_actor):
-    assert dispatcher_actor.state.alive is True
-
-
-def test_actor_setup_without_dispatch_rule(dispatcher_actor):
-    """ test to setup the dispatcher without seting a primary group by rule"""
-    with pytest.raises(NoPrimaryDispatchRuleRuleException):
-        dispatcher_actor.setup()
-
-
-def test_actor_setup(initialized_dispatcher_actor):
-    assert initialized_dispatcher_actor.state.route_table.primary_dispatch_rule is not None
