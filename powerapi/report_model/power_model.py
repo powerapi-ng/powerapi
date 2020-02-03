@@ -84,7 +84,11 @@ class PowerModel(ReportModel):
                 'target': serialized_report['target']}
 
         for name in serialized_report['metadata'].keys():
-            tags[name] = serialized_report['metadata'][name]
+            if name == 'ratio':
+                pass
+            else:
+                tags[name] = serialized_report['metadata'][name]
+            
 
         return {
             'measurement': 'power_consumption',
