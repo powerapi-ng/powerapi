@@ -1,42 +1,43 @@
-"""Copyright (c) 2018, INRIA Copyright (c) 2018, University of Lille All rights
-reserved.
+# Copyright (c) 2018, INRIA Copyright (c) 2018, University of Lille All rights
+# reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
 
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
 
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""
+import logging
+from multiprocessing import Queue
+from queue import Empty
+from mock import Mock
 
 import pytest
-from mock import Mock, patch
-import mock
 
-from ..actor.abstract_test_actor import AbstractTestActor
+from ..actor.abstract_test_actor import AbstractTestActor, FakeActor, is_actor_alive
 from powerapi.dispatcher import FormulaDispatcherReportHandler
 from powerapi.dispatcher import DispatcherState, DispatcherActor
 from powerapi.dispatcher import RouteTable
-from powerapi.message import UnknowMessageTypeException
+from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.report import Report, HWPCReport
 from powerapi.database import MongoDB
@@ -66,25 +67,7 @@ def pytest_generate_tests(metafunc):
         if isinstance(dispatch_rules, list):
             metafunc.parametrize('dispatch_rules', [dispatch_rules])
         else:
-            metafunc.parametrize('dispatch_rules', [[(Report1, DispatchRule1A(primary=True))]])
-
-class TestDispatcher(AbstractTestActor):
-
-    @pytest.fixture
-    def actor(self, dispatch_rules):
-        route_table = RouteTable()
-        for report_type, gbr in dispatch_rules:
-            route_table.dispatch_rule(report_type, gbr)
-        return DispatcherActor('dispatcher_test', Mock(), route_table)
-
-##############################################################################
-
-def get_fake_socket_interface():
-    """ Return a fake SockerInterface """
-    return mock.Mock(spec_set=SocketInterface)
-
-
-################################################################################
+            metafunc.parametrize('dispatch_rules', [[(Report1, DispatchRule1AB(primary=True))]])
 
 class Report1(Report):
     """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
@@ -201,6 +184,86 @@ REPORT_2_C2 = Report2('a', 'c', 'c2')
 # Report that could be return by the handle function
 SPLITED_REPORT_1_B2 = Report1('a', 'b2')
 SPLITED_REPORT_2_C2 = Report2('a', 'c2')
+
+
+class TestDispatcher(AbstractTestActor):
+
+    @pytest.fixture
+    def formula_queue(self):
+        return Queue()
+
+    @pytest.fixture
+    def actor(self, dispatch_rules, formula_queue):
+        route_table = RouteTable()
+        for report_type, gbr in dispatch_rules:
+            route_table.dispatch_rule(report_type, gbr)
+        return DispatcherActor('dispatcher_test', lambda name, verbose: FakeActor(name, [], verbose, queue=formula_queue),
+                               route_table, level_logger=logging.DEBUG)
+
+    @pytest.fixture
+    def dispatcher_with_formula(self, started_actor, dispatch_rules, formula_queue):
+        started_actor.send_data(REPORT_1)
+        formula_queue.get(timeout=0.5)
+        formula_queue.get(timeout=0.5)
+        formula_queue.get(timeout=0.5)
+        return started_actor
+
+    @pytest.fixture
+    def dispatcher_with_two_formula(self, dispatcher_with_formula, dispatch_rules, formula_queue):
+        dispatcher_with_formula.send_data(Report1('a', 'c'))
+        formula_queue.get(timeout=0.5)
+        formula_queue.get(timeout=0.5)
+        formula_queue.get(timeout=0.5)
+        return dispatcher_with_formula
+
+    @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
+    def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, started_actor):
+        started_actor.send_data(REPORT_1)
+        assert is_actor_alive(started_actor)
+
+    @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
+    def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, started_actor):
+        started_actor.send_data(REPORT_1)
+        is_actor_alive(started_actor)
+
+    @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
+    def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, started_actor, formula_queue):
+        started_actor.send_data(REPORT_1)
+        with pytest.raises(Empty):
+            formula_queue.get(timeout=0.5)
+
+    @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
+    def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_create_a_new_formula(self, started_actor, formula_queue):
+        started_actor.send_data(REPORT_1)
+        formula_name, _, _ = formula_queue.get(timeout=0.5)
+        assert formula_name == "('dispatcher_test', 'a', 'b')"
+        assert formula_queue.get(timeout=0.5) == 'start'
+
+    @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
+    def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self, dispatcher_with_formula, formula_queue):
+        dispatcher_with_formula.send_data(REPORT_1)
+        assert formula_queue.get(timeout=0.5) == REPORT_1
+        with pytest.raises(Empty):
+            print(formula_queue.get(timeout=0.5))
+
+    @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
+                            (Report2, DispatchRule2A())])
+    def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_forward_report_to_all_formula(self, dispatcher_with_two_formula, formula_queue):
+        dispatcher_with_two_formula.send_data(REPORT_2)
+        assert formula_queue.get(timeout=0.5) == REPORT_2
+        assert formula_queue.get(timeout=0.5) == REPORT_2
+        with pytest.raises(Empty):
+            print(formula_queue.get(timeout=0.5))
+
+    def test_send_PoisonPillMessage_make_dispatcher_hard_kill_formula(self, dispatcher_with_two_formula, formula_queue):
+        dispatcher_with_two_formula.send_control(PoisonPillMessage())
+        assert formula_queue.get(timeout=0.5) == 'hard kill'
+        assert formula_queue.get(timeout=0.5) == 'hard kill'
+
+
+###############################################
+## TEST METIER DE L'EXTRACTION DU FORMULA ID ##
+###############################################
 
 
 def init_state():
@@ -444,11 +507,3 @@ class TestHandlerFunction:
         # Try to initialize the state
         start_handler.handle(StartMessage())
         assert dispatcher_state.initialized is True
-
-
-##############################################################################
-
-
-
-
-
