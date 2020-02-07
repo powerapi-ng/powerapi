@@ -28,8 +28,66 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
 
+from multiprocessing import Queue
+from mock import Mock
+
 import pytest
+
 from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
+from powerapi.actor import Actor
+
+class FakeActor(Actor):
+
+    def __init__(self, name, *args, queue=None, **kwargs):
+        self.q = queue
+        self.logger = Mock()
+        self.logger.info = Mock()
+        self.name = name
+        self.socket_interface = Mock()
+        self.q.put((name, args, kwargs))
+        self.alive = False
+
+    def connect_data(self):
+        pass
+
+    def connect_control(self):
+        pass
+
+    def join(self):
+        pass
+
+    def is_alive(self):
+        return self.alive
+
+    def hard_kill(self):
+        self.alive = False
+        self.q.put('hard kill')
+
+    def soft_kill(self):
+        self.alive = False
+        self.q.put('soft kill')
+
+    def send_data(self, msg):
+        self.q.put(msg)
+
+    def send_control(self, msg):
+        self.q.put(msg)
+
+    def start(self):
+        self.alive = True
+        self.q.put('start')
+
+    def terminate(self):
+        self.q.put('terminate')
+
+
+def is_actor_alive(actor, time=0.5):
+    """
+    wait the actor to terminate or 0.5 secondes and return its is_alive value
+    """
+    actor.join(time)
+    return actor.is_alive()
+
 
 class AbstractTestActor:
 
