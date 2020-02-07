@@ -207,8 +207,7 @@ def pytest_generate_tests(metafunc):
 
     if 'report_model' in metafunc.fixturenames:
         report_model= getattr(metafunc.function, '_report_model', None)
-        metafunc.parametrize('report_model',
-                              [report_model])
+        metafunc.parametrize('report_model', [report_model])
 
 
 ##############################################################################
@@ -238,49 +237,6 @@ def test_pusher_create_bad_db(pusher, supervisor):
         supervisor.launch_actor(pusher)
     pusher.terminate()
     pusher.join()
-
-
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_report_model(PowerModel())
-def test_pusher_init_ok(initialized_pusher):
-    """
-    Create a PusherActor and send a StartMessage
-    """
-    assert is_actor_alive(initialized_pusher)
-
-
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_report_model(PowerModel())
-def test_pusher_init_already_init(initialized_pusher):
-    """
-    Create a PusherActor and send a StartMessage to an already initialized Actor
-    """
-    initialized_pusher.send_control(StartMessage())
-    assert is_actor_alive(initialized_pusher)
-    assert isinstance(initialized_pusher.receive_control(), ErrorMessage)
-
-
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_report_model(PowerModel())
-def test_pusher_kill_without_init(started_pusher):
-    """
-    Create a PusherActor and kill him with a PoisonPillMessage before initialization
-    """
-    started_pusher.connect_control()
-    # wait for the main process to connect the pusher before sending the message
-    time.sleep(0.5)
-    started_pusher.hard_kill()
-    assert not is_actor_alive(started_pusher, 5)
-
-
-@define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
-@define_report_model(PowerModel())
-def test_pusher_kill_after_init(generate_mongodb_data, initialized_pusher_plus_supervisor):
-    """
-    Create a PusherActor and kill him with a PoisonPillMessage
-    """
-    initialized_pusher_plus_supervisor[1].kill_actors()
-    assert not is_actor_alive(initialized_pusher_plus_supervisor[0])
 
 
 # TODO: Test with different config:

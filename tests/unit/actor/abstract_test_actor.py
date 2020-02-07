@@ -34,7 +34,7 @@ from mock import Mock
 import pytest
 
 from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
-from powerapi.actor import Actor
+from powerapi.actor import Actor, NotConnectedException
 
 class FakeActor(Actor):
 
@@ -126,3 +126,11 @@ class AbstractTestActor:
         msg = started_actor.receive_control(2000)
         assert isinstance(msg, ErrorMessage)
         assert msg.error_message == 'Actor already initialized'
+
+    def test_send_message_on_data_canal_to_non_initialized_actor_raise_NotConnectedException(self, actor):
+        with pytest.raises(NotConnectedException):
+            actor.send_data(StartMessage())
+
+    def test_send_message_on_control_canal_to_non_initialized_actor_raise_NotConnectedException(self, actor):
+        with pytest.raises(NotConnectedException):
+            actor.send_control(StartMessage())
