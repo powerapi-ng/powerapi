@@ -57,18 +57,6 @@ def define_route_table(route_table):
         return func
     return wrap
 
-
-def define_formula_init_msg(formula_init_msg):
-    """
-    A decorator to set the _formula_init_msg
-    attribute for individual tests.
-    """
-    def wrap(func):
-        setattr(func, '_formula_init_msg', formula_init_msg)
-        return func
-    return wrap
-
-
 def receive(socket):
     """
     wait for a message reception on a given socket and return it
@@ -100,16 +88,6 @@ def pytest_generate_tests(metafunc):
                                   route_table_with_primary_rule()])
         else:
             metafunc.parametrize('route_table', [RouteTable()])
-
-    if 'formula_init_msg' in metafunc.fixturenames:
-        formula_init_msg = getattr(metafunc.function, '_formula_init_msg', None)
-        if isinstance(formula_init_msg, Report):
-            metafunc.parametrize('formula_init_msg', [[formula_init_msg]])
-        elif formula_init_msg == 'all':
-            metafunc.parametrize('formula_init_msg',
-                                 [[], [gen_good_report()]])
-        else:
-            metafunc.parametrize('formula_init_msg', [[]])
 
 
 ##############
@@ -184,14 +162,6 @@ def dispatcher3(request, route_table):
 
 
 @pytest.fixture()
-def bad_report():
-    """
-    Return a badly formated HWPCReport
-    """
-    return create_report_root([])
-
-
-@pytest.fixture()
 def formula_socket():
     """
     return the socket that will be used by the FakeFormula actors to log their
@@ -204,11 +174,13 @@ def formula_socket():
 
 
 @pytest.fixture()
-def dispatcher_with_formula(formula_init_msg, initialized_dispatcher,
+def dispatcher_with_formula(initialized_dispatcher,
                             route_table, formula_socket):
     """
     return a dispatcher with formula
     """
+    formula_init_msg = [gen_good_report()]
+
     for msg in formula_init_msg:
         try:
             gb_rule = route_table.get_dispatch_rule(msg)
@@ -289,36 +261,6 @@ class FakeGBR(DispatchRule):
         return 'MESSAGE OTHER GBR'
 
 
-def route_table_no_hwpc():
-    """
-    return a RouteTable with :
-      - a FakeGBR as primary rule
-    """
-    route_table = RouteTable()
-    route_table.dispatch_rule(FakeReport, FakeGBR(primary=True))
-    return route_table
-
-
-def empty_route_table():
-    """
-    return a RouteTable with no rule
-    """
-    return RouteTable()
-
-
-def route_table_hwpc_not_primary():
-    """
-    return a RouteTable with :
-      - a FakeGBR as primary rule
-      - a HWPCGrouptBy rule
-    """
-    route_table = RouteTable()
-    route_table.dispatch_rule(FakeReport, FakeGBR(primary=True))
-    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.ROOT))
-
-    return route_table
-
-
 def route_table_with_primary_rule():
     """
     return a RouteTable with :
@@ -328,9 +270,6 @@ def route_table_with_primary_rule():
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.ROOT,
                                                            primary=True))
     return route_table
-
-
-
 
 ####################
 # Multi-Dispatcher #
@@ -375,31 +314,6 @@ def test_create_formula_double_dispatcher(initialized_dispatcher, dispatcher3, f
 #  Kill  #
 ##########
 @define_route_table(route_table_with_primary_rule())
-def test_kill_non_init_dispatcher(dispatcher):
-    """
-    Create a Dispatcher and call its kill method
-
-    Test :
-      - if the actor is terminated
-    """
-    with pytest.raises(NotConnectedException):
-        dispatcher.hard_kill()
-
-
-@define_route_table(route_table_with_primary_rule())
-def test_kill_init_dispatcher(initialized_dispatcher):
-    """
-    Create an initialized Dispatcher and call its kill method
-
-    Test :
-      - if the actor is terminated
-    """
-    initialized_dispatcher.hard_kill()
-    assert not is_actor_alive(initialized_dispatcher)
-
-
-@define_route_table(route_table_with_primary_rule())
-@define_formula_init_msg(gen_good_report())
 def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
     """
     Create an initialized Dispatcher with one formula and then kill it
