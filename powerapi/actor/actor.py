@@ -130,7 +130,7 @@ class Actor(multiprocessing.Process):
         Define how to handle signal interrupts
         """
         def term_handler(_, __):
-            self.logger.info("Term handler")
+            self.logger.debug("Term handler")
             pp_handler = self.state.get_corresponding_handler(PoisonPillMessage())
             pp_handler.handle(PoisonPillMessage(soft=False))
             self._kill_process()
@@ -154,7 +154,7 @@ class Actor(multiprocessing.Process):
 
         self.socket_interface.setup()
 
-        self.logger.info(self.name + ' process created.')
+        self.logger.debug(self.name + ' process created.')
 
         self._signal_handler_setup()
 
@@ -214,7 +214,7 @@ class Actor(multiprocessing.Process):
         Kill the actor (close sockets)
         """
         self.socket_interface.close()
-        self.logger.info(self.name + " teardown")
+        self.logger.debug(self.name + " teardown")
 
     def connect_data(self):
         """
@@ -238,7 +238,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.socket_interface.send_control(msg)
-        self.logger.info('send control [' + str(msg) + '] to ' + self.name)
+        self.logger.debug('send control [' + str(msg) + '] to ' + self.name)
 
     def receive_control(self, timeout=None):
         """
@@ -248,7 +248,7 @@ class Actor(multiprocessing.Process):
             timeout = self.socket_interface.timeout
 
         msg = self.socket_interface.receive_control(timeout)
-        self.logger.info("receive control : [" + str(msg) + "]")
+        self.logger.debug("receive control : [" + str(msg) + "]")
         return msg
 
     def send_data(self, msg):
@@ -258,7 +258,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.socket_interface.send_data(msg)
-        self.logger.info('send data [' + str(msg) + '] to ' + self.name)
+        self.logger.debug('send data [' + str(msg) + '] to ' + self.name)
 
     def receive(self):
         """
@@ -269,7 +269,7 @@ class Actor(multiprocessing.Process):
         :rtype: a list of Object
         """
         msg = self.socket_interface.receive()
-        self.logger.info("receive data : [" + str(msg) + "]")
+        self.logger.debug("receive data : [" + str(msg) + "]")
         return msg
 
     def soft_kill(self):

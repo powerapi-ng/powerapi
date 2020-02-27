@@ -144,7 +144,7 @@ class SocketInterface:
         socket.set_hwm(0)
         port_number = socket.bind_to_random_port(LOCAL_ADDR)
         self.poller.register(socket, zmq.POLLIN)
-        self.logger.info("bind to " + LOCAL_ADDR + ':' + str(port_number))
+        self.logger.debug("bind to " + LOCAL_ADDR + ':' + str(port_number))
         return (socket, port_number)
 
     def receive(self):
@@ -237,7 +237,7 @@ class SocketInterface:
         self.push_socket.setsockopt(zmq.LINGER, -1)
         self.push_socket.set_hwm(0)
         self.push_socket.connect(self.pull_socket_address)
-        self.logger.info("connected data to %s" % (self.pull_socket_address))
+        self.logger.debug("connected data to %s" % (self.pull_socket_address))
 
     def connect_control(self):
         """
@@ -256,7 +256,7 @@ class SocketInterface:
         self.control_socket.setsockopt(zmq.LINGER, 0)
         self.control_socket.set_hwm(0)
         self.control_socket.connect(self.control_socket_address)
-        self.logger.info("connected control to %s" % (self.control_socket_address))
+        self.logger.debug("connected control to %s" % (self.control_socket_address))
 
     def send_control(self, msg):
         """

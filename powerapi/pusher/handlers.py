@@ -87,5 +87,5 @@ class ReportHandler(InitHandler):
             self.state.buffer.sort(key=lambda x: x.timestamp)
 
             self.state.database.save_many(self.state.buffer, self.state.report_model)
-            self.state.actor.logger.info('save ' + str(len(self.state.buffer)) + ' reports in database')
+            self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.buffer = []
