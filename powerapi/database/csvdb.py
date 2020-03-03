@@ -132,7 +132,7 @@ class CsvIterDB(IterDB):
 
         # Get the current timestamp
         current_timestamp = self.saved_timestamp
-
+        previous_target = None
         # For all files
         for path_file in self.filenames:
 
@@ -149,18 +149,22 @@ class CsvIterDB(IterDB):
                 # Get the timestamp as datetime
                 row_timestamp = utils.timestamp_to_datetime(
                     int(row['timestamp']))
-
                 # If timestamp is higher, we stop here
                 if row_timestamp > current_timestamp:
-                    if path_file == self.filenames[0]:
+                    if path_file == self.filenames[-1]:
                         self.saved_timestamp = row_timestamp
-                    break
+                    break # move to next file
+
+                if previous_target is not None:
+                    if row['target'] != previous_target:
+                        break # move to next file
+                else:
+                    previous_target = row['target']
 
                 # Else if it's the same, we merge
-                elif row_timestamp == current_timestamp:
-                    utils.dict_merge(
-                        json,
-                        self.report_model.from_csvdb(path_file.split('/')[-1], row))
+                utils.dict_merge(
+                    json,
+                    self.report_model.from_csvdb(path_file.split('/')[-1], row))
 
                 # Next line
                 self.tmp_read[path_file]['next_line'] = self._next(path_file)
@@ -172,7 +176,9 @@ class CsvIterDB(IterDB):
                     self.tmp_read[filename]['file'].close()
             raise StopIteration()
 
-        return self.report_model.get_type().deserialize(json)
+        data = self.report_model.get_type().deserialize(json)
+
+        return data
 
 
 class CsvDB(BaseDB):
