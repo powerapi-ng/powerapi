@@ -144,7 +144,15 @@ class CsvIterDB(IterDB):
 
                 # If nothing more, break
                 if row is None:
-                    break
+                    # If the first file a no next file, just stop the iteration
+                    if not json and path_file == self.filenames[0]:
+                        # Close files
+                        for filename in self.filenames:
+                            if self.tmp_read[filename]['file'] is not None:
+                                self.tmp_read[filename]['file'].close()
+                        raise StopIteration()
+                    else:
+                        break
 
                 # Get the timestamp as datetime
                 row_timestamp = utils.timestamp_to_datetime(
