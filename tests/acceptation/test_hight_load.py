@@ -26,29 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-"""
-Test the architecture when it has to deal with a lot of data, pulled with a
-hight frequency. Input database contain a lot of data, that will overflow the
-backend. Backend have to handle all of this data and continue to compute data
-and writing them in real time.
-
-Architecture :
-  - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode off)
-  - 1 dispatcher (HWPC dispatch rule (dispatch by SOCKET)
-  - 1 Dummy Formula
-  - 1 pusher (connected to MongoDB1 [collection test_result]
-
-MongoDB1 content :
-  - 3000 HWPC repport with two socket and one RAPL_EVENT
-
-Scenario:
-  - Launch the full architecture
-
-Test if:
-  - each 50 ms, reports are writen in the output database
-
-"""
 import logging
 import time
 import pytest
@@ -75,7 +52,13 @@ LOG_LEVEL = logging.NOTSET
 
 @pytest.fixture
 def database():
-    db = gen_base_db_test(DB_URI, 6000)
+    db = gen_base_db_test(DB_URI, 3000)
+    yield db
+    clean_base_db_test(DB_URI)
+
+@pytest.fixture
+def database2():
+    db = gen_base_db_test(DB_URI, 30)
     yield db
     clean_base_db_test(DB_URI)
 
@@ -94,6 +77,27 @@ def get_number_of_output_reports():
 
 
 def test_run(database, supervisor):
+    """
+    Test the architecture when it has to deal with a lot of data, pulled with a
+    hight frequency. Input database contain a lot of data, that will overflow the
+    backend. Backend have to handle all of this data and continue to compute data
+    and writing them in real time.
+
+    Architecture :
+      - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode off)
+      - 1 dispatcher (HWPC dispatch rule (dispatch by SOCKET)
+      - 1 Dummy Formula
+      - 1 pusher (connected to MongoDB1 [collection test_result]
+
+    MongoDB1 content :
+      - 3000 HWPC repport with two socket and one RAPL_EVENT
+
+    Scenario:
+      - Launch the full architecture
+
+    Test if:
+      - each 50 ms, reports are writen in the output database
+    """
     # Pusher
     output_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_result')
     pusher = PusherActor("pusher_mongodb", PowerModel(), output_mongodb, level_logger=LOG_LEVEL)
@@ -124,9 +128,63 @@ def test_run(database, supervisor):
     for i in range(3):
         time.sleep(0.2)
         current = get_number_of_output_reports()
-        assert current > number_of_output_reports
+        assert current >= number_of_output_reports
         number_of_output_reports = current
 
     time.sleep(0.1)
         
     supervisor.join()
+
+
+def test_with_slow_formula(database2, supervisor):
+    """Test the architecture when it has to deal with a lot of data, with a formula
+    that is very slow. Input database contain a lot of data, but formula can't
+    handle them. The puller will end before formula end to handle data and
+    supervisor will begin to send poisonpill message to all actors. Formula and
+    pusher must continue to handle report.
+
+    Architecture :
+      - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode off)
+      - 1 dispatcher (HWPC dispatch rule (dispatch by SOCKET)
+      - 1 Dummy Formula with will wait 0.2 ms when it receive a message
+      - 1 pusher (connected to MongoDB1 [collection test_result]
+
+    MongoDB1 content :
+      - 30 HWPC repport with two socket and one RAPL_EVENT
+
+    Scenario:
+      - Launch the full architecture
+
+    Test if:
+      - after powerapi handle all the reports, test if all the reports was handeled
+        by the formula and pushed to the mongo database and if no report were lost
+
+    """
+    # Pusher
+    output_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_result')
+    pusher = PusherActor("pusher_mongodb", PowerModel(), output_mongodb, level_logger=LOG_LEVEL)
+
+    # Formula
+    formula_factory = (lambda name, verbose:
+                       DummyFormulaActor(name, {'my_pusher': pusher}, level_logger=verbose, sleep_time=0.1))
+                       # DummyFormulaActor(name, {'my_pusher': pusher}, level_logger=verbose))
+
+    # Dispatcher
+    route_table = RouteTable()
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
+
+    dispatcher = DispatcherActor('dispatcher', formula_factory, route_table, level_logger=LOG_LEVEL)
+
+    # Puller
+    input_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_hwrep')
+    report_filter = Filter()
+    report_filter.filter(lambda msg: True, dispatcher)
+    puller = PullerActor("puller_mongodb", input_mongodb, report_filter, HWPCModel(), level_logger=LOG_LEVEL)
+
+    supervisor.launch_actor(pusher)
+    supervisor.launch_actor(dispatcher)
+    supervisor.launch_actor(puller)
+
+    supervisor.join()
+
+    assert get_number_of_output_reports() == 30 * 2

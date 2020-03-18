@@ -38,12 +38,19 @@ from powerapi.report import Report
 from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 
+class DummyState(FormulaState):
+
+    def __init__(self, actor, pushers, sleep_time):
+        FormulaState.__init__(self, actor, pushers)
+        self.sleep_time = sleep_time
+
+
 class DummyFormulaActor(FormulaActor):
     """
     A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
     """
-    def __init__(self, name, pushers, level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name, pushers, level_logger=logging.WARNING, sleep_time=0, timeout=None):
         """
         Initialize a new Dummy Formula actor.
         :param name: Actor name
@@ -54,7 +61,7 @@ class DummyFormulaActor(FormulaActor):
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = FormulaState(self, pushers)
+        self.state = DummyState(self, pushers, sleep_time)
 
     def setup(self):
         """

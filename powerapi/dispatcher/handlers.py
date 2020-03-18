@@ -47,8 +47,9 @@ def _clean_list(id_list):
 
 
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
-    def teardown(self):
-        self.state.supervisor.kill_actors()
+    def teardown(self, soft=False):
+        self.state.supervisor.kill_actors(soft=soft)
+
 
 class FormulaDispatcherReportHandler(InitHandler):
     """

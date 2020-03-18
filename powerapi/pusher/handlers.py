@@ -52,7 +52,7 @@ class PusherStartHandler(StartHandler):
 
 
 class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
-    def teardown(self):
+    def teardown(self, soft=False):
         if len(self.state.buffer) > 0:
             self.state.database.save_many(self.state.buffer, self.state.report_model)
 

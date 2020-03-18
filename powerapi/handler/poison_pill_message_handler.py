@@ -36,7 +36,7 @@ class PoisonPillMessageHandler(Handler):
     Generic handler for PoisonPillMessage
     """
 
-    def teardown(self):
+    def teardown(self, soft=False):
         """
         function called before terminating the actor process
         could be redefined
@@ -52,6 +52,7 @@ class PoisonPillMessageHandler(Handler):
             self.state.actor.logger.warning("HandlerException")
 
     def _empty_mail_box(self):
+        print(str(self.state.actor.name) + " empty mail box")
         while True:
             self.state.actor.socket_interface.timeout = 0.1
             msg = self.state.actor.socket_interface.receive()
@@ -73,6 +74,6 @@ class PoisonPillMessageHandler(Handler):
 
         if msg.is_soft:
             self._empty_mail_box()
-        self.teardown()
+        self.teardown(soft=msg.is_soft)
 
         self.state.alive = False

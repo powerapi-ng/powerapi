@@ -116,12 +116,14 @@ class Supervisor:
         for actor in self.supervised_actors:
             actor.join()
 
-    def kill_actors(self, by_data=False):
+    def kill_actors(self, soft=False, by_data=False):
         """
         Kill all the supervised actors
         """
-
         for actor in self.supervised_actors:
             if actor.is_alive():
-                actor.hard_kill()
+                if soft:
+                    actor.soft_kill()
+                else:
+                    actor.hard_kill()
                 actor.join()

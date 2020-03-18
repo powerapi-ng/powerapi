@@ -92,7 +92,7 @@ class DBPullerThread(Thread):
 
 
 class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
-    def teardown(self):
+    def teardown(self, soft=False):
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.socket_interface.close()
 

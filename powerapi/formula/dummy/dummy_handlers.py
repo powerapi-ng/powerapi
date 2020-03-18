@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
 
 from powerapi.handler import Handler
 from powerapi.report import PowerReport
@@ -55,6 +56,7 @@ class ReportHandler(Handler):
         :rtype:  powerapi.State
         :raises UnknowMessageTypeException: If the msg is not a Report
         """
+        time.sleep(self.state.sleep_time)
         results = self._estimate(msg)
         for _, actor_pusher in self.state.pushers.items():
             for result in results:

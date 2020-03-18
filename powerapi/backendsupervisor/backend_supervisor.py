@@ -103,13 +103,14 @@ class BackendSupervisor(Supervisor):
         - Supervisor send a PoisonPill (by_data) to the Pusher
         - Supervisor wait for the Pusher death
         """
+        print('toto')
         for puller in self.pullers:
             puller.join()
-
+        print('titi')
         for dispatcher in self.dispatchers:
             dispatcher.soft_kill()
             dispatcher.join()
-
+        print('tata')
         for pusher in self.pushers:
             pusher.soft_kill()
             pusher.join()

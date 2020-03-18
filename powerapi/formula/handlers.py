@@ -31,6 +31,6 @@ from powerapi.handler import PoisonPillMessageHandler
 
 
 class FormulaPoisonPillMessageHandler(PoisonPillMessageHandler):
-    def teardown(self):
+    def teardown(self, soft=False):
         for _, pusher in self.state.pushers.items():
             pusher.socket_interface.close()
