@@ -255,10 +255,16 @@ class TestDispatcher(AbstractTestActor):
         with pytest.raises(Empty):
             print(formula_queue.get(timeout=0.5))
 
-    def test_send_PoisonPillMessage_make_dispatcher_hard_kill_formula(self, dispatcher_with_two_formula, formula_queue):
+    def test_send_hard_PoisonPillMessage_make_dispatcher_hard_kill_formula(self, dispatcher_with_two_formula, formula_queue):
+        dispatcher_with_two_formula.send_control(PoisonPillMessage(soft=False))
+        assert formula_queue.get(timeout=0.5) == 'hard kill'
+        assert formula_queue.get(timeout=0.5) == 'hard kill'
+
+
+    def test_send_soft_PoisonPillMessage_make_dispatcher_soft_kill_formula(self, dispatcher_with_two_formula, formula_queue):
         dispatcher_with_two_formula.send_control(PoisonPillMessage())
-        assert formula_queue.get(timeout=0.5) == 'hard kill'
-        assert formula_queue.get(timeout=0.5) == 'hard kill'
+        assert formula_queue.get(timeout=0.5) == 'soft kill'
+        assert formula_queue.get(timeout=0.5) == 'soft kill'
 
 
 ###############################################
