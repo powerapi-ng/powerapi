@@ -50,7 +50,7 @@ class HWPCReportHandler(Handler):
 
 
 class FakePoisonPillMessageHandler(FormulaPoisonPillMessageHandler):
-    def teardown(self):
+    def teardown(self, soft=False):
         self.state.actor.push_socket.send(pickle.dumps('terminated'))
 
 
