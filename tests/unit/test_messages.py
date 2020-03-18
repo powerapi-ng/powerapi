@@ -37,21 +37,21 @@ from powerapi.message import PoisonPillMessage
 #####################
 # PoisonPillMessage #
 #####################
-def test_soft_PoisonPillMessage_attr():
-    """
-    Create a soft PoisonPillMessage instance and test its attribute value
-    """
+def test_create_PoisonPillMessage_with_soft_True_set_attribute_is_soft_to_True():
     msg = PoisonPillMessage(soft=True)
-
     assert msg.is_soft
+
+
+def test_create_PoisonPillMessage_with_soft_True_set_attribute_is_hard_to_False():
+    msg = PoisonPillMessage(soft=True)
     assert not msg.is_hard
 
 
-def test_hard_PoisonPillMessage_attr():
-    """
-    Create a hard PoisonPillMessage instance and test its attribute value
-    """
+def test_create_PoisonPillMessage_with_soft_False_set_attribute_is_soft_to_False():
     msg = PoisonPillMessage(soft=False)
-
     assert not msg.is_soft
+
+
+def test_create_PoisonPillMessage_with_soft_False_set_attribute_is_hard_to_True():
+    msg = PoisonPillMessage(soft=False)
     assert msg.is_hard

@@ -83,7 +83,7 @@ class FormulaDispatcherReportHandler(InitHandler):
 
             else:
                 for formula in self.state.get_corresponding_formula(list(formula_id)):
-                    formula.send(msg)
+                    formula.send_data(msg)
 
     def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
         """

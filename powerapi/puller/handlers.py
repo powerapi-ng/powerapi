@@ -30,7 +30,7 @@ import time
 from threading import Thread
 
 from powerapi.actor import NotConnectedException
-from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage
+from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage, ErrorMessage
 from powerapi.handler import HandlerException
 from powerapi.exception import PowerAPIException
 from powerapi.filter import FilterUselessError
@@ -97,6 +97,12 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
             dispatcher.socket_interface.close()
 
 
+class InitiatizationException(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+
 class PullerStartHandler(StartHandler):
     """
     Initialize the database interface
@@ -119,6 +125,9 @@ class PullerStartHandler(StartHandler):
     def initialization(self):
 
         self._database_connection()
+
+        if not self.state.report_filter.filters:
+            raise InitiatizationException('No filters')
         # Connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.connect_data()
@@ -132,7 +141,11 @@ class PullerStartHandler(StartHandler):
         if not isinstance(msg, StartMessage):
             return
 
-        self.initialization()
+
+        try:
+            self.initialization()
+        except InitiatizationException as e:
+            self.state.actor.send_control(ErrorMessage(e.msg))
 
         if self.state.alive:
             self.state.initialized = True

@@ -29,150 +29,115 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+
+import logging
+import time
+from queue import Empty
 from mock import Mock
-from datetime import datetime
-from powerapi.report import create_report_root, HWPCReport
-from powerapi.report_model import HWPCModel
-from powerapi.pusher import PusherStartHandler, ReportHandler
-from powerapi.pusher import PusherState, ReportHandler
-from powerapi.actor import Actor, SocketInterface
-from powerapi.message import StartMessage, OKMessage, ErrorMessage
 
-##############################################################################
+import pytest
 
+from powerapi.report import Report
+from powerapi.pusher import PusherActor
 
-def get_fake_db():
-    """ Return a fake MongoDB """
-    fake_mongo = Mock(stream_mode=False)
-    values = [2, 3]
-
-    def fake_next():
-        if not values:
-            return None
-        return values.pop()
-
-    def fake_iter():
-        return iter([])
-
-    fake_mongo.__next__ = fake_next
-    fake_mongo.__iter__ = fake_iter
-    return fake_mongo
+from ..actor.abstract_test_actor import AbstractTestActor
+from ..db_utils import FakeDB, AbstractTestActorWithDB, REPORT1, REPORT2
 
 
-def get_fake_socket_interface():
-    """ Return a fake SockerInterface """
-    return Mock(spec_set=SocketInterface)
+def define_buffer_size(size):
+    def wrap(func):
+        setattr(func, '_buffer_size', size)
+        return func
+    return wrap
 
+def define_delay(delay):
+    def wrap(func):
+        setattr(func, '_delay', delay)
+        return func
+    return wrap
 
-##############################################################################
-
-
-class TestHandlerPusher:
-    """ TestHandlerPusher class """
-
-    def test_pusher_start_handler(self):
-        """
-        Test the StartHandler of PusherActor
-        """
-
-        # Define PusherState
-        fake_database = get_fake_db()
-        fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(Mock(),
-                                   fake_database,
-                                   HWPCModel())
-        pusher_state.actor.socket_interface = fake_socket_interface
-        assert pusher_state.initialized is False
-
-        # Define StartHandler
-        start_handler = PusherStartHandler(pusher_state)
-
-        # Test Random message when state is not initialized
-        to_send = [OKMessage(), ErrorMessage("Error"),
-                   create_report_root({})]
-        for msg in to_send:
-            start_handler.handle(msg)
-            assert fake_database.method_calls == []
-            assert fake_socket_interface.method_calls == []
-            assert pusher_state.initialized is False
-
-        # Try to initialize the state
-        start_handler.handle(StartMessage())
-        assert pusher_state.initialized is True
-
-
-    def test_pusher_power_handler(self):
-        """
-        Test the ReportHandler of PusherActor
-        """
-        
-        # Define PusherState
-        fake_database = get_fake_db()
-        fake_socket_interface = get_fake_socket_interface()
-        pusher_state = PusherState(Mock(),
-                                   fake_database,
-                                   HWPCModel())
-        pusher_state.actor.socket_interface = fake_socket_interface
-        assert pusher_state.initialized is False
-
-        # Define PowerHandler
-        power_handler = ReportHandler(pusher_state)
-        
-        # Test Random message when state is not initialized
-        to_send = [OKMessage(), ErrorMessage("Error"),
-                   create_report_root({})]
-        for msg in to_send:
-            power_handler.handle_message(msg)
-            assert pusher_state.database.method_calls == []
-            assert pusher_state.initialized is False
-
-        pusher_state.initialized = True
-
-        # Test Random message when state is initialized
-        #to_send = [OKMessage(), ErrorMessage("Error"),
-        #           create_report_root({})]
-        #for msg in to_send:
-        #    power_handler.handle_message(msg, pusher_state)
-        #    assert pusher_state.database.method_calls == []
-
-        ## Test with a PowerMessage
-        #for _ in range(101):
-        #    power_handler.handle_message(PowerReport("10", "test", "test", "test", "test"),
-        #                                 pusher_state)
-        #assert len(pusher_state.buffer) == 101
-
-
-def test_ReportHandler_message_saving_order():
+def pytest_generate_tests(metafunc):
     """
-    Handle 3 HWPCReport with a pusher.ReportHandler
-    The maximum size of the handler buffer is 2
-    This 3 reports are not sent in their chronological order
+    Function called by pytest when collecting a test_XXX function
 
-    First report : timestamp = 0
-    Second report : timestamp = 2
-    Third report : timestamp = 1
+    define the content fixtures in test environement with collected the
+    value _content if it exist or with an empty content
 
-    When the handler save the received reports test if the reports are saved in
-    their chronological order
-
+    :param metafunc: the test context given by pytest
     """
+    if 'content' in metafunc.fixturenames:
+        content = getattr(metafunc.function, '_content', None)
+        if isinstance(content, list):
+            metafunc.parametrize('content', [content])
+        else:
+            metafunc.parametrize('content', [[]])
 
-    fake_database = get_fake_db()
-    fake_database.save_many = Mock()
+    if 'buffer_size' in metafunc.fixturenames:
+        buffer_size = getattr(metafunc.function, '_buffer_size', None)
+        if isinstance(buffer_size, int):
+            metafunc.parametrize('buffer_size', [buffer_size])
+        else:
+            metafunc.parametrize('buffer_size', [50])
 
-    pusher_state = PusherState(Mock(), fake_database, HWPCModel())
-    report_handler = ReportHandler(pusher_state, delay=10000, max_size=2)
+    if 'delay' in metafunc.fixturenames:
+        delay = getattr(metafunc.function, '_delay', None)
+        if isinstance(delay, int):
+            metafunc.parametrize('delay', [delay])
+        else:
+            metafunc.parametrize('delay', [100])
 
-    report0 = HWPCReport(datetime.fromtimestamp(0), None, None, None)
-    report1 = HWPCReport(datetime.fromtimestamp(2), None, None, None)
-    report2 = HWPCReport(datetime.fromtimestamp(1), None, None, None)
 
-    report_handler.handle(report0)
-    report_handler.handle(report1)
-    report_handler.handle(report2)
+class TestPuller(AbstractTestActorWithDB):
 
-    buffer = fake_database.save_many.call_args[0][0]
+    @pytest.fixture
+    def fake_db(self, content):
+        return FakeDB(content)
 
-    assert len(buffer) == 3
-    assert buffer[0].timestamp < buffer[1].timestamp
-    assert buffer[1].timestamp < buffer[2].timestamp
+    @pytest.fixture
+    def actor(self, fake_db, buffer_size, delay):
+        report_model = Mock()
+        report_model.get_type = Mock(return_value=Report)
+        return PusherActor('pusher_test', report_model, fake_db, level_logger=logging.DEBUG, max_size=buffer_size,
+                           delay=delay)
+
+    @define_buffer_size(0)
+    def test_send_one_report_to_pusher_with_0sized_buffer_make_it_save_the_report(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        assert fake_db.q.get(timeout=1) == [REPORT1]
+
+    @define_buffer_size(1)
+    def test_send_one_report_to_pusher_with_1sized_buffer_make_it_not_save_the_report(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        with pytest.raises(Empty):
+            fake_db.q.get(timeout=1)
+
+    @define_buffer_size(1)
+    def test_send_two_report_to_pusher_with_1sized_buffer_make_it_save_the_reports_in_one_call(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        started_actor.send_data(REPORT2)
+        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
+
+    @define_delay(0)
+    def test_send_one_report_to_pusher_with_0delay_make_it_save_the_reports(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        assert fake_db.q.get(timeout=1) == [REPORT1]
+
+    @define_delay(2000)
+    def test_send_two_report_to_pusher_with_2seconde_delay_make_it_not_save_the_reports(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        started_actor.send_data(REPORT2)
+        with pytest.raises(Empty):
+            fake_db.q.get(timeout=1)
+
+    @define_delay(2000)
+    def test_send_two_report__with_two_second_between_messages_to_pusher_with_2seconde_delay_make_it_save_the_report(self, started_actor, fake_db):
+        started_actor.send_data(REPORT1)
+        time.sleep(2)
+        started_actor.send_data(REPORT2)
+        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
+
+    @define_buffer_size(1)
+    def test_send_two_report_in_wrong_time_order_to_a_pusher_make_it_save_them_in_good_order(self, started_actor, fake_db):
+        started_actor.send_data(REPORT2)
+        started_actor.send_data(REPORT1)
+        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
