@@ -69,6 +69,7 @@ def pytest_generate_tests(metafunc):
         else:
             metafunc.parametrize('content', [[]])
 
+
     if 'filt' in metafunc.fixturenames:
         filt = getattr(metafunc.function, '_filter', None)
         metafunc.parametrize('filt', [filt])
@@ -100,12 +101,10 @@ class TestPuller(AbstractTestActorWithDB):
     @pytest.fixture
     def actor(self, fake_db, filt, fake_filter):
         filter = fake_filter if filt is None else filt
-        # return PullerActor('puller_test', fake_db, filter, 0, level_logger=logging.DEBUG)
-        print(filter)
-        return PullerActor('puller_test', fake_db, filter, 0)
+        return PullerActor('puller_test', fake_db, filter, 0, level_logger=logging.DEBUG)
 
     @define_database_content([REPORT1, REPORT2])
-    def test_start_actor_with_db_that_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor, fake_dispatcher, content):
+    def test_start_actor_with_db_thath_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor, fake_dispatcher, content):
         for report in content:
             assert fake_dispatcher.q.get(timeout=2) == report
 
