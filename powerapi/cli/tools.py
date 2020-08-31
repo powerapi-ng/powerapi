@@ -38,7 +38,7 @@ from powerapi.cli.parser import store_true
 from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
-from powerapi.report_model import HWPCModel, PowerModel, FormulaModel
+from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -209,6 +209,7 @@ class DBActorGenerator(Generator):
             'HWPCReport': HWPCModel(),
             'PowerReport': PowerModel(),
             'FormulaReport': FormulaModel(),
+            'ControlReport': ControlModel(),
         }
 
         self.db_factory = {

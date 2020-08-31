@@ -27,9 +27,41 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.report_model.report_model import ReportModel, BadInputData
-from powerapi.report_model.report_model import CSV_HEADER_COMMON, CSV_HEADER_HWPC, CSV_HEADER_POWER
-from powerapi.report_model.hwpc_model import HWPCModel
-from powerapi.report_model.power_model import PowerModel
-from powerapi.report_model.formula_model import FormulaModel
-from powerapi.report_model.control_model import ControlModel
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Dict, List
+
+from powerapi.report import Report
+
+
+class ControlReport(Report):
+    """
+    EventReport stores information about an event.
+    This is useful to control external tools via a producer/consumer job queue.
+    """
+
+    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: List):
+        """
+        Initialize a Control Event report using the given parameters.
+        :param timestamp: Report timestamp
+        :param sensor: Sensor name
+        :param target: Target name
+        :param action: Action name
+        :param parameters: Parameter values
+        """
+        Report.__init__(self, timestamp, sensor, target)
+        self.action = action
+        self.parameters = parameters
+
+    def __repr__(self) -> str:
+        return 'ControlReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters)
+
+    @staticmethod
+    def deserialize(data: Dict) -> ControlReport:
+        """
+        Generate a report using the given data.
+        :param data: Dictionary containing the report attributes
+        :return: The Formula report initialized with the given data
+        """
+        return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'])
