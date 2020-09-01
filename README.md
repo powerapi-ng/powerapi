@@ -13,7 +13,7 @@ As a middleware toolkit, PowerAPI offers the capability of assembling power mete
 
 PowerAPI is an open-source project developed by the [Spirals research group](https://team.inria.fr/spirals) (University of Lille 1 and Inria) and fully managed with [setuptools](https://pypi.org/project/setuptools/).
 
-The documentation is available [here](https://powerapi.org).
+The documentation is available [here](http://powerapi.org).
 
 ## Mailing list
 You can follow the latest news and asks questions by subscribing to our <a href="mailto:sympa@inria.fr?subject=subscribe powerapi">mailing list</a>.
