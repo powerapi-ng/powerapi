@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       # Language image for build and unit tests
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
 
       # Service image for integration tests
       - image: circleci/mongo:4.0
