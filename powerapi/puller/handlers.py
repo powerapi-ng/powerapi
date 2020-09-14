@@ -27,6 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
+import asyncio
+import logging
+import threading
 from threading import Thread
 
 from powerapi.actor import NotConnectedException
@@ -35,11 +38,10 @@ from powerapi.handler import HandlerException
 from powerapi.exception import PowerAPIException
 from powerapi.filter import FilterUselessError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
-from powerapi.database import DBError
+from powerapi.database import DBError, SocketDB
 from powerapi.message import ErrorMessage, PoisonPillMessage
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model.report_model import BadInputData
-
 
 class NoReportExtractedException(PowerAPIException):
     """
@@ -49,14 +51,34 @@ class NoReportExtractedException(PowerAPIException):
 
 class DBPullerThread(Thread):
 
-    def __init__(self, state, timeout):
+    def __init__(self, state, timeout, handler):
         Thread.__init__(self)
         self.timeout = timeout
         self.state = state
+        self.loop = None
+        self.handler = handler
+
+    def _connect(self):
+        try:
+            self.state.database.connect()
+            self.loop.run_until_complete(self.state.database.connect())
+            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
+
+        except DBError as error:
+            self.state.actor.send_control(ErrorMessage(error.msg))
+            self.state.alive = False
 
     def _pull_database(self):
         try:
-            return next(self.state.database_it)
+            if self.state.asynchrone:
+                report = self.loop.run_until_complete(self.state.database_it.__anext__())
+                if report is not None:
+                    return report
+                else:
+                    raise StopIteration()
+            else:
+                return next(self.state.database_it)
+
         except (StopIteration, BadInputData, DeserializationFail):
             raise NoReportExtractedException()
 
@@ -72,6 +94,13 @@ class DBPullerThread(Thread):
 
         :param None msg: None.
         """
+        if self.state.asynchrone:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+            self.state.loop = self.loop
+            self.loop.set_debug(enabled=True)
+            logging.basicConfig(level=logging.DEBUG)
+            self._connect()
 
         while self.state.alive:
             try:
@@ -83,11 +112,15 @@ class DBPullerThread(Thread):
             except NoReportExtractedException:
                 time.sleep(self.state.timeout_puller/1000)
                 if not self.state.stream_mode:
+                    self.handler.handle_internal_msg(PoisonPillMessage(soft=False))
                     return
 
             except FilterUselessError:
-                self.state.actor.send_control(ErrorMessage("FilterUselessError"))
+                self.handler.handle_internal_msg(PoisonPillMessage(soft=False))
                 return
+
+            except StopIteration:
+                continue
 
 
 
@@ -95,7 +128,6 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
     def teardown(self, soft=False):
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.socket_interface.close()
-
 
 class InitiatizationException(Exception):
 
@@ -141,7 +173,6 @@ class PullerStartHandler(StartHandler):
         if not isinstance(msg, StartMessage):
             return
 
-
         try:
             self.initialization()
         except InitiatizationException as e:
@@ -158,24 +189,23 @@ class PullerStartHandler(StartHandler):
         Initialize the database and connect all dispatcher to the
         socket_interface
         """
-
-
-        db_puller_thread = DBPullerThread(self.state, self.timeout)
+        # db_puller_thread = DBPullerThread(self.state, self.timeout, loop=asyncio.get_event_loop())
+        db_puller_thread = DBPullerThread(self.state, self.timeout, self)
         db_puller_thread.start()
-
-        while db_puller_thread.is_alive() and self.state.alive:
+        # while db_puller_thread.is_alive() and self.state.alive:
+        while self.state.alive:
             time.sleep(0.4)
             msg = self.state.actor.receive_control(0.1)
             if msg is not None:
                 self.handle_internal_msg(msg)
 
-        self.handle_internal_msg(PoisonPillMessage(soft=False))
-
+        # self.handle_internal_msg(PoisonPillMessage(soft=False))
 
     def _database_connection(self):
         try:
-            self.state.database.connect()
-            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
+            if not self.state.asynchrone:
+                self.state.database.connect()
+                self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
 
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(error.msg))

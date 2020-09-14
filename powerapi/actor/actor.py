@@ -32,6 +32,7 @@ import signal
 import multiprocessing
 import setproctitle
 import sys
+import threading
 
 import zmq
 

@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import json
 from typing import Dict, List, Tuple
 from powerapi.report_model import ReportModel, CSV_HEADER_COMMON, CSV_HEADER_HWPC, BadInputData
 from powerapi.report import HWPCReport
@@ -46,6 +46,11 @@ class HWPCModel(ReportModel):
         Return the type of report
         """
         return HWPCReport
+
+    def from_json(self, json_str):
+        report = json.loads(json_str)
+        report.pop('_id', None)
+        return report
 
     def from_mongodb(self, json) -> Dict:
         """

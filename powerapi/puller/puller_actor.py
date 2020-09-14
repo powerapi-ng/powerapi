@@ -51,7 +51,7 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_puller):
+    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=False):
         """
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
@@ -79,6 +79,11 @@ class PullerState(State):
         #: (int): Counter for "sleeping mode"
         self.counter = 0
 
+        #: (bool): enable asynchrone driver
+        self.asynchrone=asynchrone
+
+        self.loop = None
+
 
 class PullerActor(Actor):
     """
@@ -89,18 +94,19 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
-                 timeout=0, timeout_puller=100):
+                 timeout=0, timeout_puller=100, asynchrone=False):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
         :param int level_logger: Define the level of the logger
         :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
+        :param bool asynchrone: use asynchrone driver
         """
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=asynchrone)
 
     def setup(self):
         """
