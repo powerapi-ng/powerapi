@@ -75,7 +75,7 @@ from tests.mongo_utils import gen_base_db_test
 from tests.mongo_utils import clean_base_db_test
 
 DB_URI = "mongodb://localhost:27017/"
-PORT = random.randint(10000, 20000)
+PORT = random.randint(1000, 60000)
 LOG_LEVEL = logging.NOTSET
 
 
