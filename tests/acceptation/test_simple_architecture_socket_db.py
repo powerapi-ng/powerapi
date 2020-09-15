@@ -52,9 +52,9 @@ Test if:
 import json
 import time
 import logging
+import random
 from threading import Thread
 from socket import socket
-
 
 import pytest
 import pymongo
@@ -75,7 +75,7 @@ from tests.mongo_utils import gen_base_db_test
 from tests.mongo_utils import clean_base_db_test
 
 DB_URI = "mongodb://localhost:27017/"
-PORT = 4321
+PORT = random.randint(10000, 20000)
 LOG_LEVEL = logging.NOTSET
 
 
