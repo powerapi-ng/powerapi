@@ -49,7 +49,7 @@ class SocketDB(BaseDB):
     async def connect(self):
         self.queue = asyncio.Queue()
         # self.queue = Queue()
-        self.server = await asyncio.start_server(self.gen_server_callback(), host='localhost', port=self.port)
+        self.server = await asyncio.start_server(self.gen_server_callback(), host='127.0.0.1', port=self.port)
 
     async def stop(self):
         self.server.close()

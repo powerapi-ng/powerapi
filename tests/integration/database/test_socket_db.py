@@ -37,8 +37,6 @@ import pytest
 from powerapi.database import SocketDB
 from powerapi.report_model import HWPCModel
 
-PORT = 6789
-
 def extract_json_report(n):
     json_file = open('tests/hwpc_reports.json', 'r')
     reports = json.load(json_file)
@@ -72,18 +70,18 @@ def assert_report_equals(hwpc_report, json_report):
 
 
 @pytest.fixture
-async def socket_db():
-    socket_db = SocketDB(PORT)
+async def socket_db(unused_tcp_port):
+    socket_db = SocketDB(unused_tcp_port)
     await socket_db.connect()
     yield socket_db
     await socket_db.stop()
 
 
 @pytest.mark.asyncio
-async def test_read_one_json_object_received_from_the_socket(socket_db):
+async def test_read_one_json_object_received_from_the_socket(socket_db, unused_tcp_port):
 
     json_reports = extract_json_report(1)
-    client = ClientThread(json_reports, PORT)
+    client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
     iterator = socket_db.iter(HWPCModel(), False)
@@ -93,9 +91,9 @@ async def test_read_one_json_object_received_from_the_socket(socket_db):
 
 
 @pytest.mark.asyncio
-async def test_read_two_json_object_received_from_the_socket(socket_db):
+async def test_read_two_json_object_received_from_the_socket(socket_db, unused_tcp_port):
     json_reports = extract_json_report(2)
-    client = ClientThread(json_reports, PORT)
+    client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
     iterator = socket_db.iter(HWPCModel(), False)

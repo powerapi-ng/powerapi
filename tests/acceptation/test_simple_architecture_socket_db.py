@@ -75,7 +75,6 @@ from tests.mongo_utils import gen_base_db_test
 from tests.mongo_utils import clean_base_db_test
 
 DB_URI = "mongodb://localhost:27017/"
-PORT = random.randint(1000, 60000)
 LOG_LEVEL = logging.NOTSET
 
 
@@ -148,7 +147,7 @@ def check_db():
              'target': report['target']}) == 1
 
 
-def test_run(database, supervisor):
+def test_run(database, supervisor, unused_tcp_port):
     # Pusher
     output_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_result')
     pusher = PusherActor("pusher_mongodb", PowerModel(), output_mongodb, level_logger=LOG_LEVEL, max_size=0)
@@ -164,8 +163,7 @@ def test_run(database, supervisor):
     dispatcher = DispatcherActor('dispatcher', formula_factory, route_table, level_logger=LOG_LEVEL)
 
     # Puller
-    input_socket = SocketDB(PORT)
-    print(PORT)
+    input_socket = SocketDB(unused_tcp_port)
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_socket", input_socket, report_filter, HWPCModel(), level_logger=LOG_LEVEL, stream_mode=True, asynchrone=True)
@@ -174,12 +172,12 @@ def test_run(database, supervisor):
     supervisor.launch_actor(puller)
     time.sleep(1)
     json_reports = extract_json_report(10)
-    client = ClientThread(json_reports, PORT)
+    client = ClientThread(json_reports, unused_tcp_port)
     client.start()
     time.sleep(1)
     check_db()
 
-def test_run_with_delay_between_message(database, supervisor):
+def test_run_with_delay_between_message(unused_tcp_port, database, supervisor):
     """
     run the same test but set a delay of 1s after sendig the 5th first messages
     """
@@ -198,7 +196,7 @@ def test_run_with_delay_between_message(database, supervisor):
     dispatcher = DispatcherActor('dispatcher', formula_factory, route_table, level_logger=LOG_LEVEL)
 
     # Puller
-    input_socket = SocketDB(PORT + 1)
+    input_socket = SocketDB(unused_tcp_port)
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_socket", input_socket, report_filter, HWPCModel(), level_logger=LOG_LEVEL, stream_mode=True, asynchrone=True)
@@ -207,8 +205,7 @@ def test_run_with_delay_between_message(database, supervisor):
     supervisor.launch_actor(puller)
     time.sleep(1)
     json_reports = extract_json_report(10)
-    client = ClientThreadDelay(json_reports, PORT + 1)
+    client = ClientThreadDelay(json_reports, unused_tcp_port)
     client.start()
     time.sleep(2)
     check_db()
-
