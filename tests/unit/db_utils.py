@@ -67,6 +67,7 @@ REPORT2 = Report(3, 4, 5)
 class FakeDB(BaseDB):
 
     def __init__(self, content=[], *args, **kwargs):
+        BaseDB.__init__(self)
         self._content = content
         self.q = Queue()
 

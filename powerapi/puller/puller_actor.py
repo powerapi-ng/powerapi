@@ -94,7 +94,7 @@ class PullerActor(Actor):
     """
 
     def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
-                 timeout=0, timeout_puller=100, asynchrone=False):
+                 timeout=0, timeout_puller=100):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
@@ -106,7 +106,7 @@ class PullerActor(Actor):
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=asynchrone)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=database.asynchrone)
 
     def setup(self):
         """

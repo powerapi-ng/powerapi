@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -76,6 +76,14 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('input', subparser_mongo_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+        subparser_socket_input = ComponentSubParser('socket')
+        subparser_socket_input.add_argument('p', 'port', help='specify port to bind the socket')
+        subparser_socket_input.add_argument('n', 'name', help='specify puller name', default='puller_socket')
+        subparser_socket_input.add_argument('m', 'model', help='specify data type that will be sent through the socket',
+                                           default='HWPCReport')
+        self.add_component_subparser('input', subparser_socket_input,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
         subparser_csv_input = ComponentSubParser('csv')
         subparser_csv_input.add_argument('f', 'files',
                                          help='specify input csv files with this format : file1,file2,file3',
@@ -91,7 +99,7 @@ class CommonCLIParser(MainParser):
         subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
         subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
-                                            
+
         subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
         subparser_mongo_output.add_argument('n', 'name', help='specify puller name', default='pusher_mongodb')
@@ -214,6 +222,7 @@ class DBActorGenerator(Generator):
 
         self.db_factory = {
             'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
+            'socket': lambda db_config: SocketDB(db_config['port']),
             'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
             'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),

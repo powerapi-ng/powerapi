@@ -41,6 +41,8 @@ SOCKET_TIMEOUT = 0.5
 class SocketDB(BaseDB):
 
     def __init__(self, port):
+        BaseDB.__init__(self)
+        self.asynchrone=True
         self.queue = None
         # self.loop = asyncio.get_event_loop()
         self.port = port
