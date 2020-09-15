@@ -165,6 +165,7 @@ def test_run(database, supervisor):
 
     # Puller
     input_socket = SocketDB(PORT)
+    print(PORT)
     report_filter = Filter()
     report_filter.filter(lambda msg: True, dispatcher)
     puller = PullerActor("puller_socket", input_socket, report_filter, HWPCModel(), level_logger=LOG_LEVEL, stream_mode=True, asynchrone=True)
