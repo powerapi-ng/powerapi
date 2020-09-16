@@ -83,6 +83,8 @@ jobs:
       - image: circleci/buildpack-deps
 
     steps:
+      - checkout
+
       - run:
           name: prepare environment
           command: |
