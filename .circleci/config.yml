@@ -80,7 +80,7 @@ jobs:
 
   publish-pypy-version:
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/buildpack-deps
 
     steps:
       - checkout
