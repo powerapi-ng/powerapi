@@ -103,7 +103,8 @@ jobs:
       - run:
           name: build docker image
           command: |
-            docker build . --tag powerapi/powerapi:$CIRCLE_TAG
+            cd powerapi_pypy
+            docker build . --tag powerapi/powerapi:$CIRCLE_TAG-pypy
 
       - run:
           name: push image to docker.com
