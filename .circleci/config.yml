@@ -104,13 +104,13 @@ jobs:
           name: build and push docker image
           command: |
             cd powerapi_pypy
-            docker build . --tag powerapi/powerapi:${$CIRCLE_TAG:1}-pypy
+            docker build . --tag powerapi/powerapi:${CIRCLE_TAG:1}-pypy
 
       - run:
           name: push image to docker.com
           command: |
             docker login docker.com -u powerapi -p $DOCKERHUB_PASSWORD
-            docker push powerapi/powerapi:${$CIRCLE_TAG:1}-pypy
+            docker push powerapi/powerapi:${CIRCLE_TAG:1}-pypy
 
 workflows:
   version: 2
