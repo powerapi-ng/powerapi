@@ -82,7 +82,7 @@ jobs:
     docker:
       - image: circleci/buildpack-deps
 
-    environement:
+    environment:
       POWERAPI_VERSION: "${$CIRCLE_TAG:1}"
 
     steps:
