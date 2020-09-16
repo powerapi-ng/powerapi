@@ -101,8 +101,7 @@ jobs:
       - run:
           name: build docker image
           command: |
-            version=$(python3 -c "import powerapi; print(powerapi.__version__)")
-            docker build . --tag powerapi/powerapi:$version-pypy
+            docker build . --tag powerapi/powerapi:$CIRCLE_TAG
 
       - run:
           name: push image to docker.com
