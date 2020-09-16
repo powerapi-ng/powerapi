@@ -83,7 +83,6 @@ jobs:
       - image: circleci/buildpack-deps
 
     steps:
-      - setup_remote_docker
       - run:
           name: prepare environment
           command: |
@@ -98,6 +97,7 @@ jobs:
             cd powerapi_pypy
             sh to_3.6.sh
 
+      - setup_remote_docker
       - run:
           name: build docker image
           command: |
