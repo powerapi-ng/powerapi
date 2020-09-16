@@ -82,9 +82,6 @@ jobs:
     docker:
       - image: circleci/buildpack-deps
 
-    environment:
-      POWERAPI_VERSION: "${$CIRCLE_TAG:1}"
-
     steps:
       - checkout
 
@@ -107,13 +104,13 @@ jobs:
           name: build and push docker image
           command: |
             cd powerapi_pypy
-            docker build . --tag powerapi/powerapi:$POWERAPI_VERSION-pypy
+            docker build . --tag powerapi/powerapi:${$CIRCLE_TAG:1}-pypy
 
       - run:
           name: push image to docker.com
           command: |
             docker login docker.com -u powerapi -p $DOCKERHUB_PASSWORD
-            docker push powerapi/powerapi:$POWERAPI_VERSION-pypy
+            docker push powerapi/powerapi:${$CIRCLE_TAG:1}-pypy
 
 workflows:
   version: 2
