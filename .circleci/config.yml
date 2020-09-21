@@ -43,7 +43,7 @@ jobs:
 
   publish-release:
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
 
     steps:
       - checkout
