@@ -76,37 +76,7 @@ jobs:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload dist/*
-
-  publish-pypy-version:
-    docker:
-      - image: circleci/buildpack-deps
-
-    steps:
-      - checkout
-
-      - run:
-          name: prepare environment
-          command: |
-            mkdir powerapi_pypy
-            cp -R powerapi powerapi_pypy/
-            cp setup.cfg setup.py powerapi_pypy/
-            cp pypy/to_3.6.sh pypy/Dockerfile powerapi_pypy/
-
-      - run:
-          name: change python version to 3.6
-          command: |
-            cd powerapi_pypy
-            sh to_3.6.sh
-
-      - setup_remote_docker
-      - run:
-          name: build and push docker image
-          command: |
-            cd powerapi_pypy
-            docker build . --tag powerapi/powerapi:${CIRCLE_TAG:1}-pypy
-            docker login docker.com -u powerapi -p $DOCKERHUB_PASSWORD
-            docker push docker.io/powerapi/powerapi:${CIRCLE_TAG:1}-pypy
+             twine upload dist/*
             
 workflows:
   version: 2
@@ -125,12 +95,3 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v.*/
-      - publish-pypy-version:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-
