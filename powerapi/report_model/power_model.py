@@ -86,6 +86,8 @@ class PowerModel(ReportModel):
         for name in serialized_report['metadata'].keys():
             if name == 'ratio':
                 pass
+            if name == 'predict':
+                pass
             else:
                 tags[name] = serialized_report['metadata'][name]
             
