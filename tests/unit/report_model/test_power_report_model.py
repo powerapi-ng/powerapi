@@ -48,3 +48,20 @@ def test_convert_to_influxDB_format_dont_keep_ratio_in_tag():
     model = PowerModel()
     influxdb_format = model.to_influxdb(serialized_report)
     assert 'ratio' not in influxdb_format['tags']
+
+
+def test_convert_to_influxDB_format_dont_keep_predict_in_tag():
+    serialized_report = {
+        'sensor': 'sensor_name',
+        'target': 'target_name',
+        'timestamp': datetime.datetime.now().timestamp(),
+        'power': 3,
+        'metadata': {
+            'scope': 2,
+            'socket': 1,
+            'formula': 'formuna_name',
+            'predict': 3}
+    }
+    model = PowerModel()
+    influxdb_format = model.to_influxdb(serialized_report)
+    assert 'predict' not in influxdb_format['tags']
