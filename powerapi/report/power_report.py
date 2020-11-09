@@ -40,7 +40,7 @@ class PowerReport(Report):
     PowerReport stores the power estimation information.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: Dict[str, Any]):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, socket: int, power: float, metadata: Dict[str, Any]):
         """
         Initialize a Power report using the given parameters.
         :param datetime timestamp: Report timestamp
@@ -53,9 +53,10 @@ class PowerReport(Report):
 
         self.metadata = metadata
         self.power = power
+        self.socket = socket
 
     def __repr__(self) -> str:
-        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, self.metadata)
+        return 'PowerReport(%s, %s, %s, %d, %f, %s)' % (self.timestamp, self.sensor, self.target, self.socket, self.power, self.metadata)
 
     @staticmethod
     def deserialize(data: Dict) -> PowerReport:
@@ -64,4 +65,6 @@ class PowerReport(Report):
         :param Dict data: Dictionary containing the report attributes
         :return: The Power report initialized with the given data
         """
-        return PowerReport(data['timestamp'], data['sensor'], data['target'], data['power'], data['metadata'])
+        socket_id = data['socket'] if 'socket' in data else -1
+
+        return PowerReport(data['timestamp'], data['sensor'], data['target'], socket_id, data['power'], data['metadata'])

@@ -174,7 +174,7 @@ def initialized_pusher_plus_supervisor(pusher, supervisor):
 
 
 def gen_power_report():
-    return PowerReport(1, "sensor", "target", 0.11, {"metadata1": "truc", "metadata2": "oui"})
+    return PowerReport(1, "sensor", "target", 0, 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 
 def mongodb_database(uri, database_name, collection_name):

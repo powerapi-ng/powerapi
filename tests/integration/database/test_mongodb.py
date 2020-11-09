@@ -50,7 +50,7 @@ CPT = 1
 def gen_power_report():
     global CPT
     CPT += 1
-    return PowerReport(CPT, "sensor", "target", 0.11, {"metadata1": "truc", "metadata2": "oui"})
+    return PowerReport(CPT, "sensor", "target", 0, 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 
 def gen_hwpc_report():

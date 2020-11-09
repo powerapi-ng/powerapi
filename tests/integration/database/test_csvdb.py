@@ -120,7 +120,7 @@ def gen_hwpc_report():
 def gen_power_report():
     global CPT
     CPT += 1
-    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11, {"metadata1": "truc", "metadata2": "oui"})
+    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, -1, 0.11, {"metadata1": "truc", "metadata2": "oui"})
 
 ##################
 #    FIXTURES    #

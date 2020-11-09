@@ -61,6 +61,13 @@ class PowerModel(ReportModel):
         """
         return PowerReport
 
+    def _influxdb_keept_metadata(self):
+        """
+        return the list of metadata named that must be keept while converting powerReport to influxdb format
+        """
+        return ()
+
+
     def to_influxdb(self, serialized_report) -> Dict:
         """
         Return raw data from serialized report
@@ -81,14 +88,14 @@ class PowerModel(ReportModel):
             raise BadInputData()
 
         tags = {'sensor': serialized_report['sensor'],
-                'target': serialized_report['target']}
+                'target': serialized_report['target'],
+                'socket': serialized_report['socket']}
 
-        for name in serialized_report['metadata'].keys():
-            if name == 'ratio':
+        for metadata_name in self._influxdb_keept_metadata():
+            if metadata_name not in serialized_report['metadata']:
                 pass
             else:
-                tags[name] = serialized_report['metadata'][name]
-            
+                tags[metadata_name] = serialized_report['metadata'][metadata_name]
 
         return {
             'measurement': 'power_consumption',

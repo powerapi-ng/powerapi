@@ -44,11 +44,11 @@ SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'target_test'
 
 POWER_REPORT_0 = PowerReport(datetime.datetime.fromtimestamp(0), SENSOR_NAME,
-                             TARGET_NAME, 100, {})
+                             TARGET_NAME, 0, 100, {})
 POWER_REPORT_1 = PowerReport(datetime.datetime.fromtimestamp(1), SENSOR_NAME,
-                             TARGET_NAME, 100, {})
+                             TARGET_NAME, 0, 100, {})
 POWER_REPORT_2 = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME,
-                             TARGET_NAME, 100, {})
+                             TARGET_NAME, 0, 100, {})
 
 
 def bad_serialize():
@@ -61,7 +61,7 @@ def bad_serialize():
         }}
 
 
-BAD_POWER_REPORT = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME, TARGET_NAME, 100, {})
+BAD_POWER_REPORT = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME, TARGET_NAME, 0, 100, {})
 BAD_POWER_REPORT.serialize = bad_serialize
 
 
