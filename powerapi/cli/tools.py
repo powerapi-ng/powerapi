@@ -200,14 +200,34 @@ class ModelNameAlreadyUsed(PowerAPIException):
     Exception raised when attempting to add to a DBActorGenerator a model factory with a name already bound to another
     model factory in the DBActorGenerator
     """
+    def __init__(self, model_name):
+        self.model_name = model_name
 
 
-class ModelNameAlreadyUsed(PowerAPIException):
+class DatabaseNameAlreadyUsed(PowerAPIException):
     """
     Exception raised when attempting to add to a DBActorGenerator a database factory with a name already bound to another
     database factory in the DBActorGenerator
     """
+    def __init__(self, database_name):
+        self.database_name = database_name
 
+        
+class ModelNameDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a DBActorGenerator a model factory with a name that is not bound to another
+    model factory in the DBActorGenerator
+    """
+    def __init__(self, model_name):
+        self.model_name = model_name
+
+class DatabaseNameDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a DBActorGenerator a database factory with a name that is not bound to another
+    database factory in the DBActorGenerator
+    """
+    def __init__(self, database_name):
+        self.database_name = database_name
 
 class DBActorGenerator(Generator):
 
@@ -229,14 +249,24 @@ class DBActorGenerator(Generator):
             'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
         }
 
+    def remove_model_factory(self, model_name):
+        if model_name not in self.model_factory:
+            raise ModelNameDoesNotExist(model_name)
+        del self.model_factory[model_name]
+
+    def remove_db_factory(self, database_name):
+        if database_name not in self.db_factory:
+            raise DatabaseNameDoesNotExist(database_name)
+        del self.db_factory[database_name]
+
     def add_model_factory(self, model_name, model_factory):
         if model_name in self.model_factory:
-            raise ModelNameAlreadyUsed()
+            raise ModelNameAlreadyUsed(model_name)
         self.model_factory[model_name] = model_factory
 
     def add_db_factory(self, db_name, db_factory):
         if db_name in self.model_factory:
-            raise ModelNameAlreadyUsed()
+            raise DatabaseNameAlreadyUsed(db_name)
         self.model_factory[db_name] = db_factory
 
     def _generate_db(self, db_name, db_config, main_config):

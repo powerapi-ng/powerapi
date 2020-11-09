@@ -33,31 +33,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 import sys
 
-from mock import Mock
+from mock import Mock, patch
 
-from powerapi.cli.tools import PullerGenerator, PusherGenerator
+from powerapi.cli.tools import PullerGenerator, PusherGenerator, DBActorGenerator
+from powerapi.cli.tools import ModelNameDoesNotExist, DatabaseNameDoesNotExist
 from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
 
 ####################
 # PULLER GENERATOR #
 ####################
-def test_no_input_specified():
+
+class SysExitException(Exception):
+    pass
+
+
+@patch('sys.exit', side_effect=SysExitException())
+def test_no_input_specified(mocked_sys_exit):
     """
     generate puller from an empty config dict
 
     Test if the generate_puller function call sys.exit
     """
     args = {}
-    sys.exit = Mock()
-    sys.exit.side_effect = Exception()
+    # sys.exit = Mock()
+    # sys.exit.side_effect = Exception()
 
     generator = PullerGenerator(None)
 
-    with pytest.raises(Exception):
+    with pytest.raises(SysExitException):
         generator.generate(args)
 
-    assert sys.exit.called
+    # assert sys.exit.called
 
 
 def test_generate_puller_from_simple_config():
@@ -146,39 +153,44 @@ def test_generate_two_pusher():
     assert db.collection_name == 'huhu'
 
 
-# def test_generate_puller_and_pusher_with_same_database():
-#     """
-#     generate mongodb puller and pusher from this config :
-#     {'verbose': True, 'stream': True, 'input': {'mongodb': 'toto': {{'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
-#                                                 'collection': 'tutu'}}},
-#      'output': {'mongodb': 'hoho': {{'model': 'HWPCReport', 'name': 'hoho', 'collection': 'tete'}}}}
-#     as the database have the same uri and same database name, this value are not specified on the configuration of the output
+#########################
+# DBActorGenerator Test #
+#########################
+def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
+    generator = DBActorGenerator('input')
 
-#     Test if :
-#       - puller and pusher database uri is titi
-#       - puller and pusher database db is tata
-#       - puller database collection is tutu
-#       - pusher database collection is tete
+    with pytest.raises(ModelNameDoesNotExist):
+        generator.remove_model_factory('model')
 
-#     """
-#     args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
-#                                                                    'db': 'tata', 'collection': 'tutu'}}},
-#             'output': {'mongodb': {'hoho': {'model': 'HWPCReport', 'name': 'hoho', 'collection': 'tete'}}}}
 
-#     puller_generator = PullerGenerator(None)
-#     result = puller_generator.generate(args)
+def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
+    generator = DBActorGenerator('input')
 
-#     puller = result['toto']
-#     puller_db = puller.state.database
+    with pytest.raises(ModelNameDoesNotExist):
+        generator.remove_model_factory('model')
 
-#     pusher_generator = PusherGenerator()
-#     result = pusher_generator.generate(args)
 
-#     pusher = result['hoho']
+def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
+    generator = DBActorGenerator('input')
 
-#     pusher_db = pusher.state.database
+    with pytest.raises(ModelNameDoesNotExist):
+        generator.remove_model_factory('model')
 
-#     assert pusher_db.uri == puller_db.uri
-#     assert pusher_db.db_name == puller_db.db_name
-#     assert pusher_db.collection_name == 'tete'
-#     assert puller_db.collection_name == 'tutu'
+@patch('sys.exit', side_effect=SysExitException())
+def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(mocked_sys_exit):
+    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
+                                                                   'db': 'tata', 'collection': 'tutu'}}}}
+    generator = PullerGenerator(None)
+    generator.remove_model_factory('HWPCReport')
+    with pytest.raises(SysExitException):
+        result = generator.generate(args)
+
+
+@patch('sys.exit', side_effect=SysExitException())
+def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(mocked_sys_exit):
+    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
+                                                                   'db': 'tata', 'collection': 'tutu'}}}}
+    generator = PullerGenerator(None)
+    generator.remove_db_factory('mongodb')
+    with pytest.raises(SysExitException):
+        result = generator.generate(args)
