@@ -40,8 +40,8 @@ from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 class DummyState(FormulaState):
 
-    def __init__(self, actor, pushers, sleep_time):
-        FormulaState.__init__(self, actor, pushers)
+    def __init__(self, actor, pushers, metadata, sleep_time):
+        FormulaState.__init__(self, actor, pushers, metadata)
         self.sleep_time = sleep_time
 
 
@@ -61,7 +61,7 @@ class DummyFormulaActor(FormulaActor):
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
 
         #: (powerapi.State): Basic state of the Formula.
-        self.state = DummyState(self, pushers, sleep_time)
+        self.state = DummyState(self, pushers, self.formula_metadata, sleep_time)
 
     def setup(self):
         """

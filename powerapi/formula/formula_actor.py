@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import re
 from typing import Dict
 
 from powerapi.actor import Actor, State, SocketInterface
@@ -39,7 +40,7 @@ class FormulaState(State):
     State of the Formula actor.
     """
 
-    def __init__(self, actor, pushers):
+    def __init__(self, actor, pushers, metadata):
         """
         Initialize a new Formula actor state.
         :param actor: Actor linked to the state
@@ -47,6 +48,7 @@ class FormulaState(State):
         """
         super().__init__(actor)
         self.pushers = pushers
+        self.metadata = metadata
 
 
 class FormulaActor(Actor):
@@ -63,7 +65,24 @@ class FormulaActor(Actor):
         :param timeout: Time in millisecond to wait for a message before calling the timeout handler
         """
         Actor.__init__(self, name, level_logger, timeout)
-        self.state = FormulaState(self, pushers)
+
+        self.formula_metadata = self._extract_formula_metadata(name)
+        self.state = FormulaState(self, pushers, self.formula_metadata)
+
+    def _extract_formula_metadata(self, formula_name):
+        metadata_str = re.findall(r'\'([\w_]*)\'', formula_name)
+
+        metadata = {}
+
+        if len(metadata_str) >= 2:
+            metadata['sensor'] = metadata_str[1]
+
+        if len(metadata_str) >= 3:
+            metadata['socket'] = int(metadata_str[2])
+
+        if len(metadata_str) >= 4:
+            metadata['core'] = int(metadata_str[3])
+        return metadata
 
     def setup(self):
         """
