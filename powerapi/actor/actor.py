@@ -115,6 +115,9 @@ class Actor(multiprocessing.Process):
         #: (func): Actor behaviour
         self.behaviour = Actor._initial_behaviour
 
+        #: (List): list of exception that restart the actor it they are raised
+        self.low_exception = []
+
     def run(self):
         """
         Main code executed by the actor
@@ -122,7 +125,13 @@ class Actor(multiprocessing.Process):
         self._setup()
 
         while self.state.alive:
-            self.behaviour(self)
+            try:
+                self.behaviour(self)
+            except Exception as exn:
+                if type(exn) in self.low_exception:
+                    self.state.reinit()
+                else:
+                    self.state.alive = False
 
         self._kill_process()
 

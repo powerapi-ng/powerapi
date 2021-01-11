@@ -80,6 +80,7 @@ class BaseDB:
     """
     def __init__(self):
         self.asynchrone = False
+        self.exceptions = []
 
     def connect(self):
         """

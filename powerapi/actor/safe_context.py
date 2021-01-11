@@ -53,3 +53,7 @@ class SafeContext():
             cls._current_pid = current_process().pid
 
         return cls._context
+
+    @classmethod
+    def destroy(cls):
+        cls._context.destroy()

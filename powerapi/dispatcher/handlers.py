@@ -29,6 +29,7 @@
 
 from powerapi.handler import InitHandler, Handler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import OKMessage, StartMessage
+from powerapi.exception import PowerAPIException
 
 
 def _clean_list(id_list):
@@ -49,6 +50,10 @@ def _clean_list(id_list):
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
     def teardown(self, soft=False):
         self.state.supervisor.kill_actors(soft=soft)
+
+
+class DispatcherSendMessageToDeadFormulaError(PowerAPIException):
+    pass
 
 
 class FormulaDispatcherReportHandler(InitHandler):
@@ -79,11 +84,17 @@ class FormulaDispatcherReportHandler(InitHandler):
             primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = self.state.get_direct_formula(formula_id)
-                formula.send_data(msg)
-
+                if formula.is_alive():
+                    formula.send_data(msg)
+                else:
+                    raise DispatcherSendMessageToDeadFormulaError()
             else:
                 for formula in self.state.get_corresponding_formula(list(formula_id)):
-                    formula.send_data(msg)
+                    if formula.is_alive():
+                        formula.send_data(msg)
+                    else:
+                        raise DispatcherSendMessageToDeadFormulaError()
+
 
     def _extract_formula_id(self, report, dispatch_rule, primary_dispatch_rule):
         """

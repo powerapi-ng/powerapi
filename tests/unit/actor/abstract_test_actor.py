@@ -35,6 +35,8 @@ import pytest
 
 from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
 from powerapi.actor import Actor, NotConnectedException
+from powerapi.handler import Handler
+
 
 class FakeActor(Actor):
 
@@ -89,6 +91,23 @@ def is_actor_alive(actor, time=0.5):
     return actor.is_alive()
 
 
+class CrashMessage:
+    def __init__(self, exception_type):
+        self.exception_type = exception_type
+
+class PingMessage:
+    pass
+
+class PingHandler(Handler):
+    def handle_message(self, msg):
+        self.state.actor.send_control('pong')
+
+class CrashHandler(Handler):
+
+    def handle_message(self, msg):
+        raise msg.exception_type()
+
+
 class AbstractTestActor:
 
     @pytest.fixture
@@ -106,6 +125,29 @@ class AbstractTestActor:
         init_actor.send_control(StartMessage())
         _ = init_actor.receive_control(2000)
         return init_actor
+
+    @pytest.fixture
+    def actor_with_crash_handler(self, actor):
+        actor.state.handlers = [
+            (CrashMessage, CrashHandler(actor.state)),
+            (PingMessage, PingHandler(actor.state))
+        ]
+
+        actor.start()
+        actor.connect_data()
+        actor.connect_control()
+        
+        yield actor
+        
+        if actor.is_alive():
+            actor.terminate()
+        actor.socket_interface.close()
+
+    @pytest.fixture
+    def started_actor_with_crash_handler(self, actor_with_crash_handler):
+        actor_with_crash_handler.send_control(StartMessage())
+        _ = actor_with_crash_handler.receive_control(2000)
+        return actor_with_crash_handler
 
     def test_new_actor_is_alive(self, init_actor):
         assert init_actor.is_alive()
@@ -134,3 +176,25 @@ class AbstractTestActor:
     def test_send_message_on_control_canal_to_non_initialized_actor_raise_NotConnectedException(self, actor):
         with pytest.raises(NotConnectedException):
             actor.send_control(StartMessage())
+
+    def test_if_actor_behaviour_raise_low_exception_the_actor_must_stay_alive(self, actor_with_crash_handler):
+        if actor_with_crash_handler.low_exception == []:
+            assert True
+        else:
+            exception = actor_with_crash_handler.low_exception[0]
+            actor_with_crash_handler.send_data(CrashMessage(exception))
+            assert is_actor_alive(actor_with_crash_handler, time=1)
+
+
+    def test_if_actor_behaviour_raise_low_exception_the_actor_must_answer_to_ping_message(self, actor_with_crash_handler):
+        actor_with_crash_handler.send_data(PingMessage())
+
+        answer = actor_with_crash_handler.receive_control(2000)
+        assert answer == 'pong'
+
+
+    def test_if_actor_behaviour_raise_fatal_exception_the_actor_must_be_killed(self, actor_with_crash_handler):
+        actor_with_crash_handler.send_data(CrashMessage(TypeError))
+        assert not is_actor_alive(actor_with_crash_handler, time=1)
+
+

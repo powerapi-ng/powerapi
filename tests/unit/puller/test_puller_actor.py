@@ -108,7 +108,7 @@ class TestPuller(AbstractTestActorWithDB):
         for report in content:
             assert fake_dispatcher.q.get(timeout=2) == report
 
-    def test_starting_actor_in_stream_mode_make_it_termiante_itself_after_empty_db(self, started_actor):
+    def test_starting_actor_in_stream_mode_make_it_terminate_itself_after_empty_db(self, started_actor):
         started_actor.join(2)
         assert started_actor.is_alive() is False
 

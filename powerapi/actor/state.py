@@ -88,3 +88,6 @@ class State:
         :type handler: powerapi.handler.AbstractHandler
         """
         self.handlers.append((message_type, handler))
+
+    def reinit(self):
+        pass

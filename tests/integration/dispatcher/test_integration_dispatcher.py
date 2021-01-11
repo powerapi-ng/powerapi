@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import pickle
 
 import pytest
 
@@ -57,6 +58,16 @@ def define_route_table(route_table):
         return func
     return wrap
 
+def define_formula_factory(formula_factory):
+    """
+    A decorator to set the _formula_factory
+    attribute for individual tests.
+    """
+    def wrap(func):
+        setattr(func, '_formula_factory', formula_factory)
+        return func
+    return wrap
+
 def receive(socket):
     """
     wait for a message reception on a given socket and return it
@@ -75,6 +86,9 @@ def pytest_generate_tests(metafunc):
     define the route_table fixtures in test environement with collected the
     value _route_table if it exist or with an empty RouteTable
 
+    define the formula_factory fixtures in test environement with collected the
+    value _formula_factory if it exist or with an formula factory that create FakeFormula
+
     :param metafunc: the test context given by pytest
     """
     if 'route_table' in metafunc.fixturenames:
@@ -88,20 +102,25 @@ def pytest_generate_tests(metafunc):
                                   route_table_with_primary_rule()])
         else:
             metafunc.parametrize('route_table', [RouteTable()])
+    if 'formula_factory' in metafunc.fixturenames:
+        formula_factory = getattr(metafunc.function, '_formula_factory', None)
+        if formula_factory is None:
+            def formula_factory(name, log):
+                return FakeFormulaActor(name, FORMULA_SOCKET_ADDR, level_logger=log)
+        metafunc.parametrize('formula_factory', [formula_factory])
 
 
 ##############
 #  Fixtures  #
 ##############
 @pytest.fixture()
-def dispatcher(request, route_table):
+def dispatcher(request, route_table, formula_factory):
     """
     return an instance of a DispatcherActor that is not launched
     """
     dispatcher_actor = DispatcherActor(
         'test_dispatcher-',
-        lambda name, log: FakeFormulaActor(name, FORMULA_SOCKET_ADDR,
-                                           level_logger=log),
+        formula_factory,
         route_table,
         level_logger=LOG_LEVEL)
     return dispatcher_actor
@@ -187,11 +206,13 @@ def dispatcher_with_formula(initialized_dispatcher,
             if not gb_rule.is_primary:
                 msg = FakeReport()
             initialized_dispatcher.send_data(msg)
-        except UnknowMessageTypeException:
+        except UnknowMessageTypenException:
             msg = FakeReport()
             initialized_dispatcher.send_data(msg)
-        assert receive(formula_socket) == 'created'
-        assert receive(formula_socket) == msg
+        # flush the socket from report send by the created formula
+        receive(formula_socket)
+        # assert receive(formula_socket) == 'created'
+        # assert receive(formula_socket) == msg
 
     yield initialized_dispatcher
     # wait for formula termination
@@ -260,6 +281,19 @@ class FakeGBR(DispatchRule):
     def __str__(self):
         return 'MESSAGE OTHER GBR'
 
+# class FakeDispatchRule(DispatchRule):
+
+#     def __init__(self):
+#         self.fields = ()
+
+
+def route_table_hwpc_not_primary():
+    route_table = RouteTable()
+    route_table.dispatch_rule(FakeReport, FakeGBR(primary=True))
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.ROOT,
+                                                           primary=False))
+    return route_table
+
 
 def route_table_with_primary_rule():
     """
@@ -299,13 +333,11 @@ def test_create_formula_double_dispatcher(initialized_dispatcher, dispatcher3, f
     Supervisor().launch_actor(dispatcher3)
     initialized_dispatcher.send_data(gen_good_report())
     assert is_actor_alive(initialized_dispatcher)
-    assert receive(formula_socket) == 'created'
     assert receive(formula_socket) == gen_good_report()
     assert receive(formula_socket) is None
 
     dispatcher3.send_data(gen_good_report())
     assert is_actor_alive(dispatcher3)
-    assert receive(formula_socket) == 'created'
     assert receive(formula_socket) == gen_good_report()
     assert receive(formula_socket) is None
 
@@ -325,3 +357,23 @@ def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
     dispatcher_with_formula.hard_kill()
     assert not is_actor_alive(dispatcher_with_formula)
     assert receive(formula_socket) == 'terminated'
+
+
+def crash_formula_factory(name, log):
+    return CrashFormulaActor(name, {}, 0, RuntimeError, level_logger=log)
+
+
+@define_formula_factory(crash_formula_factory)
+@define_route_table(route_table_with_primary_rule())
+def test_dispatcher_send_report_to_a_dead_formula_must_crash(dispatcher_with_formula):
+    dispatcher_with_formula.send_data(gen_good_report())
+    dispatcher_with_formula.send_data(gen_good_report())
+    dispatcher_with_formula.send_data(gen_good_report())
+    dispatcher_with_formula.send_data(gen_good_report())
+    assert not is_actor_alive(dispatcher_with_formula)
+
+@define_formula_factory(crash_formula_factory)
+@define_route_table(route_table_hwpc_not_primary())
+def test_dispatcher_send_non_primary_report_to_a_dead_formula_must_crash(dispatcher_with_formula):
+    dispatcher_with_formula.send_data(gen_good_report())
+    assert not is_actor_alive(dispatcher_with_formula)

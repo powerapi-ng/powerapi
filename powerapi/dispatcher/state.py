@@ -64,6 +64,7 @@ class RouteTable:
         :raise: UnknowMessageTypeException if no group by rule is mapped to the
                 received message type
         """
+
         for (report_class, dispatch_rule) in self.route_table:
             if isinstance(msg, report_class):
                 return dispatch_rule
@@ -83,6 +84,7 @@ class RouteTable:
             if self.primary_dispatch_rule is not None:
                 raise PrimaryDispatchRuleRuleAlreadyDefinedException()
             self.primary_dispatch_rule = dispatch_rule
+
 
         self.route_table.append((report_class, dispatch_rule))
 

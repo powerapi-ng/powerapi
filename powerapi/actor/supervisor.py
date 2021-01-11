@@ -27,6 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import multiprocessing
+
 from powerapi.exception import PowerAPIException
 from powerapi.message import StartMessage, ErrorMessage
 
@@ -113,8 +115,10 @@ class Supervisor:
         """
         wait until all actor are terminated
         """
-        for actor in self.supervised_actors:
-            actor.join()
+        actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
+        multiprocessing.connection.wait(actor_sentinels)
+        # for actor in self.supervised_actors:
+        #     actor.join()
 
     def kill_actors(self, soft=False, by_data=False):
         """

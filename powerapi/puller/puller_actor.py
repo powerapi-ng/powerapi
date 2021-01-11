@@ -108,6 +108,9 @@ class PullerActor(Actor):
         #: (State): Actor State.
         self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=database.asynchrone)
 
+        self.low_exception += database.exceptions
+
+
     def setup(self):
         """
         Define StartMessage handler and PoisonPillMessage handler

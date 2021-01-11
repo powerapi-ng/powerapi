@@ -87,5 +87,3 @@ class FakeFormulaActor(Actor):
         self.push_socket.connect(self.addr)
 
         self.add_handler(Report, HWPCReportHandler(self.state, self.push_socket))
-
-        self.push_socket.send(pickle.dumps('created'))

@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import multiprocessing
 import signal
 
 from powerapi.actor import Supervisor
@@ -86,14 +86,15 @@ class BackendSupervisor(Supervisor):
                 actor.kill()
                 actor.join()
 
-        for puller in self.pullers:
-            puller.join()
-
-        for dispatcher in self.dispatchers:
-            dispatcher.join()
-
-        for pusher in self.pushers:
-            pusher.join()
+        for actor in self.supervised_actors:
+            if not actor.is_alive():
+                self.kill_actors()
+                return
+        
+        actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
+        import select
+        select.select(actor_sentinels, actor_sentinels, actor_sentinels)
+        self.kill_actors()
 
     def join_stream_mode_off(self):
         """

@@ -39,6 +39,8 @@ from powerapi.report import Report
 from powerapi.report_model import ReportModel
 
 
+
+
 class MongoBadDBError(DBError):
     """
     Error raised when hostname/port fail
@@ -121,6 +123,8 @@ class MongoDB(BaseDB):
         #: (pymongo.MongoClient): MongoClient pointed to the
         #: targeted collection
         self.collection = None
+
+        self.exceptions = [pymongo.errors.PyMongoError]
 
     def connect(self):
         """
