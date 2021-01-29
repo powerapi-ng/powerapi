@@ -33,6 +33,7 @@ import multiprocessing
 import setproctitle
 import sys
 import threading
+import traceback
 
 import zmq
 
@@ -129,9 +130,14 @@ class Actor(multiprocessing.Process):
                 self.behaviour(self)
             except Exception as exn:
                 if type(exn) in self.low_exception:
+                    self.logger.error('Minor exception raised, restart actor !')
+                    traceback.print_exc()
                     self.state.reinit()
                 else:
                     self.state.alive = False
+                    self.logger.error('Major Exception raised, stop actor')
+                    traceback.print_exc()
+
 
         self._kill_process()
 
