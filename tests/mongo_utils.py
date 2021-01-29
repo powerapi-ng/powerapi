@@ -31,12 +31,14 @@ import datetime
 import pymongo
 
 
-def generate_hwpc_report(report_id, sensor, target, timestamp):
+def generate_hwpc_report(report_id, sensor, target, i):
     """ generate a HWPC report with json format
     """
+    seconds = i % 60
+    minutes = int(i / 60)
     return {
         '_id': str(report_id),
-        'timestamp': datetime.datetime.fromtimestamp(timestamp),
+        'timestamp': datetime.datetime(1970, 1, 1, 0, minutes, seconds),
         'sensor': str(sensor),
         'target': str(target),
         'groups': {

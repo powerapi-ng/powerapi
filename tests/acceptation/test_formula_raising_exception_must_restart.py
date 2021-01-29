@@ -95,7 +95,7 @@ def check_db():
 
     for report in c_input.find():
         print(report['timestamp'])
-        if report['timestamp'] == datetime.datetime(1970, 1, 1, 1, 0, 6):
+        if report['timestamp'] == datetime.datetime(1970, 1, 1, 0, 0, 6):
             print('pass')
             continue
         assert c_output.count_documents(
