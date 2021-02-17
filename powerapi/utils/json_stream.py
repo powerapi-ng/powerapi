@@ -83,7 +83,7 @@ class JsonStream:
         if len(self.json_buffer) > stream_len:
             json_str = self._extract_json()
             if json_str is None:
-                return self._extract_big_json()
+                return await self._extract_big_json()
             else:
                 return json_str
         else:
