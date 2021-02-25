@@ -29,4 +29,5 @@
 
 from powerapi.utils.utils import *
 from powerapi.utils.tree import Tree
+from powerapi.utils.stat_buffer import StatBuffer
 from .json_stream import JsonStream

@@ -33,4 +33,5 @@ from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameEr
 from powerapi.database.mongodb import MongoDB, MongoBadDBError
 from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
 from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
+from powerapi.database.prometheus_db import PrometheusDB
 from .socket_db import SocketDB

@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -67,7 +67,7 @@ class CommonCLIParser(MainParser):
         self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
 
         subparser_mongo_input = ComponentSubParser('mongodb')
-        subparser_mongo_input.add_argument('u', 'uri', help='sepcify MongoDB uri')
+        subparser_mongo_input.add_argument('u', 'uri', help='specify MongoDB uri')
         subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name', )
         subparser_mongo_input.add_argument('c', 'collection', help='specify MongoDB database collection')
         subparser_mongo_input.add_argument('n', 'name', help='specify puller name', default='puller_mongodb')
@@ -96,7 +96,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_mongo_output = ComponentSubParser('mongodb')
-        subparser_mongo_output.add_argument('u', 'uri', help='sepcify MongoDB uri')
+        subparser_mongo_output.add_argument('u', 'uri', help='specify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
         subparser_mongo_output.add_argument('c', 'collection', help='specify MongoDB database collection')
 
@@ -104,6 +104,19 @@ class CommonCLIParser(MainParser):
                                             default='PowerReport')
         subparser_mongo_output.add_argument('n', 'name', help='specify puller name', default='pusher_mongodb')
         self.add_component_subparser('output', subparser_mongo_output,
+                                     help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
+
+        subparser_prom_output = ComponentSubParser('prom')
+        subparser_prom_output.add_argument('a', 'addr', help='specify server address')
+        subparser_prom_output.add_argument('p', 'port', help='specify server port', type=int)
+        subparser_prom_output.add_argument('M', 'metric_name', help='speify metric name')
+        subparser_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
+        subparser_prom_output.add_argument('A', 'aggregation_period', help='specify number of second for the value must be aggregated before compute statistics on them', default=15, type=int)
+
+        subparser_prom_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                            default='PowerReport')
+        subparser_prom_output.add_argument('n', 'name', help='specify puller name', default='pusher_prom')
+        self.add_component_subparser('output', subparser_prom_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_csv_output = ComponentSubParser('csv')
@@ -116,7 +129,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_influx_output = ComponentSubParser('influxdb')
-        subparser_influx_output.add_argument('u', 'uri', help='sepcify InfluxDB uri')
+        subparser_influx_output.add_argument('u', 'uri', help='specify InfluxDB uri')
         subparser_influx_output.add_argument('d', 'db', help='specify InfluxDB database name')
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
         subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
@@ -126,7 +139,7 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_opentsdb_output = ComponentSubParser('opentsdb')
-        subparser_opentsdb_output.add_argument('u', 'uri', help='sepcify openTSDB host')
+        subparser_opentsdb_output.add_argument('u', 'uri', help='specify openTSDB host')
         subparser_opentsdb_output.add_argument('p', 'port', help='specify openTSDB connection port', type=int)
         subparser_opentsdb_output.add_argument('metric_name', help='specify metric name')
 
@@ -247,6 +260,8 @@ class DBActorGenerator(Generator):
                                            files=[] if 'files' not in db_config else db_config['files']),
             'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
             'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
+            'prom': lambda db_config: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
+                                                   db_config['metric_description'], self.model_factory[db_config['model']], db_config['aggregation_period']),
         }
 
     def remove_model_factory(self, model_name):
