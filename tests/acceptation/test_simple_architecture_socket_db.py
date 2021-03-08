@@ -53,6 +53,7 @@ import json
 import time
 import logging
 import random
+from datetime import datetime
 from threading import Thread
 from socket import socket
 
@@ -142,8 +143,9 @@ def check_db():
 
     for report in json_reports:
 
+        ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f%z")
         assert c_output.count_documents(
-            {'timestamp': report['timestamp'], 'sensor': report['sensor'],
+            {'timestamp': ts, 'sensor': report['sensor'],
              'target': report['target']}) == 1
 
 
