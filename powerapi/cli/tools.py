@@ -314,4 +314,8 @@ class PusherGenerator(DBActorGenerator):
         DBActorGenerator.__init__(self, 'output')
 
     def _actor_factory(self, name, db, model, stream_mode, level_logger):
-        return PusherActor(name, model, db, level_logger)
+        if type(db) == PrometheusDB:
+            max_size = -1
+        else:
+            max_size = 50
+        return PusherActor(name, model, db, level_logger, max_size=max_size)
