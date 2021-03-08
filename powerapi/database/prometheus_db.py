@@ -78,7 +78,7 @@ class PrometheusDB(BaseDB):
 
         self.mean_metric = Gauge(self.metric_name + '_mean', self.metric_description + '(MEAN)', self.report_model.get_tags())
         self.std_metric = Gauge(self.metric_name + '_std', self.metric_description + '(STD)', self.report_model.get_tags())
-        start_http_server(self.port, addr=self.address)
+        start_http_server(self.port)
 
     def _expose_data(self, key):
         aggregated_value = self.buffer.get_stats(key)
