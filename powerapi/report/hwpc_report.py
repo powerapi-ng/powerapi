@@ -87,7 +87,8 @@ class HWPCReport(Report):
         :return: The HWPC report initialized with the given data
         """
         try:
-            report = HWPCReport(data['timestamp'], data['sensor'], data['target'], data['groups'])
+            ts = datetime.strptime(data['timestamp'], "%Y-%m-%dT%H:%M:%S.%f%z") if type(data['timestamp']) == str else data['timestamp']
+            report = HWPCReport(ts, data['sensor'], data['target'], data['groups'])
         except KeyError:
             raise DeserializationFail()
 
