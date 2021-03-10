@@ -108,6 +108,8 @@ def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_1_while_2_measur
     assert buffer.get_stats('ab') == {
         'mean': 1.5,
         'std': 0.5,
+        'min': 1.0,
+        'max': 2.0,
         'tags': {'t1': 'a', 't2': 'b'},
         'time': 2
     }
@@ -121,6 +123,8 @@ def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_1_while_3_measur
     assert buffer.get_stats('ab') == {
         'mean': 1.5,
         'std': 0.5,
+        'min': 1.0,
+        'max': 2.0,
         'tags': {'t1': 'a', 't2': 'b'},
         'time': 2
     }
@@ -145,6 +149,8 @@ def test_get_stats_second_times_on_a_stat_buffer_with_aggregation_periode_of_1_w
     assert buffer.get_stats('ab') == {
         'mean': 3.5,
         'std': 0.5,
+        'min': 3.0,
+        'max': 4.0,
         'tags': {'t1': 'a', 't2': 'b'},
         'time': 4
     }

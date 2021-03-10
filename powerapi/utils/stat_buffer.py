@@ -73,12 +73,12 @@ class StatBuffer:
 
         return (last_measure['time'] - first_measure['time']) >= self.aggregation_periode
 
-    def _compute_stats(self, values: List[float]) -> Tuple[float, float]:
+    def _compute_stats(self, values: List[float]) -> Tuple[float, float, float, float]:
         """
-        :return: mean, std
+        :return: mean, std, min, max
         """
         np_values = np.array([value['value'] for value in values])
-        return np_values.mean(), np_values.std()
+        return np_values.mean(), np_values.std(), np_values.min(), np_values.max()
 
     def _split_values(self, values: List[Dict]):
         time_of_first_measure = values[0]['time']
@@ -105,6 +105,8 @@ class StatBuffer:
         {
           'mean': float,
           'std': float,
+          'min': float,
+          'max': float',
           'time': int, # timestamp of the last measure
           'tags': Dict,
         }
@@ -115,11 +117,13 @@ class StatBuffer:
 
         values, self.buffer[key] = self._split_values(self.buffer[key])
 
-        mean, std = self._compute_stats(values)
+        mean, std, min, max = self._compute_stats(values)
 
         return {
             'mean': mean,
             'std': std,
+            'min': min,
+            'max': max,
             'time': values[-1]['time'],
             'tags': values[-1]['tags']
         }
