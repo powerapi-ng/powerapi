@@ -153,7 +153,7 @@ class PowerModel(ReportModel):
             }
         }
         """
-        final_dict: Dict = {}
+        final_dict = {}
 
         try:
             final_dict = {key: row[key] for key in CSV_HEADER_POWER}
