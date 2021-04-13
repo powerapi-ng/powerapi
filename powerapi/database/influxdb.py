@@ -74,6 +74,12 @@ class InfluxDB(BaseDB):
 
         self.client = None
 
+    def _ping_client(self):
+        if hasattr(self.client, 'ping'):
+            self.client.ping()
+        else:
+            self.client.request(url="ping", method='GET', expected_response_code=204)
+
     def connect(self):
         """
         Override from BaseDB.
@@ -90,7 +96,7 @@ class InfluxDB(BaseDB):
 
         self.client = InfluxDBClient(host=self.uri, port=self.port, database=self.db_name)
         try:
-            self.client.ping()
+            self._ping_client()
         except ConnectionError:
             raise CantConnectToInfluxDBException('connexion error')
 
