@@ -86,9 +86,12 @@ class PrometheusDB(BaseDB):
             return
 
         kwargs = {label: aggregated_value['tags'][label] for label in self.report_model.get_tags()}
-
-        self.mean_metric.labels(**kwargs).set(aggregated_value['mean'])
-        self.std_metric.labels(**kwargs).set(aggregated_value['std'])
+        try:
+            self.mean_metric.labels(**kwargs).set(aggregated_value['mean'])
+            self.std_metric.labels(**kwargs).set(aggregated_value['std'])
+        except TypeError:
+            self.mean_metric.labels(kwargs).set(aggregated_value['mean'])
+            self.std_metric.labels(kwargs).set(aggregated_value['std'])
 
     def save(self, report: Report, report_model: ReportModel):
         """
@@ -100,7 +103,7 @@ class PrometheusDB(BaseDB):
 
         value = report_model.to_prometheus(report.serialize())
 
-        key = ''.join([value['tags'][tag] for tag in self.report_model.get_tags()])
+        key = ''.join([str(value['tags'][tag]) for tag in self.report_model.get_tags()])
         self.buffer.append(value, key)
         self._expose_data(key)
 
@@ -112,7 +115,7 @@ class PrometheusDB(BaseDB):
         :param report_model: ReportModel
         """
         value = report_model.to_prometheus(reports[0].serialize())
-        key = ''.join([value['tags'][tag] for tag in self.report_model.get_tags()])
+        key = ''.join([str(value['tags'][tag]) for tag in self.report_model.get_tags()])
         for report in reports:
             value = report_model.to_prometheus(report.serialize())
             self.buffer.append(value, key)
