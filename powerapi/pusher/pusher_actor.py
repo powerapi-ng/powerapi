@@ -39,7 +39,7 @@ class PusherState(State):
     Contains in addition to State values :
       - The database interface
     """
-    def __init__(self, actor, database, report_model):
+    def __init__(self, actor, database, report_model, asynchrone = False):
         """
         :param BaseDB database: Database for saving data.
         """
@@ -53,6 +53,8 @@ class PusherState(State):
 
         #: (Dict): Buffer data.
         self.buffer = []
+
+        self.asynchrone = asynchrone
 
 
 class PusherActor(Actor):
@@ -74,7 +76,7 @@ class PusherActor(Actor):
         Actor.__init__(self, name, level_logger, timeout)
 
         #: (State): State of the actor.
-        self.state = PusherState(self, database, report_model)
+        self.state = PusherState(self, database, report_model, asynchrone=database.asynchrone)
         self.delay = delay
         self.max_size = max_size
 

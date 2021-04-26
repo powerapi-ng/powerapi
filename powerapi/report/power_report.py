@@ -56,7 +56,7 @@ class PowerReport(Report):
         self.socket = socket
 
     def __repr__(self) -> str:
-        return 'PowerReport(%s, %s, %s, %d, %f, %s)' % (self.timestamp, self.sensor, self.target, self.socket, self.power, self.metadata)
+        return 'PowerReport(%s, %s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, str(self.socket), self.power, self.metadata)
 
     @staticmethod
     def deserialize(data: Dict) -> PowerReport:

@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, IOTcpDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -84,6 +84,16 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('input', subparser_socket_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+        subparser_daemon_input = ComponentSubParser ('tcp')
+        subparser_daemon_input.add_argument ('p', 'port', help='specify the port to connect')
+        subparser_daemon_input.add_argument ('n', 'name', help='specify puller name', default="puller_tcp")
+        subparser_daemon_input.add_argument ('u', 'uri', help='specify the address of the puller', default='localhost')
+        subparser_daemon_input.add_argument('m', 'model', help='specify data type that will be sent through the socket',
+                                            default='HWPCReport')
+
+        self.add_component_subparser('input', subparser_daemon_input,
+                                     help_str='specify a tcp input : -p 8000 -a localhost ... ')
+        
         subparser_csv_input = ComponentSubParser('csv')
         subparser_csv_input.add_argument('f', 'files',
                                          help='specify input csv files with this format : file1,file2,file3',
@@ -149,6 +159,16 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('output', subparser_opentsdb_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+
+        subparser_tcp_output = ComponentSubParser ('tcp')
+        subparser_tcp_output.add_argument ('p', 'port', help="the port to bind")
+        subparser_tcp_output.add_argument ('u', 'uri', help="the address to bind", default="0.0.0.0")
+        subparser_tcp_output.add_argument('m', 'model', help='specify data type that will be send in the stream',
+                                          default='PowerReport')
+        subparser_tcp_output.add_argument('n', 'name', help='specify pusher name', default='pusher_tcp')
+        self.add_component_subparser ('output', subparser_tcp_output,
+                                      help_str='specify a tcp output : -p 8001 -m PowerReport ... ')
+        
     def parse_argv(self):
         try:
             return self.parse(sys.argv[1:])
@@ -191,11 +211,11 @@ class Generator:
             sys.exit()
 
         actors = {}
-
+        
         for component_type, components_list in config[self.component_group_name].items():
             for component_name, component_config in components_list.items():
                 try:
-                    actors[component_name] = self._gen_actor(component_type, component_config, config)
+                    actors[component_name] = self._gen_actor(self.component_group_name, component_type, component_config, config)
                 except KeyError as exn:
                     msg = 'CLI error : argument ' + exn.args[0]
                     msg += ' needed with --output ' + component_type
@@ -254,14 +274,15 @@ class DBActorGenerator(Generator):
         }
 
         self.db_factory = {
-            'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
-            'socket': lambda db_config: SocketDB(db_config['port']),
-            'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+            'mongodb': lambda db_config,_: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
+            'socket': lambda db_config,_: SocketDB(db_config['port']),
+            'csv': lambda db_config,_: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
-            'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
-            'prom': lambda db_config: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
+            'influxdb': lambda db_config,_: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
+            'opentsdb': lambda db_config,_: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
+            'prom': lambda db_config,_: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
                                                    db_config['metric_description'], self.model_factory[db_config['model']], db_config['aggregation_period']),
+            'tcp': lambda db_config, group_name: IOTcpDB (db_config ['uri'], db_config['port'], input=(group_name == "input"))
         }
 
     def remove_model_factory(self, model_name):
@@ -284,14 +305,14 @@ class DBActorGenerator(Generator):
             raise DatabaseNameAlreadyUsed(db_name)
         self.model_factory[db_name] = db_factory
 
-    def _generate_db(self, db_name, db_config, main_config):
-        return self.db_factory[db_name](db_config)
+    def _generate_db(self, group_name, db_name, db_config, main_config):
+        return self.db_factory[db_name](db_config, group_name)
 
 
-    def _gen_actor(self, db_name, db_config, main_config):
-        db = self._generate_db(db_name, db_config, main_config)
-        model = self.model_factory[db_config['model']]
-        name = db_config['name']
+    def _gen_actor(self, group_name, db_name, db_config, main_config):
+        db = self._generate_db(group_name, db_name, db_config, main_config)
+        model = self.model_factory[db_config['model']]        
+        name = db_config ['name']
         return self._actor_factory(name, db, model, main_config['stream'], main_config['verbose'])
 
     def _actor_factory(self, name, db, model, stream_mode, level_logger):

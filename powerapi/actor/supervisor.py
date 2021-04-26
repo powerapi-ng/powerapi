@@ -106,6 +106,7 @@ class Supervisor:
             elif msg is None:
                 if actor.is_alive():
                     actor.terminate()
+                    print (actor)
                     raise FailConfigureError("Unable to configure the " + actor.name)
                 else:
                     raise CrashConfigureError("The " + actor.name + " crash during initialisation process")

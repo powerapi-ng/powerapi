@@ -35,3 +35,4 @@ from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
 from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 from powerapi.database.prometheus_db import PrometheusDB
 from .socket_db import SocketDB
+from .tcp_db import IOTcpDB

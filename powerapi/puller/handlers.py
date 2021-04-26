@@ -60,7 +60,7 @@ class DBPullerThread(Thread):
 
     def _connect(self):
         try:
-            self.state.database.connect()
+            #self.state.database.connect()
             self.loop.run_until_complete(self.state.database.connect())
             self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
 

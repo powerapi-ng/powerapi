@@ -29,9 +29,34 @@
 
 import time
 
+import asyncio
+import threading
 from powerapi.handler import InitHandler, Handler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import ErrorMessage
 from powerapi.database import DBError
+
+
+class AsyncLoop:
+    """ Threading example class
+    The run() method will be started and it will run in the background
+    until the application exits.
+    """
+
+    def __init__(self, loop):
+        """ Constructor
+        :type interval: int
+        :param interval: Check interval, in seconds
+        """
+        self.loop = loop        
+        thread = threading.Thread(target=self.run, args=())
+        thread.daemon = True                            # Daemonize thread
+        thread.start()
+
+        # Start the execution
+
+    def run(self):
+        self.loop.run_forever ()
+
 
 
 class PusherStartHandler(StartHandler):
@@ -44,7 +69,12 @@ class PusherStartHandler(StartHandler):
         Initialize the output database
         """
         try:
-            self.state.database.connect()
+            if (self.state.asynchrone):
+                loop = asyncio.get_event_loop ()    
+                loop.run_until_complete (self.state.database.connect())
+                AsyncLoop (loop)
+            else:
+                self.state.database.connect()
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(error.msg))
             self.state.alive = False
@@ -83,9 +113,8 @@ class ReportHandler(InitHandler):
         self.state.buffer.append(msg)
         if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
             self.last_database_write_time = time.time()
-
-            self.state.buffer.sort(key=lambda x: x.timestamp)
-
+            
+            self.state.buffer.sort(key=lambda x: x.timestamp)                
             self.state.database.save_many(self.state.buffer, self.state.report_model)
             self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.buffer = []
