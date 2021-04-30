@@ -27,7 +27,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip3 install -e ".[mongodb, influxdb]"
+            pip3 install -e ".[mongodb, influxdb, prometheus]"
 
       - save_cache:
           paths:
