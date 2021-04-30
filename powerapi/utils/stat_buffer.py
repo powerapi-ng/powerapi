@@ -82,7 +82,7 @@ class StatBuffer:
 
     def _split_values(self, values: List[Dict]):
         time_of_first_measure = values[0]['time']
-        
+
         def split(value_in_periode, value_out_periode):
             if value_out_periode == []:
                 return value_in_periode, value_out_periode
@@ -94,8 +94,7 @@ class StatBuffer:
                 return split(value_in_periode, value_out_periode)
 
         return split([], values)
-        
-    
+
     def get_stats(self, key: str) -> Dict:
         """
         return statistics on the values corresponding to the given key
