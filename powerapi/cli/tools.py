@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -95,6 +95,15 @@ class CommonCLIParser(MainParser):
         self.add_component_subparser('input', subparser_csv_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
+        subparser_virtiofs_output = ComponentSubParser('virtiofs')
+        subparser_virtiofs_output.add_argument('r', 'vm_name_regexp', help='regexp used to extract vm name from report. The regexp must match the name of the target in the HWPC-report and a group must')
+        subparser_virtiofs_output.add_argument('d', 'root_directory_name', help='directory where VM directory will be stored')
+        subparser_virtiofs_output.add_argument('p', 'vm_directory_name_prefix', help='first part of the VM directory name', default='')
+        subparser_virtiofs_output.add_argument('s', 'vm_directory_name_suffix', help='last part of the VM directory name', default='')
+
+        self.add_component_subparser('output', subparser_virtiofs_output,
+                                     help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
+                
         subparser_mongo_output = ComponentSubParser('mongodb')
         subparser_mongo_output.add_argument('u', 'uri', help='specify MongoDB uri')
         subparser_mongo_output.add_argument('d', 'db', help='specify MongoDB database name')
@@ -262,6 +271,7 @@ class DBActorGenerator(Generator):
             'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
             'prom': lambda db_config: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
                                                    db_config['metric_description'], self.model_factory[db_config['model']], db_config['aggregation_period']),
+            'virtiofs': lambda db_config: VirtioFSDB(db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
         }
 
     def remove_model_factory(self, model_name):

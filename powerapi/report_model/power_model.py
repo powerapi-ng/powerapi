@@ -64,12 +64,19 @@ class PowerModel(ReportModel):
     def get_tags(self):
         return ['target', 'socket', 'sensor']
 
+    def to_virtiofs_db(self, report) -> Tuple[str, str]:
+        """
+        return a tuple containing the power value and the name of the file to store the value.
+        """
+        filename = 'power_consumption_package' + str(report.socket)
+        power = report.power
+        return filename, power
+
     def _influxdb_keept_metadata(self):
         """
         return the list of metadata named that must be keept while converting powerReport to influxdb format
         """
         return ()
-
 
     def to_influxdb(self, serialized_report) -> Dict:
         """
