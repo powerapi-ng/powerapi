@@ -100,7 +100,9 @@ class CommonCLIParser(MainParser):
         subparser_virtiofs_output.add_argument('d', 'root_directory_name', help='directory where VM directory will be stored')
         subparser_virtiofs_output.add_argument('p', 'vm_directory_name_prefix', help='first part of the VM directory name', default='')
         subparser_virtiofs_output.add_argument('s', 'vm_directory_name_suffix', help='last part of the VM directory name', default='')
-
+        subparser_virtiofs_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                            default='PowerReport')
+        subparser_virtiofs_output.add_argument('n', 'name', help='specify pusher name', default='pusher_virtiofs')
         self.add_component_subparser('output', subparser_virtiofs_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
                 
@@ -111,7 +113,7 @@ class CommonCLIParser(MainParser):
 
         subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
-        subparser_mongo_output.add_argument('n', 'name', help='specify puller name', default='pusher_mongodb')
+        subparser_mongo_output.add_argument('n', 'name', help='specify pusher name', default='pusher_mongodb')
         self.add_component_subparser('output', subparser_mongo_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
@@ -124,7 +126,7 @@ class CommonCLIParser(MainParser):
 
         subparser_prom_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
-        subparser_prom_output.add_argument('n', 'name', help='specify puller name', default='pusher_prom')
+        subparser_prom_output.add_argument('n', 'name', help='specify pusher name', default='pusher_prom')
         self.add_component_subparser('output', subparser_prom_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
@@ -133,7 +135,7 @@ class CommonCLIParser(MainParser):
                                           help='specify directory where where output  csv files will be writen')
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                           default='PowerReport')
-        subparser_csv_output.add_argument('n', 'name', help='specify puller name', default='pusher_csv')
+        subparser_csv_output.add_argument('n', 'name', help='specify pusher name', default='pusher_csv')
         self.add_component_subparser('output', subparser_csv_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
@@ -143,7 +145,7 @@ class CommonCLIParser(MainParser):
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
         subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='PowerReport')
-        subparser_influx_output.add_argument('n', 'name', help='specify puller name', default='pusher_influxdb')
+        subparser_influx_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb')
         self.add_component_subparser('output', subparser_influx_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
@@ -154,7 +156,7 @@ class CommonCLIParser(MainParser):
 
         subparser_opentsdb_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='PowerReport')
-        subparser_opentsdb_output.add_argument('n', 'name', help='specify puller name', default='pusher_opentsdb')
+        subparser_opentsdb_output.add_argument('n', 'name', help='specify pusher name', default='pusher_opentsdb')
         self.add_component_subparser('output', subparser_opentsdb_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
