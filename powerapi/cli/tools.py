@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -128,6 +128,17 @@ class CommonCLIParser(MainParser):
                                             default='PowerReport')
         subparser_prom_output.add_argument('n', 'name', help='specify pusher name', default='pusher_prom')
         self.add_component_subparser('output', subparser_prom_output,
+                                     help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
+
+        subparser_direct_prom_output = ComponentSubParser('direct_prom')
+        subparser_direct_prom_output.add_argument('a', 'addr', help='specify server address')
+        subparser_direct_prom_output.add_argument('p', 'port', help='specify server port', type=int)
+        subparser_direct_prom_output.add_argument('M', 'metric_name', help='speify metric name')
+        subparser_direct_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
+        subparser_direct_prom_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                            default='PowerReport')
+        subparser_direct_prom_output.add_argument('n', 'name', help='specify pusher name', default='pusher_prom')
+        self.add_component_subparser('output', subparser_direct_prom_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_csv_output = ComponentSubParser('csv')
@@ -273,6 +284,8 @@ class DBActorGenerator(Generator):
             'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
             'prom': lambda db_config: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
                                                    db_config['metric_description'], self.model_factory[db_config['model']], db_config['aggregation_period']),
+            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
+                                                          db_config['metric_description'], self.model_factory[db_config['model']]),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
         }
 
