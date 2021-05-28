@@ -110,7 +110,6 @@ class DirectPrometheusDB(BaseDB):
         if key not in self.measure_for_current_period:
             args = [measure['tags'][label] for label in self.report_model.get_tags()]
             self.measure_for_current_period[key] = args
-        print((self.exposed_measure, self.measure_for_current_period))
 
     def save_many(self, reports: List[Report], report_model: ReportModel):
         """
