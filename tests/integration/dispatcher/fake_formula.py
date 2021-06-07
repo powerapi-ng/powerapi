@@ -46,12 +46,12 @@ class HWPCReportHandler(Handler):
         self.push_socket = push_socket
 
     def handle(self, msg):
-        self.push_socket.send(pickle.dumps(msg))
+        self.push_socket.send(pickle.dumps((self.state.actor.name, msg)))
 
 
 class FakePoisonPillMessageHandler(FormulaPoisonPillMessageHandler):
     def teardown(self, soft=False):
-        self.state.actor.push_socket.send(pickle.dumps('terminated'))
+        self.state.actor.push_socket.send(pickle.dumps((self.state.actor.name, 'terminated')))
 
 
 class FakeFormulaActor(Actor):
@@ -63,7 +63,7 @@ class FakeFormulaActor(Actor):
     result to a Pusher.
     """
 
-    def __init__(self, name, push_socket_addr, level_logger=logging.WARNING,
+    def __init__(self, name, push_socket_addr, level_logger=logging.DEBUG,
                  timeout=None):
         """
         :param str name: Actor name

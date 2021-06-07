@@ -27,6 +27,54 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.dispatch_rule.dispatch_rule import DispatchRule
-from powerapi.dispatch_rule.hwpc_dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.dispatch_rule.power_dispatch_rule import PowerDispatchRule, PowerDepthLevel
+from enum import IntEnum
+
+from powerapi.dispatch_rule import DispatchRule
+
+
+class PowerDepthLevel(IntEnum):
+    """
+    Enumeration that specify which report level use to group by the reports
+    """
+
+    TARGET = -1
+    SENSOR = 0
+    SOCKET = 1
+    CORE = 2
+
+
+def extract_id_from_report(report, depth):
+    if depth == PowerDepthLevel.TARGET:
+        return (report.target,)
+
+    if depth == PowerDepthLevel.SENSOR:
+        return (report.sensor,)
+
+    if depth == PowerDepthLevel.SOCKET:
+        return extract_id_from_report(report, depth - 1) + (report.socket,)
+
+    if depth == PowerDepthLevel.CORE:
+        return extract_id_from_report(report, depth - 1) + (report.core,)
+    
+class PowerDispatchRule(DispatchRule):
+    """
+    Group by rule for HWPC report
+    """
+    def __init__(self, depth: PowerDepthLevel, primary=False):
+        """
+        :param depth:
+        :type depth: HWPCDepthLevel
+        """
+        DispatchRule.__init__(self, primary)
+        self.depth = depth
+        self.fields = self._set_field()
+
+    def _set_field(self):
+        if self.depth == PowerDepthLevel.TARGET:
+            return ['target']
+
+        return ['sensor', 'socket', 'core'][:(self.depth + 1)]
+        
+
+    def get_formula_id(self, report):
+        return [extract_id_from_report(report, self.depth)]

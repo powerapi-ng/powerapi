@@ -36,6 +36,7 @@ from powerapi.actor import NotConnectedException, Supervisor, CrashConfigureErro
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import StartMessage, ErrorMessage, UnknowMessageTypeException
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
+from powerapi.dispatch_rule import PowerDispatchRule, PowerDepthLevel
 from powerapi.report import *
 from tests.utils import *
 from tests.integration.dispatcher.fake_formula import FakeFormulaActor
@@ -219,10 +220,21 @@ def dispatcher_with_formula(initialized_dispatcher,
     for msg in formula_init_msg:
         receive(formula_socket)
 
+@pytest.fixture()
+def dispatcher_with_two_formula(dispatcher_with_formula, formula_socket):
+    receive(formula_socket)
+    return dispatcher_with_formula
+
 
 ###################
 # Report Creation #
 ###################
+TS1 = 0
+SENSOR1= 'sensor1'
+TARGET1 = 'target1'
+def gen_power_report():
+    return PowerReport(TS1, SENSOR1, TARGET1, 0, 1234, {}, core=0)
+
 def gen_good_report():
     """
     Return a well formated HWPCReport
@@ -294,6 +306,12 @@ def route_table_hwpc_not_primary():
                                                            primary=False))
     return route_table
 
+def route_table_hwpc_primary_PowerReport_not_primary():
+    route_table = RouteTable()
+    route_table.dispatch_rule(PowerReport, PowerDispatchRule(PowerDepthLevel.SOCKET, primary=False))
+    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(HWPCDepthLevel.SOCKET,
+                                                           primary=True))
+    return route_table
 
 def route_table_with_primary_rule():
     """
@@ -333,12 +351,12 @@ def test_create_formula_double_dispatcher(initialized_dispatcher, dispatcher3, f
     Supervisor().launch_actor(dispatcher3)
     initialized_dispatcher.send_data(gen_good_report())
     assert is_actor_alive(initialized_dispatcher)
-    assert receive(formula_socket) == gen_good_report()
+    assert receive(formula_socket) == ("('test_dispatcher-', 'toto')", gen_good_report())
     assert receive(formula_socket) is None
 
     dispatcher3.send_data(gen_good_report())
     assert is_actor_alive(dispatcher3)
-    assert receive(formula_socket) == gen_good_report()
+    assert receive(formula_socket) == ("('test_dispatcher2-', 'toto')", gen_good_report())
     assert receive(formula_socket) is None
 
 
@@ -356,7 +374,7 @@ def test_kill_dispatcher_with_formula(dispatcher_with_formula, formula_socket):
     """
     dispatcher_with_formula.hard_kill()
     assert not is_actor_alive(dispatcher_with_formula)
-    assert receive(formula_socket) == 'terminated'
+    assert receive(formula_socket) == ("('test_dispatcher-', 'toto')", 'terminated')
 
 
 def crash_formula_factory(name, log):
@@ -377,3 +395,15 @@ def test_dispatcher_send_report_to_a_dead_formula_must_crash(dispatcher_with_for
 def test_dispatcher_send_non_primary_report_to_a_dead_formula_must_crash(dispatcher_with_formula):
     dispatcher_with_formula.send_data(gen_good_report())
     assert not is_actor_alive(dispatcher_with_formula)
+
+#########################################
+# Dispatcher for HWPC and Power reports #
+#########################################
+@define_route_table(route_table_hwpc_primary_PowerReport_not_primary())
+def test_send_power_report_to_dispatcher_with_hwpc_primary_rule_and_living_formula_must_forward_the_report_to_the_good_formula(dispatcher_with_two_formula, formula_socket):
+    report = gen_power_report()
+    formula_name = "('test_dispatcher-', 'sensor1', 0)"
+    dispatcher_with_two_formula.send_data(report)
+    assert is_actor_alive(dispatcher_with_two_formula)
+    assert receive(formula_socket) == (formula_name, report)
+    assert receive(formula_socket) is None
