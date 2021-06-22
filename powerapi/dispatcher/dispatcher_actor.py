@@ -26,21 +26,81 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import logging
-from powerapi.actor import Actor
-from powerapi.exception  import PowerAPIException
+from typing import Type, Callable, Tuple, Dict, List
+
+from thespian.actors import ActorAddress, ActorExitRequest
+
+from powerapi.actor import Actor, InitializationException
+from powerapi.formula import FormulaActor
+from powerapi.dispatcher import RouteTable
+from powerapi.dispatch_rule import DispatchRule
+from powerapi.utils import Tree
 from powerapi.report import Report
-from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.dispatcher import StartHandler, DispatcherState, DispatcherPoisonPillMessageHandler
-from powerapi.dispatcher import FormulaDispatcherReportHandler
+from powerapi.message import StartMessage
 
 
-class NoPrimaryDispatchRuleRuleException(PowerAPIException):
+def _clean_list(id_list):
     """
-    Exception raised when user want to get the primary dispatch_rule rule on a
-    formula dispatcher that doesn't have one
+    return a list where all elements are unique
     """
+    id_list.sort()
+    r_list = []
+    last_element = None
+    for x in id_list:
+        if x != last_element:
+            r_list.append(x)
+            last_element = x
+    return r_list
+
+
+
+def _extract_formula_id(report: Report, dispatch_rule: DispatchRule, primary_dispatch_rule: DispatchRule) -> List[Tuple]:
+    """
+    Use the dispatch rule to extract formula_id from the given report.
+    Formula id are then mapped to an identifier that match the primary
+    report identifier fields
+
+    ex: primary dispatch_rule (sensor, socket, core)
+        second  dispatch_rule (sensor)
+    The second dispatch_rule need to match with the primary if sensor are
+    equal.
+
+    :param powerapi.Report report:                 Report to split
+    :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
+
+    :return: List of formula_id associated to a sub-report of report
+    :rtype: [tuple]
+    """
+
+    # List of tuple (id_report, report)
+    id_list = dispatch_rule.get_formula_id(report)
+    if dispatch_rule.is_primary:
+        return id_list
+
+    def f(id):
+        return _match_report_id(id, dispatch_rule, primary_dispatch_rule)
+    
+    return _clean_list(list(map(f, id_list)))
+
+def _match_report_id(report_id: Tuple, dispatch_rule: DispatchRule, primary_rule: DispatchRule) -> Tuple:
+    """
+    Return the new_report_id with the report_id by removing
+    every "useless" fields from it.
+
+    :param tuple report_id:                     Original report id
+    :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
+    """
+    print(report_id)
+    new_report_id = ()
+    for i in range(len(report_id)):
+        if i >= len(primary_rule.fields):
+            return new_report_id
+        if dispatch_rule.fields[i] == primary_rule.fields[i]:
+            new_report_id += (report_id[i], )
+        else:
+            return new_report_id
+    return new_report_id
 
 
 class DispatcherActor(Actor):
@@ -51,7 +111,7 @@ class DispatcherActor(Actor):
     if no Formula exist for this message.
     """
 
-    def __init__(self, name, formula_init_function, route_table, level_logger=logging.WARNING, timeout=None):
+    def __init__(self):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
@@ -61,39 +121,106 @@ class DispatcherActor(Actor):
         :param bool timeout: Define the time in millisecond to wait for a
                              message before run timeout_handler
         """
-        Actor.__init__(self, name, level_logger, timeout)
+        Actor.__init__(self)
 
-        # (func): Function for creating Formula
-        self.formula_init_function = formula_init_function
+        self.name: str = None
+        self.formula_class: Type[FormulaActor] = None
+        self.formula_config_factory: Callable[[str], Tuple[Type[FormulaActor], Dict]] = None
+        self.route_table: RouteTable = None
+        self.formula_pool = None
 
-        # (powerapi.DispatcherState): Actor state
-        self.state = DispatcherState(self, self._create_factory(), route_table)
+    def _initialization(self, message: StartMessage):
+        self.name = message.init_values['name']
+        self.formula_class = message.init_values['formula_class']
+        self.formula_config_factory = message.init_values['formula_config_factory']
+        self.route_table = message.init_values['route_table']
+        self.formula_pool = FormulaPool()
 
-    def setup(self):
+        if self.route_table.primary_dispatch_rule is None:
+            raise InitializationException('Dispatcher initialized without primary dispatch rule')
+
+    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
         """
-        Check if there is a primary group by rule. Set define
-        StartMessage, PoisonPillMessage and Report handlers
+        When receiving ActorExitRequest, forward it to all formula
         """
-        Actor.setup(self)
-        if self.state.route_table.primary_dispatch_rule is None:
-            raise NoPrimaryDispatchRuleRuleException()
+        for formula in self.formula_pool.get_all_formula():
+            self.send(formula, ActorExitRequest())
 
-        self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
-        self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
-        self.add_handler(StartMessage, StartHandler(self.state))
-
-    def _create_factory(self):
+    def receiveMsg_Report(self, message: Report, sender: ActorAddress):
         """
-        Create the full Formula Factory
-
-        :return: Formula Factory
-        :rtype: func(formula_id) -> Formula
+        When receiving a report, split it into sub-reports (if needed) and send them to their corresponding formula.
+        If the corresponding formula does not exist, the dispatcher create it and send it the report
         """
-        formula_init_function = self.formula_init_function
+        dispatch_rule = self.route_table.get_dispatch_rule(message)
+        primary_dispatch_rule = self.route_table.primary_dispatch_rule
 
-        def factory(formula_id):
-            formula = formula_init_function(str((self.name,) + formula_id), self.logger.getEffectiveLevel())
-            self.state.supervisor.launch_actor(formula, start_message=False)
-            return formula
+        if dispatch_rule is None:
+            # todo : logger que le report n'a pas été reconnue par une dispatch rule
+            return
 
-        return factory
+        for formula_id in _extract_formula_id(message, dispatch_rule, primary_dispatch_rule):
+            primary_rule_fields = primary_dispatch_rule.fields
+            if len(formula_id) == len(primary_rule_fields):
+                try:
+                    formula = self.formula_pool.get_direct_formula(formula_id)
+                except KeyError:
+                    formula = self._create_formula(formula_id)
+                    self.formula_pool.add_formula(formula_id, formula)
+                finally:
+                    self.send(formula, message)
+            else:
+                for formula in self.formula_pool.get_corresponding_formula(list(formula_id)):
+                    self.send(formula, message)
+
+    def _create_formula(self, formula_id: Tuple):
+        formula = self.createActor(self.formula_class)
+        config = self.formula_config_factory(str((self.name,) + formula_id))
+        self.send(formula, StartMessage(config))
+        return formula
+
+
+class FormulaPool:
+    def __init__(self):
+        self.formula_dict = {}
+        self.formula_tree = Tree()
+
+    def add_formula(self, formula_id, formula):
+        """
+        Create a formula corresponding to the given formula id
+        and add it in memory
+
+        :param tuple formula_id: Define the key corresponding to
+                                 a specific Formula
+        """
+        self.formula_dict[formula_id] = formula
+        self.formula_tree.add(list(formula_id), formula)
+
+    def get_direct_formula(self, formula_id):
+        """
+        Get the formula corresponding to the given formula id
+        or create and return it if its didn't exist
+
+        :param tuple formula_id: Key corresponding to a Formula
+        :return: a Formula
+        :rtype: Formula or None
+        """
+        return self.formula_dict[formula_id]
+
+    def get_corresponding_formula(self, formula_id):
+        """
+        Get the Formulas which have id match with the given formula_id
+
+        :param tuple formula_id: Key corresponding to a Formula
+        :return: All Formulas that match with the key
+        :rtype: list(Formula)
+        """
+        return self.formula_tree.get(formula_id)
+
+    def get_all_formula(self):
+        """
+        Get all the Formula created by the Dispatcher
+
+        :return: List of the Formula
+        :rtype: list((formula_id, Formula), ...)
+        """
+        return self.formula_dict.items()

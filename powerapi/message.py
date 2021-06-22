@@ -26,54 +26,29 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from typing import Dict, Any
 from powerapi.exception import PowerAPIException
-
-
-class UnknowMessageTypeException(PowerAPIException):
-    """
-    Exception happen when we don't know the message type
-    """
 
 
 class Message:
     """
-    Abstract class message. Each object that is used by zmq
-    need to be a Message.
+    Abstract Message class
     """
     def __str__(self):
         raise NotImplementedError()
 
 
-class PoisonPillMessage(Message):
+class PingMessage(Message):
     """
-    Message which allow to kill an actor
-    """
-    def __init__(self, soft=True):
-        self.is_soft = soft
-        self.is_hard = not soft
-
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
-        if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
-        return False
-
-
-class StartMessage(Message):
-    """
-    Message that ask the actor to launch its initialisation process
+    Message used to test if an actor is alive
     """
     def __str__(self):
-        return "StartMessage"
+        return "PingMessage"
 
 
 class OKMessage(Message):
     """
-    Message used in synchron communication to answer that the actor
-    completed the task previously asked
+    Message send to acknowledge last received message
     """
     def __str__(self):
         return "OKMessage"
@@ -91,4 +66,15 @@ class ErrorMessage(Message):
         self.error_message = error_message
 
     def __str__(self):
-        return "ErrorMessage"
+        return "ErrorMessage : " + self.error_message
+
+
+class StartMessage(Message):
+    """
+    Message that ask the actor to launch its initialisation process
+    """
+    def __init__(self, init_values: Dict[str, Any]):
+        self.init_values = init_values
+
+    def __str__(self):
+        return "StartMessage"

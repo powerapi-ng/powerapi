@@ -27,53 +27,53 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import Handler, HandlerException
-from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
+# from powerapi.handler import Handler, HandlerException
+# from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
 
 
-class PoisonPillMessageHandler(Handler):
-    """
-    Generic handler for PoisonPillMessage
-    """
+# class PoisonPillMessageHandler(Handler):
+#     """
+#     Generic handler for PoisonPillMessage
+#     """
 
-    def teardown(self, soft=False):
-        """
-        function called before terminating the actor process
-        could be redefined
-        """
+#     def teardown(self, soft=False):
+#         """
+#         function called before terminating the actor process
+#         could be redefined
+#         """
 
-    def handle_msg(self, msg):
-        try:
-            handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
-        except UnknowMessageTypeException:
-            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
-        except HandlerException:
-            self.state.actor.logger.warning("HandlerException")
+#     def handle_msg(self, msg):
+#         try:
+#             handler = self.state.get_corresponding_handler(msg)
+#             handler.handle_message(msg)
+#         except UnknowMessageTypeException:
+#             self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
+#         except HandlerException:
+#             self.state.actor.logger.warning("HandlerException")
 
-    def _empty_mail_box(self):
-        print(str(self.state.actor.name) + " empty mail box")
-        while True:
-            self.state.actor.socket_interface.timeout = 0.1
-            msg = self.state.actor.socket_interface.receive()
+#     def _empty_mail_box(self):
+#         print(str(self.state.actor.name) + " empty mail box")
+#         while True:
+#             self.state.actor.socket_interface.timeout = 0.1
+#             msg = self.state.actor.socket_interface.receive()
 
-            if msg is not None:
-                self.handle_msg(msg)
-            else:
-                return
+#             if msg is not None:
+#                 self.handle_msg(msg)
+#             else:
+#                 return
 
-    def handle(self, msg):
-        """
-        Set the :attr:`alive <powerapi.actor.state.State.alive>`
-        attribute of the actor state to False
+#     def handle(self, msg):
+#         """
+#         Set the :attr:`alive <powerapi.actor.state.State.alive>`
+#         attribute of the actor state to False
 
-        :param Object msg: the message received by the actor
-        """
-        if not isinstance(msg, PoisonPillMessage):
-            raise UnknowMessageTypeException(type(msg))
+#         :param Object msg: the message received by the actor
+#         """
+#         if not isinstance(msg, PoisonPillMessage):
+#             raise UnknowMessageTypeException(type(msg))
 
-        if msg.is_soft:
-            self._empty_mail_box()
-        self.teardown(soft=msg.is_soft)
+#         if msg.is_soft:
+#             self._empty_mail_box()
+#         self.teardown(soft=msg.is_soft)
 
-        self.state.alive = False
+#         self.state.alive = False

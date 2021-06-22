@@ -43,19 +43,7 @@ class StartHandler(Handler):
 
         :param powerapi.StartMessage msg: Message that initialize the actor
         """
-        if self.state.initialized:
-            self.state.actor.send_control(
-                ErrorMessage('Actor already initialized'))
-            return
 
-        if not isinstance(msg, StartMessage):
-            return
-
-        self.initialization()
-
-        if self.state.alive:
-            self.state.initialized = True
-            self.state.actor.send_control(OKMessage())
 
     def initialization(self):
         """

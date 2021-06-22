@@ -31,62 +31,63 @@ import logging
 import re
 from typing import Dict
 
-from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import PusherActor
+# from powerapi.actor import Actor, State, SocketInterface
+# from powerapi.pusher import PusherActor
+
+class FormulaActor:
+    pass
+# class FormulaState(State):
+#     """
+#     State of the Formula actor.
+#     """
+
+#     def __init__(self, actor, pushers, metadata):
+#         """
+#         Initialize a new Formula actor state.
+#         :param actor: Actor linked to the state
+#         :param pushers: Pushers available for the actor
+#         """
+#         super().__init__(actor)
+#         self.pushers = pushers
+#         self.metadata = metadata
 
 
-class FormulaState(State):
-    """
-    State of the Formula actor.
-    """
+# class FormulaActor(Actor):
+#     """
+#     Formula actor abstract class.
+#     """
 
-    def __init__(self, actor, pushers, metadata):
-        """
-        Initialize a new Formula actor state.
-        :param actor: Actor linked to the state
-        :param pushers: Pushers available for the actor
-        """
-        super().__init__(actor)
-        self.pushers = pushers
-        self.metadata = metadata
+#     def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
+#         """
+#         Initialize a new Formula actor.
+#         :param name: Actor name
+#         :param pushers: Pusher actors
+#         :param level_logger: Level of the logger
+#         :param timeout: Time in millisecond to wait for a message before calling the timeout handler
+#         """
+#         Actor.__init__(self, name, level_logger, timeout)
 
+#         self.formula_metadata = self._extract_formula_metadata(name)
+#         self.state = FormulaState(self, pushers, self.formula_metadata)
 
-class FormulaActor(Actor):
-    """
-    Formula actor abstract class.
-    """
+#     def _extract_formula_metadata(self, formula_name):
+#         metadata_str = re.findall(r'\'([\w_]*)\'', formula_name)
 
-    def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
-        """
-        Initialize a new Formula actor.
-        :param name: Actor name
-        :param pushers: Pusher actors
-        :param level_logger: Level of the logger
-        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
-        """
-        Actor.__init__(self, name, level_logger, timeout)
+#         metadata = {}
 
-        self.formula_metadata = self._extract_formula_metadata(name)
-        self.state = FormulaState(self, pushers, self.formula_metadata)
+#         if len(metadata_str) >= 2:
+#             metadata['sensor'] = metadata_str[1]
 
-    def _extract_formula_metadata(self, formula_name):
-        metadata_str = re.findall(r'\'([\w_]*)\'', formula_name)
+#         if len(metadata_str) >= 3:
+#             metadata['socket'] = int(metadata_str[2])
 
-        metadata = {}
+#         if len(metadata_str) >= 4:
+#             metadata['core'] = int(metadata_str[3])
+#         return metadata
 
-        if len(metadata_str) >= 2:
-            metadata['sensor'] = metadata_str[1]
-
-        if len(metadata_str) >= 3:
-            metadata['socket'] = int(metadata_str[2])
-
-        if len(metadata_str) >= 4:
-            metadata['core'] = int(metadata_str[3])
-        return metadata
-
-    def setup(self):
-        """
-        Setup the Formula actor.
-        """
-        for _, pusher in self.state.pushers.items():
-            pusher.connect_data()
+#     def setup(self):
+#         """
+#         Setup the Formula actor.
+#         """
+#         for _, pusher in self.state.pushers.items():
+#             pusher.connect_data()

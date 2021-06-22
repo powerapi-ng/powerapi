@@ -27,19 +27,23 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-
+import time
 from multiprocessing import Queue
 
 import pytest
 
 from mock import Mock
+
+from thespian.actors import ActorExitRequest
+
 from powerapi.report import Report
 from powerapi.puller import PullerActor
 from powerapi.message import StartMessage, ErrorMessage
-from powerapi.filter import Filter
+from powerapi.filter import Filter, RouterWithoutRuleException
 
 from ..actor.abstract_test_actor import AbstractTestActor
 from ..db_utils import FakeDB, AbstractTestActorWithDB, define_database_content, REPORT1, REPORT2
+from ...utils import DummyActor, is_actor_alive
 
 
 def define_filter(filt):
@@ -75,45 +79,59 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize('filt', [filt])
 
 
-class FakeDispatcher:
-
-    def __init__(self):
-        self.q = Queue()
-
-    def send_data(self, report):
-        self.q.put(report, block=False)
-
+def filter_rule(report):
+    return True
 
 class TestPuller(AbstractTestActorWithDB):
 
     @pytest.fixture
-    def fake_dispatcher(self):
-        return FakeDispatcher()
+    def fake_dispatcher(self, system):
+        dispatcher = system.createActor(DummyActor)
+        system.tell(dispatcher, 'dispatcher')
+        return dispatcher
 
     @pytest.fixture
     def fake_filter(self, fake_dispatcher):
-        fake_filter = Mock()
-        fake_filter.filters = [(Mock(return_value=True), Mock())]
-        fake_filter.route = Mock(return_value=[fake_dispatcher])
-        fake_filter.get_type = Mock(return_value=Report)
+        fake_filter = Filter()
+        fake_filter.filter(filter_rule, fake_dispatcher)
         return fake_filter
 
     @pytest.fixture
-    def actor(self, fake_db, filt, fake_filter):
+    def empty_filter(self):
+        fake_filter = Filter()
+        return fake_filter
+
+    @pytest.fixture
+    def actor(self, system, fake_db, filt, fake_filter):
         filter = fake_filter if filt is None else filt
-        return PullerActor('puller_test', fake_db, filter, 0, level_logger=logging.DEBUG)
+        puller = system.createActor(PullerActor)
+        yield puller
+        system.tell(puller, ActorExitRequest())
+
+    @pytest.fixture
+    def actor_config(self, system, actor, fake_db, fake_filter):
+        return {'name': 'puller_test', 'database': fake_db, 'report_filter': fake_filter, 'report_model': None, 'stream_mode': False}
+
+    def test_create_puller_with_router_without_rules_must_raise_RouterWithoutRuleException(self, system, empty_filter, fake_db):
+        puller = system.createActor(PullerActor)
+        puller_config = {'name': 'puller_test', 'database': fake_db, 'report_filter': empty_filter, 'report_model': None, 'stream_mode': False}
+        answer = system.ask(puller, StartMessage(puller_config))
+        assert isinstance(answer, ErrorMessage)
+        assert answer.error_message == 'filter without rules'
 
     @define_database_content([REPORT1, REPORT2])
-    def test_start_actor_with_db_thath_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor, fake_dispatcher, content):
+    def test_start_actor_with_db_thath_contains_2_report_make_actor_send_reports_to_dispatcher(self, system, started_actor, fake_dispatcher, content):
         for report in content:
-            assert fake_dispatcher.q.get(timeout=2) == report
+            assert system.listen() == ('dispatcher', report)
 
-    def test_starting_actor_in_stream_mode_make_it_terminate_itself_after_empty_db(self, started_actor):
-        started_actor.join(2)
-        assert started_actor.is_alive() is False
+    def test_starting_actor_in_non_stream_mode_make_it_terminate_itself_after_empty_db(self, system, started_actor):
+        time.sleep(1)
+        assert not is_actor_alive(system, started_actor)
 
-    @define_filter(Filter())
-    def test_send_start_message_to_puller_without_filter_answer_with_error_message(self, init_actor):
-        init_actor.send_control(StartMessage())
-        msg = init_actor.receive_control(2000)
-        assert isinstance(msg, ErrorMessage)
+    def test_starting_actor_in_stream_mode_dont_terminate_itself_after_empty_db(self, system, actor, fake_db, fake_filter):
+        assert is_actor_alive(system, actor)
+        puller_config = {'name': 'puller_test', 'database': fake_db, 'report_filter': fake_filter, 'report_model': None, 'stream_mode': True}
+        answer = system.ask(actor, StartMessage(puller_config))
+        time.sleep(1)
+        assert is_actor_alive(system, actor)
+

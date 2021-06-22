@@ -27,6 +27,5 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, StartHandler, DispatcherPoisonPillMessageHandler
-from powerapi.dispatcher.state import RouteTable, DispatcherState
-from powerapi.dispatcher.dispatcher_actor import DispatcherActor, NoPrimaryDispatchRuleRuleException
+from powerapi.dispatcher.route_table import RouteTable
+from powerapi.dispatcher.dispatcher_actor import DispatcherActor

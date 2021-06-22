@@ -1,21 +1,21 @@
 # Copyright (c) 2018, INRIA
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
-#
+
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-#
+
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-#
+
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-#
+
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-#
+
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,279 +27,95 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-import signal
-import multiprocessing
-import setproctitle
-import sys
-import threading
-import traceback
+from typing import Any
+from datetime import timedelta
 
-import zmq
+from thespian.actors import ActorTypeDispatcher, ActorAddress, ActorExitRequest, WakeupMessage
 
-from powerapi.actor import State, SocketInterface
-from powerapi.message import PoisonPillMessage
-from powerapi.message import UnknowMessageTypeException
-from powerapi.handler import HandlerException
+from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage
+from powerapi.exception import PowerAPIException
 
-
-class Actor(multiprocessing.Process):
+class InitializationException(PowerAPIException):
     """
-    Abstract class that exposes an interface to create, setup and handle actors
+    Exception raised when an actor failed to initialize itself
+    """
 
-    :Method Interface:
+class Actor(ActorTypeDispatcher):
+    """
+    PowerAPI abstract Actor class
 
-    This table list from wich interface each methods are accessible
-
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +=================================+============================================================================================+
-    | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                       |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-
-    :Attributes Interface:
+    implement basic actor behaviour
+    """
+    def __init__(self):
+        self.name : str = ''
+        self.initialized : bool = False
     
-    This table list from wich interface each attributes are accessible
+    def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
+        """
+        When receiving a PingMessage, the actor answer with a OKMessage to its sender 
+        """
+        self.send(sender, OKMessage())
 
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`state <powerapi.actor.actor.Actor.state>`                                           |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
+    def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
+        """
+        When receiving a StartMessage : 
+          - if the actor is already initialized, answer with a ErrorMessage
+          - otherwise initialize the actor with the abstract method _initialization and answer with an OKMessage
+        """
+        if self.initialized:
+            self.send(sender, ErrorMessage('Actor already initialized'))
+            return
+
+        try:
+            self._initialization(message)
+        except InitializationException as e:
+            self.send(sender, ErrorMessage(e.msg))
+            self.send(self.myAddress, ActorExitRequest())
+            return
+
+        self.initialized = True
+        self.send(sender, OKMessage())
+
+    def receiveUnrecognizedMessage(self, message: Any, sender: ActorAddress):
+        """
+        When receiving a message with a type that can't be handle, the actor answer with an ErrorMessage
+        """
+        self.send(sender, ErrorMessage("did not recognize the message type : " + str(type(message))))
+
+    def _initialization(self, message: StartMessage):
+        raise NotImplementedError()
+
+class TimedActor(Actor):
+    """
+    An actor that process a task at regular time interval
     """
 
-    def __init__(self, name, level_logger=logging.WARNING, timeout=None):
+    def __init__(self, time_interval: float):
         """
-        Initialization and start of the process.
-
-        :param str name: unique name that will be used to indentify the actor
-                         processus
-        :param int level_logger: Define the level of the logger
-        :param int timeout: if define, do something if no msg is recv every
-                            timeout (in ms)
+        :param time_interval: time (in seconds) to wait between each task to launch
         """
-        multiprocessing.Process.__init__(self, name=name)
+        Actor.__init__(self)
+        self._time_interval = timedelta(seconds=time_interval)
 
-        #: (logging.Logger): Logger
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level_logger)
-        formatter = logging.Formatter(
-            '%(asctime)s || %(levelname)s || ' +
-            '%(process)d %(processName)s || %(message)s')
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-
-        # file logger
-        #handlerf = logging.FileHandler('powerapi.log')
-        #handlerf.setLevel(level_logger)
-        #handlerf.setFormatter(formatter)
-
-        self.logger.addHandler(handler)
-        #self.logger.addHandler(handlerf)
-
-        #: (powerapi.State): Actor context
-        self.state = State(self)
-
-        #: (powerapi.SocketInterface): Actor's SocketInterface
-        self.socket_interface = SocketInterface(name, timeout)
-
-        #: (func): Actor behaviour
-        self.behaviour = Actor._initial_behaviour
-
-        #: (List): list of exception that restart the actor it they are raised
-        self.low_exception = []
-
-    def run(self):
+    def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
         """
-        Main code executed by the actor
+        When receiving a StartMessage, initialize the actor and set it into sleeping phase
+        ask the actor system to wake agter a given time period
         """
-        self._setup()
+        Actor.receiveMsg_StartMessage(self, message, sender)
+        self.wakeupAfter(self._time_interval)
 
-        while self.state.alive:
-            try:
-                self.behaviour(self)
-            except Exception as exn:
-                if type(exn) in self.low_exception:
-                    self.logger.error('Minor exception raised, restart actor !')
-                    traceback.print_exc()
-                    self.state.reinit()
-                else:
-                    self.state.alive = False
-                    self.logger.error('Major Exception raised, stop actor')
-                    traceback.print_exc()
-
-
-        self._kill_process()
-
-    def _signal_handler_setup(self):
+    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
+        print('Dead')
+        
+    def receiveMsg_WakeupMessage(self, message: WakeupMessage, sender: ActorAddress):
         """
-        Define how to handle signal interrupts
+        When receiving a WakeupMessage, launch the actor task
         """
-        def term_handler(_, __):
-            self.logger.debug("Term handler")
-            pp_handler = self.state.get_corresponding_handler(PoisonPillMessage())
-            pp_handler.handle(PoisonPillMessage(soft=False))
-            self._kill_process()
-            sys.exit(0)
-
-        signal.signal(signal.SIGTERM, term_handler)
-        signal.signal(signal.SIGINT, term_handler)
-
-    def _setup(self):
-        """
-        Set actor specific configuration:
-
-         - set the processus name
-         - setup the socket interface
-         - setup the signal handler
-
-        This method is called before entering on the behaviour loop
-        """
-        # Name process
-        setproctitle.setproctitle(self.name)
-
-        self.socket_interface.setup()
-
-        self.logger.debug(self.name + ' process created.')
-
-        self._signal_handler_setup()
-
-        self.setup()
-
-    def setup(self):
-        """
-        Function called before entering on the behaviour loop
-
-        Can be overriden to use personal actor setup
-        """
-
-    def add_handler(self, message_type, handler):
-        """
-        Map a handler to a message type
-
-        :param type message_type: type of the message that the handler can
-                                  handle
-        :param handler: handler that will handle all messages of the given type
-        :type handler: powerapi.handler.Handler
-        """
-        self.state.add_handler(message_type, handler)
-
-    def set_behaviour(self, new_behaviour):
-        """
-        Set a new behaviour
-        :param new_behaviour: function
-        """
-        self.behaviour = new_behaviour
-
-    def _initial_behaviour(self):
-        """
-        Initial behaviour of an actor
-
-        Wait for a message, and handle it with the correct handler
-
-        If the message is None, call the timout_handler otherwise find the
-        handler correponding to the message type and call it on the message.
-        """
-
-        msg = self.receive()
-        # Timeout
-        if msg is None:
-            return
-        # Message
+        if self.initialized:
+            self._launch_task()
         else:
-            try:
-                handler = self.state.get_corresponding_handler(msg)
-                handler.handle_message(msg)
-            except UnknowMessageTypeException:
-                self.logger.warning("UnknowMessageTypeException: " + str(msg))
-            except HandlerException:
-                self.logger.warning("HandlerException")
+            self.send(sender, ErrorMessage("Actor not initialized"))
 
-    def _kill_process(self):
-        """
-        Kill the actor (close sockets)
-        """
-        self.socket_interface.close()
-        self.logger.debug(self.name + " teardown")
-
-    def connect_data(self):
-        """
-        Open a canal that can be use for unidirectional communication to this
-        actor
-        """
-        self.socket_interface.connect_data()
-
-    def connect_control(self):
-        """
-        Open a control canal with this actor. An actor can have only one
-        control open at the same time. Open a pair socket on the process
-        that want to control this actor
-        """
-        self.socket_interface.connect_control()
-
-    def send_control(self, msg):
-        """
-        Send a message to this actor on the control canal
-
-        :param Object msg: the message to send to this actor
-        """
-        self.socket_interface.send_control(msg)
-        self.logger.debug('send control [' + str(msg) + '] to ' + self.name)
-
-    def receive_control(self, timeout=None):
-        """
-        Receive a message from this actor on the control canal
-        """
-        if timeout is None:
-            timeout = self.socket_interface.timeout
-
-        msg = self.socket_interface.receive_control(timeout)
-        self.logger.debug("receive control : [" + str(msg) + "]")
-        return msg
-
-    def send_data(self, msg):
-        """
-        Send a msg to this actor using the data canal
-
-        :param Object msg: the message to send to this actor
-        """
-        self.socket_interface.send_data(msg)
-        self.logger.debug('send data [' + str(msg) + '] to ' + self.name)
-
-    def receive(self):
-        """
-        Block until a message was received (or until timeout) an return the
-        received messages
-
-        :return: the list of received messages or an empty list if timeout
-        :rtype: a list of Object
-        """
-        msg = self.socket_interface.receive()
-        self.logger.debug("receive data : [" + str(msg) + "]")
-        return msg
-
-    def soft_kill(self):
-        """Kill this actor by sending a soft :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
-        """
-        self.send_control(PoisonPillMessage(soft=True))
-        self.socket_interface.close()
-
-    def hard_kill(self):
-        """Kill this actor by sending a hard :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
-        """
-        self.send_control(PoisonPillMessage(soft=False))
-        self.socket_interface.close()
+    def _launch_task(self):
+        raise NotImplementedError()

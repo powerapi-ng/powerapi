@@ -34,25 +34,26 @@ from typing import List
 from powerapi.report import Report
 from powerapi.database.base_db import BaseDB, IterDB
 from powerapi.report_model.report_model import CSV_HEADER_COMMON, ReportModel
-from powerapi.utils import utils, Error
+from powerapi.exception import PowerAPIException
+from powerapi.utils import utils
 
 # Array of field that will not be considered as a group
 COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
 
 
-class CsvBadFilePathError(Error):
+class CsvBadFilePathError(PowerAPIException):
     """
     Error raised when file is not found
     """
 
 
-class CsvBadCommonKeysError(Error):
+class CsvBadCommonKeysError(PowerAPIException):
     """
     Error raised when a common keys is not found
     """
 
 
-class HeaderAreNotTheSameError(Error):
+class HeaderAreNotTheSameError(PowerAPIException):
     """
     Error raised when the header read in a file doesn't fit the input data
     """

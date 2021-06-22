@@ -36,160 +36,108 @@ import sys
 
 import zmq
 
-from powerapi.handler import Handler
-from powerapi.report import PowerReport, Report
-from powerapi.formula import FormulaActor, FormulaState, FormulaPoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
-from powerapi.actor import SafeContext
+from thespian.actors import Actor, ActorSystem, ActorExitRequest
+
+from powerapi.message import PingMessage, StartMessage, OKMessage
+from powerapi.report import *
 
 
-def is_actor_alive(actor, time=0.5):
+class DummyActor(Actor):
     """
-    wait the actor to terminate or 0.5 secondes and return its is_alive value
+    Actor that forward all received message to the actor system
+    each message is wraped into a tuple that contains the actor name and the forwarded message
+    the actor must be initialized by the actor system by sending its name (str) This message must be the first message that the dummy actor receive.
+    It will not be forwarded
+
     """
-    actor.join(time)
-    return actor.is_alive()
+    def __init__(self):
+        Actor.__init__(self)
+        self.name = None
+        self.system_address = None
+
+    def receiveMessage(self, message, sender):
+        if self.name is None:
+            self.name = message
+            self.system_address = sender
+        else:
+            self.send(self.system_address, (self.name, message))
 
 
-#######################
-# Function to log
-#######################
-
-
-def gen_side_effect(filename, msg):
+class DummyFormulaActor(Actor):
     """
-    generate a function for patching mocked methods with a side effect
-
-    the side effect send a message to a given socket
-
-    :param str filename: filename
-    :param str msg: message to send to the socket
+    Formula that forward received message
     """
-    def log_side_effect(*args, **kwargs):
-        socket = SafeContext.get_context().socket(zmq.PUSH)
-        socket.connect(filename)
-        socket.send_string(msg)
-        socket.close()
+    def __init__(self):
+        self.name = None
+        self.fake_puller = None
 
-    return log_side_effect
-
-
-def is_log_ok(filename, validation_msg_list):
-    """
-    check if some side effects defined by gen_side_effect was apply
-
-    :param str filename: file name for log
-    :param list validation_msg_list: list of message that the side effects must
-                                     send
-    """
-
-    result_list = []
-    for _ in range(len(validation_msg_list)):
-        event = filename.poll(500)
-        if event == 0:
-            return False
-        msg = filename.recv_string()
-        result_list.append(msg)
-
-    result_list.sort()
-    validation_msg_list.sort()
-
-    return result_list == validation_msg_list
-
-#######################
-# Function to send data
-#######################
-
-
-def gen_send_side_effect(address):
-    """
-    Generate a function for patching mocked methods like send_data/send_monitor
-    usually used for sending some data.
-
-    :param Message msg: Msg to send
-    """
-    def send_side_effect(msg):
-        context = zmq.Context()
-        socket = context.socket(zmq.PUSH)
-        socket.connect(address)
-        socket.send(pickle.dumps(msg))
-        socket.close()
-        context.destroy()
-
-    return send_side_effect
-
-
-def receive_side_effect(address, context):
-    """
-    Return Message send by the gen_send_side_effect.
-
-    :param str address: Address of the socket where the side effect must send
-                        the message
-    :param zmq.context context: Zmq context used for receiving message from the
-                                side effect
-    :rtype boolean: True if all the waited message was received,
-                    False otherwise
-    """
-    socket = context.socket(zmq.PULL)
-    socket.bind(address)
-
-    result_list = []
-    while True:
-        event = socket.poll(500)
-        if event == 0:
-            break
-        msg = pickle.loads(socket.recv())
-        result_list.append(msg)
-    socket.close()
-
-    return result_list
-
-
-#################
-# Crash Formula #
-#################
-class CrashState(FormulaState):
-    def __init__(self, actor, pushers, metadata, nb_reports_max, exception):
-        FormulaState.__init__(self, actor, pushers, metadata)
-        self.nb_reports = 0
-        self.nb_reports_max = nb_reports_max
-        self.exception = exception
-
-    def reinit(self):
-        self.nb_reports = 0
+    def receiveMessage(self, message, sender):
+        if isinstance(message, StartMessage):
+            self.name = message.init_values['name']
+            self.fake_puller = self.createActor(DummyActor, globalName=message.init_values['logger_name'])
+        if isinstance(message, ActorExitRequest):
+            self.send(self.fake_puller, 'dead')
+        else:
+            self.send(self.fake_puller, message)
 
 
 class CrashException(Exception):
     pass
 
 
-class ReportHandler(Handler):
-    def _estimate(self, report):
-        if self.state.nb_reports >= self.state.nb_reports_max:
-            raise self.state.exception()
+class CrashFormulaActor(DummyFormulaActor):
+    """
+    Formula that crash after receiveing 3 messages
+    """
+    def __init__(self):
+        DummyFormulaActor.__init__(self)
+        self.report_received = 0
 
-        self.state.nb_reports += 1
-        metadata = {'formula_name': self.state.actor.name}
-
-        socket_id = self.state.metadata['socket'] if 'socket' in self.state.metadata else -1
-
-        result_msg = PowerReport(report.timestamp, report.sensor, report.target, socket_id, 42, metadata)
-        return [result_msg]
-
-    def handle(self, msg):
-        results = self._estimate(msg)
-        for _, actor_pusher in self.state.pushers.items():
-            for result in results:
-                actor_pusher.send_data(result)
+    def receiveMessage(self, message, sender):
+        DummyFormulaActor.receiveMessage(self, message, sender)
+        self.report_received += 1
+        print(self.report_received)
+        if self.report_received >= 3:
+            self.send(self.fake_puller, 'crash')
+            raise CrashException
 
 
-class CrashFormulaActor(FormulaActor):
-    def __init__(self, name, pushers, nb_reports_max, exception, level_logger=logging.WARNING, timeout=None):
-        FormulaActor.__init__(self, name, pushers, level_logger, timeout)
-        self.state = CrashState(self, pushers, self.formula_metadata, nb_reports_max, exception)
-        self.low_exception = [CrashException]
+def is_actor_alive(system, actor_address, time=1):
+    """
+    wait the actor to terminate or 0.5 secondes and return its is_alive value
+    """
+    msg = system.ask(actor_address, PingMessage(), time)
+    print(msg)
+    return isinstance(msg, OKMessage)
 
-    def setup(self):
-        FormulaActor.setup(self)
-        self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
-        self.add_handler(Report, ReportHandler(self.state))
+###################
+# Report Creation #
+###################
+TS1 = 0
+SENSOR1= 'sensor1'
+TARGET1 = 'target1'
+def gen_power_report():
+    return PowerReport(TS1, SENSOR1, TARGET1, 0, 1234, {}, core=0)
+
+def gen_hwpc_report():
+    """
+    Return a well formated HWPCReport
+    """
+    cpua = create_core_report('1', 'e0', '0')
+    cpub = create_core_report('2', 'e0', '1')
+    cpuc = create_core_report('1', 'e0', '2')
+    cpud = create_core_report('2', 'e0', '3')
+    cpue = create_core_report('1', 'ne1', '0')
+    cpuf = create_core_report('2', 'e1', '1')
+    cpug = create_core_report('1', 'e1', '2')
+    cpuh = create_core_report('2', 'e1', '3')
+
+    socketa = create_socket_report('1', [cpua, cpub])
+    socketb = create_socket_report('2', [cpuc, cpud])
+    socketc = create_socket_report('1', [cpue, cpuf])
+    socketd = create_socket_report('2', [cpug, cpuh])
+
+    groupa = create_group_report('1', [socketa, socketb])
+    groupb = create_group_report('2', [socketc, socketd])
+
+    return create_report_root([groupa, groupb])

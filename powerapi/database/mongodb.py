@@ -77,6 +77,7 @@ class MongoIterDB(IterDB):
     def __next__(self) -> Report:
         """
         Allow to get the next data
+        :raise: StopIteration in stream mode when no report was found. In non stream mode, raise StopIteration if the database is empty
         """
         if not self.stream_mode:
             json = self.cursor.next()

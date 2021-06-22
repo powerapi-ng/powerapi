@@ -29,19 +29,6 @@
 
 import collections.abc as collections
 import datetime
-from powerapi.exception import PowerAPIException
-
-
-class Error(PowerAPIException):
-    """
-    Error class for more understandable Error class
-    """
-    def __init__(self, msg):
-        """
-        :param str msg: Message of the error
-        """
-        super().__init__(msg)
-
 
 def timestamp_to_datetime(timestamp):
     """

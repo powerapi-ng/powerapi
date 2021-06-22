@@ -26,59 +26,52 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Callable, List
-
-
-from thespian.actors import ActorAddress
-
-from powerapi.report import Report
 from powerapi.exception import PowerAPIException
 
 
-class RouterWithoutRuleException(PowerAPIException):
+class RouteTable:
     """
-    Exception raised when a filter route with 0 filters
-    """
-    def __init__(self):
-        PowerAPIException.__init__(self, "")
-
-
-class Filter:
-    """
-    Filter class
-
-    A filter allow the Puller to route Report of the database to Dispatchers
-    by fixing some rules.
+    Structure that map a :class:`Report<powerapi.report.Report>` type to a
+    :class:`DispatchRule<powerapi.dispatch_rule.DispatchRule>` rule
     """
 
     def __init__(self):
-        self.filters = []
+        #: (array): Array of tuple that link a Report type to a DispatchRule
+        # rule
+        self.route_table = []
+        #: (powerapi.DispatchRule): Allow to define how to create the Formula id
+        self.primary_dispatch_rule = None
 
-    def filter(self, rule: Callable[[Report], bool], dispatcher: ActorAddress):
+    def get_dispatch_rule(self, msg):
         """
-        Define a rule for a kind of report, and send it to the dispatcher
-        if the rule accept it.
+        Return the corresponding group by rule mapped to the received message
+        type
 
-        :param (func(report) -> bool) rule:      Function which return if
-                                                 the report has to be send to
-                                                 this dispatcher
-        :param powerapi.Dispatcher dispatcher: Dispatcher we want to send the
-                                                 report
+        :param type msg: the received message
+        :return: the dispatch_rule rule mapped to the received message type
+        :rtype: powerapi.dispatch_rule.DispatchRule
+        :raise: UnknowMessageTypeException if no group by rule is mapped to the
+                received message type
         """
-        self.filters.append((rule, dispatcher))
+        for (report_class, dispatch_rule) in self.route_table:
+            if isinstance(msg, report_class):
+                return dispatch_rule
 
-    def route(self, report: Report) -> List[ActorAddress]:
+        return None
+
+    def dispatch_rule(self, report_class, dispatch_rule):
         """
-        Get the list of dispatchers to whom send the report, or None
+        Add a dispatch_rule rule to the route table
 
-        :param powerapi.Report report: Message to send
+        :param Type report_class: Type of the message that the
+                                  dispatch_rule rule must handle
+        :param dispatch_rule: Group_by rule to add
+        :type dispatch_rule:  powerapi.dispatch_rule.DispatchRule
         """
-        if not self.filters:
-            raise RuntimeError()
+        if dispatch_rule.is_primary:
+            if self.primary_dispatch_rule is not None:
+                raise PrimaryDispatchRuleRuleAlreadyDefinedException()
+            self.primary_dispatch_rule = dispatch_rule
 
-        dispatchers = []
-        for rule, dispatcher in self.filters:
-            if rule(report):
-                dispatchers.append(dispatcher)
 
-        return dispatchers
+        self.route_table.append((report_class, dispatch_rule))
