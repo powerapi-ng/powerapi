@@ -42,21 +42,13 @@ from powerapi.filter import Filter, RouterWithoutRuleException
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model import ReportModel
 from powerapi.report_model.report_model import BadInputData
+from powerapi.message import PullerStartMessage
 
 
 class PullerActor(TimedActor):
     def __init__(self):
-        """
-        :param str name: Actor name.
-        :param BaseDB database: Allow to interact with a Database.
-        :param Filter report_filter: Filter of the Puller.
-        :param int level_logger: Define the level of the logger
-        :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
-        :param bool asynchrone: use asynchrone driver
-        """
         TimedActor.__init__(self, 1)
 
-        self.name = None
         self.database = None
         self.report_filter = None
         self.report_model = None
@@ -65,13 +57,16 @@ class PullerActor(TimedActor):
 
         self._number_of_message_before_sleeping = 10
 
-    def _initialization(self, start_message):
+    def _initialization(self, start_message: PullerStartMessage):
+        TimedActor._initialization(self, start_message)
+        
+        if not isinstance(start_message, PullerStartMessage):
+            raise InitializationException('use PullerStartMessage instead of StartMessage')
 
-        self.name = start_message.init_values['name']
-        self.database = start_message.init_values['database']
-        self.report_filter = start_message.init_values['report_filter']
-        self.report_model = start_message.init_values['report_model']
-        self.stream_mode = start_message.init_values['stream_mode']
+        self.database = start_message.database
+        self.report_filter = start_message.report_filter
+        self.report_model = start_message.report_model
+        self.stream_mode = start_message.stream_mode
 
         self._database_connection()
         if not self.report_filter.filters:

@@ -36,14 +36,13 @@ from mock import Mock
 
 from thespian.actors import ActorExitRequest
 
-from powerapi.report import Report
 from powerapi.puller import PullerActor
-from powerapi.message import StartMessage, ErrorMessage
+from powerapi.message import PullerStartMessage, ErrorMessage, StartMessage
 from powerapi.filter import Filter, RouterWithoutRuleException
 
-from ..actor.abstract_test_actor import AbstractTestActor
-from ..db_utils import FakeDB, AbstractTestActorWithDB, define_database_content, REPORT1, REPORT2
-from ...utils import DummyActor, is_actor_alive
+from .actor.abstract_test_actor import AbstractTestActor
+from .db_utils import FakeDB, AbstractTestActorWithDB, define_database_content, REPORT1, REPORT2
+from ..utils import DummyActor, is_actor_alive
 
 
 def define_filter(filt):
@@ -109,13 +108,13 @@ class TestPuller(AbstractTestActorWithDB):
         system.tell(puller, ActorExitRequest())
 
     @pytest.fixture
-    def actor_config(self, system, actor, fake_db, fake_filter):
-        return {'name': 'puller_test', 'database': fake_db, 'report_filter': fake_filter, 'report_model': None, 'stream_mode': False}
+    def actor_start_message(self, system, actor, fake_db, fake_filter):
+        return PullerStartMessage('puller_test', fake_db, fake_filter, None, False)
 
     def test_create_puller_with_router_without_rules_must_raise_RouterWithoutRuleException(self, system, empty_filter, fake_db):
         puller = system.createActor(PullerActor)
-        puller_config = {'name': 'puller_test', 'database': fake_db, 'report_filter': empty_filter, 'report_model': None, 'stream_mode': False}
-        answer = system.ask(puller, StartMessage(puller_config))
+        puller_start_message = PullerStartMessage('puller_test', fake_db, empty_filter, None, False)
+        answer = system.ask(puller, puller_start_message)
         assert isinstance(answer, ErrorMessage)
         assert answer.error_message == 'filter without rules'
 
@@ -130,8 +129,15 @@ class TestPuller(AbstractTestActorWithDB):
 
     def test_starting_actor_in_stream_mode_dont_terminate_itself_after_empty_db(self, system, actor, fake_db, fake_filter):
         assert is_actor_alive(system, actor)
-        puller_config = {'name': 'puller_test', 'database': fake_db, 'report_filter': fake_filter, 'report_model': None, 'stream_mode': True}
-        answer = system.ask(actor, StartMessage(puller_config))
+        puller_start_message = PullerStartMessage('puller_test', fake_db, fake_filter, None, True)
+        answer = system.ask(actor, puller_start_message)
         time.sleep(1)
         assert is_actor_alive(system, actor)
+
+    def test_starting_actor_with_a_non_PullerStartMessage_must_answer_error_message(self, system, actor):
+        puller_start_message = StartMessage('puller_test')
+        answer = system.ask(actor, puller_start_message)
+        assert isinstance(answer, ErrorMessage)
+        assert answer.error_message == 'use PullerStartMessage instead of StartMessage'
+        
 

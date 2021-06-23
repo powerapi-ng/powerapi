@@ -63,6 +63,12 @@ class DummyActor(Actor):
             self.send(self.system_address, (self.name, message))
 
 
+class DummyFormulaStartMessage(StartMessage):
+    def __init__(self, name, puller_address):
+        StartMessage.__init__(self, name)
+        self.puller_address = puller_address
+
+
 class DummyFormulaActor(Actor):
     """
     Formula that forward received message
@@ -73,8 +79,8 @@ class DummyFormulaActor(Actor):
 
     def receiveMessage(self, message, sender):
         if isinstance(message, StartMessage):
-            self.name = message.init_values['name']
-            self.fake_puller = self.createActor(DummyActor, globalName=message.init_values['logger_name'])
+            self.name = message.name
+            self.fake_puller = self.createActor(DummyActor, globalName=message.puller_address)
         if isinstance(message, ActorExitRequest):
             self.send(self.fake_puller, 'dead')
         else:

@@ -75,24 +75,24 @@ class AbstractTestActorWithDB(AbstractTestActor):
         return FakeDB(content, pipe_in)
 
     @pytest.fixture
-    def started_actor(self, actor, pipe_out, fake_db, actor_config):
-        ActorSystem().ask(actor, StartMessage(actor_config))
+    def started_actor(self, actor, pipe_out, fake_db, actor_start_message):
+        ActorSystem().ask(actor, actor_start_message)
         print(pipe_out.recv())  # remove 'connected' string from Queue
         return actor
 
-    def test_send_StartMessage_answer_OkMessage(self, system, actor, actor_config):
-        system.tell(actor, StartMessage(actor_config))
+    def test_send_StartMessage_answer_OkMessage(self, system, actor, actor_start_message):
+        system.tell(actor, actor_start_message)
         msg = system.listen()
         print(msg)
         assert isinstance(msg, OKMessage)
 
-    def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, system, started_actor, actor_config):
-        msg = system.ask(started_actor, StartMessage(actor_config))
+    def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, system, started_actor, actor_start_message):
+        msg = system.ask(started_actor, actor_start_message)
         assert isinstance(msg, ErrorMessage)
         assert msg.error_message == 'Actor already initialized'
 
-    def test_starting_actor_make_it_connect_to_database(self, system, actor, actor_config, pipe_out):
-        ActorSystem().ask(actor, StartMessage(actor_config))
+    def test_starting_actor_make_it_connect_to_database(self, system, actor, actor_start_message, pipe_out):
+        ActorSystem().ask(actor, actor_start_message)
         assert pipe_out.recv() == 'connected'
 
 

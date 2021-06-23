@@ -47,7 +47,7 @@ class Actor(ActorTypeDispatcher):
     implement basic actor behaviour
     """
     def __init__(self):
-        self.name : str = ''
+        self.name : str = None
         self.initialized : bool = False
     
     def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
@@ -83,7 +83,7 @@ class Actor(ActorTypeDispatcher):
         self.send(sender, ErrorMessage("did not recognize the message type : " + str(type(message))))
 
     def _initialization(self, message: StartMessage):
-        raise NotImplementedError()
+        self.name = message.name
 
 class TimedActor(Actor):
     """

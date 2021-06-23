@@ -26,68 +26,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from typing import List
 
-import logging
-import re
-from typing import Dict
+from thespian.actors import ActorAddress
 
-# from powerapi.actor import Actor, State, SocketInterface
-# from powerapi.pusher import PusherActor
-
-class FormulaActor:
-    pass
-# class FormulaState(State):
-#     """
-#     State of the Formula actor.
-#     """
-
-#     def __init__(self, actor, pushers, metadata):
-#         """
-#         Initialize a new Formula actor state.
-#         :param actor: Actor linked to the state
-#         :param pushers: Pushers available for the actor
-#         """
-#         super().__init__(actor)
-#         self.pushers = pushers
-#         self.metadata = metadata
+from powerapi.actor import Actor
+from powerapi.message import StartMessage
 
 
-# class FormulaActor(Actor):
-#     """
-#     Formula actor abstract class.
-#     """
+class FormulaActor(Actor):
+    def __init__(self):
+        Actor.__init__(self)
+        self.name: str = None
+        self.pushers: List[ActorAddress] = None
 
-#     def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
-#         """
-#         Initialize a new Formula actor.
-#         :param name: Actor name
-#         :param pushers: Pusher actors
-#         :param level_logger: Level of the logger
-#         :param timeout: Time in millisecond to wait for a message before calling the timeout handler
-#         """
-#         Actor.__init__(self, name, level_logger, timeout)
-
-#         self.formula_metadata = self._extract_formula_metadata(name)
-#         self.state = FormulaState(self, pushers, self.formula_metadata)
-
-#     def _extract_formula_metadata(self, formula_name):
-#         metadata_str = re.findall(r'\'([\w_]*)\'', formula_name)
-
-#         metadata = {}
-
-#         if len(metadata_str) >= 2:
-#             metadata['sensor'] = metadata_str[1]
-
-#         if len(metadata_str) >= 3:
-#             metadata['socket'] = int(metadata_str[2])
-
-#         if len(metadata_str) >= 4:
-#             metadata['core'] = int(metadata_str[3])
-#         return metadata
-
-#     def setup(self):
-#         """
-#         Setup the Formula actor.
-#         """
-#         for _, pusher in self.state.pushers.items():
-#             pusher.connect_data()
+    def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
+        self.name = message.init_values['name']

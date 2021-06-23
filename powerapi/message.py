@@ -26,8 +26,15 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Dict, Any
-from powerapi.exception import PowerAPIException
+from __future__ import annotations
+from typing import Dict, Any, Type, Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from powerapi.database import BaseDB
+    from powerapi.filter import Filter
+    from powerapi.report_model import ReportModel
+    from powerapi.dispatcher import RouteTable
 
 
 class Message:
@@ -73,8 +80,25 @@ class StartMessage(Message):
     """
     Message that ask the actor to launch its initialisation process
     """
-    def __init__(self, init_values: Dict[str, Any]):
-        self.init_values = init_values
+    def __init__(self, name: str):
+        self.name = name
 
     def __str__(self):
         return "StartMessage"
+
+
+class PullerStartMessage(StartMessage):
+    def __init__(self, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool):
+        StartMessage.__init__(self, name)
+        self.database = database
+        self.report_filter = report_filter
+        self.report_model = report_model
+        self.stream_mode = stream_mode
+
+
+class DispatcherStartMessage(StartMessage):
+    def __init__(self, name: str, formula_class, formula_config_factory: Callable, route_table: RouteTable):
+        StartMessage.__init__(self, name)
+        self.formula_class = formula_class
+        self.formula_config_factory = formula_config_factory
+        self.route_table = route_table

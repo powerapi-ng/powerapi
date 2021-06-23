@@ -25,24 +25,18 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import logging
-from multiprocessing import Queue
-from queue import Empty
-from mock import Mock
-
 import pytest
 
 from thespian.actors import ActorExitRequest
 
-from ...utils import DummyActor, DummyFormulaActor, is_actor_alive, CrashFormulaActor
+from ...utils import DummyActor, DummyFormulaActor, is_actor_alive, CrashFormulaActor, DummyFormulaStartMessage
 from ...utils import gen_power_report, gen_hwpc_report
 from ..actor.abstract_test_actor import AbstractTestActor
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.dispatcher.dispatcher_actor import _extract_formula_id
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
 from powerapi.dispatch_rule import PowerDispatchRule, PowerDepthLevel
-from powerapi.message import OKMessage, StartMessage, ErrorMessage
+from powerapi.message import OKMessage, ErrorMessage, DispatcherStartMessage, StartMessage
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.report import Report, HWPCReport, PowerReport
 from powerapi.database import MongoDB
@@ -218,6 +212,7 @@ class Report3(Report):
     def __repr__(self):
         return self.__str__()
 
+
 class DispatchRule3(DispatchRule):
     """Group by rule that split the report if it contains a *b2* value
 
@@ -250,8 +245,8 @@ SPLITED_REPORT_1_B2 = Report1('a', 'b2')
 SPLITED_REPORT_2_C2 = Report2('a', 'c2')
 
 
-def formula_factory(name):
-    return {'name': name, 'logger_name': LOGGER_NAME}
+def formula_StartMessage_factory(name):
+    return DummyFormulaStartMessage(name, LOGGER_NAME)
 
 class TestDispatcher(AbstractTestActor):
 
@@ -269,11 +264,11 @@ class TestDispatcher(AbstractTestActor):
         system.tell(logger_actor, ActorExitRequest())
 
     @pytest.fixture
-    def actor_config(self, dispatch_rules, logger, formula_class):
+    def actor_start_message(self, dispatch_rules, logger, formula_class):
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
             route_table.dispatch_rule(report_type, gbr)
-        return {'name': 'dispatcher', 'formula_config_factory': formula_factory, 'formula_class': formula_class, 'route_table': route_table}
+        return DispatcherStartMessage('dispatcher', formula_class, formula_StartMessage_factory, route_table)
 
     @pytest.fixture
     def dispatcher_with_formula(self, system, started_actor, logger, dispatch_rules):
@@ -288,6 +283,12 @@ class TestDispatcher(AbstractTestActor):
         system.listen(0.5)
         system.listen(0.5)
         return dispatcher_with_formula
+
+    @define_dispatch_rules([(Report1, DispatchRule1A(primary=True))])
+    def test_starting_actor_without_DispatcherStartMessage_must_answer_error_message(self, system, actor, logger):
+        answer = system.ask(actor, StartMessage('test'))
+        assert isinstance(answer, ErrorMessage)
+        assert answer.error_message == 'use DispatcherStartMessage instead of StartMessage'
 
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
     def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, system, started_actor, logger):
@@ -304,7 +305,7 @@ class TestDispatcher(AbstractTestActor):
         system.tell(started_actor, REPORT_1)
         _, start_msg = system.listen(1)
         assert isinstance(start_msg, StartMessage)
-        assert start_msg.init_values['name'] == "('dispatcher', 'a', 'b')"
+        assert start_msg.name == "('dispatcher', 'a', 'b')"
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self, system, dispatcher_with_formula, logger):
@@ -342,7 +343,7 @@ class TestDispatcher(AbstractTestActor):
         assert len(start_message) == 2
 
         for msg in start_message:
-            assert msg.init_values['name'] == "('dispatcher', 'a', 'b')" or msg.init_values['name'] == "('dispatcher', 'a', 'b2')"
+            assert msg.name == "('dispatcher', 'a', 'b')" or msg.name == "('dispatcher', 'a', 'b2')"
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report3, DispatchRule3())])
@@ -381,7 +382,7 @@ class TestDispatcher(AbstractTestActor):
         _, msg = system.listen(0.5)
         assert msg == 'crash'
 
-        # test if formula was restarted 
+        # test if formula was restarted
         system.tell(dispatcher_with_formula, REPORT_1)
         _, msg = system.listen(0.5)
         assert msg == REPORT_1

@@ -37,7 +37,7 @@ from powerapi.dispatcher import RouteTable
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.utils import Tree
 from powerapi.report import Report
-from powerapi.message import StartMessage
+from powerapi.message import StartMessage, DispatcherStartMessage
 
 
 def _clean_list(id_list):
@@ -112,28 +112,20 @@ class DispatcherActor(Actor):
     """
 
     def __init__(self):
-        """
-        :param str name: Actor name
-        :param func formula_init_function: Function for creating Formula
-        :param route_table: initialized route table of the DispatcherActor
-        :type route_table: powerapi.dispatcher.state.RouteTable
-        :param int level_logger: Define the level of the logger
-        :param bool timeout: Define the time in millisecond to wait for a
-                             message before run timeout_handler
-        """
         Actor.__init__(self)
 
-        self.name: str = None
         self.formula_class: Type[FormulaActor] = None
-        self.formula_config_factory: Callable[[str], Tuple[Type[FormulaActor], Dict]] = None
+        self.formula_config_factory: Callable = None
         self.route_table: RouteTable = None
         self.formula_pool = None
 
     def _initialization(self, message: StartMessage):
-        self.name = message.init_values['name']
-        self.formula_class = message.init_values['formula_class']
-        self.formula_config_factory = message.init_values['formula_config_factory']
-        self.route_table = message.init_values['route_table']
+        Actor._initialization(self, message)
+        if not isinstance(message, DispatcherStartMessage):
+            raise InitializationException('use DispatcherStartMessage instead of StartMessage')
+        self.formula_class = message.formula_class
+        self.formula_config_factory = message.formula_config_factory
+        self.route_table = message.route_table
         self.formula_pool = FormulaPool()
 
         if self.route_table.primary_dispatch_rule is None:
@@ -163,10 +155,10 @@ class DispatcherActor(Actor):
             if len(formula_id) == len(primary_rule_fields):
                 try:
                     formula = self.formula_pool.get_direct_formula(formula_id)
+                    self.send(formula, message)
                 except KeyError:
                     formula = self._create_formula(formula_id)
                     self.formula_pool.add_formula(formula_id, formula)
-                finally:
                     self.send(formula, message)
             else:
                 for formula in self.formula_pool.get_corresponding_formula(list(formula_id)):
@@ -174,8 +166,8 @@ class DispatcherActor(Actor):
 
     def _create_formula(self, formula_id: Tuple):
         formula = self.createActor(self.formula_class)
-        config = self.formula_config_factory(str((self.name,) + formula_id))
-        self.send(formula, StartMessage(config))
+        start_message = self.formula_config_factory(str((self.name,) + formula_id))
+        self.send(formula, start_message)
         return formula
 
 

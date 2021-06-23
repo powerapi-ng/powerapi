@@ -35,7 +35,7 @@ import pytest
 
 from thespian.actors import ActorSystem
 
-from powerapi.message import StartMessage, OKMessage, ErrorMessage, PingMessage
+from powerapi.message import OKMessage, ErrorMessage, PingMessage
 from powerapi.actor import Actor
 
 
@@ -51,7 +51,7 @@ class AbstractTestActor:
         while ActorSystem().listen(0.1) != None:
             continue
         ActorSystem().shutdown()
-    
+
     @pytest.fixture
     def system(self):
         syst = ActorSystem(systemBase='multiprocQueueBase')
@@ -63,12 +63,12 @@ class AbstractTestActor:
         raise NotImplementedError()
 
     @pytest.fixture
-    def actor_config(self):
+    def actor_start_message(self):
         raise NotImplementedError()
 
     @pytest.fixture
-    def started_actor(self, system, actor, actor_config):
-        system.ask(actor, StartMessage(actor_config))
+    def started_actor(self, system, actor, actor_start_message):
+        system.ask(actor, actor_start_message)
         return actor
 
     def test_create_an_actor_and_send_it_PingMessage_must_make_it_answer_OKMessage(self, system, actor):
@@ -80,4 +80,3 @@ class AbstractTestActor:
         msg = system.ask(actor, UnknowMessage(), 0.3)
         print(msg)
         assert isinstance(msg, ErrorMessage)
-
