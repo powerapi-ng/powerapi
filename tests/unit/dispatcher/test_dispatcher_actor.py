@@ -29,9 +29,11 @@ import pytest
 
 from thespian.actors import ActorExitRequest
 
-from ...utils import DummyActor, DummyFormulaActor, is_actor_alive, CrashFormulaActor, DummyFormulaStartMessage
-from ...utils import gen_power_report, gen_hwpc_report
-from ..actor.abstract_test_actor import AbstractTestActor
+from powerapi.test_utils import is_actor_alive
+from powerapi.test_utils.dummy_actor import DummyActor, DummyFormulaActor, CrashFormulaActor, DummyFormulaStartMessage
+from powerapi.test_utils.report.hwpc import gen_hwpc_report
+from powerapi.test_utils.report.power import gen_power_report
+from powerapi.test_utils.abstract_test import AbstractTestActor, LOGGER_NAME
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.dispatcher.dispatcher_actor import _extract_formula_id
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
@@ -40,8 +42,6 @@ from powerapi.message import OKMessage, ErrorMessage, DispatcherStartMessage, St
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.report import Report, HWPCReport, PowerReport
 from powerapi.database import MongoDB
-
-LOGGER_NAME='thespian_test_logger'
 
 def define_dispatch_rules(rules):
     def wrap(func):
@@ -255,13 +255,6 @@ class TestDispatcher(AbstractTestActor):
         actor = system.createActor(DispatcherActor)
         yield actor
         system.tell(actor, ActorExitRequest())
-
-    @pytest.fixture
-    def logger(self, system):
-        logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
-        system.tell(logger_actor, 'logger')
-        yield logger_actor
-        system.tell(logger_actor, ActorExitRequest())
 
     @pytest.fixture
     def actor_start_message(self, dispatch_rules, logger, formula_class):

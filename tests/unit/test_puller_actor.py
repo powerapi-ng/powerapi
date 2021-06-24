@@ -39,10 +39,14 @@ from thespian.actors import ActorExitRequest
 from powerapi.puller import PullerActor
 from powerapi.message import PullerStartMessage, ErrorMessage, StartMessage
 from powerapi.filter import Filter, RouterWithoutRuleException
+from powerapi.report import Report
+from powerapi.test_utils.abstract_test import AbstractTestActor, AbstractTestActorWithDB, define_database_content
+from powerapi.test_utils.db import FakeDB
+from powerapi.test_utils.dummy_actor import DummyActor
+from powerapi.test_utils import is_actor_alive
 
-from .actor.abstract_test_actor import AbstractTestActor
-from .db_utils import FakeDB, AbstractTestActorWithDB, define_database_content, REPORT1, REPORT2
-from ..utils import DummyActor, is_actor_alive
+REPORT1 = Report(1, 2, 3)
+REPORT2 = Report(3, 4, 5)
 
 
 def define_filter(filt):

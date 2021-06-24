@@ -26,23 +26,68 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import socket
-import pickle
-import random
 from multiprocessing import Pipe
 
 import pytest
 
-from thespian.actors import ActorSystem
+from thespian.actors import ActorSystem, ActorExitRequest
 
-from powerapi.message import StartMessage, OKMessage, ErrorMessage
-from powerapi.database import BaseDB
-from powerapi.report import Report
-from .actor.abstract_test_actor import AbstractTestActor
-from ..utils import DummyActor
+from powerapi.message import OKMessage, ErrorMessage, PingMessage
+from powerapi.actor import Actor
 
+from .db import FakeDB
+from .dummy_actor import DummyActor
 
-SOCKET_ADDR='/tmp/powerapi_test_socket'
+LOGGER_NAME='thespian_test_logger'
+
+class UnknowMessage:
+    pass
+
+class AbstractTestActor:
+    """
+    test basic actor behaviour
+    """
+    @classmethod 
+    def teardown_class(cls):
+        while ActorSystem().listen(0.1) != None:
+            continue
+        ActorSystem().shutdown()
+
+    @pytest.fixture
+    def logger(self, system):
+        logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
+        system.tell(logger_actor, 'logger')
+        yield logger_actor
+        system.tell(logger_actor, ActorExitRequest())
+
+    @pytest.fixture
+    def system(self):
+        syst = ActorSystem(systemBase='multiprocQueueBase')
+        yield syst
+        syst.shutdown()
+
+    @pytest.fixture
+    def actor(self):
+        raise NotImplementedError()
+
+    @pytest.fixture
+    def actor_start_message(self):
+        raise NotImplementedError()
+
+    @pytest.fixture
+    def started_actor(self, system, actor, actor_start_message):
+        system.ask(actor, actor_start_message)
+        return actor
+
+    def test_create_an_actor_and_send_it_PingMessage_must_make_it_answer_OKMessage(self, system, actor):
+        msg = system.ask(actor, PingMessage(), 0.3)
+        print(msg)
+        assert isinstance(msg, OKMessage)
+
+    def test_create_an_actor_and_send_it_UnknowMessage_must_make_it_answer_ErrorMessage(self, system, actor):
+        msg = system.ask(actor, UnknowMessage(), 0.3)
+        print(msg)
+        assert isinstance(msg, ErrorMessage)
 
 def define_database_content(content):
     def wrap(func):
@@ -94,31 +139,3 @@ class AbstractTestActorWithDB(AbstractTestActor):
     def test_starting_actor_make_it_connect_to_database(self, system, actor, actor_start_message, pipe_out):
         ActorSystem().ask(actor, actor_start_message)
         assert pipe_out.recv() == 'connected'
-
-
-REPORT1 = Report(1, 2, 3)
-REPORT2 = Report(3, 4, 5)
-
-class FakeDBError(Exception):
-    pass
-
-class FakeDB():
-
-    def __init__(self, content=[], pipe=None, *args, **kwargs):
-        BaseDB.__init__(self)
-        self._content = content
-        self.pipe = pipe
-        self.socket_name = SOCKET_ADDR + str(random.randint(1, 10000))
-        self.exceptions = [FakeDBError]
-
-    def connect(self):
-        self.pipe.send('connected')
-
-    def iter(self, report_model, stream_mode):
-        return self._content.__iter__()
-
-    def save(self, report, report_model):
-        self.pipe.send(report)
-
-    def save_many(self, reports, report_model):
-        self.pipe.send(reports)

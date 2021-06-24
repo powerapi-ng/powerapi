@@ -26,21 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import logging
-import multiprocessing
-import os
-import time
-import pickle
-import sys
-
-import zmq
-
 from thespian.actors import Actor, ActorSystem, ActorExitRequest
-
 from powerapi.message import PingMessage, StartMessage, OKMessage
-from powerapi.report import *
-
 
 class DummyActor(Actor):
     """
@@ -106,44 +93,3 @@ class CrashFormulaActor(DummyFormulaActor):
         if self.report_received >= 3:
             self.send(self.fake_puller, 'crash')
             raise CrashException
-
-
-def is_actor_alive(system, actor_address, time=1):
-    """
-    wait the actor to terminate or 0.5 secondes and return its is_alive value
-    """
-    msg = system.ask(actor_address, PingMessage(), time)
-    print(msg)
-    return isinstance(msg, OKMessage)
-
-###################
-# Report Creation #
-###################
-TS1 = 0
-SENSOR1= 'sensor1'
-TARGET1 = 'target1'
-def gen_power_report():
-    return PowerReport(TS1, SENSOR1, TARGET1, 0, 1234, {}, core=0)
-
-def gen_hwpc_report():
-    """
-    Return a well formated HWPCReport
-    """
-    cpua = create_core_report('1', 'e0', '0')
-    cpub = create_core_report('2', 'e0', '1')
-    cpuc = create_core_report('1', 'e0', '2')
-    cpud = create_core_report('2', 'e0', '3')
-    cpue = create_core_report('1', 'ne1', '0')
-    cpuf = create_core_report('2', 'e1', '1')
-    cpug = create_core_report('1', 'e1', '2')
-    cpuh = create_core_report('2', 'e1', '3')
-
-    socketa = create_socket_report('1', [cpua, cpub])
-    socketb = create_socket_report('2', [cpuc, cpud])
-    socketc = create_socket_report('1', [cpue, cpuf])
-    socketd = create_socket_report('2', [cpug, cpuh])
-
-    groupa = create_group_report('1', [socketa, socketb])
-    groupb = create_group_report('2', [socketc, socketd])
-
-    return create_report_root([groupa, groupb])
