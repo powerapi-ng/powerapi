@@ -26,19 +26,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import List
+from typing import Dict, Type
 
 from thespian.actors import ActorAddress
 
 from powerapi.actor import Actor
-from powerapi.message import StartMessage
+from powerapi.message import FormulaStartMessage
 
 
 class FormulaActor(Actor):
-    def __init__(self):
-        Actor.__init__(self)
+    def __init__(self, start_message_cls: Type[FormulaStartMessage]):
+        Actor.__init__(self, start_message_cls)
         self.name: str = None
-        self.pushers: List[ActorAddress] = None
+        self.pushers: Dict[str, ActorAddress] = None
 
-    def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
-        self.name = message.init_values['name']
+    def _initialization(self, start_message: FormulaStartMessage):
+        self.pushers = start_message.pushers

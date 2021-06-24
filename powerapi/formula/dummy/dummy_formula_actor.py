@@ -26,23 +26,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
 
-import logging
-import re
-from functools import reduce
+from thespian.actors import ActorAddress
 
-from powerapi.formula import FormulaActor, FormulaState, FormulaPoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
-from powerapi.report import Report
-
-from powerapi.formula.dummy.dummy_handlers import ReportHandler
-
-
-class DummyState(FormulaState):
-
-    def __init__(self, actor, pushers, metadata, sleep_time):
-        FormulaState.__init__(self, actor, pushers, metadata)
-        self.sleep_time = sleep_time
+from powerapi.formula import FormulaActor
+from powerapi.report import Report, PowerReport
+from powerapi.message import DummyFormulaStartMessage
 
 
 class DummyFormulaActor(FormulaActor):
@@ -56,4 +46,16 @@ class DummyFormulaActor(FormulaActor):
         :param name: Actor name
         :param pusher_actors: Pusher actors
         """
-        FormulaActor.__init__(self)
+        FormulaActor.__init__(self, DummyFormulaStartMessage)
+
+        self.sleeping_time = None
+
+    def _initialization(self, message: DummyFormulaStartMessage):
+        FormulaActor._initialization(self, message)
+        self.sleeping_time = message.sleeping_time
+
+    def receiveMsg_Report(self, message: Report, sender: ActorAddress):
+        time.sleep(self.sleeping_time)
+        power_report =  PowerReport(message.timestamp, message.sensor, message.target, '0', 42, {})
+        for _, pusher in self.pushers.items():
+            self.send(pusher, power_report)

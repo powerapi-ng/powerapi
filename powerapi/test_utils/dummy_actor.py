@@ -89,7 +89,6 @@ class CrashFormulaActor(DummyFormulaActor):
     def receiveMessage(self, message, sender):
         DummyFormulaActor.receiveMessage(self, message, sender)
         self.report_received += 1
-        print(self.report_received)
         if self.report_received >= 3:
             self.send(self.fake_puller, 'crash')
             raise CrashException

@@ -27,8 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
-from typing import Dict, Any, Type, Callable
+from typing import Dict, Any, Type, Callable, List
 from typing import TYPE_CHECKING
+
+from thespian.actors import ActorAddress
 
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
@@ -102,3 +104,15 @@ class DispatcherStartMessage(StartMessage):
         self.formula_class = formula_class
         self.formula_config_factory = formula_config_factory
         self.route_table = route_table
+
+
+class FormulaStartMessage(StartMessage):
+    def __init__(self, name: str, pushers: Dict[str, ActorAddress]):
+        StartMessage.__init__(self, name)
+        self.pushers = pushers
+
+
+class DummyFormulaStartMessage(StartMessage):
+    def __init__(self, name: str, pushers: Dict[str, ActorAddress], sleeping_time: int):
+        FormulaStartMessage.__init__(self, name, pushers)
+        self.sleeping_time = sleeping_time

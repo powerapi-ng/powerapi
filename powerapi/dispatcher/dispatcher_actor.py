@@ -112,7 +112,7 @@ class DispatcherActor(Actor):
     """
 
     def __init__(self):
-        Actor.__init__(self)
+        Actor.__init__(self, DispatcherStartMessage)
 
         self.formula_class: Type[FormulaActor] = None
         self.formula_config_factory: Callable = None
@@ -121,8 +121,6 @@ class DispatcherActor(Actor):
 
     def _initialization(self, message: StartMessage):
         Actor._initialization(self, message)
-        if not isinstance(message, DispatcherStartMessage):
-            raise InitializationException('use DispatcherStartMessage instead of StartMessage')
         self.formula_class = message.formula_class
         self.formula_config_factory = message.formula_config_factory
         self.route_table = message.route_table

@@ -251,7 +251,7 @@ def formula_StartMessage_factory(name):
 class TestDispatcher(AbstractTestActor):
 
     @pytest.fixture
-    def actor(self, system, dispatch_rules):
+    def actor(self, system):
         actor = system.createActor(DispatcherActor)
         yield actor
         system.tell(actor, ActorExitRequest())

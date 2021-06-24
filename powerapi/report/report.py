@@ -65,7 +65,10 @@ class Report(Message):
         return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and (repr(other) == repr(self))
+        return (isinstance(other, type(self)) and
+                self.timestamp == other.timestamp and
+                self.sensor == other.sensor and
+                self.target == other.target)
 
     def serialize(self) -> Dict:
         """

@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Any
+from typing import Any, Type
 from datetime import timedelta
 
 from thespian.actors import ActorTypeDispatcher, ActorAddress, ActorExitRequest, WakeupMessage
@@ -46,9 +46,10 @@ class Actor(ActorTypeDispatcher):
 
     implement basic actor behaviour
     """
-    def __init__(self):
-        self.name : str = None
-        self.initialized : bool = False
+    def __init__(self, start_message_cls: Type[StartMessage]):
+        self.name: str = None
+        self.initialized: bool = False
+        self.start_message_cls = start_message_cls
     
     def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
         """
@@ -64,6 +65,10 @@ class Actor(ActorTypeDispatcher):
         """
         if self.initialized:
             self.send(sender, ErrorMessage('Actor already initialized'))
+            return
+
+        if not isinstance(message, self.start_message_cls):
+            self.send(sender, ErrorMessage('use '+ self.start_message_cls.__name__ + ' instead of StartMessage'))
             return
 
         try:
@@ -90,11 +95,11 @@ class TimedActor(Actor):
     An actor that process a task at regular time interval
     """
 
-    def __init__(self, time_interval: float):
+    def __init__(self, start_message_cls, time_interval: float):
         """
         :param time_interval: time (in seconds) to wait between each task to launch
         """
-        Actor.__init__(self)
+        Actor.__init__(self, start_message_cls)
         self._time_interval = timedelta(seconds=time_interval)
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):

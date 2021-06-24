@@ -47,7 +47,7 @@ from powerapi.message import PullerStartMessage
 
 class PullerActor(TimedActor):
     def __init__(self):
-        TimedActor.__init__(self, 1)
+        TimedActor.__init__(self, PullerStartMessage, 1)
 
         self.database = None
         self.report_filter = None
@@ -59,9 +59,6 @@ class PullerActor(TimedActor):
 
     def _initialization(self, start_message: PullerStartMessage):
         TimedActor._initialization(self, start_message)
-        
-        if not isinstance(start_message, PullerStartMessage):
-            raise InitializationException('use PullerStartMessage instead of StartMessage')
 
         self.database = start_message.database
         self.report_filter = start_message.report_filter
