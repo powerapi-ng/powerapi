@@ -51,30 +51,24 @@ from multiprocessing import Process
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.backendsupervisor import BackendSupervisor
-from powerapi.formula import DummyFormulaActor
+from powerapi.formula import FormulaValues
+from powerapi.supervisor import Supervisor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
 from powerapi.report_model import HWPCModel, PowerModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
+from powerapi.message import DispatcherStartMessage, FormulaStartMessage
+from powerapi.cli.tools import PusherGenerator, PullerGenerator
+from powerapi.test_utils.actor import shutdown_system, CrashFormula
+from powerapi.test_utils.report.hwpc import extract_json_report
+from powerapi.test_utils.db.mongo import mongo_database
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_HWPC_COLLECTION_NAME, MONGO_POWER_COLLECTION_NAME, MONGO_DATABASE_NAME
 
 
-from tests.mongo_utils import gen_base_db_test
-from tests.mongo_utils import clean_base_db_test
-from tests.utils import is_actor_alive
-from tests.utils import CrashFormulaActor
-
-DB_URI = "mongodb://localhost:27017/"
-LOG_LEVEL = logging.NOTSET
-
-
-@pytest.fixture
-def database():
-    db = gen_base_db_test(DB_URI, 200)
-    yield db
-    clean_base_db_test(DB_URI)
+def filter_rule(msg):
+    return True
 
 @pytest.fixture
 def main_process():
@@ -93,54 +87,52 @@ class MainProcess(Process):
     """
     def __init__(self):
         Process.__init__(self, name='test_crash_dispatcher')
-
+        
     def run(self):
+        supervisor = Supervisor()
+
         # Setup signal handler
         def term_handler(_, __):
-            puller.hard_kill()
-            dispatcher.hard_kill()
-            pusher.hard_kill()
-            exit(0)
+            supervisor.kill_actors()
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-        stream_mode = True
-        supervisor = BackendSupervisor(stream_mode)
+        config = {'verbose': True, 'stream': True,
+                  'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_POWER_COLLECTION_NAME}}},
+                  'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_HWPC_COLLECTION_NAME}}}
+                  }
 
         # Pusher
-        output_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_result')
-        pusher = PusherActor("pusher_mongodb", PowerModel(), output_mongodb, level_logger=LOG_LEVEL)
-
-
-        # Formula
-        formula_factory = (lambda name, verbose:
-                           CrashFormulaActor(name, {'my_pusher': pusher}, 0, RuntimeError, level_logger=verbose))
+        pusher_generator = PusherGenerator()
+        pusher_info = pusher_generator.generate(config)
+        pusher_cls, pusher_start_message = pusher_info['test_pusher']
+    
+        pusher = supervisor.launch(pusher_cls, pusher_start_message)
 
         # Dispatcher
         route_table = RouteTable()
-        route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
-
-        dispatcher = DispatcherActor('dispatcher', formula_factory, route_table,
-                                     level_logger=LOG_LEVEL)
+        route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
+        dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', CrashFormula, FormulaValues({'test_pusher': pusher}), route_table, 'cpu')
+            
+        dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
 
         # Puller
-        input_mongodb = MongoDB(DB_URI, 'MongoDB1', 'test_hwrep')
         report_filter = Filter()
-        report_filter.filter(lambda msg: True, dispatcher)
-        puller = PullerActor("puller_mongodb", input_mongodb,
-                             report_filter, HWPCModel(), stream_mode=stream_mode, level_logger=LOG_LEVEL)
-
-        time.sleep(2)
-        supervisor.launch_actor(pusher)
-        supervisor.launch_actor(dispatcher)
-        supervisor.launch_actor(puller)
-        supervisor.join()
+        report_filter.filter(filter_rule, dispatcher)
+        puller_generator = PullerGenerator(report_filter)
+        puller_info = puller_generator.generate(config)
+        puller_cls, puller_start_message = puller_info['test_puller']
+        puller = supervisor.launch(puller_cls, puller_start_message)
 
 
-def test_crash_dispatcher(database, main_process):
+        supervisor.monitor()
+
+
+def test_crash_dispatcher(main_process, mongo_database, shutdown_system):
     if main_process.is_alive():
-        main_process.join(100)
-        assert not is_actor_alive(main_process)
+        print('toto')
+        main_process.join(10)
+        assert not main_process.is_alive()
 
     assert True

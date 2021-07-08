@@ -32,13 +32,20 @@ import pytest
 
 from thespian.actors import ActorSystem, ActorExitRequest
 
-from powerapi.message import OKMessage, ErrorMessage, PingMessage
+from powerapi.message import OKMessage, ErrorMessage, PingMessage, EndMessage
 from powerapi.actor import Actor
 
-from .db import FakeDB
-from .dummy_actor import DummyActor
+from .db import FakeDB, CrashDB
+from .dummy_actor import DummyActor, DummyStartMessage, logger
+from .actor import system, is_actor_alive
 
 LOGGER_NAME='thespian_test_logger'
+
+def recv_from_pipe(pipe, timeout):
+    if pipe.poll(timeout):
+        return pipe.recv()
+    else:
+        return None
 
 class UnknowMessage:
     pass
@@ -54,17 +61,25 @@ class AbstractTestActor:
         ActorSystem().shutdown()
 
     @pytest.fixture
-    def logger(self, system):
-        logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
-        system.tell(logger_actor, 'logger')
-        yield logger_actor
-        system.tell(logger_actor, ActorExitRequest())
+    def dummy_pipe(self):
+        """
+        pipe used between dummy actor and pytest process
+        """
+        return Pipe()
 
     @pytest.fixture
-    def system(self):
-        syst = ActorSystem(systemBase='multiprocQueueBase')
-        yield syst
-        syst.shutdown()
+    def dummy_pipe_out(self, dummy_pipe):
+        """
+        pipe used from pytest process to receive dummy actor information
+        """
+        return dummy_pipe[0]
+
+    @pytest.fixture
+    def dummy_pipe_in(self, dummy_pipe):
+        """
+        pipe used from dummy actor to send information to pytest process
+        """
+        return dummy_pipe[1]
 
     @pytest.fixture
     def actor(self):
@@ -80,7 +95,7 @@ class AbstractTestActor:
         return actor
 
     def test_create_an_actor_and_send_it_PingMessage_must_make_it_answer_OKMessage(self, system, actor):
-        msg = system.ask(actor, PingMessage(), 0.3)
+        msg = system.ask(actor, PingMessage('system'), 0.3)
         print(msg)
         assert isinstance(msg, OKMessage)
 
@@ -88,6 +103,20 @@ class AbstractTestActor:
         msg = system.ask(actor, UnknowMessage(), 0.3)
         print(msg)
         assert isinstance(msg, ErrorMessage)
+
+    def test_send_StartMessage_answer_OkMessage(self, system, actor, actor_start_message):
+        msg = system.ask(actor, actor_start_message)
+        print(msg)
+        assert isinstance(msg, OKMessage)
+
+    def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, system, started_actor, actor_start_message):
+        msg = system.ask(started_actor, actor_start_message)
+        assert isinstance(msg, ErrorMessage)
+        assert msg.error_message == 'Actor already initialized'
+
+    def test_send_EndMessage_to_started_actor_make_it_terminate(self, system, started_actor):
+        system.tell(started_actor, EndMessage)
+        assert not is_actor_alive(system, started_actor)
 
 def define_database_content(content):
     def wrap(func):
@@ -120,22 +149,17 @@ class AbstractTestActorWithDB(AbstractTestActor):
         return FakeDB(content, pipe_in)
 
     @pytest.fixture
+    def crash_db(self):
+        return CrashDB()
+
+    @pytest.fixture
     def started_actor(self, actor, pipe_out, fake_db, actor_start_message):
         ActorSystem().ask(actor, actor_start_message)
         print(pipe_out.recv())  # remove 'connected' string from Queue
         return actor
 
-    def test_send_StartMessage_answer_OkMessage(self, system, actor, actor_start_message):
-        system.tell(actor, actor_start_message)
-        msg = system.listen()
-        print(msg)
-        assert isinstance(msg, OKMessage)
-
-    def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, system, started_actor, actor_start_message):
-        msg = system.ask(started_actor, actor_start_message)
-        assert isinstance(msg, ErrorMessage)
-        assert msg.error_message == 'Actor already initialized'
-
     def test_starting_actor_make_it_connect_to_database(self, system, actor, actor_start_message, pipe_out):
         ActorSystem().ask(actor, actor_start_message)
         assert pipe_out.recv() == 'connected'
+
+        

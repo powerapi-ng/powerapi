@@ -32,12 +32,17 @@ from datetime import timedelta
 
 from thespian.actors import ActorTypeDispatcher, ActorAddress, ActorExitRequest, WakeupMessage
 
-from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage
-from powerapi.exception import PowerAPIException
+from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage, EndMessage
+from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
 
-class InitializationException(PowerAPIException):
+class InitializationException(PowerAPIExceptionWithMessage):
     """
     Exception raised when an actor failed to initialize itself
+    """
+
+class ActorNotInitializedException(PowerAPIException):
+    """
+    Exception raised when a non initialized actor received a message that is not a StartMessage
     """
 
 class Actor(ActorTypeDispatcher):
@@ -47,15 +52,18 @@ class Actor(ActorTypeDispatcher):
     implement basic actor behaviour
     """
     def __init__(self, start_message_cls: Type[StartMessage]):
+        ActorTypeDispatcher.__init__(self)
         self.name: str = None
+        self.parent: ActorAddress = None
         self.initialized: bool = False
         self.start_message_cls = start_message_cls
-    
+
     def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
         """
         When receiving a PingMessage, the actor answer with a OKMessage to its sender 
         """
-        self.send(sender, OKMessage())
+        print((self.name, message))
+        self.send(sender, OKMessage(self.name))
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
         """
@@ -63,32 +71,41 @@ class Actor(ActorTypeDispatcher):
           - if the actor is already initialized, answer with a ErrorMessage
           - otherwise initialize the actor with the abstract method _initialization and answer with an OKMessage
         """
+        print((self.name, message))
+        self.parent = sender
+        
         if self.initialized:
-            self.send(sender, ErrorMessage('Actor already initialized'))
+            self.send(sender, ErrorMessage(self.name, 'Actor already initialized'))
             return
 
         if not isinstance(message, self.start_message_cls):
-            self.send(sender, ErrorMessage('use '+ self.start_message_cls.__name__ + ' instead of StartMessage'))
+            self.send(sender, ErrorMessage(self.name, 'use '+ self.start_message_cls.__name__ + ' instead of StartMessage'))
             return
 
         try:
             self._initialization(message)
         except InitializationException as e:
-            self.send(sender, ErrorMessage(e.msg))
+            self.send(sender, ErrorMessage(self.name, e.msg))
             self.send(self.myAddress, ActorExitRequest())
             return
 
         self.initialized = True
-        self.send(sender, OKMessage())
+        self.send(sender, OKMessage(self.name))
+
+    def receiveMsg_ErrorMessage(self, message: ErrorMessage, sender: ActorAddress):
+        print((self.name, message))
+        print(message.error_message)
 
     def receiveUnrecognizedMessage(self, message: Any, sender: ActorAddress):
         """
         When receiving a message with a type that can't be handle, the actor answer with an ErrorMessage
         """
-        self.send(sender, ErrorMessage("did not recognize the message type : " + str(type(message))))
+        print((self.name, message))
+        self.send(sender, ErrorMessage(self.name, "did not recognize the message type : " + str(type(message))))
 
     def _initialization(self, message: StartMessage):
         self.name = message.name
+
 
 class TimedActor(Actor):
     """
@@ -111,16 +128,18 @@ class TimedActor(Actor):
         self.wakeupAfter(self._time_interval)
 
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
-        print('Dead')
-        
+        print((self.name, message))
+
     def receiveMsg_WakeupMessage(self, message: WakeupMessage, sender: ActorAddress):
         """
         When receiving a WakeupMessage, launch the actor task
         """
+        print((self.name, message))
         if self.initialized:
             self._launch_task()
         else:
-            self.send(sender, ErrorMessage("Actor not initialized"))
+            #: log
+            raise ActorNotInitializedException()
 
     def _launch_task(self):
         raise NotImplementedError()

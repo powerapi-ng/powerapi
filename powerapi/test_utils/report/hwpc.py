@@ -26,11 +26,34 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.report import *
+import json
+
+from powerapi.report import HWPCReport, create_socket_report, create_report_root, create_group_report, create_core_report
+import powerapi.test_utils.report as parent_module
+from powerapi.report_model import HWPCModel
+
 
 ###################
 # Report Creation #
 ###################
+
+def extract_json_report(n):
+    path = parent_module.__path__[0]
+    json_file = open(path + '/hwpc.json', 'r')
+    reports = json.load(json_file)
+    json_file.close()
+    return reports['reports'][:n]
+
+
+def extract_reports(n):
+    path = parent_module.__path__[0]
+    json_file = open(path + '/hwpc.json', 'r')
+    reports = list(map(HWPCReport.deserialize, json.load(json_file)['reports']))
+    
+    json_file.close()
+    return reports[:n]
+
+
 def gen_hwpc_report():
     """
     Return a well formated HWPCReport

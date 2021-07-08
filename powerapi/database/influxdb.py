@@ -113,9 +113,11 @@ class InfluxDB(BaseDB):
         :param report: Report to save
         :param report_model: ReportModel
         """
-
         data = report_model.to_influxdb(report.serialize())
+        print(report.socket)
+        print(data)
         self.client.write_points([data])
+
 
     def save_many(self, reports: List[Report], report_model: ReportModel):
         """

@@ -26,10 +26,32 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import datetime
 
+import pytest
+
 from influxdb import InfluxDBClient
+from ..report.power import SENSOR_NAME, TARGET_NAME
+
+INFLUX_URI = 'localhost'
+INFLUX_PORT = 8086
+INFLUX_DBNAME = 'acceptation_test'
+
+
+@pytest.fixture()
+def influx_database():
+    client = create_empty_db(INFLUX_URI, INFLUX_PORT)
+    delete_db(client, INFLUX_DBNAME)
+    yield client
+    delete_db(client, INFLUX_DBNAME)
+
+
+@pytest.fixture()
+def influx_database_with_one_power_report():
+    client = create_non_empty_db(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, 1,
+                                 SENSOR_NAME, TARGET_NAME)
+    yield client
+    delete_db(client, INFLUX_DBNAME)
 
 
 def generate_power_report(sensor, target, timestamp):

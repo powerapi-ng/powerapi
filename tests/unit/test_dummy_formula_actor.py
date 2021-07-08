@@ -30,10 +30,14 @@ import pytest
 
 from thespian.actors import ActorExitRequest
 
-from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.message import StartMessage, DummyFormulaStartMessage, ErrorMessage
+from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
+from powerapi.formula import CpuDramDomainValues
+from powerapi.message import StartMessage, FormulaStartMessage, ErrorMessage, EndMessage, OKMessage
 from powerapi.report import Report, PowerReport
-from powerapi.test_utils.abstract_test import AbstractTestActor
+from powerapi.test_utils.abstract_test import AbstractTestActor, recv_from_pipe
+from powerapi.test_utils.actor import system
+from powerapi.test_utils.dummy_actor import logger
+
 
 class TestDummyFormula(AbstractTestActor):
     @pytest.fixture
@@ -44,16 +48,18 @@ class TestDummyFormula(AbstractTestActor):
 
     @pytest.fixture
     def actor_start_message(self, logger):
-        return DummyFormulaStartMessage('test_dummy_formula', {'logger': logger}, 1)
+        values = DummyFormulaValues({'logger': logger}, 1)
+        return FormulaStartMessage('system', 'test_dummy_formula', values, CpuDramDomainValues('test_device', ('test_sensor', 0, 0)))
 
     def test_starting_dummy_formula_without_DummyFormulaStartMessage_answer_ErrorMessage(self, system, actor):
-        answer = system.ask(actor, StartMessage('test'))
+        answer = system.ask(actor, StartMessage('system', 'test'))
         assert isinstance(answer, ErrorMessage)
-        assert answer.error_message == 'use DummyFormulaStartMessage instead of StartMessage'
+        assert answer.error_message == 'use FormulaStartMessage instead of StartMessage'
 
-    def test_send_Report_to_dummy_formula_make_formula_send_power_report_to_logger_with_42_as_power_value_after_1_second(self, system, started_actor):
+    def test_send_Report_to_dummy_formula_make_formula_send_power_report_to_logger_with_42_as_power_value_after_1_second(self, system, started_actor, dummy_pipe_out):
         report1 = Report(1, 2, 3)
         system.tell(started_actor, report1)
-        _, msg = system.listen(1.5)
+
+        _, msg = dummy_pipe_out.recv()
         assert isinstance(msg, PowerReport)
         assert msg.power == 42

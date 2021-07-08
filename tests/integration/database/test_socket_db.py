@@ -36,11 +36,7 @@ import pytest
 
 from powerapi.database import SocketDB
 from powerapi.report_model import HWPCModel
-
-def extract_json_report(n):
-    json_file = open('tests/hwpc_reports.json', 'r')
-    reports = json.load(json_file)
-    return reports['reports'][:n]
+from powerapi.test_utils.report.hwpc import extract_json_report
 
 
 class ClientThread(Thread):

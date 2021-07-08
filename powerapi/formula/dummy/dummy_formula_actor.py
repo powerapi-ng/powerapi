@@ -27,15 +27,22 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
+from typing import Dict, Tuple
 
 from thespian.actors import ActorAddress
 
-from powerapi.formula import FormulaActor
+from powerapi.formula import AbstractCpuDramFormula, FormulaValues, CpuDramDomainValues
 from powerapi.report import Report, PowerReport
-from powerapi.message import DummyFormulaStartMessage
+from powerapi.message import FormulaStartMessage
 
 
-class DummyFormulaActor(FormulaActor):
+class DummyFormulaValues(FormulaValues):
+    def __init__(self, pushers: Dict[str, ActorAddress], sleeping_time: int):
+        FormulaValues.__init__(self, pushers)
+        self.sleeping_time = sleeping_time
+
+
+class DummyFormulaActor(AbstractCpuDramFormula):
     """
     A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
@@ -46,16 +53,17 @@ class DummyFormulaActor(FormulaActor):
         :param name: Actor name
         :param pusher_actors: Pusher actors
         """
-        FormulaActor.__init__(self, DummyFormulaStartMessage)
+        AbstractCpuDramFormula.__init__(self, FormulaStartMessage)
 
         self.sleeping_time = None
 
-    def _initialization(self, message: DummyFormulaStartMessage):
-        FormulaActor._initialization(self, message)
-        self.sleeping_time = message.sleeping_time
+    def _initialization(self, message: FormulaStartMessage):
+        AbstractCpuDramFormula._initialization(self, message)
+        self.sleeping_time = message.values.sleeping_time
 
     def receiveMsg_Report(self, message: Report, sender: ActorAddress):
+        print((self.name, message))
         time.sleep(self.sleeping_time)
-        power_report =  PowerReport(message.timestamp, message.sensor, message.target, '0', 42, {})
+        power_report =  PowerReport(message.timestamp, message.sensor, message.target, self.socket, 42, {})
         for _, pusher in self.pushers.items():
             self.send(pusher, power_report)

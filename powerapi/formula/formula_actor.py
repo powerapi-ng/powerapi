@@ -26,12 +26,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Dict, Type
+from typing import Dict, Type, Tuple
 
-from thespian.actors import ActorAddress
+from thespian.actors import ActorAddress, ActorExitRequest
 
 from powerapi.actor import Actor
-from powerapi.message import FormulaStartMessage
+from powerapi.message import FormulaStartMessage, EndMessage, OKMessage
+
+class FormulaValues:
+    def __init__(self, pushers: Dict[str, ActorAddress]):
+        self.pushers = pushers
+
+class DomainValues:
+    def __init__(self, device_id: str, formula_id: Tuple):
+        self.device_id = device_id
+        self.sensor = formula_id[0]
 
 
 class FormulaActor(Actor):
@@ -39,6 +48,19 @@ class FormulaActor(Actor):
         Actor.__init__(self, start_message_cls)
         self.name: str = None
         self.pushers: Dict[str, ActorAddress] = None
+        self.device_id = None
+        self.sensor = None
 
     def _initialization(self, start_message: FormulaStartMessage):
-        self.pushers = start_message.pushers
+        Actor._initialization(self, start_message)
+        self.pushers = start_message.values.pushers
+        self.device_id = start_message.domain_values.device_id
+        self.sensor = start_message.domain_values.sensor
+
+    def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+        print((self.name, message))
+        self.send(self.myAddress, ActorExitRequest())
+
+    @staticmethod
+    def gen_domain_values(device_id: str, formula_id: Tuple) -> DomainValues:
+        return DomainValues(device_id, formula_id)

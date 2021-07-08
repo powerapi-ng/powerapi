@@ -26,9 +26,27 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import datetime
+
+import pytest
 import pymongo
+
+
+MONGO_URI = "mongodb://localhost:27017/"
+MONGO_HWPC_COLLECTION_NAME = 'test_hwrep'
+MONGO_POWER_COLLECTION_NAME = 'test_power'
+MONGO_DATABASE_NAME = 'MongoDB1'
+
+
+@pytest.fixture
+def mongo_database():
+    """
+    mongo database with 10 hwpc-report
+    """
+    db = gen_base_db_test(MONGO_URI, 10)
+    yield db
+    clean_base_db_test(MONGO_URI)
+
 
 
 def generate_hwpc_report(report_id, sensor, target, i):
@@ -59,6 +77,15 @@ def generate_hwpc_report(report_id, sensor, target, i):
         }
     }
 
+def make_hwpc_generator(nb_items):
+    """
+    Generate *nb_items* HWPCReport
+    """
+    def generator():
+        for i in range(nb_items):
+            yield generate_hwpc_report(i, 'sensor_test', 'system', i)
+    return generator
+
 
 def generate_colection(db, name, capped, item_generator, size=None):
     """
@@ -85,83 +112,17 @@ def generate_colection(db, name, capped, item_generator, size=None):
         db[name].insert_one(item)
 
 
-def make_generator_unit_mongo(nb_items):
-    """
-    Generate *nb_items* HWPCReport
-    """
-    def generator():
-        for i in range(nb_items):
-            yield generate_hwpc_report(i, 'sensor_test', 'system', i)
-    return generator
-
-
-def gen_base_test_unit_mongo(uri):
-    """
-    create a database that will be used by mongodb unit test
-    """
-    mongo = pymongo.MongoClient(uri)
-    db = mongo['test_mongodb']
-
-    generate_colection(db, 'test_mongodb1', False,
-                       make_generator_unit_mongo(10))
-    generate_colection(db, 'test_mongodb2', True,
-                       make_generator_unit_mongo(10), size=(256 * 40))
-    generate_colection(db, 'test_mongodb3', False,
-                       make_generator_unit_mongo(2))
-    mongo.close()
-
-
-def clean_base_test_unit_mongo(uri):
-    """
-    drop test_mongodb1, test_mongodb2 and test_mongodb3 collections
-    """
-    mongo = pymongo.MongoClient(uri)
-    db_names = mongo.list_database_names()
-    for name in db_names:
-        if "test_" in name:
-            for col in mongo[name].list_collection_names():
-                mongo[name][col].drop()
-    mongo.close()
-
-
-def make_generator_unit_filter(sensor_names):
-    def generator():
-        for n in range(len(sensor_names)):
-            for i in range(2):
-                yield generate_hwpc_report(n * 2 + i, sensor_names[n], 'system', i)
-    return generator
-
-
-def gen_base_test_unit_filter(uri):
-    """
-    create a database that will be used by filter unit test
-    """
-    mongo = pymongo.MongoClient(uri)
-    db = mongo['test_filter']
-    generate_colection(db, 'test_filter1', False, make_generator_unit_filter(
-        ["sensor_test1", "sensor_test2", "sensor_test3"]))
-    mongo.close()
-
-
-def clean_base_test_unit_filter(uri):
-    """
-    drop test_filter1 collection
-    """
-    mongo = pymongo.MongoClient(uri)
-    db = mongo['test_filter']
-    db['test_filter1'].drop()
-    mongo.close()
-
-
 def gen_base_db_test(uri, nb_items):
     """
     Generate a mongoDB database named MongoDB1 containing *nb_items* HWPC report
     in the test_hwrep collection
     """
     mongo = pymongo.MongoClient(uri)
-    db = mongo['MongoDB1']
-    generate_colection(db, 'test_hwrep', False,
-                       make_generator_unit_mongo(nb_items))
+    db = mongo[MONGO_DATABASE_NAME]
+    generate_colection(db, MONGO_HWPC_COLLECTION_NAME, False,
+                       make_hwpc_generator(nb_items))
+    # delete output collection
+    db[MONGO_POWER_COLLECTION_NAME].drop()
     mongo.close()
 
 

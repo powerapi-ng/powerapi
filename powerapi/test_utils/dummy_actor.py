@@ -26,39 +26,51 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pytest
+
 from thespian.actors import Actor, ActorSystem, ActorExitRequest
-from powerapi.message import PingMessage, StartMessage, OKMessage
+
+from powerapi.message import PingMessage, StartMessage, OKMessage, ErrorMessage
+from powerapi.actor import Actor as PowerapiActor, InitializationException
+from powerapi.formula import DomainValues
+
+LOGGER_NAME='thespian_test_logger'
+
+@pytest.fixture
+def logger(system, dummy_pipe_in):
+    logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
+    system.tell(logger_actor, DummyStartMessage('system', 'logger', dummy_pipe_in))
+    yield logger_actor
+    system.tell(logger_actor, ActorExitRequest())
+
+
+class DummyStartMessage(StartMessage):
+    def __init__(self, sender_name, name, pipe):
+        StartMessage.__init__(self, sender_name, name)
+        self.pipe = pipe
+
 
 class DummyActor(Actor):
     """
-    Actor that forward all received message to the actor system
-    each message is wraped into a tuple that contains the actor name and the forwarded message
-    the actor must be initialized by the actor system by sending its name (str) This message must be the first message that the dummy actor receive.
-    It will not be forwarded
-
+    Actor that forward all start message (except StartMessage) into a pipe to the test process
     """
     def __init__(self):
         Actor.__init__(self)
-        self.name = None
-        self.system_address = None
+        self.pipe = None
+
 
     def receiveMessage(self, message, sender):
-        if self.name is None:
-            self.name = message
-            self.system_address = sender
+        if isinstance(message, DummyStartMessage):
+            self.pipe = message.pipe
+            self.name = message.name
         else:
-            self.send(self.system_address, (self.name, message))
-
-
-class DummyFormulaStartMessage(StartMessage):
-    def __init__(self, name, puller_address):
-        StartMessage.__init__(self, name)
-        self.puller_address = puller_address
+            self.pipe.send((self.name, message))
+            print((self.name, message))
 
 
 class DummyFormulaActor(Actor):
     """
-    Formula that forward received message
+    Formula that forward received message to fake pusher
     """
     def __init__(self):
         self.name = None
@@ -67,11 +79,18 @@ class DummyFormulaActor(Actor):
     def receiveMessage(self, message, sender):
         if isinstance(message, StartMessage):
             self.name = message.name
-            self.fake_puller = self.createActor(DummyActor, globalName=message.puller_address)
-        if isinstance(message, ActorExitRequest):
+            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
+            self.send(self.fake_puller, message)
+            self.send(sender, OKMessage(self.name))
+        elif isinstance(message, ActorExitRequest):
             self.send(self.fake_puller, 'dead')
         else:
+            print(('formula', message))
             self.send(self.fake_puller, message)
+
+    @staticmethod
+    def gen_domain_values(device_id, formula_id):
+        return DomainValues(device_id, formula_id)
 
 
 class CrashException(Exception):
@@ -80,7 +99,7 @@ class CrashException(Exception):
 
 class CrashFormulaActor(DummyFormulaActor):
     """
-    Formula that crash after receiveing 3 messages
+    Formula that crash after receiving 3 messages
     """
     def __init__(self):
         DummyFormulaActor.__init__(self)
@@ -92,3 +111,51 @@ class CrashFormulaActor(DummyFormulaActor):
         if self.report_received >= 3:
             self.send(self.fake_puller, 'crash')
             raise CrashException
+
+
+class CrashInitFormulaActor(DummyFormulaActor):
+    """
+    Formula that at initialization end answer ErrorMessage to StartMessage
+    Like DummyFormulaActor, it will forward received Message to fake pusher
+    """
+    def __init__(self):
+        DummyFormulaActor.__init__(self)
+        self.report_received = 0
+
+    def receiveMessage(self, message, sender):
+        if isinstance(message, StartMessage):
+            self.name = message.name
+            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
+            self.send(sender, ErrorMessage(self.name, 'formula crashed'))
+        elif isinstance(message, ActorExitRequest):
+            self.send(self.fake_puller, 'dead')
+        else:
+            self.send(self.fake_puller, message)
+
+
+class DummyPowerapiActor(PowerapiActor):
+    """
+    Actor that have the same thant a basic powerapi actor
+    """
+
+    def __init__(self):
+        PowerapiActor.__init__(self, StartMessage)
+
+
+class CrashInitActor(DummyPowerapiActor):
+    """
+    Basic powerapi actor that crash a initialisation
+    """
+    def _initialization(self, msg):
+        raise InitializationException('error')
+
+
+class CrashActor(DummyPowerapiActor):
+    """
+    Basic powerapi actor that crash after 2s
+    """
+    def _initialization(self, msg):
+        self.wakeupAfter(2)
+
+    def receiveMsg_WakeupMessage(self, message, sender):
+        raise CrashException()

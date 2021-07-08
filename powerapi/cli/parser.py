@@ -63,7 +63,7 @@ def _find_longest_name(names):
 #############
 class ParserException(PowerAPIException):
     def __init__(self, argument_name):
-        super().__init__()
+        PowerAPIException.__init__(self)
         self.argument_name = argument_name
 
 
@@ -111,7 +111,7 @@ class AlreadyAddedArgumentException(ParserException):
 
     """
     def __init__(self, argument_name):
-        super().__init__(argument_name)
+        ParserException.__init__(self, argument_name)
         self.msg = 'Parser already contain an argument ' + argument_name
 
 
@@ -122,7 +122,7 @@ class MissingValueException(ParserException):
 
     """
     def __init__(self, argument_name):
-        super().__init__(argument_name)
+        ParserException.__init__(self, argument_name)
         self.msg = 'Argument ' + argument_name + ' require a value'
 
 
@@ -132,7 +132,7 @@ class UnknowArgException(ParserException):
 
     """
     def __init__(self, argument_name):
-        super().__init__(argument_name)
+        ParserException.__init__(self, argument_name)
         self.msg = 'Unknow argument ' + argument_name
 
 
@@ -143,7 +143,7 @@ class BadTypeException(ParserException):
 
     """
     def __init__(self, argument_name, type):
-        super().__init__(argument_name)
+        ParserException.__init__(self, argument_name)
         self.type_name = type.__name__
         self.article = 'an' if self.type_name in ('a', 'e', 'i', 'o', 'u', 'y') else 'a'
 
@@ -154,7 +154,7 @@ class BadContextException(ParserException):
     the current context
     """
     def __init__(self, argument_name, context_list):
-        super().__init__(argument_name)
+        ParserException.__init__(self, argument_name)
         self.context_list = context_list
         self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
         for main_arg_name, context_name in context_list:

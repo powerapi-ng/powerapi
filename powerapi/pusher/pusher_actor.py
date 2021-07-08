@@ -26,33 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from thespian.actors import ActorAddress, ActorExitRequest
 
-import logging
-from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage, StartMessage
-
-class PusherState(State):
-    """
-    Pusher Actor State
-
-    Contains in addition to State values :
-      - The database interface
-    """
-    def __init__(self, actor, database, report_model):
-        """
-        :param BaseDB database: Database for saving data.
-        """
-        State.__init__(self, actor)
-
-        #: (BaseDB): Database for saving data.
-        self.database = database
-
-        #: (Report): Type of the report that the pusher handle.
-        self.report_model = report_model
-
-        #: (Dict): Buffer data.
-        self.buffer = []
+from powerapi.actor import Actor, InitializationException
+from powerapi.message import PusherStartMessage, EndMessage
+from powerapi.database import DBError
+from powerapi.report import PowerReport
 
 
 class PusherActor(Actor):
@@ -62,27 +41,26 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_model, database, level_logger=logging.WARNING, timeout=1000, delay=100, max_size=50):
-        """
-        :param str name: Pusher name.
-        :param Report report_model: ReportModel
-        :param BaseDB database: Database use for saving data.
-        :param int level_logger: Define the level of the logger
-        :param int delay: number of ms before message containing in the buffer will be writen in database
-        :param int max_size: maximum of message that the buffer can store before write them in database
-        """
-        Actor.__init__(self, name, level_logger, timeout)
+    def __init__(self):
+        Actor.__init__(self, PusherStartMessage)
+        self.database = None
+        self.report_model = None
 
-        #: (State): State of the actor.
-        self.state = PusherState(self, database, report_model)
-        self.delay = delay
-        self.max_size = max_size
+    def _initialization(self, message: PusherStartMessage):
+        Actor._initialization(self, message)
+        self.database = message.database
+        self.report_model = message.report_model
 
-    def setup(self):
-        """
-        Define StartMessage, PoisonPillMessage handlers and a handler for
-        each report type
-        """
-        self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
-        self.add_handler(self.state.report_model.get_type(), ReportHandler(self.state, self.delay, self.max_size))
-        self.add_handler(StartMessage, PusherStartHandler(self.state))
+        try:
+            self.database.connect()
+        except DBError as error:
+            raise InitializationException(error.msg)
+
+    def receiveMsg_PowerReport(self, message: PowerReport, sender: ActorAddress):
+        print((self.name, message))
+        self.database.save(message, self.report_model)
+
+    def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+        print((self.name, message))
+        self.send(self.parent, EndMessage(self.name))
+        self.send(self.myAddress, ActorExitRequest())

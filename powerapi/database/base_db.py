@@ -30,16 +30,16 @@
 from typing import List
 from powerapi.report_model import ReportModel
 from powerapi.report import Report
-from powerapi.exception import PowerAPIException
+from powerapi.exception import PowerAPIExceptionWithMessage
 
 
-class DBError(PowerAPIException):
+class DBError(PowerAPIExceptionWithMessage):
 
     """
     Error raised when an error occuried when using a database
     """
     def __init__(self, msg: str):
-        PowerAPIException.__init__(self, msg)
+        PowerAPIExceptionWithMessage.__init__(self, msg)
 
 
 class IterDB:

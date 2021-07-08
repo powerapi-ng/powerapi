@@ -1,33 +1,32 @@
-"""
-Copyright (c) 2018, INRIA
-Copyright (c) 2018, University of Lille
-All rights reserved.
+# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, University of Lille
+# All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
 
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
 
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 
 import pytest
 import shutil
@@ -41,38 +40,38 @@ from powerapi.report_model import PowerModel, HWPCModel, CSV_HEADER_COMMON
 from powerapi.database import CsvDB
 from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError, HeaderAreNotTheSameError
 from powerapi.utils import timestamp_to_datetime
+from powerapi.test_utils.db.csv import ROOT_PATH
 
-PATH_TO_TEST = "tests/unit/environment/csv/"
 
 # All this file raise error
-BAD_COMMON = [PATH_TO_TEST + "bad_common_miss_sensor.csv",
-              PATH_TO_TEST + "bad_common_miss_target.csv",
-              PATH_TO_TEST + "bad_common_miss_timestamp.csv"]
+BAD_COMMON = [ROOT_PATH + "bad_common_miss_sensor.csv",
+              ROOT_PATH + "bad_common_miss_target.csv",
+              ROOT_PATH + "bad_common_miss_timestamp.csv"]
 
 # Create 2 full HWPCReport
-BASIC_FILES = [PATH_TO_TEST + "core2.csv",
-               PATH_TO_TEST + "rapl2.csv",
-               PATH_TO_TEST + "pcu2.csv"]
+BASIC_FILES = [ROOT_PATH + "core2.csv",
+               ROOT_PATH + "rapl2.csv",
+               ROOT_PATH + "pcu2.csv"]
 
 # Create 1 full HWPCReport (first miss)
-FIRST_PRIMARY_MISSING = [PATH_TO_TEST + "core1_miss_first.csv",
-                         PATH_TO_TEST + "rapl2.csv",
-                         PATH_TO_TEST + "pcu2.csv"]
+FIRST_PRIMARY_MISSING = [ROOT_PATH + "core1_miss_first.csv",
+                         ROOT_PATH + "rapl2.csv",
+                         ROOT_PATH + "pcu2.csv"]
 
 # Create 1 full HWPCReport (second miss)
-SECOND_PRIMARY_MISSING = [PATH_TO_TEST + "core1_miss_second.csv",
-                          PATH_TO_TEST + "rapl2.csv",
-                          PATH_TO_TEST + "pcu2.csv"]
+SECOND_PRIMARY_MISSING = [ROOT_PATH + "core1_miss_second.csv",
+                          ROOT_PATH + "rapl2.csv",
+                          ROOT_PATH + "pcu2.csv"]
 
 # Create 2 HWPCReport, first without rapl, second full
-FIRST_RAPL_MISSING = [PATH_TO_TEST + "core2.csv",
-                      PATH_TO_TEST + "rapl1_miss_first.csv",
-                      PATH_TO_TEST + "pcu2.csv"]
+FIRST_RAPL_MISSING = [ROOT_PATH + "core2.csv",
+                      ROOT_PATH + "rapl1_miss_first.csv",
+                      ROOT_PATH + "pcu2.csv"]
 
 # Create 2 HWPCReport, first full, second without rapl
-SECOND_RAPL_MISSING = [PATH_TO_TEST + "core2.csv",
-                       PATH_TO_TEST + "rapl1_miss_second.csv",
-                       PATH_TO_TEST + "pcu2.csv"]
+SECOND_RAPL_MISSING = [ROOT_PATH + "core2.csv",
+                       ROOT_PATH + "rapl1_miss_second.csv",
+                       ROOT_PATH + "pcu2.csv"]
 
 
 ######### For CsvDB saving

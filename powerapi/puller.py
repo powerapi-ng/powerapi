@@ -42,7 +42,7 @@ from powerapi.filter import Filter, RouterWithoutRuleException
 from powerapi.report.report import DeserializationFail
 from powerapi.report_model import ReportModel
 from powerapi.report_model.report_model import BadInputData
-from powerapi.message import PullerStartMessage
+from powerapi.message import PullerStartMessage, EndMessage
 
 
 class PullerActor(TimedActor):
@@ -103,11 +103,17 @@ class PullerActor(TimedActor):
                 if self.stream_mode:
                     self.wakeupAfter(self._time_interval)
                 else:
-                    self.send(self.myAddress, ActorExitRequest())
+                    self._terminate()
                     return
             except (BadInputData, DeserializationFail):
                 pass
         self.wakeupAfter(self._time_interval)
+
+    def _terminate(self):
+        self.send(self.parent, EndMessage(self.name))
+        for _, dispatcher in self.report_filter.filters:
+            self.send(dispatcher, EndMessage(self.name))
+        self.send(self.myAddress, ActorExitRequest())
 
 
     def _pull_database(self):

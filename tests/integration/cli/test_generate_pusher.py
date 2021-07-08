@@ -26,79 +26,60 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import pytest
+
+from thespian.actors import ActorExitRequest
 
 from powerapi.report_model import PowerModel
 from powerapi.report import PowerReport
 from powerapi.cli.tools import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
-from powerapi.backendsupervisor import BackendSupervisor
+from powerapi.test_utils.actor import system
+from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
 
-from tests.influx_utils import create_empty_db, delete_db, get_all_reports
-
-
-
-INFLUX_URI = 'localhost'
-INFLUX_PORT = 8086
-INFLUX_DBNAME = 'acceptation_test'
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'system'
 
-@pytest.fixture()
-def influx_database():
-    client = create_empty_db(INFLUX_URI, INFLUX_PORT)
-    yield client
-    delete_db(client, INFLUX_DBNAME)
-
-
-@pytest.fixture
-def supervisor():
-    s = BackendSupervisor(False)
-    yield s
-    s.kill_actors()
 
 @pytest.fixture
 def power_report():
     return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 1, 0.11, {"metadata1": "azerty", "metadata2": "qwerty"})
 
 
+class PowerModelWithFormulaName(PowerModel):
+
+    def _influxdb_keept_metadata(self):
+        return PowerModel._influxdb_keept_metadata(self) + ('formula_name',)
 
 
-
-def test_generate_pusher_with_new_PowerReport_model_and_send_it_powerReport_must_store_PowerReport_with_right_tag(influx_database, supervisor, power_report):
+def test_generate_pusher_with_new_PowerReport_model_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
     """
     Create a PusherGenerator that generate pusher with a PowerReportModel that keep formula_name metadata in PowerReport
     Generate a pusher connected to an influxDB
     send a powerReport with formula_name metadata to the pusher
-    test if stored data was tag with formula_name
+    test if stored data have tag with formula_name
     """
 
     config = {'verbose': True, 'stream': False,
               'output': {'influxdb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
                                                       'db': INFLUX_DBNAME}}}}
 
-    class PowerModelWithFormulaName(PowerModel):
-
-        def _influxdb_keept_metadata(self):
-            return PowerModel._influxdb_keept_metadata(self) + ('formula_name',)
 
     generator = PusherGenerator()
     generator.remove_model_factory('PowerReport')
     generator.add_model_factory('PowerReport', PowerModelWithFormulaName())
 
     actors = generator.generate(config)
-    pusher = actors['test_pusher']
-    supervisor.launch_actor(pusher)
+    pusher_cls, pusher_start_message = actors['test_pusher']
 
-    pusher.send_data(power_report)
+    pusher = system.createActor(pusher_cls)
+    system.ask(pusher, pusher_start_message)
 
-    supervisor.kill_actors(soft=True)
-
+    system.tell(pusher, power_report)
+    import time
+    time.sleep(0.1)
+    system.tell(pusher, ActorExitRequest())
     influx_database.switch_database(INFLUX_DBNAME)
-    reports = list(influx_database.query('SELECT * FROM "power_consumption"'))
-
-    assert len(reports[0]) == 1
-    assert 'socket' in  reports[0][0]
-    assert reports[0][0]['socket'] == '1'
+    reports = list(influx_database.query('SELECT * FROM "power_consumption"').get_points(tags={'socket': '1'}))
+    assert len(reports) == 1

@@ -39,6 +39,7 @@ from powerapi.cli.tools import PullerGenerator, PusherGenerator, DBActorGenerato
 from powerapi.cli.tools import ModelNameDoesNotExist, DatabaseNameDoesNotExist
 from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
+from powerapi.message import PullerStartMessage, PusherStartMessage
 
 ####################
 # PULLER GENERATOR #
@@ -49,22 +50,12 @@ class SysExitException(Exception):
 
 
 @patch('sys.exit', side_effect=SysExitException())
-def test_no_input_specified(mocked_sys_exit):
-    """
-    generate puller from an empty config dict
-
-    Test if the generate_puller function call sys.exit
-    """
+def test_generate_puller_from_empty_config_dict_call_sys_exit(mocked_sys_exit):
     args = {}
-    # sys.exit = Mock()
-    # sys.exit.side_effect = Exception()
-
     generator = PullerGenerator(None)
 
     with pytest.raises(SysExitException):
         generator.generate(args)
-
-    # assert sys.exit.called
 
 
 def test_generate_puller_from_simple_config():
@@ -74,7 +65,7 @@ def test_generate_puller_from_simple_config():
                                              'collection': 'tutu'}}}}
 
     Test if :
-      - function return a dict containing one actor, its key is 'toto'
+      - function return a dict containing one element, its key is 'toto'
       - puller type is PullerActor
       - puller name is toto
       - puller database type is MongoDB
@@ -90,11 +81,12 @@ def test_generate_puller_from_simple_config():
 
     assert len(result) == 1
     assert 'toto' in result
-    puller = result['toto']
-    assert isinstance(puller, PullerActor)
-    assert puller.name == 'toto'
+    puller_cls, start_message = result['toto']
+    assert puller_cls == PullerActor
+    assert isinstance(start_message, PullerStartMessage)
+    assert start_message.name == 'toto'
 
-    db = puller.state.database
+    db = start_message.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'
@@ -129,11 +121,11 @@ def test_generate_two_pusher():
 
     assert len(result) == 2
     assert 'toto' in result
-    puller = result['toto']
-    assert isinstance(puller, PullerActor)
-    assert puller.name == 'toto'
+    puller1_cls, start_message1 = result['toto']
+    assert puller1_cls == PullerActor
+    assert start_message1.name == 'toto'
 
-    db = puller.state.database
+    db = start_message1.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'
@@ -141,11 +133,11 @@ def test_generate_two_pusher():
     assert db.collection_name == 'tutu'
 
     assert 'titi' in result
-    puller = result['titi']
-    assert isinstance(puller, PullerActor)
-    assert puller.name == 'titi'
+    puller2_cls, start_message2 = result['titi']
+    assert puller2_cls == PullerActor
+    assert start_message2.name == 'titi'
 
-    db = puller.state.database
+    db = start_message2.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'

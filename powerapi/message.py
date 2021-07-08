@@ -37,12 +37,16 @@ if TYPE_CHECKING:
     from powerapi.filter import Filter
     from powerapi.report_model import ReportModel
     from powerapi.dispatcher import RouteTable
+    from powerapi.formula import FormulaValues, FormulaActor, FormulaValues, DomainValues
 
 
 class Message:
     """
     Abstract Message class
     """
+    def __init__(self, sender_name: str):
+        self.sender_name = sender_name
+    
     def __str__(self):
         raise NotImplementedError()
 
@@ -51,6 +55,9 @@ class PingMessage(Message):
     """
     Message used to test if an actor is alive
     """
+    def __init__(self, sender_name: str):
+        Message.__init__(self, sender_name)
+
     def __str__(self):
         return "PingMessage"
 
@@ -59,6 +66,9 @@ class OKMessage(Message):
     """
     Message send to acknowledge last received message
     """
+    def __init__(self, sender_name: str):
+        Message.__init__(self, sender_name)
+    
     def __str__(self):
         return "OKMessage"
 
@@ -68,10 +78,11 @@ class ErrorMessage(Message):
     Message used to indicate that an error as occuried
     """
 
-    def __init__(self, error_message):
+    def __init__(self, sender_name: str, error_message: str):
         """
         :param str error_code: message associated to the error
         """
+        Message.__init__(self, sender_name)
         self.error_message = error_message
 
     def __str__(self):
@@ -82,16 +93,28 @@ class StartMessage(Message):
     """
     Message that ask the actor to launch its initialisation process
     """
-    def __init__(self, name: str):
+    def __init__(self, sender_name: str, name: str):
+        Message.__init__(self, sender_name)
         self.name = name
 
     def __str__(self):
         return "StartMessage"
 
 
+class EndMessage(Message):
+    """
+    Message sent by actor to its parent when it terminate itself
+    """
+    def __init__(self, sender_name: str):
+        Message.__init__(self, sender_name)
+
+    def __str__(self):
+        return "EndMessage"
+
+
 class PullerStartMessage(StartMessage):
-    def __init__(self, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool):
-        StartMessage.__init__(self, name)
+    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool):
+        StartMessage.__init__(self, sender_name, name)
         self.database = database
         self.report_filter = report_filter
         self.report_model = report_model
@@ -99,20 +122,34 @@ class PullerStartMessage(StartMessage):
 
 
 class DispatcherStartMessage(StartMessage):
-    def __init__(self, name: str, formula_class, formula_config_factory: Callable, route_table: RouteTable):
-        StartMessage.__init__(self, name)
+    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaValues, route_table: RouteTable, device_id: str):
+        """
+        :param formula_class: Class of the formula the dispatcher handle
+        :param formula_values: Values that will be always passed to formula for initialization
+        :param route_table: Dispatcher's Route table
+        :param device_id: name of the device the dispatcher handle
+        """
+        StartMessage.__init__(self, sender_name, name)
         self.formula_class = formula_class
-        self.formula_config_factory = formula_config_factory
+        self.formula_values = formula_values
         self.route_table = route_table
+        self.device_id = device_id
 
 
 class FormulaStartMessage(StartMessage):
-    def __init__(self, name: str, pushers: Dict[str, ActorAddress]):
-        StartMessage.__init__(self, name)
-        self.pushers = pushers
+    def __init__(self, sender_name: str, name: str, formula_values: FormulaValues, domain_values: DomainValues):
+        StartMessage.__init__(self, sender_name, name)
+        self.values = formula_values
+        self.domain_values = domain_values
 
 
-class DummyFormulaStartMessage(StartMessage):
-    def __init__(self, name: str, pushers: Dict[str, ActorAddress], sleeping_time: int):
-        FormulaStartMessage.__init__(self, name, pushers)
-        self.sleeping_time = sleeping_time
+class PusherStartMessage(StartMessage):
+    def __init__(self, sender_name: str, name: str, database: BaseDB, report_model: ReportModel):
+        """
+        :param str name: Pusher name.
+        :param Report report_model: ReportModel
+        :param BaseDB database: Database use for saving data.
+        """
+        StartMessage.__init__(self, sender_name, name)
+        self.database = database
+        self.report_model = report_model

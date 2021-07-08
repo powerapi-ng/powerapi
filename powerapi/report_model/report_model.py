@@ -33,7 +33,7 @@ from powerapi.exception import PowerAPIException
 
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
 CSV_HEADER_HWPC = CSV_HEADER_COMMON + ['socket', 'cpu']
-CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power']
+CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
 
 
 class BadInputData(PowerAPIException):

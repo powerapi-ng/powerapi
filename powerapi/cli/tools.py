@@ -30,8 +30,10 @@
 import os
 import sys
 import logging
+from typing import Dict, Tuple, Type
 
 from functools import reduce
+from powerapi.actor import Actor
 from powerapi.exception import PowerAPIException
 from powerapi.cli.parser import MainParser, ComponentSubParser
 from powerapi.cli.parser import store_true
@@ -42,6 +44,7 @@ from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlMo
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
+from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
 
 
 def enable_log(arg, val, args, acc):
@@ -207,7 +210,7 @@ class Generator:
     def __init__(self, component_group_name):
         self.component_group_name = component_group_name
 
-    def generate(self, config):
+    def generate(self, config: Dict) -> Dict[str, Tuple[Type[Actor], StartMessage]]:
         if self.component_group_name not in config:
             print('CLI error : no ' + self.component_group_name + ' specified', file=sys.stderr)
             sys.exit()
@@ -226,7 +229,7 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_name, component_config, main_config):
+    def _gen_actor(self, component_name: str, component_config: Dict, main_config: Dict) -> Tuple[Type[Actor], StartMessage]:
         raise NotImplementedError()
 
 
@@ -247,7 +250,7 @@ class DatabaseNameAlreadyUsed(PowerAPIException):
     def __init__(self, database_name):
         self.database_name = database_name
 
-        
+
 class ModelNameDoesNotExist(PowerAPIException):
     """
     Exception raised when attempting to remove to a DBActorGenerator a model factory with a name that is not bound to another
@@ -256,6 +259,7 @@ class ModelNameDoesNotExist(PowerAPIException):
     def __init__(self, model_name):
         self.model_name = model_name
 
+
 class DatabaseNameDoesNotExist(PowerAPIException):
     """
     Exception raised when attempting to remove to a DBActorGenerator a database factory with a name that is not bound to another
@@ -263,6 +267,7 @@ class DatabaseNameDoesNotExist(PowerAPIException):
     """
     def __init__(self, database_name):
         self.database_name = database_name
+
 
 class DBActorGenerator(Generator):
 
@@ -317,9 +322,14 @@ class DBActorGenerator(Generator):
         db = self._generate_db(db_name, db_config, main_config)
         model = self.model_factory[db_config['model']]
         name = db_config['name']
-        return self._actor_factory(name, db, model, main_config['stream'], main_config['verbose'])
+        start_message = self._start_message_factory(name, db, model, main_config['stream'], main_config['verbose'])
+        actor = self._actor_factory(db_config)
+        return (actor, start_message)
 
-    def _actor_factory(self, name, db, model, stream_mode, level_logger):
+    def _actor_factory(self, db_config):
+        raise NotImplementedError()
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
         raise NotImplementedError()
 
 
@@ -329,8 +339,11 @@ class PullerGenerator(DBActorGenerator):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
 
-    def _actor_factory(self, name, db, model, stream_mode, level_logger):
-        return PullerActor(name, db, self.report_filter, model, stream_mode, level_logger)
+    def _actor_factory(self, db_config):
+        return PullerActor
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        return PullerStartMessage('system', name, db, self.report_filter, model, stream_mode)
 
 
 class PusherGenerator(DBActorGenerator):
@@ -338,9 +351,8 @@ class PusherGenerator(DBActorGenerator):
     def __init__(self):
         DBActorGenerator.__init__(self, 'output')
 
-    def _actor_factory(self, name, db, model, stream_mode, level_logger):
-        if type(db) == PrometheusDB:
-            max_size = -1
-        else:
-            max_size = 50
-        return PusherActor(name, model, db, level_logger, max_size=max_size)
+    def _actor_factory(self, db_config):
+        return PusherActor
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        return PusherStartMessage('system', name, db, model)

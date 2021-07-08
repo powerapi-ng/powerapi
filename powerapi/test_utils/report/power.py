@@ -27,8 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.report import PowerReport
-TS1 = 0
-SENSOR1= 'sensor1'
-TARGET1 = 'target1'
+
+SENSOR_NAME = 'sensor_test'
+TARGET_NAME = 'target_test'
+
 def gen_power_report():
-    return PowerReport(TS1, SENSOR1, TARGET1, 0, 1234, {}, core=0)
+    return PowerReport(0, SENSOR_NAME, TARGET_NAME, 0, 1234, {}, )
+
+def gen_power_report_with_ts(ts):
+    return PowerReport(ts, SENSOR_NAME, TARGET_NAME, 0, 0.11, {"metadata1": "truc", "metadata2": "oui"})
