@@ -1,4 +1,4 @@
-.. PowerAPI (QuickStart)
+﻿.. PowerAPI (QuickStart)
 
 Démarrage rapide
 
@@ -10,7 +10,7 @@ This part helps you to understand how to use **PowerAPI**. It is assumed that yo
 PowerAPI CLI on Docker
 ======================
 
-You have to install `Docker <https://docs.docker.com/install/>`_ to run **PowerAPI**, the command below allow to run the data processing.
+You have to install `Docker <https://docs.docker.com/install/>`_ to run **PowerAPI**, the command below allows to run the data processing.
 
 .. code-block:: none
 
