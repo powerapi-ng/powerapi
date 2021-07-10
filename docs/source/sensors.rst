@@ -6,7 +6,7 @@ This page lists the **sensors**, which are currently supported by **PowerAPI**. 
 
 .. note::
 
-   Code in this page is not tested :D
+   Code on this page is not tested :D
 
 HWPC-Sensor
 -----------
