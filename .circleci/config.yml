@@ -9,7 +9,6 @@ jobs:
       # Service image for integration tests
       - image: circleci/mongo:4.0
       - image: influxdb:1.5
-      - image: openstackhelm/libvirt:ubuntu_focal-20210514
     working_directory: ~/repo
 
     steps:
@@ -26,6 +25,7 @@ jobs:
           name: install dependencies
           command: |
             python3 -m venv venv
+            sudo apt install libvirt-dev
             . venv/bin/activate
             pip3 install -e ".[mongodb, influxdb, prometheus]"
 
