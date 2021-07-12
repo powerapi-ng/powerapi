@@ -455,7 +455,7 @@ class MainParser(Parser):
                             type=type)
         self._add_argument_names(names, flag)
 
-    def add_formula_subparser(self, component_type, subparser, help_str=''):
+    def add_component_subparser(self, component_type, subparser, help_str=''):
         """
         Add a subparser that will be used by the argument *component_name*
 
@@ -489,9 +489,10 @@ class MainParser(Parser):
             self._add_argument_names([action_name], action.is_flag)
 
 
-    def add_component_subparser(self, component_type, subparser, help_str=''):
+    def add_actor_subparser(self, component_type, subparser, help_str=''):
         """
         Add a subparser that will be used by the argument *component_name*
+        The component must contain a name action
 
         :param str component_type:
         :param ComponentSubParser subparser:

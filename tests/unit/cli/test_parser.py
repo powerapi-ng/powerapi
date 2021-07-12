@@ -216,7 +216,7 @@ def test_subparser():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     check_parsing_result(parser, '', {})
 
@@ -249,7 +249,7 @@ def test_formula_subparser():
 
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
-    parser.add_formula_subparser('sub', subparser)
+    parser.add_component_subparser('sub', subparser)
 
     check_parsing_result(parser, '', {})
 
@@ -273,7 +273,7 @@ def test_create_two_component():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'toto': {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b': True}}}})
 
@@ -292,7 +292,7 @@ def test_create_component_that_already_exist():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     with pytest.raises(ComponentAlreadyExistException):
         check_parsing_result(parser, '--sub toto --name titi --sub toto --name titi', None)
@@ -434,7 +434,7 @@ def test_add_component_subparser_with_two_name():
     subparser = ComponentSubParser('titi')
     subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
     check_parsing_result(parser, '--sub titi -a --name tutu', {'sub': {'titi': {'tutu': {'aaa': True, 'name': 'tutu'}}}})
 
 
@@ -447,7 +447,7 @@ def test_add_component_subparser_that_aldready_exists():
     subparser = ComponentSubParser('titi')
 
     with pytest.raises(SubParserWithoutNameArgumentException):
-        parser.add_component_subparser('toto', subparser)
+        parser.add_actor_subparser('toto', subparser)
 
 
 def test_parse_empty_string_default_value():

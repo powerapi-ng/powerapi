@@ -85,6 +85,11 @@ class DBPullerThread(Thread):
     def _get_dispatchers(self, report):
         return self.state.report_filter.route(report)
 
+    def _modify_report(self, report):
+        for report_modifier in self.state.report_modifier_list:
+            report = report_modifier.modify_report(report)
+        return report
+
     def run(self):
         """
         Read data from Database and send it to the dispatchers.
@@ -104,7 +109,10 @@ class DBPullerThread(Thread):
 
         while self.state.alive:
             try:
-                report = self._pull_database()
+                raw_report = self._pull_database()
+                print(raw_report)
+                report = self._modify_report(raw_report)
+                
                 dispatchers = self._get_dispatchers(report)
                 for dispatcher in dispatchers:
                     dispatcher.send_data(report)

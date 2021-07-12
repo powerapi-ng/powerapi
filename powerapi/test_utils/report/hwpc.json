@@ -1,0 +1,775 @@
+{"reports": [
+    {
+        "_id" : "5f57a7649750d76f8a581efe",
+        "timestamp" : "2020-09-08T15:46:44.856",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 53940583,
+                        "APERF" : 20657118,
+                        "TSC" : 2119425306,
+                        "time_enabled" : 94443440859,
+                        "time_running" : 94443440859
+                    },
+                    "4" : {
+                        "MPERF" : 30858794,
+                        "APERF" : 11841645,
+                        "TSC" : 2119471970,
+                        "time_enabled" : 94443537870,
+                        "time_running" : 94443537870
+                    },
+                    "5" : {
+                        "MPERF" : 45135257,
+                        "APERF" : 17224644,
+                        "TSC" : 2119519390,
+                        "time_enabled" : 94443651086,
+                        "time_running" : 94443651086
+                    },
+                    "6" : {
+                        "MPERF" : 18900524,
+                        "APERF" : 7387378,
+                        "TSC" : 2119566048,
+                        "time_enabled" : 94443714389,
+                        "time_running" : 94443714389
+                    },
+                    "7" : {
+                        "MPERF" : 17952172,
+                        "APERF" : 6892455,
+                        "TSC" : 2119581092,
+                        "time_enabled" : 94443740788,
+                        "time_running" : 94443740788
+                    },
+                    "0" : {
+                        "MPERF" : 56243422,
+                        "APERF" : 21601116,
+                        "TSC" : 2119604214,
+                        "time_enabled" : 94443799508,
+                        "time_running" : 94443799508
+                    },
+                    "1" : {
+                        "MPERF" : 25419378,
+                        "APERF" : 9726891,
+                        "TSC" : 2119600894,
+                        "time_enabled" : 94443900843,
+                        "time_running" : 94443900843
+                    },
+                    "2" : {
+                        "MPERF" : 38417484,
+                        "APERF" : 14846563,
+                        "TSC" : 2119642128,
+                        "time_enabled" : 94443956903,
+                        "time_running" : 94443956903
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 4973133824,
+                        "time_enabled" : 94443294839,
+                        "time_running" : 94443294839
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a7639750d76f8a581efb",
+        "timestamp" : "2020-09-08T15:46:43.852",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 15517245,
+                        "APERF" : 6000680,
+                        "TSC" : 2118859644,
+                        "time_enabled" : 93439900822,
+                        "time_running" : 93439900822
+                    },
+                    "4" : {
+                        "MPERF" : 40034107,
+                        "APERF" : 16533647,
+                        "TSC" : 2118837082,
+                        "time_enabled" : 93439965596,
+                        "time_running" : 93439965596
+                    },
+                    "5" : {
+                        "MPERF" : 21419919,
+                        "APERF" : 8400372,
+                        "TSC" : 2118793970,
+                        "time_enabled" : 93440071580,
+                        "time_running" : 93440071580
+                    },
+                    "6" : {
+                        "MPERF" : 18750926,
+                        "APERF" : 8224924,
+                        "TSC" : 2118713278,
+                        "time_enabled" : 93440121015,
+                        "time_running" : 93440121015
+                    },
+                    "7" : {
+                        "MPERF" : 22365387,
+                        "APERF" : 8938792,
+                        "TSC" : 2118706166,
+                        "time_enabled" : 93440143591,
+                        "time_running" : 93440143591
+                    },
+                    "0" : {
+                        "MPERF" : 43918723,
+                        "APERF" : 17185475,
+                        "TSC" : 2118547890,
+                        "time_enabled" : 93440173944,
+                        "time_running" : 93440173944
+                    },
+                    "1" : {
+                        "MPERF" : 35920184,
+                        "APERF" : 14173818,
+                        "TSC" : 2118674178,
+                        "time_enabled" : 93440279080,
+                        "time_running" : 93440279080
+                    },
+                    "2" : {
+                        "MPERF" : 28001045,
+                        "APERF" : 11663653,
+                        "TSC" : 2118762026,
+                        "time_enabled" : 93440326725,
+                        "time_running" : 93440326725
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 4664852480,
+                        "time_enabled" : 93439860598,
+                        "time_running" : 93439860598
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a7629750d76f8a581ef8",
+        "timestamp" : "2020-09-08T15:46:42.849",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 18337108,
+                        "APERF" : 6992820,
+                        "TSC" : 2118853640,
+                        "time_enabled" : 92436624233,
+                        "time_running" : 92436624233
+                    },
+                    "4" : {
+                        "MPERF" : 34542787,
+                        "APERF" : 13284335,
+                        "TSC" : 2118872242,
+                        "time_enabled" : 92436707956,
+                        "time_running" : 92436707956
+                    },
+                    "5" : {
+                        "MPERF" : 42723542,
+                        "APERF" : 18089333,
+                        "TSC" : 2118905124,
+                        "time_enabled" : 92436828038,
+                        "time_running" : 92436828038
+                    },
+                    "6" : {
+                        "MPERF" : 31485058,
+                        "APERF" : 12201687,
+                        "TSC" : 2119004448,
+                        "time_enabled" : 92436927968,
+                        "time_running" : 92436927968
+                    },
+                    "7" : {
+                        "MPERF" : 23769922,
+                        "APERF" : 9142154,
+                        "TSC" : 2119018080,
+                        "time_enabled" : 92436959917,
+                        "time_running" : 92436959917
+                    },
+                    "0" : {
+                        "MPERF" : 28012878,
+                        "APERF" : 10803137,
+                        "TSC" : 2119058968,
+                        "time_enabled" : 92437062746,
+                        "time_running" : 92437062746
+                    },
+                    "1" : {
+                        "MPERF" : 37323716,
+                        "APERF" : 16328872,
+                        "TSC" : 2118938248,
+                        "time_enabled" : 92437108232,
+                        "time_running" : 92437108232
+                    },
+                    "2" : {
+                        "MPERF" : 45261874,
+                        "APERF" : 17644928,
+                        "TSC" : 2118790358,
+                        "time_enabled" : 92437118933,
+                        "time_running" : 92437118933
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 4661182464,
+                        "time_enabled" : 92436574633,
+                        "time_running" : 92436574633
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a7619750d76f8a581ef5",
+        "timestamp" : "2020-09-08T15:46:41.846",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 23743435,
+                        "APERF" : 9221476,
+                        "TSC" : 2119668942,
+                        "time_enabled" : 91433352475,
+                        "time_running" : 91433352475
+                    },
+                    "4" : {
+                        "MPERF" : 31919131,
+                        "APERF" : 12766760,
+                        "TSC" : 2119797202,
+                        "time_enabled" : 91433432080,
+                        "time_running" : 91433432080
+                    },
+                    "5" : {
+                        "MPERF" : 74570605,
+                        "APERF" : 42399120,
+                        "TSC" : 2119890740,
+                        "time_enabled" : 91433532757,
+                        "time_running" : 91433532757
+                    },
+                    "6" : {
+                        "MPERF" : 59636092,
+                        "APERF" : 36957432,
+                        "TSC" : 2120007012,
+                        "time_enabled" : 91433599072,
+                        "time_running" : 91433599072
+                    },
+                    "7" : {
+                        "MPERF" : 28459963,
+                        "APERF" : 13556863,
+                        "TSC" : 2120029336,
+                        "time_enabled" : 91433629017,
+                        "time_running" : 91433629017
+                    },
+                    "0" : {
+                        "MPERF" : 54290864,
+                        "APERF" : 31114914,
+                        "TSC" : 2120089170,
+                        "time_enabled" : 91433693257,
+                        "time_running" : 91433693257
+                    },
+                    "1" : {
+                        "MPERF" : 31711808,
+                        "APERF" : 12615298,
+                        "TSC" : 2120189516,
+                        "time_enabled" : 91433796111,
+                        "time_running" : 91433796111
+                    },
+                    "2" : {
+                        "MPERF" : 74674832,
+                        "APERF" : 30852689,
+                        "TSC" : 2120340910,
+                        "time_enabled" : 91433890371,
+                        "time_running" : 91433890371
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 5852364800,
+                        "time_enabled" : 91433269849,
+                        "time_running" : 91433269849
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a7609750d76f8a581ef2",
+        "timestamp" : "2020-09-08T15:46:40.842",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 12933015,
+                        "APERF" : 5176623,
+                        "TSC" : 2118270124,
+                        "time_enabled" : 90429709560,
+                        "time_running" : 90429709560
+                    },
+                    "4" : {
+                        "MPERF" : 30726969,
+                        "APERF" : 12610497,
+                        "TSC" : 2118177368,
+                        "time_enabled" : 90429729425,
+                        "time_running" : 90429729425
+                    },
+                    "5" : {
+                        "MPERF" : 24820546,
+                        "APERF" : 10197147,
+                        "TSC" : 2118116304,
+                        "time_enabled" : 90429785031,
+                        "time_running" : 90429785031
+                    },
+                    "6" : {
+                        "MPERF" : 25779260,
+                        "APERF" : 11275877,
+                        "TSC" : 2118049130,
+                        "time_enabled" : 90429801482,
+                        "time_running" : 90429801482
+                    },
+                    "7" : {
+                        "MPERF" : 18986023,
+                        "APERF" : 7921528,
+                        "TSC" : 2117950906,
+                        "time_enabled" : 90429821869,
+                        "time_running" : 90429821869
+                    },
+                    "0" : {
+                        "MPERF" : 17787291,
+                        "APERF" : 7406330,
+                        "TSC" : 2117708406,
+                        "time_enabled" : 90429855385,
+                        "time_running" : 90429855385
+                    },
+                    "1" : {
+                        "MPERF" : 24246962,
+                        "APERF" : 9404041,
+                        "TSC" : 2117716930,
+                        "time_enabled" : 90429907282,
+                        "time_running" : 90429907282
+                    },
+                    "2" : {
+                        "MPERF" : 40849028,
+                        "APERF" : 17084039,
+                        "TSC" : 2117758312,
+                        "time_enabled" : 90429934095,
+                        "time_running" : 90429934095
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 4674813952,
+                        "time_enabled" : 90429696179,
+                        "time_running" : 90429696179
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a75f9750d76f8a581eef",
+        "timestamp" : "2020-09-08T15:46:39.839",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 14060838,
+                        "APERF" : 5362553,
+                        "TSC" : 2118936880,
+                        "time_enabled" : 89426713440,
+                        "time_running" : 89426713440
+                    },
+                    "4" : {
+                        "MPERF" : 32429718,
+                        "APERF" : 12339973,
+                        "TSC" : 2118897036,
+                        "time_enabled" : 89426784032,
+                        "time_running" : 89426784032
+                    },
+                    "5" : {
+                        "MPERF" : 27336544,
+                        "APERF" : 10421839,
+                        "TSC" : 2118939988,
+                        "time_enabled" : 89426860636,
+                        "time_running" : 89426860636
+                    },
+                    "6" : {
+                        "MPERF" : 42518193,
+                        "APERF" : 16182870,
+                        "TSC" : 2118993800,
+                        "time_enabled" : 89426923965,
+                        "time_running" : 89426923965
+                    },
+                    "7" : {
+                        "MPERF" : 35090303,
+                        "APERF" : 13363522,
+                        "TSC" : 2119017940,
+                        "time_enabled" : 89426994423,
+                        "time_running" : 89426994423
+                    },
+                    "0" : {
+                        "MPERF" : 22944283,
+                        "APERF" : 8740710,
+                        "TSC" : 2119152560,
+                        "time_enabled" : 89427140365,
+                        "time_running" : 89427140365
+                    },
+                    "1" : {
+                        "MPERF" : 26000489,
+                        "APERF" : 9916946,
+                        "TSC" : 2119040610,
+                        "time_enabled" : 89427188652,
+                        "time_running" : 89427188652
+                    },
+                    "2" : {
+                        "MPERF" : 29401676,
+                        "APERF" : 11352805,
+                        "TSC" : 2118975726,
+                        "time_enabled" : 89427200396,
+                        "time_running" : 89427200396
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 4603248640,
+                        "time_enabled" : 89426623574,
+                        "time_running" : 89426623574
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a75e9750d76f8a581eec",
+        "timestamp" : "2020-09-08T15:46:38.836",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 32272034,
+                        "APERF" : 17108949,
+                        "TSC" : 2119719278,
+                        "time_enabled" : 88423401673,
+                        "time_running" : 88423401673
+                    },
+                    "4" : {
+                        "MPERF" : 43214434,
+                        "APERF" : 17745100,
+                        "TSC" : 2119886848,
+                        "time_enabled" : 88423500099,
+                        "time_running" : 88423500099
+                    },
+                    "5" : {
+                        "MPERF" : 33019247,
+                        "APERF" : 15678525,
+                        "TSC" : 2119957094,
+                        "time_enabled" : 88423561858,
+                        "time_running" : 88423561858
+                    },
+                    "6" : {
+                        "MPERF" : 26108645,
+                        "APERF" : 11642785,
+                        "TSC" : 2119978486,
+                        "time_enabled" : 88423598498,
+                        "time_running" : 88423598498
+                    },
+                    "7" : {
+                        "MPERF" : 41687507,
+                        "APERF" : 16673844,
+                        "TSC" : 2120093758,
+                        "time_enabled" : 88423663568,
+                        "time_running" : 88423663568
+                    },
+                    "0" : {
+                        "MPERF" : 41333967,
+                        "APERF" : 17227384,
+                        "TSC" : 2120215578,
+                        "time_enabled" : 88423727042,
+                        "time_running" : 88423727042
+                    },
+                    "1" : {
+                        "MPERF" : 31302895,
+                        "APERF" : 15651566,
+                        "TSC" : 2120416112,
+                        "time_enabled" : 88423828218,
+                        "time_running" : 88423828218
+                    },
+                    "2" : {
+                        "MPERF" : 27855178,
+                        "APERF" : 11807911,
+                        "TSC" : 2120508824,
+                        "time_enabled" : 88423884603,
+                        "time_running" : 88423884603
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 5095292928,
+                        "time_enabled" : 88423246307,
+                        "time_running" : 88423246307
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a75d9750d76f8a581eea",
+        "timestamp" : "2020-09-08T15:46:37.832",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 24214804,
+                        "APERF" : 10009730,
+                        "TSC" : 2117904404,
+                        "time_enabled" : 87419735175,
+                        "time_running" : 87419735175
+                    },
+                    "4" : {
+                        "MPERF" : 30570951,
+                        "APERF" : 12400898,
+                        "TSC" : 2117750690,
+                        "time_enabled" : 87419754897,
+                        "time_running" : 87419754897
+                    },
+                    "5" : {
+                        "MPERF" : 45768583,
+                        "APERF" : 18794437,
+                        "TSC" : 2117501404,
+                        "time_enabled" : 87419787625,
+                        "time_running" : 87419787625
+                    },
+                    "6" : {
+                        "MPERF" : 26265276,
+                        "APERF" : 12004064,
+                        "TSC" : 2117434446,
+                        "time_enabled" : 87419814411,
+                        "time_running" : 87419814411
+                    },
+                    "7" : {
+                        "MPERF" : 36814240,
+                        "APERF" : 15294576,
+                        "TSC" : 2117448628,
+                        "time_enabled" : 87419826043,
+                        "time_running" : 87419826043
+                    },
+                    "0" : {
+                        "MPERF" : 30578165,
+                        "APERF" : 13871204,
+                        "TSC" : 2117359212,
+                        "time_enabled" : 87419828525,
+                        "time_running" : 87419828525
+                    },
+                    "1" : {
+                        "MPERF" : 28883901,
+                        "APERF" : 12312207,
+                        "TSC" : 2117275542,
+                        "time_enabled" : 87419836608,
+                        "time_running" : 87419836608
+                    },
+                    "2" : {
+                        "MPERF" : 62001608,
+                        "APERF" : 38232450,
+                        "TSC" : 2117284408,
+                        "time_enabled" : 87419847139,
+                        "time_running" : 87419847139
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 5200936960,
+                        "time_enabled" : 87419719716,
+                        "time_running" : 87419719716
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a75c9750d76f8a581ee6",
+        "timestamp" : "2020-09-08T15:46:36.829",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 17604753,
+                        "APERF" : 7093485,
+                        "TSC" : 2119099328,
+                        "time_enabled" : 86416912432,
+                        "time_running" : 86416912432
+                    },
+                    "4" : {
+                        "MPERF" : 27604127,
+                        "APERF" : 10612203,
+                        "TSC" : 2119237816,
+                        "time_enabled" : 86417004421,
+                        "time_running" : 86417004421
+                    },
+                    "5" : {
+                        "MPERF" : 39026453,
+                        "APERF" : 15214968,
+                        "TSC" : 2119441078,
+                        "time_enabled" : 86417155905,
+                        "time_running" : 86417155905
+                    },
+                    "6" : {
+                        "MPERF" : 25537561,
+                        "APERF" : 10983572,
+                        "TSC" : 2119577858,
+                        "time_enabled" : 86417233845,
+                        "time_running" : 86417233845
+                    },
+                    "7" : {
+                        "MPERF" : 44851449,
+                        "APERF" : 17464644,
+                        "TSC" : 2119583624,
+                        "time_enabled" : 86417240313,
+                        "time_running" : 86417240313
+                    },
+                    "0" : {
+                        "MPERF" : 35301920,
+                        "APERF" : 14044032,
+                        "TSC" : 2119573420,
+                        "time_enabled" : 86417279396,
+                        "time_running" : 86417279396
+                    },
+                    "1" : {
+                        "MPERF" : 27316559,
+                        "APERF" : 10698254,
+                        "TSC" : 2119572452,
+                        "time_enabled" : 86417326405,
+                        "time_running" : 86417326405
+                    },
+                    "2" : {
+                        "MPERF" : 17766224,
+                        "APERF" : 7751564,
+                        "TSC" : 2119579576,
+                        "time_enabled" : 86417337810,
+                        "time_running" : 86417337810
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 5136973824,
+                        "time_enabled" : 86416853942,
+                        "time_running" : 86416853942
+                    }
+                }
+            }
+        }
+    },
+    {
+        "_id" : "5f57a75b9750d76f8a581ee3",
+        "timestamp" : "2020-09-08T15:46:35.826",
+        "sensor" : "sensor",
+        "target" : "all",
+        "groups" : {
+            "msr" : {
+                "0" : {
+                    "3" : {
+                        "MPERF" : 19674510,
+                        "APERF" : 7556555,
+                        "TSC" : 2118843850,
+                        "time_enabled" : 85413539929,
+                        "time_running" : 85413539929
+                    },
+                    "4" : {
+                        "MPERF" : 25033730,
+                        "APERF" : 9627550,
+                        "TSC" : 2118744748,
+                        "time_enabled" : 85413567473,
+                        "time_running" : 85413567473
+                    },
+                    "5" : {
+                        "MPERF" : 29020485,
+                        "APERF" : 11139533,
+                        "TSC" : 2118633338,
+                        "time_enabled" : 85413621926,
+                        "time_running" : 85413621926
+                    },
+                    "6" : {
+                        "MPERF" : 31737245,
+                        "APERF" : 12394965,
+                        "TSC" : 2118547698,
+                        "time_enabled" : 85413637852,
+                        "time_running" : 85413637852
+                    },
+                    "7" : {
+                        "MPERF" : 31633224,
+                        "APERF" : 12478968,
+                        "TSC" : 2118498990,
+                        "time_enabled" : 85413643439,
+                        "time_running" : 85413643439
+                    },
+                    "0" : {
+                        "MPERF" : 32527222,
+                        "APERF" : 12667607,
+                        "TSC" : 2118413896,
+                        "time_enabled" : 85413681646,
+                        "time_running" : 85413681646
+                    },
+                    "1" : {
+                        "MPERF" : 23116445,
+                        "APERF" : 8903379,
+                        "TSC" : 2118296840,
+                        "time_enabled" : 85413729249,
+                        "time_running" : 85413729249
+                    },
+                    "2" : {
+                        "MPERF" : 39862171,
+                        "APERF" : 15700054,
+                        "TSC" : 2118224292,
+                        "time_enabled" : 85413740744,
+                        "time_running" : 85413740744
+                    }
+                }
+            },
+            "rapl" : {
+                "0" : {
+                    "7" : {
+                        "RAPL_ENERGY_PKG" : 5092933632,
+                        "time_enabled" : 85413525073,
+                        "time_running" : 85413525073
+                    }
+                }
+            }
+        }
+    }
+
+
+]
+}

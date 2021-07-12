@@ -51,7 +51,7 @@ class PullerState(State):
       - the database interface
       - the Filter class
     """
-    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=False):
+    def __init__(self, actor, database, report_filter, report_model, stream_mode, timeout_puller, report_modifier_list=[], asynchrone=False):
         """
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
@@ -84,6 +84,8 @@ class PullerState(State):
 
         self.loop = None
 
+        self.report_modifier_list = report_modifier_list
+
 
 class PullerActor(Actor):
     """
@@ -93,7 +95,7 @@ class PullerActor(Actor):
     to many Dispatcher depending of some rules.
     """
 
-    def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
+    def __init__(self, name, database, report_filter, report_model, stream_mode=False, report_modifier_list=[], level_logger=logging.WARNING,
                  timeout=0, timeout_puller=100):
         """
         :param str name: Actor name.
@@ -106,7 +108,7 @@ class PullerActor(Actor):
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, asynchrone=database.asynchrone)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller, report_modifier_list=report_modifier_list, asynchrone=database.asynchrone)
 
         self.low_exception += database.exceptions
 
