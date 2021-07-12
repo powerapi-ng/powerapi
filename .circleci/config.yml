@@ -9,7 +9,7 @@ jobs:
       # Service image for integration tests
       - image: circleci/mongo:4.0
       - image: influxdb:1.5
-      - image: openstackhelm/libvirt:latest
+      - image: openstackhelm/libvirt:20210125-585df1e
     working_directory: ~/repo
 
     steps:
