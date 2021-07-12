@@ -28,7 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from libvirt import libvirtError
+try:
+    from libvirt import libvirtError
+except ImportError:
+    libvirtError = Exception
 
 DOMAIN_NAME_1 = 'instance-00000001'
 DOMAIN_NAME_2 = 'instance-00000002'

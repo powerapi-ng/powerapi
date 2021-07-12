@@ -30,7 +30,10 @@ import pytest
 
 from mock import patch
 
-from libvirt import libvirtError
+try:
+    from libvirt import libvirtError
+except ImportError:
+    libvirtError = Exception
 
 from powerapi.report_modifier import LibvirtMapper
 from powerapi.report import Report
