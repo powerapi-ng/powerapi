@@ -33,6 +33,8 @@ try:
     from libvirt import openReadOnly, libvirtError
 except ImportError:
     logging.getLogger().info("libvirt-python is not installed.")
+    libvirtError = Exception
+    openReadOnly = None
 
 from . import ReportModifier
 
