@@ -67,9 +67,9 @@ from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.tools import PusherGenerator, PullerGenerator
 from powerapi.test_utils.actor import shutdown_system
-from powerapi.test_utils.report.hwpc import extract_json_report
+from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_HWPC_COLLECTION_NAME, MONGO_POWER_COLLECTION_NAME, MONGO_DATABASE_NAME
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
 from powerapi.test_utils.db.influx import influx_database, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT, get_all_reports
 from powerapi.test_utils.db.csv import FILES, files, ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
@@ -107,22 +107,26 @@ def launch_simple_architecture(config, supervisor):
 ##################
 def check_mongo_db():
     mongo = pymongo.MongoClient(MONGO_URI)
-    c_input = mongo[MONGO_DATABASE_NAME][MONGO_HWPC_COLLECTION_NAME]
-    c_output = mongo[MONGO_DATABASE_NAME][MONGO_POWER_COLLECTION_NAME]
+    c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
+    c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
 
     assert c_output.count_documents({}) == c_input.count_documents({}) * 2
 
     for report in c_input.find():
-
+        ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         assert c_output.count_documents(
-            {'timestamp': report['timestamp'], 'sensor': report['sensor'],
+            {'timestamp': ts, 'sensor': report['sensor'],
              'target': report['target']}) == 2
 
 
+@pytest.fixture
+def mongodb_content():
+    return extract_rapl_reports_with_2_sockets(10)
+        
 def test_run_mongo(mongo_database, shutdown_system):
     config = {'verbose': True, 'stream': False,
-              'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_POWER_COLLECTION_NAME}}},
-              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_HWPC_COLLECTION_NAME}}}
+              'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
+              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
               }
 
     supervisor = Supervisor()
@@ -137,21 +141,23 @@ def test_run_mongo(mongo_database, shutdown_system):
 ###################
 def check_influx_db(influx_client):
     mongo = pymongo.MongoClient(INFLUX_URI)
-    c_input = mongo['MongoDB1']['test_hwrep']
+    c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = get_all_reports(influx_client, INFLUX_DBNAME)
 
     assert c_input.count_documents({}) * 2 == len(c_output)
 
     for report in c_input.find():
+        ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         influx_client.switch_database(INFLUX_DBNAME)
-        l = list(influx_client.query('SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'].strftime('%Y-%m-%dT%H:%M:%SZ') + '\'').get_points())
+        # l = list(influx_client.query('SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'].strftime('%Y-%m-%dT%H:%M:%SZ') + '\'').get_points())
+        l = list(influx_client.query('SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'] + 'Z\'').get_points())
         assert len(l) == 2
 
 
 def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
     config = {'verbose': True, 'stream': False,
               'output': {'influxdb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT, 'db': INFLUX_DBNAME}}},
-              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_HWPC_COLLECTION_NAME}}}
+              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
               }
 
     supervisor = Supervisor()
@@ -225,29 +231,29 @@ def test_run_csv_to_csv(files, shutdown_system):
 # SOCKET INPUT #
 ################
 def check_db_socket():
-    json_reports = extract_json_report(10)
+    json_reports = extract_rapl_reports_with_2_sockets(10)
     mongo = pymongo.MongoClient(MONGO_URI)
-    c_output = mongo[MONGO_DATABASE_NAME][MONGO_POWER_COLLECTION_NAME]
+    c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
 
-    assert c_output.count_documents({}) == 10
+    assert c_output.count_documents({}) == 20
 
     for report in json_reports:
 
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         assert c_output.count_documents(
             {'timestamp': ts, 'sensor': report['sensor'],
-             'target': report['target']}) == 1
+             'target': report['target']}) == 2
 
 
 def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     config = {'verbose': True, 'stream': False,
               'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME,
-                                                     'collection': MONGO_POWER_COLLECTION_NAME}}},
+                                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
               'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'puller'}}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    client = ClientThread(extract_json_report(10), unused_tcp_port)
+    client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
     supervisor.monitor()
     check_db_socket()
@@ -255,12 +261,12 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
 def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     config = {'verbose': True, 'stream': False,
               'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME,
-                                                     'collection': MONGO_POWER_COLLECTION_NAME}}},
+                                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
               'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'puller'}}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    client = ClientThreadDelay(extract_json_report(10), unused_tcp_port)
+    client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
     supervisor.monitor()
     check_db_socket()

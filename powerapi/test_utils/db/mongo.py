@@ -33,96 +33,31 @@ import pymongo
 
 
 MONGO_URI = "mongodb://localhost:27017/"
-MONGO_HWPC_COLLECTION_NAME = 'test_hwrep'
-MONGO_POWER_COLLECTION_NAME = 'test_power'
+MONGO_INPUT_COLLECTION_NAME = 'test_input'
+MONGO_OUTPUT_COLLECTION_NAME = 'test_output'
 MONGO_DATABASE_NAME = 'MongoDB1'
 
 
 @pytest.fixture
-def mongo_database():
+def mongo_database(mongodb_content):
     """
     mongo database with 10 hwpc-report
     """
-    db = gen_base_db_test(MONGO_URI, 10)
-    yield db
+    gen_base_db_test(MONGO_URI, mongodb_content)
+    yield None
     clean_base_db_test(MONGO_URI)
 
 
-
-def generate_hwpc_report(report_id, sensor, target, i):
-    """ generate a HWPC report with json format
-    """
-    seconds = i % 60
-    minutes = int(i / 60)
-    return {
-        '_id': str(report_id),
-        'timestamp': datetime.datetime(1970, 1, 1, 0, minutes, seconds),
-        'sensor': str(sensor),
-        'target': str(target),
-        'groups': {
-            'rapl': {
-                '0': {
-                    '0': {
-                        'RAPL_EVENT': 100,
-                        'simple_event': 200
-                    }
-                },
-                '1': {
-                    '0': {
-                        'RAPL_EVENT': 100,
-                        'simple_event': 300
-                    }
-                }
-            }
-        }
-    }
-
-def make_hwpc_generator(nb_items):
-    """
-    Generate *nb_items* HWPCReport
-    """
-    def generator():
-        for i in range(nb_items):
-            yield generate_hwpc_report(i, 'sensor_test', 'system', i)
-    return generator
-
-
-def generate_colection(db, name, capped, item_generator, size=None):
-    """
-    generate a collection and fill it
-
-    :param db: the database to insert the collectio
-    :param str name: name of the collection
-    :param boolean capped: True if the collection must be capped, in this case,
-                           the size parameter must be set
-    :param item_generator: generator that generate items to be stored on the
-                           collection
-    :param int size: (in case capped is set to True) max size of the collection
-    """
-    # delete collection if it already exist
-    db[name].drop()
-
-    # create collection
-    if capped:
-        db.create_collection(name, capped=True, size=size)
-    else:
-        db.create_collection(name)
-
-    for item in item_generator():
-        db[name].insert_one(item)
-
-
-def gen_base_db_test(uri, nb_items):
-    """
-    Generate a mongoDB database named MongoDB1 containing *nb_items* HWPC report
-    in the test_hwrep collection
-    """
+def gen_base_db_test(uri, content):
     mongo = pymongo.MongoClient(uri)
     db = mongo[MONGO_DATABASE_NAME]
-    generate_colection(db, MONGO_HWPC_COLLECTION_NAME, False,
-                       make_hwpc_generator(nb_items))
+    # delete collection if it already exist
+    db[MONGO_INPUT_COLLECTION_NAME].drop()
+    db.create_collection(MONGO_INPUT_COLLECTION_NAME)
+    for item in content:
+        db[MONGO_INPUT_COLLECTION_NAME].insert_one(item)
     # delete output collection
-    db[MONGO_POWER_COLLECTION_NAME].drop()
+    db[MONGO_OUTPUT_COLLECTION_NAME].drop()
     mongo.close()
 
 
@@ -131,8 +66,7 @@ def clean_base_db_test(uri):
     drop test_hwrep and test_result collections
     """
     mongo = pymongo.MongoClient(uri)
-    db = mongo['MongoDB1']
-    db['test_hwrep'].drop()
-
-    db['test_result'].drop()
+    db = mongo[MONGO_DATABASE_NAME]
+    db[MONGO_INPUT_COLLECTION_NAME].drop()
+    db[MONGO_OUTPUT_COLLECTION_NAME].drop()
     mongo.close()

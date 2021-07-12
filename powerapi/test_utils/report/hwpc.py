@@ -27,6 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
+from typing import Dict
 
 from powerapi.report import HWPCReport, create_socket_report, create_report_root, create_group_report, create_core_report
 import powerapi.test_utils.report as parent_module
@@ -36,16 +37,19 @@ from powerapi.report_model import HWPCModel
 ###################
 # Report Creation #
 ###################
-
-def extract_json_report(n):
+def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> Dict:
+    """
+    Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
+    This file contain hwpc reports with only RAPL_PKG events, recorded on a two socket host
+    """
     path = parent_module.__path__[0]
-    json_file = open(path + '/hwpc.json', 'r')
+    json_file = open(path + '/hwpc_rapl_2_socket.json', 'r')
     reports = json.load(json_file)
     json_file.close()
-    return reports['reports'][:n]
-
+    return reports['reports'][:number_of_reports]
 
 def extract_reports(n):
+    # todo: a dégager
     path = parent_module.__path__[0]
     json_file = open(path + '/hwpc.json', 'r')
     reports = list(map(HWPCReport.deserialize, json.load(json_file)['reports']))
@@ -55,6 +59,7 @@ def extract_reports(n):
 
 
 def gen_hwpc_report():
+    # todo: a dégager
     """
     Return a well formated HWPCReport
     """
