@@ -359,6 +359,8 @@ class ReportModifierGenerator:
 
     def generate(self, config):
         report_modifier_list = []
+        if 'report_modifier' not in config:
+            return []
         for report_modifier_name in config['report_modifier'].keys():
             report_modifier = self.factory[report_modifier_name](config['report_modifier'][report_modifier_name])
             report_modifier_list.append(report_modifier)
