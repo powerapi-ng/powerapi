@@ -41,7 +41,6 @@ from powerapi.message import StartMessage, ErrorMessage, PusherStartMessage, OKM
 from powerapi.test_utils.actor import system, pusher, started_pusher, PUSHER_NAME, is_actor_alive
 from powerapi.test_utils.db import define_database, define_report_model
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.report.power import gen_power_report
 
 
 URI = "mongodb://localhost:27017"

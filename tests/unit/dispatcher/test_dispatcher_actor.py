@@ -31,8 +31,6 @@ from thespian.actors import ActorExitRequest
 
 from powerapi.test_utils.actor import is_actor_alive, system
 from powerapi.test_utils.dummy_actor import DummyActor, DummyFormulaActor, CrashInitFormulaActor, CrashFormulaActor, DummyStartMessage, logger, LOGGER_NAME
-from powerapi.test_utils.report.hwpc import gen_hwpc_report
-from powerapi.test_utils.report.power import gen_power_report
 from powerapi.test_utils.abstract_test import AbstractTestActor, recv_from_pipe
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.dispatcher.dispatcher_actor import _extract_formula_id

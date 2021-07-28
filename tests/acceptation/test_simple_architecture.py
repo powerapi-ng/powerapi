@@ -96,7 +96,7 @@ def launch_simple_architecture(config, supervisor):
     # Puller
     report_filter = Filter()
     report_filter.filter(filter_rule, dispatcher)
-    puller_generator = PullerGenerator(report_filter)
+    puller_generator = PullerGenerator(report_filter, [])
     puller_info = puller_generator.generate(config)
     puller_cls, puller_start_message = puller_info['test_puller']
     puller = supervisor.launch(puller_cls, puller_start_message)
@@ -139,6 +139,10 @@ def test_run_mongo(mongo_database, shutdown_system):
 ###################
 # MONGO to INFLUX #
 ###################
+@pytest.fixture
+def influxdb_content():
+    return []
+
 def check_influx_db(influx_client):
     mongo = pymongo.MongoClient(INFLUX_URI)
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]

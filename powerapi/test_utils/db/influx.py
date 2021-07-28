@@ -39,53 +39,21 @@ INFLUX_DBNAME = 'acceptation_test'
 
 
 @pytest.fixture()
-def influx_database():
-    client = create_empty_db(INFLUX_URI, INFLUX_PORT)
+def influx_database(influxdb_content):
+    client = InfluxDBClient(host=INFLUX_URI, port=INFLUX_PORT)
     delete_db(client, INFLUX_DBNAME)
+    init_db(client, influxdb_content)
     yield client
     delete_db(client, INFLUX_DBNAME)
 
 
-@pytest.fixture()
-def influx_database_with_one_power_report():
-    client = create_non_empty_db(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, 1,
-                                 SENSOR_NAME, TARGET_NAME)
-    yield client
-    delete_db(client, INFLUX_DBNAME)
+def init_db(client, content):
+    if content != []:
+        client.create_database(INFLUX_DBNAME)
+        client.switch_database(INFLUX_DBNAME)
+        client.write_points(content)
 
-
-def generate_power_report(sensor, target, timestamp):
-    """ generate a power report with json format
-    """
-
-    return {
-        'measurement': 'power_consumption',
-        'tags': {'sensor': sensor,
-                 'target': target},
-        'time': str(datetime.datetime.fromtimestamp(timestamp)),
-        'fields': {
-            'power': 100
-        }
-    }
-
-
-def create_empty_db(url, port):
-    client = InfluxDBClient(host=url, port=port)
-    client.ping()
-
-    return client
-
-
-def create_non_empty_db(url, port, db_name, number_of_reports, sensor_name, target_name):
-    client = create_empty_db(url, port)
-    client.create_database(db_name)
-    client.switch_database(db_name)
-    for i in range(number_of_reports):
-        client.write_points([generate_power_report(sensor_name, target_name, i)])
-
-    return client
-
-
+    
 def delete_db(client, db_name):
     client.drop_database(db_name)
     client.close()

@@ -26,13 +26,29 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import datetime
+
 from powerapi.report import PowerReport
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'target_test'
 
-def gen_power_report():
-    return PowerReport(0, SENSOR_NAME, TARGET_NAME, 0, 1234, {}, )
+POWER_REPORT_1 = PowerReport(0, SENSOR_NAME, TARGET_NAME, 0, 1234, {"metadata1": "truc", "metadata2": "oui"})
 
-def gen_power_report_with_ts(ts):
-    return PowerReport(ts, SENSOR_NAME, TARGET_NAME, 0, 0.11, {"metadata1": "truc", "metadata2": "oui"})
+def gen_json_power_report(number_of_reports):
+    """ generate number_of_reports power report with json format
+    """
+    reports = []
+    for ts in range(number_of_reports):
+        reports.append(
+            {
+                'measurement': 'power_consumption',
+                'tags': {'sensor': SENSOR_NAME,
+                         'target': TARGET_NAME},
+                'time': str(datetime.datetime.fromtimestamp(ts)),
+                'fields': {
+                    'power': 100
+                }
+            }
+        )
+    return reports

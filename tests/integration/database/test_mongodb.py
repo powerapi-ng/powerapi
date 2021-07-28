@@ -35,9 +35,12 @@ from powerapi.report_model import HWPCModel, PowerModel
 from powerapi.report import PowerReport, HWPCReport
 from powerapi.database import MongoDB, MongoBadDBError
 
-from powerapi.test_utils.db.mongo import mongo_database, MONGO_URI, MONGO_DATABASE_NAME, MONGO_HWPC_COLLECTION_NAME
-from powerapi.test_utils.report.power import gen_power_report
-from powerapi.test_utils.report.hwpc import gen_hwpc_report
+from powerapi.test_utils.db.mongo import mongo_database, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+from powerapi.test_utils.report.hwpc import gen_HWPCReports, extract_rapl_reports_with_2_sockets
+
+@pytest.fixture
+def mongodb_content():
+    return extract_rapl_reports_with_2_sockets(10)
 
 
 ###################
@@ -67,7 +70,7 @@ def test_mongodb_read_basic_db(mongo_database):
     Test read mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_HWPC_COLLECTION_NAME)
+    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME)
 
     # Check if we can reload after reading
     mongodb.connect()
@@ -87,7 +90,7 @@ def test_mongodb_read_capped_db(mongo_database):
     Test read mongodb capped collection
     """
     # Load DB
-    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_HWPC_COLLECTION_NAME)
+    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME)
 
     # Check if we can read one time
     mongodb.connect()
@@ -118,39 +121,12 @@ def test_mongodb_save_basic_db(mongo_database):
     Test save mongodb collection
     """
     # Load DB
-    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_HWPC_COLLECTION_NAME)
+    mongodb = MongoDB(MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME)
 
     mongodb.connect()
 
     # Check if save work
     basic_count = mongodb.collection.count_documents({})
-    for _ in range(2):
-        mongodb.save(gen_hwpc_report(), HWPCModel())
+    for report in gen_HWPCReports(2):
+        mongodb.save(report, HWPCModel())
     assert mongodb.collection.count_documents({}) == basic_count + 2
-
-
-def test_mongodb_all_reports(mongo_database):
-    """
-    Test create/save/read all kind of reports
-    """
-    all_reports = [(HWPCModel(), gen_hwpc_report),
-                   (PowerModel(), gen_power_report)]
-
-    for model, generator in all_reports:
-        # Load DB
-        mongodb = MongoDB(MONGO_URI, "test_reports"+model.get_type().__name__,
-                          "test_reports"+model.get_type().__name__)
-        mongodb.connect()
-
-        # Create report
-        report = generator()
-
-        # Save report
-        mongodb.save(report, model)
-
-        # Read report
-        mongodb_iter = mongodb.iter(model, False)
-        read_report = next(mongodb_iter)
-
-        # Compare
-        assert read_report == report

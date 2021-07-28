@@ -46,11 +46,16 @@ TARGET_NAME = 'system'
 def power_report():
     return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 1, 0.11, {"metadata1": "azerty", "metadata2": "qwerty"})
 
+@pytest.fixture
+def influxdb_content():
+    return []
+
 
 class PowerModelWithFormulaName(PowerModel):
 
     def _influxdb_keept_metadata(self):
         return PowerModel._influxdb_keept_metadata(self) + ('formula_name',)
+
 
 
 def test_generate_pusher_with_new_PowerReport_model_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):

@@ -54,6 +54,7 @@ class PullerActor(TimedActor):
         self.report_model = None
         self.stream_mode = None
         self.database_it = None
+        self.report_modifier_list = None
 
         self._number_of_message_before_sleeping = 10
 
@@ -64,11 +65,11 @@ class PullerActor(TimedActor):
         self.report_filter = start_message.report_filter
         self.report_model = start_message.report_model
         self.stream_mode = start_message.stream_mode
+        self.report_modifier_list = start_message.report_modifier_list
 
         self._database_connection()
         if not self.report_filter.filters:
             raise InitializationException('filter without rules')
-
 
     def _database_connection(self):
         try:
@@ -87,6 +88,11 @@ class PullerActor(TimedActor):
         except DBError as error:
             raise InitializationException(error.msg)
 
+    def _modify_report(self, report):
+        for report_modifier in self.report_modifier_list:
+            report = report_modifier.modify_report(report)
+        return report
+        
     def _launch_task(self):
         """
         Initialize the database and connect all dispatcher to the
@@ -94,7 +100,8 @@ class PullerActor(TimedActor):
         """
         for _ in range(self._number_of_message_before_sleeping):
             try:
-                report = self._pull_database()
+                raw_report = self._pull_database()
+                report = self._modify_report(raw_report)
                 dispatchers = self.report_filter.route(report)
                 for dispatcher in dispatchers:
                     self.send(dispatcher, report)

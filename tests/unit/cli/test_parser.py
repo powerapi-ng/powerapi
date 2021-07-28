@@ -1,35 +1,31 @@
-"""
-Copyright (c) 2018, INRIA
-Copyright (c) 2018, University of Lille
-All rights reserved.
+# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, University of Lille
+# All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
 
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
 
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-
-
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
 from powerapi.cli.parser import Parser, MainParser, ComponentSubParser
@@ -216,7 +212,7 @@ def test_subparser():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     check_parsing_result(parser, '', {})
 
@@ -249,7 +245,7 @@ def test_formula_subparser():
 
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
-    parser.add_formula_subparser('sub', subparser)
+    parser.add_component_subparser('sub', subparser)
 
     check_parsing_result(parser, '', {})
 
@@ -273,7 +269,7 @@ def test_create_two_component():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'toto': {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b': True}}}})
 
@@ -292,7 +288,7 @@ def test_create_component_that_already_exist():
     subparser = ComponentSubParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
 
     with pytest.raises(ComponentAlreadyExistException):
         check_parsing_result(parser, '--sub toto --name titi --sub toto --name titi', None)
@@ -409,7 +405,7 @@ def test_cant_convert_to_type():
 
 
 # parse with ComponentSubparser tests #
-def test_add_component_subparser_that_aldready_exists():
+def test_add_actor_subparser_that_aldready_exists():
     """
     Add a component_subparser that already exists to a parser and test if an
     AlreadyAddedArgumentException is raised
@@ -417,15 +413,15 @@ def test_add_component_subparser_that_aldready_exists():
     parser = MainParser(help_arg=False)
     subparser = ComponentSubParser('titi')
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('toto', subparser)
+    parser.add_actor_subparser('toto', subparser)
     subparser2 = ComponentSubParser('titi')
     subparser2.add_argument('n', 'name')
     
     with pytest.raises(AlreadyAddedArgumentException):
-        parser.add_component_subparser('toto', subparser2)
+        parser.add_actor_subparser('toto', subparser2)
 
 
-def test_add_component_subparser_with_two_name():
+def test_add_actor_subparser_with_two_name():
     """
     add a component subparser with one short name and one long name
     parse a string and test if the value is only bind to the long name
@@ -434,11 +430,11 @@ def test_add_component_subparser_with_two_name():
     subparser = ComponentSubParser('titi')
     subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
     subparser.add_argument('n', 'name')
-    parser.add_component_subparser('sub', subparser)
+    parser.add_actor_subparser('sub', subparser)
     check_parsing_result(parser, '--sub titi -a --name tutu', {'sub': {'titi': {'tutu': {'aaa': True, 'name': 'tutu'}}}})
 
 
-def test_add_component_subparser_that_aldready_exists():
+def test_add_actor_subparser_that_aldready_exists():
     """
     Add a component_subparser with no argument 'name'
     test if a SubParserWithoutNameArgumentException is raised
@@ -447,7 +443,7 @@ def test_add_component_subparser_that_aldready_exists():
     subparser = ComponentSubParser('titi')
 
     with pytest.raises(SubParserWithoutNameArgumentException):
-        parser.add_component_subparser('toto', subparser)
+        parser.add_actor_subparser('toto', subparser)
 
 
 def test_parse_empty_string_default_value():

@@ -36,7 +36,7 @@ from powerapi.report import HWPCReport, PowerReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.test_utils.actor import system, dispatcher, dispatcher_start_message, started_dispatcher
 from powerapi.test_utils.dummy_actor import logger
-from powerapi.test_utils.report.hwpc import extract_reports
+from powerapi.test_utils.report.hwpc import gen_HWPCReports
 from powerapi.test_utils.abstract_test import recv_from_pipe
 
 
@@ -68,7 +68,7 @@ def route_table(logger):
 
 
 def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_FakePusher(system, started_dispatcher, dummy_pipe_out):
-    for report in extract_reports(5):
+    for report in gen_HWPCReports(5):
         system.tell(started_dispatcher, report)
 
     for _ in range(5):

@@ -27,20 +27,21 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
-from typing import Dict
+from typing import Dict, List
 
 from powerapi.report import HWPCReport, create_socket_report, create_report_root, create_group_report, create_core_report
 import powerapi.test_utils.report as parent_module
 from powerapi.report_model import HWPCModel
-
+from powerapi.test_utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
 ###################
 # Report Creation #
 ###################
-def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> Dict:
+def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
     This file contain hwpc reports with only RAPL_PKG events, recorded on a two socket host
+    :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
     json_file = open(path + '/hwpc_rapl_2_socket.json', 'r')
@@ -48,36 +49,58 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> Dict:
     json_file.close()
     return reports['reports'][:number_of_reports]
 
-def extract_reports(n):
-    # todo: a dégager
+def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
+    """
+    Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
+    This file contain hwpc reports , recorded on a two socket host, with events : 
+    - RAPL_PKG
+    - MPERF
+    - APERF
+    - TSC
+    - CPU_CLK_THREAD_UNHALTED:THREAD_P
+    - CPU_CLK_THREAD_UNHALTED:REF_P
+    - LLC_MISSES
+    - INSTRUCTIONS_RETIRED
+    :return: a list of reports. Each reports is a json dictionary
+    """
+    path = parent_module.__path__[0]
+    json_file = open(path + '/hwpc_all_events_2_socket.json', 'r')
+    reports = json.load(json_file)
+    json_file.close()
+    return reports['reports'][:number_of_reports]
+
+def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict]:
+    """
+    Extract the number_of_reports first reports of the file hwpc_all_vm_target.json
+
+    This file contain hwpc reports , recorded on a two socket host, with events : 
+    - RAPL_PKG
+    - MPERF
+    - APERF
+    - TSC
+    - CPU_CLK_THREAD_UNHALTED:THREAD_P
+    - CPU_CLK_THREAD_UNHALTED:REF_P
+    - LLC_MISSES
+    - INSTRUCTIONS_RETIRED
+
+    ! only reports with target LIBVIRT_TARGET_NAME1 or LIBVIRT_TARGET_NAME2 are returned !
+
+    :return: a list of reports. Each reports is a json dictionary. Only reports with vm name as target is returned
+    """
+    path = parent_module.__path__[0]
+    json_file = open(path + '/hwpc_all_vm_target.json', 'r')
+    reports = json.load(json_file)
+    json_file.close()
+    return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2,  reports['reports']))[:number_of_reports]
+
+def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
+    """
+    generate number_of_reports HWPCReport extracted from the file hwpc.json
+    :return: a list of HWPCReport
+    """
     path = parent_module.__path__[0]
     json_file = open(path + '/hwpc.json', 'r')
     reports = list(map(HWPCReport.deserialize, json.load(json_file)['reports']))
-    
+
     json_file.close()
-    return reports[:n]
-
-
-def gen_hwpc_report():
-    # todo: a dégager
-    """
-    Return a well formated HWPCReport
-    """
-    cpua = create_core_report('1', 'e0', '0')
-    cpub = create_core_report('2', 'e0', '1')
-    cpuc = create_core_report('1', 'e0', '2')
-    cpud = create_core_report('2', 'e0', '3')
-    cpue = create_core_report('1', 'ne1', '0')
-    cpuf = create_core_report('2', 'e1', '1')
-    cpug = create_core_report('1', 'e1', '2')
-    cpuh = create_core_report('2', 'e1', '3')
-
-    socketa = create_socket_report('1', [cpua, cpub])
-    socketb = create_socket_report('2', [cpuc, cpud])
-    socketc = create_socket_report('1', [cpue, cpuf])
-    socketd = create_socket_report('2', [cpug, cpuh])
-
-    groupa = create_group_report('1', [socketa, socketb])
-    groupb = create_group_report('2', [socketc, socketd])
-
-    return create_report_root([groupa, groupb])
+    return reports[:number_of_reports]

@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from powerapi.report_model import ReportModel
     from powerapi.dispatcher import RouteTable
     from powerapi.formula import FormulaValues, FormulaActor, FormulaValues, DomainValues
+    from powerapi.report_modifier import ReportModifier
 
 
 class Message:
@@ -113,12 +114,13 @@ class EndMessage(Message):
 
 
 class PullerStartMessage(StartMessage):
-    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool):
+    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool, report_modifier_list: List[ReportModifier] = []):
         StartMessage.__init__(self, sender_name, name)
         self.database = database
         self.report_filter = report_filter
         self.report_model = report_model
         self.stream_mode = stream_mode
+        self.report_modifier_list = report_modifier_list
 
 
 class DispatcherStartMessage(StartMessage):

@@ -45,6 +45,7 @@ from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, Prom
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
+from powerapi.report_modifier import LibvirtMapper
 
 
 def enable_log(arg, val, args, acc):
@@ -69,6 +70,12 @@ class CommonCLIParser(MainParser):
                           help='enable verbose mode')
         self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
 
+        subparser_libvirt_mapper_modifier = ComponentSubParser('libvirt_mapper')
+        subparser_libvirt_mapper_modifier.add_argument('u', 'uri', help='libvirt daemon uri', default='')
+        subparser_libvirt_mapper_modifier.add_argument('d', 'domain_regexp', help='regexp used to extract domain from cgroup string')
+        self.add_component_subparser('report_modifier', subparser_libvirt_mapper_modifier,
+                                     help_str='Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...')
+
         subparser_mongo_input = ComponentSubParser('mongodb')
         subparser_mongo_input.add_argument('u', 'uri', help='specify MongoDB uri')
         subparser_mongo_input.add_argument('d', 'db', help='specify MongoDB database name', )
@@ -76,7 +83,7 @@ class CommonCLIParser(MainParser):
         subparser_mongo_input.add_argument('n', 'name', help='specify puller name', default='puller_mongodb')
         subparser_mongo_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                            default='HWPCReport')
-        self.add_component_subparser('input', subparser_mongo_input,
+        self.add_actor_subparser('input', subparser_mongo_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_socket_input = ComponentSubParser('socket')
@@ -84,7 +91,7 @@ class CommonCLIParser(MainParser):
         subparser_socket_input.add_argument('n', 'name', help='specify puller name', default='puller_socket')
         subparser_socket_input.add_argument('m', 'model', help='specify data type that will be sent through the socket',
                                            default='HWPCReport')
-        self.add_component_subparser('input', subparser_socket_input,
+        self.add_actor_subparser('input', subparser_socket_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_csv_input = ComponentSubParser('csv')
@@ -95,7 +102,7 @@ class CommonCLIParser(MainParser):
         subparser_csv_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                          default='HWPCReport')
         subparser_csv_input.add_argument('n', 'name', help='specify puller name', default='puller_csv')
-        self.add_component_subparser('input', subparser_csv_input,
+        self.add_actor_subparser('input', subparser_csv_input,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_virtiofs_output = ComponentSubParser('virtiofs')
@@ -106,7 +113,7 @@ class CommonCLIParser(MainParser):
         subparser_virtiofs_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
         subparser_virtiofs_output.add_argument('n', 'name', help='specify pusher name', default='pusher_virtiofs')
-        self.add_component_subparser('output', subparser_virtiofs_output,
+        self.add_actor_subparser('output', subparser_virtiofs_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
                 
         subparser_mongo_output = ComponentSubParser('mongodb')
@@ -117,7 +124,7 @@ class CommonCLIParser(MainParser):
         subparser_mongo_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
         subparser_mongo_output.add_argument('n', 'name', help='specify pusher name', default='pusher_mongodb')
-        self.add_component_subparser('output', subparser_mongo_output,
+        self.add_actor_subparser('output', subparser_mongo_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_prom_output = ComponentSubParser('prom')
@@ -130,7 +137,7 @@ class CommonCLIParser(MainParser):
         subparser_prom_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
         subparser_prom_output.add_argument('n', 'name', help='specify pusher name', default='pusher_prom')
-        self.add_component_subparser('output', subparser_prom_output,
+        self.add_actor_subparser('output', subparser_prom_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_direct_prom_output = ComponentSubParser('direct_prom')
@@ -141,7 +148,7 @@ class CommonCLIParser(MainParser):
         subparser_direct_prom_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                             default='PowerReport')
         subparser_direct_prom_output.add_argument('n', 'name', help='specify pusher name', default='pusher_prom')
-        self.add_component_subparser('output', subparser_direct_prom_output,
+        self.add_actor_subparser('output', subparser_direct_prom_output,
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_csv_output = ComponentSubParser('csv')
@@ -150,7 +157,7 @@ class CommonCLIParser(MainParser):
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                           default='PowerReport')
         subparser_csv_output.add_argument('n', 'name', help='specify pusher name', default='pusher_csv')
-        self.add_component_subparser('output', subparser_csv_output,
+        self.add_actor_subparser('output', subparser_csv_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_influx_output = ComponentSubParser('influxdb')
@@ -160,7 +167,7 @@ class CommonCLIParser(MainParser):
         subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='PowerReport')
         subparser_influx_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb')
-        self.add_component_subparser('output', subparser_influx_output,
+        self.add_actor_subparser('output', subparser_influx_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_opentsdb_output = ComponentSubParser('opentsdb')
@@ -171,7 +178,7 @@ class CommonCLIParser(MainParser):
         subparser_opentsdb_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                              default='PowerReport')
         subparser_opentsdb_output.add_argument('n', 'name', help='specify pusher name', default='pusher_opentsdb')
-        self.add_component_subparser('output', subparser_opentsdb_output,
+        self.add_actor_subparser('output', subparser_opentsdb_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
     def parse_argv(self):
@@ -335,15 +342,16 @@ class DBActorGenerator(Generator):
 
 class PullerGenerator(DBActorGenerator):
 
-    def __init__(self, report_filter):
+    def __init__(self, report_filter, report_modifier_list=[]):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
+        self.report_modifier_list = report_modifier_list
 
     def _actor_factory(self, db_config):
         return PullerActor
 
     def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-        return PullerStartMessage('system', name, db, self.report_filter, model, stream_mode)
+        return PullerStartMessage('system', name, db, self.report_filter, model, stream_mode, report_modifier_list=self.report_modifier_list)
 
 
 class PusherGenerator(DBActorGenerator):
@@ -356,3 +364,17 @@ class PusherGenerator(DBActorGenerator):
 
     def _start_message_factory(self, name, db, model, stream_mode, level_logger):
         return PusherStartMessage('system', name, db, model)
+
+
+class ReportModifierGenerator:
+    def __init__(self):
+        self.factory = {'libvirt_mapper': lambda config: LibvirtMapper(config['uri'], config['domain_regexp'])}
+
+    def generate(self, config):
+        report_modifier_list = []
+        if 'report_modifier' not in config:
+            return []
+        for report_modifier_name in config['report_modifier'].keys():
+            report_modifier = self.factory[report_modifier_name](config['report_modifier'][report_modifier_name])
+            report_modifier_list.append(report_modifier)
+        return report_modifier_list

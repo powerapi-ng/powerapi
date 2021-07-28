@@ -36,7 +36,7 @@ import pytest
 
 from powerapi.database import SocketDB
 from powerapi.report_model import HWPCModel
-from powerapi.test_utils.report.hwpc import extract_json_report
+from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 class ClientThread(Thread):
@@ -76,7 +76,7 @@ async def socket_db(unused_tcp_port):
 @pytest.mark.asyncio
 async def test_read_one_json_object_received_from_the_socket(socket_db, unused_tcp_port):
 
-    json_reports = extract_json_report(1)
+    json_reports = extract_rapl_reports_with_2_sockets(1)
     client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
@@ -88,7 +88,7 @@ async def test_read_one_json_object_received_from_the_socket(socket_db, unused_t
 
 @pytest.mark.asyncio
 async def test_read_two_json_object_received_from_the_socket(socket_db, unused_tcp_port):
-    json_reports = extract_json_report(2)
+    json_reports = extract_rapl_reports_with_2_sockets(2)
     client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
