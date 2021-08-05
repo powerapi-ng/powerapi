@@ -26,32 +26,40 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 """
-Launch the whole architecture, crash the formula with a fatal error and test if the whole architecture is interupted
+Launch an architecture with stream mode on and send it a sigterm signal
 
 Architecture :
-  - 1 puller (connected to MongoDB1 [collection test_hwrep], stream mode on)
-  - 1 dispatcher (HWPC dispatch rule (dispatch by ROOT)
-  - 1 Crash Formula
-  - 1 pusher (connected to MongoDB1 [collection test_result]
+  - 1 puller (connected to a database containing 10 hwpc-report, stream mode on)
+  - 1 dispatcher (HWPC dispatch rule (dispatch by SOCKET)
+  - 1 Dummy Formula
+  - 1 pusher (connected to a database)
 
-MongoDB1 content:
-  - 1 HWPC Report
+database content:
+  - 10 HWPC Report with two sockets and one RAPL_EVENT
+
+Scenario:
+  - Launch the full architecture
 
 Test if:
-  - if the architecture process was terminated
+  - all actors are killed after the signal was sent
 """
 import logging
-import time
 import signal
 import os
-import pytest
-
+import subprocess
+import time
+from datetime import datetime
 from multiprocessing import Process
+
+import pytest
+import pymongo
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.formula import FormulaValues
+from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
 from powerapi.supervisor import Supervisor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
@@ -61,78 +69,64 @@ from powerapi.report_model import HWPCModel, PowerModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.tools import PusherGenerator, PullerGenerator
-from powerapi.test_utils.actor import shutdown_system, CrashFormula
-from powerapi.test_utils.report.hwpc import extract_json_report
+from powerapi.test_utils.actor import shutdown_system
+from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_HWPC_COLLECTION_NAME, MONGO_POWER_COLLECTION_NAME, MONGO_DATABASE_NAME
-
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
 
 def filter_rule(msg):
     return True
 
-@pytest.fixture
-def main_process():
-    p = MainProcess()
-    p.start()
-    time.sleep(1)
-    yield p
-    try:
-        os.kill(p.pid, signal.SIGTERM)
-    except Exception:
-        pass
-
 class MainProcess(Process):
-    """
-    Process that run the global architecture and crash the dispatcher
-    """
-    def __init__(self):
-        Process.__init__(self, name='test_crash_dispatcher')
-        
+
     def run(self):
+        config = {'verbose': True, 'stream': True,
+                  'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
+                  'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
+                  }
         supervisor = Supervisor()
 
-        # Setup signal handler
         def term_handler(_, __):
             supervisor.kill_actors()
+            print('KILL ACTORS !!!!!!!')
+            exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
-
-        config = {'verbose': True, 'stream': True,
-                  'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_POWER_COLLECTION_NAME}}},
-                  'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_HWPC_COLLECTION_NAME}}}
-                  }
-
         # Pusher
         pusher_generator = PusherGenerator()
         pusher_info = pusher_generator.generate(config)
         pusher_cls, pusher_start_message = pusher_info['test_pusher']
-    
-        pusher = supervisor.launch(pusher_cls, pusher_start_message)
 
+        pusher = supervisor.launch(pusher_cls, pusher_start_message)
         # Dispatcher
         route_table = RouteTable()
         route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-        dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', CrashFormula, FormulaValues({'test_pusher': pusher}), route_table, 'cpu')
-            
+        dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulaValues({'test_pusher': pusher}, 0), route_table, 'cpu')
+        
         dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
-
         # Puller
         report_filter = Filter()
         report_filter.filter(filter_rule, dispatcher)
-        puller_generator = PullerGenerator(report_filter)
+        puller_generator = PullerGenerator(report_filter, [])
         puller_info = puller_generator.generate(config)
         puller_cls, puller_start_message = puller_info['test_puller']
         puller = supervisor.launch(puller_cls, puller_start_message)
-
-
         supervisor.monitor()
 
 
-def test_crash_dispatcher(main_process, mongo_database, shutdown_system):
-    if main_process.is_alive():
-        print('toto')
-        main_process.join(10)
-        assert not main_process.is_alive()
 
-    assert True
+@pytest.fixture
+def mongodb_content():
+    return extract_rapl_reports_with_2_sockets(10)
+        
+def test_run_mongo(mongo_database, shutdown_system):
+    process = MainProcess()
+    process.start()
+    time.sleep(3)
+    os.system('kill ' + str(process.pid))
+    time.sleep(3)
+    a = subprocess.run(['ps', 'ax'], capture_output=True)
+    b = subprocess.run(['grep', 'Thespian'], input=a.stdout, capture_output=True)
+    assert b.stdout == b''
+    

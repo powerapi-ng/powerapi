@@ -37,6 +37,7 @@ from powerapi.dispatcher import DispatcherActor
 from powerapi.formula import FormulaActor
 from powerapi.message import PusherStartMessage, PullerStartMessage, DispatcherStartMessage, FormulaStartMessage
 from powerapi.message import PingMessage, StartMessage, OKMessage
+from powerapi.supervisor import LOG_DEF
 
 
 PUSHER_NAME = 'test_pusher'
@@ -46,14 +47,14 @@ DISPATCHER_DEVICE_ID = 'test_device'
 
 @pytest.fixture
 def system():
-    syst = ActorSystem(systemBase='multiprocQueueBase')
+    syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
     yield syst
     syst.shutdown()
 
 @pytest.fixture
 def shutdown_system():
     yield None
-    syst = ActorSystem(systemBase='multiprocQueueBase')
+    syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
     syst.shutdown()
 
 

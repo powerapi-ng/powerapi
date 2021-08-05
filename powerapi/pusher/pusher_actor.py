@@ -57,10 +57,10 @@ class PusherActor(Actor):
             raise InitializationException(error.msg)
 
     def receiveMsg_PowerReport(self, message: PowerReport, sender: ActorAddress):
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         self.database.save(message, self.report_model)
 
     def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         self.send(self.parent, EndMessage(self.name))
         self.send(self.myAddress, ActorExitRequest())

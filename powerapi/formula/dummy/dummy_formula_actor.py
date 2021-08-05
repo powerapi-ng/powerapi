@@ -62,7 +62,7 @@ class DummyFormulaActor(AbstractCpuDramFormula):
         self.sleeping_time = message.values.sleeping_time
 
     def receiveMsg_Report(self, message: Report, sender: ActorAddress):
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         time.sleep(self.sleeping_time)
         power_report =  PowerReport(message.timestamp, message.sensor, message.target, self.socket, 42, {})
         for _, pusher in self.pushers.items():

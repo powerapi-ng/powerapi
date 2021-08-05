@@ -266,7 +266,7 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
     config = {'verbose': True, 'stream': False,
               'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME,
                                                      'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
-              'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'puller'}}},
+              'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'test_puller'}}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)

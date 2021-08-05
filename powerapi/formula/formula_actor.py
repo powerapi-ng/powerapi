@@ -46,7 +46,6 @@ class DomainValues:
 class FormulaActor(Actor):
     def __init__(self, start_message_cls: Type[FormulaStartMessage]):
         Actor.__init__(self, start_message_cls)
-        self.name: str = None
         self.pushers: Dict[str, ActorAddress] = None
         self.device_id = None
         self.sensor = None
@@ -58,7 +57,7 @@ class FormulaActor(Actor):
         self.sensor = start_message.domain_values.sensor
 
     def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         self.send(self.myAddress, ActorExitRequest())
 
     @staticmethod

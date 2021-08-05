@@ -44,7 +44,6 @@ class LibvirtMapper(ReportModifier):
         self.regexp = re.compile(regexp)
 
         daemon_uri = None if uri == '' else uri
-        print(openReadOnly)
         self.libvirt = openReadOnly(daemon_uri)
 
     def modify_report(self, report):

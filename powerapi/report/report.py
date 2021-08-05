@@ -58,6 +58,9 @@ class Report(Message):
         self.sensor = sensor
         self.target = target
 
+        #: id given by the dispatcher actor in order manage report order
+        self.dispatcher_report_id = None
+
     def __str__(self):
         return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
 

@@ -295,7 +295,7 @@ class TestDispatcher(AbstractTestActor):
         system.tell(started_actor, REPORT_1)
         _, start_msg =  recv_from_pipe(dummy_pipe_out, 0.5)
         assert isinstance(start_msg, StartMessage)
-        assert start_msg.name == "('dispatcher', 'a', 'b')"
+        assert start_msg.name == 'formula0__a__b'
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self, system, dispatcher_with_formula, logger, dummy_pipe_out):
@@ -333,7 +333,7 @@ class TestDispatcher(AbstractTestActor):
         assert len(start_message) == 2
 
         for msg in start_message:
-            assert msg.name == "('dispatcher', 'a', 'b')" or msg.name == "('dispatcher', 'a', 'b2')"
+            assert msg.name == 'formula0__a__b' or msg.name == 'formula1__a__b2'
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report3, DispatchRule3())])
@@ -363,7 +363,7 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     @define_formula_class(CrashFormulaActor)
-    def test_send_report_to_a_dispatcher_with_crashed_formula_must_restart_formula(self, system, dispatcher_with_formula, dummy_pipe_out):
+    def test_send_two_report_to_a_dispatcher_with_crashed_formula_must_restart_formula(self, system, dispatcher_with_formula, dummy_pipe_out):
         # make formula crash
         system.tell(dispatcher_with_formula, REPORT_1)
         b, a = recv_from_pipe(dummy_pipe_out, 0.5)
@@ -372,10 +372,30 @@ class TestDispatcher(AbstractTestActor):
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == 'crash'
 
-        # test if formula was restarted
+        # send two report
         system.tell(dispatcher_with_formula, REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
-        assert msg == REPORT_1
+        assert msg == 'crash'
+
+        system.tell(dispatcher_with_formula, REPORT_1)
+        _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
+        assert msg == 'crash'
+
+        # test if formula restart
+        def check_if_restart():
+            for i in range(100):
+                system.tell(dispatcher_with_formula, REPORT_1)
+                _, start_msg =  recv_from_pipe(dummy_pipe_out, 0.5)
+                if isinstance(start_msg, StartMessage):
+                    return True
+            return False
+        assert check_if_restart()
+
+        # test if next message is forwarded
+        system.tell(dispatcher_with_formula, REPORT_1)
+        _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
+
+        assert msg1 == REPORT_1
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report2, DispatchRule2A())])

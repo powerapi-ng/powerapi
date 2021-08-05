@@ -114,8 +114,6 @@ class InfluxDB(BaseDB):
         :param report_model: ReportModel
         """
         data = report_model.to_influxdb(report.serialize())
-        print(report.socket)
-        print(data)
         self.client.write_points([data])
 
 

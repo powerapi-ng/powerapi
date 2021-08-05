@@ -104,6 +104,7 @@ class PullerActor(TimedActor):
                 report = self._modify_report(raw_report)
                 dispatchers = self.report_filter.route(report)
                 for dispatcher in dispatchers:
+                    self.log_debug('send report ' + str(report) + 'to ' + str(dispatcher))
                     self.send(dispatcher, report)
 
             except StopIteration:

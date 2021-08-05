@@ -26,6 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+
 import pytest
 
 from thespian.actors import Actor, ActorSystem, ActorExitRequest
@@ -65,7 +67,7 @@ class DummyActor(Actor):
             self.name = message.name
         else:
             self.pipe.send((self.name, message))
-            print((self.name, message))
+            logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
 
 
 class DummyFormulaActor(Actor):
@@ -77,6 +79,7 @@ class DummyFormulaActor(Actor):
         self.fake_puller = None
 
     def receiveMessage(self, message, sender):
+        logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
         if isinstance(message, StartMessage):
             self.name = message.name
             self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
@@ -85,7 +88,6 @@ class DummyFormulaActor(Actor):
         elif isinstance(message, ActorExitRequest):
             self.send(self.fake_puller, 'dead')
         else:
-            print(('formula', message))
             self.send(self.fake_puller, message)
 
     @staticmethod
@@ -105,12 +107,23 @@ class CrashFormulaActor(DummyFormulaActor):
         DummyFormulaActor.__init__(self)
         self.report_received = 0
 
+    
+        
     def receiveMessage(self, message, sender):
-        DummyFormulaActor.receiveMessage(self, message, sender)
-        self.report_received += 1
-        if self.report_received >= 3:
-            self.send(self.fake_puller, 'crash')
-            raise CrashException
+        logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
+        if isinstance(message, StartMessage):
+            self.name = message.name
+            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
+            self.send(self.fake_puller, message)
+            self.send(sender, OKMessage(self.name))
+        elif isinstance(message, ActorExitRequest):
+            self.send(self.fake_puller, 'dead')
+        else:
+            self.report_received += 1
+            if self.report_received >= 3:
+                self.send(self.fake_puller, 'crash')
+                raise CrashException
+            self.send(self.fake_puller, message)
 
 
 class CrashInitFormulaActor(DummyFormulaActor):

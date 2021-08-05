@@ -26,10 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import logging
 from typing import Type, Callable, Tuple, Dict, List
 
-from thespian.actors import ActorAddress, ActorExitRequest, ChildActorExited
+from thespian.actors import ActorAddress, ActorExitRequest, ChildActorExited, PoisonMessage
 
 from powerapi.actor import Actor, InitializationException
 from powerapi.formula import FormulaActor, FormulaValues
@@ -38,6 +37,8 @@ from powerapi.dispatch_rule import DispatchRule
 from powerapi.utils import Tree
 from powerapi.report import Report
 from powerapi.message import StartMessage, DispatcherStartMessage, FormulaStartMessage, EndMessage, ErrorMessage, OKMessage
+
+from .blocking_detector import BlockingDetector
 
 
 def _clean_list(id_list):
@@ -122,6 +123,7 @@ class DispatcherActor(Actor):
         self.formula_name_service = None
         self.formula_waiting_service = FormulaWaitingService()
         self.formula_pool = {}
+        self.formula_number_id = 0
 
     def _initialization(self, message: StartMessage):
         Actor._initialization(self, message)
@@ -135,22 +137,40 @@ class DispatcherActor(Actor):
         if self.route_table.primary_dispatch_rule is None:
             raise InitializationException('Dispatcher initialized without primary dispatch rule')
 
+    def receiveMsg_PoisonMessage(self, message: PoisonMessage, sender: ActorAddress):
+        poison_message = message.poisonMessage
+        for formula_name, (formula, blocking_detector) in self.formula_pool.items():
+            if sender == formula:
+                self.log_debug('received poison messsage from formula ' + formula_name + ' : ' + str(poison_message))
+                blocking_detector.notify_poison_received(poison_message)
+                self.log_debug('formula ' + formula_name + ' is blocked : ' + str(blocking_detector.is_blocked()))
+                if blocking_detector.is_blocked():
+                    self.log_debug('restart formula ' + formula_name)
+                    self._restart_formula(formula_name)
+                    return
+
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
         """
         When receiving ActorExitRequest, forward it to all formula
         """
-        print((self.name, message))
-        for _, formula in self.formula_pool.items():
+        self.log_debug('received message ' + str(message))
+        for _, (formula, __) in self.formula_pool.items():
             self.send(formula, ActorExitRequest())
         for _, formula in self.formula_waiting_service.get_all_formula():
             self.send(formula, ActorExitRequest())
 
     def _gen_formula_name(self, formula_id):
-        return str((self.name,) + formula_id)
+        name = 'formula' + str(self.formula_number_id)
+        self.formula_number_id += 1
+        for field in formula_id:
+            name += '__' + str(field)
+        return name
 
     def _send_message(self, formula_name, message):
         try:
-            formula = self.formula_pool[formula_name]
+            formula, blocking_detector = self.formula_pool[formula_name]
+            message.dispatcher_report_id = blocking_detector.get_message_id()
+            self.log_debug('send ' + str(message) + ' to ' + formula_name)
             self.send(formula, message)
         except KeyError:
             self.formula_waiting_service.add_message(formula_name, message)
@@ -160,11 +180,11 @@ class DispatcherActor(Actor):
         When receiving a report, split it into sub-reports (if needed) and send them to their corresponding formula.
         If the corresponding formula does not exist, the dispatcher create it and send it the report
         """
-        print((self.name, message))
+        self.log_debug('received ' + str(message))
         dispatch_rule = self.route_table.get_dispatch_rule(message)
         primary_dispatch_rule = self.route_table.primary_dispatch_rule
         if dispatch_rule is None:
-            # todo : logger que le report n'a pas été reconnue par une dispatch rule
+            self.log_warning('no dispatch rule for report ' + str(message))
             return
         formula_ids = _extract_formula_id(message, dispatch_rule, primary_dispatch_rule)
 
@@ -174,24 +194,28 @@ class DispatcherActor(Actor):
                 try:
                     formula_name = self.formula_name_service.get_direct_formula_name(formula_id)
                     self._send_message(formula_name, message)
-                except KeyError:
+                except KeyError as exn:
                     formula_name = self._gen_formula_name(formula_id)
-                    formula = self._create_formula(formula_id)
+                    self.log_debug('create formula ' + formula_name)
+                    formula = self._create_formula(formula_id, formula_name)
                     self.formula_name_service.add(formula_id, formula_name)
-                    self.formula_waiting_service.add(formula_name, formula, message)
+                    self.formula_waiting_service.add(formula_name, formula)
+                    self.formula_waiting_service.add_message(formula_name, message)
             else:
                 for formula_name in self.formula_name_service.get_corresponding_formula(list(formula_id)):
                     self._send_message(formula_name, message)
 
     def _get_formula_name_from_address(self, formula_address: ActorAddress):
-        for name, address in self.formula_pool.items():
+        for name, (address, _) in self.formula_pool.items():
             if formula_address == address:
                 return name
         return self.formula_waiting_service.get_formula_by_address(formula_address)
 
     def receiveMsg_ChildActorExited(self, message: ChildActorExited, sender: ActorAddress):
-        print((self.name, message))
-        formula_name = self._get_formula_name_from_address(message.childAddress)
+        try:
+            formula_name = self._get_formula_name_from_address(message.childAddress)
+        except AttributeError:
+            return
         self.formula_name_service.remove_formula(formula_name)
         del self.formula_pool[formula_name]
         if self._exit_mode and self.formula_pool == {}:
@@ -200,30 +224,45 @@ class DispatcherActor(Actor):
             self.send(self.myAddress, ActorExitRequest())
 
     def receiveMsg_ErrorMessage(self, message: ErrorMessage, sender: ActorAddress):
-        print((self.name, message))
         self.formula_waiting_service.remove_formula(message.sender_name)
 
     def receiveMsg_OKMessage(self, message: OKMessage, sender: ActorAddress):
-        print((self.name, message))
         formula_name = message.sender_name
         waiting_messages = self.formula_waiting_service.get_waiting_messages(formula_name)
         self.formula_waiting_service.remove_formula(formula_name)
-        self.formula_pool[formula_name] = sender
+        self.formula_pool[formula_name] = (sender, BlockingDetector())
         for message in waiting_messages:
-            self.send(sender, message)
+            self._send_message(formula_name, message)
+    
 
     def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
-        print((self.name, message))
         self._exit_mode = True
-        for _, formula in self.formula_pool.items():
+        for _, (formula, __) in self.formula_pool.items():
             self.send(formula, EndMessage(self.name))
         for formula_name, _ in self.formula_waiting_service.get_all_formula():
             self.formula_waiting_service.add_message(formula_name, message)
 
-    def _create_formula(self, formula_id: Tuple) -> ActorAddress:
+    def _restart_formula(self, formula_name: str):
+        formula, _ = self.formula_pool[formula_name]
+        formula_id = self.formula_name_service.get_formula_id(formula_name)
+
+        # remove crashed formula
+        self.formula_name_service.remove_formula(formula_name)
+        del self.formula_pool[formula_name]
+        self.send(formula, ActorExitRequest())
+
+        # create new formula
+        new_name = self._gen_formula_name(formula_id)
+
+        formula = self._create_formula(formula_id, new_name)
+        self.formula_name_service.add(formula_id, new_name)
+        self.formula_waiting_service.add(new_name, formula)
+        self.log_debug('restart formula' + formula_name + ' with new name : ' + new_name)
+
+    def _create_formula(self, formula_id: Tuple, formula_name: str) -> ActorAddress:
         formula = self.createActor(self.formula_class)
         domain_values = self.formula_class.gen_domain_values(self.device_id, formula_id)
-        start_message = FormulaStartMessage(self.name, self._gen_formula_name(formula_id), self.formula_values, domain_values)
+        start_message = FormulaStartMessage(self.name, formula_name, self.formula_values, domain_values)
         self.send(formula, start_message)
         return formula
 
@@ -236,9 +275,9 @@ class FormulaWaitingService:
     def get_all_formula(self):
         return self.formulas.items()
 
-    def add(self, formula_name: str, formula_address: ActorAddress, first_message: Report):
+    def add(self, formula_name: str, formula_address: ActorAddress):
         self.formulas[formula_name] = formula_address
-        self.waiting_messages[formula_name] = [first_message]
+        self.waiting_messages[formula_name] = []
 
     def add_message(self, formula_name: str, message: Report):
         self.waiting_messages[formula_name].append(message)
@@ -281,6 +320,12 @@ class FormulaNameService:
         :rtype: Formula or None
         """
         return self.formula_name[formula_id]
+
+    def get_formula_id(self, formula_name_to_find: str) -> Tuple:
+        for formula_id, formula_name in self.formula_name.items():
+            if formula_name == formula_name_to_find:
+                return formula_id
+        return None
 
     def get_corresponding_formula(self, formula_id):
         """

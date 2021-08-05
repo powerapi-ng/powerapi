@@ -26,6 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+import sys
+
 from typing import List, Type
 
 from thespian.actors import ActorSystem, ActorAddress, ActorExitRequest
@@ -44,10 +47,45 @@ class ActorCrashedException(PowerAPIExceptionWithMessage):
     """
 
 
+class actorLogFilter(logging.Filter):
+    def filter(self, logrecord):
+        return 'actor_name' in logrecord.__dict__
+
+
+class notActorLogFilter(logging.Filter):
+    def filter(self, logrecord):
+        return 'actorAddress' not in logrecord.__dict__
+
+
+LOG_DEF = {
+    'version': 1,
+    'formatters': {
+        'normal': {'format': '%(levelname)s::%(created)s::ROOT::%(message)s'},
+        'actor': {'format': '%(levelname)s::%(created)s::%(actor_name)s::%(message)s'}},
+    'filters': {
+        'isActorLog': {'()': actorLogFilter},
+        'notActorLog': {'()': notActorLogFilter}},
+    'handlers': {
+        'h1': {'class': 'logging.StreamHandler',
+               'stream': sys.stdout,
+               'formatter': 'normal',
+               'filters': ['notActorLog'],
+               'level': logging.DEBUG},
+        'h2': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'actor',
+            'filters': ['isActorLog'],
+            'level': logging.DEBUG}
+    },
+    'loggers': {'': {'handlers': ['h1', 'h2'], 'level': logging.DEBUG}}
+}
+
 class Supervisor:
 
     def __init__(self):
-        self.system = ActorSystem(systemBase='multiprocQueueBase')
+
+        self.system = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
         self.pushers = {}
         self.pullers = {}
         self.dispatchers = {}
@@ -81,28 +119,26 @@ class Supervisor:
             raise AttributeError('Actor is not a DispatcherActor, PusherActor of PullerActor')
         self.actors[name] = address
 
-    def _ping_actors(self):
-        pass
-
     def _wait_actors(self):
         for _ in self.pushers:
-            print(self.system.listen())
+            self.system.listen()
 
     def kill_actors(self):
-        for _, actor in self.actors.items():
+        print('TERMINATE ACTORS')
+        print(list(self.actors.items()))
+        for name, actor in self.actors.items():
+            print('TERMINATE ACTOR ' + name)
             self.system.tell(actor, ActorExitRequest())
+        print('END TERMINATION')
 
     def monitor(self):
         """
         wait for an actor to send an EndMessage or for an actor to crash
-        Each 5 seconds, the supervisor will send a ping message to each actor (main and other) in order to know if they are alive or not. If they don't it will
-        raise a ActorCrashedException
-        :raise ActorCrashedException: if an actor crashed
         """
         while True:
             msg = self.system.listen(1)
             if msg is None:
-                self._ping_actors()
+                pass
             elif isinstance(msg, EndMessage):
                 self._wait_actors()
                 return

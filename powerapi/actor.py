@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
 
 from typing import Any, Type
 from datetime import timedelta
@@ -53,27 +54,49 @@ class Actor(ActorTypeDispatcher):
     """
     def __init__(self, start_message_cls: Type[StartMessage]):
         ActorTypeDispatcher.__init__(self)
-        self.name: str = None
+        self.name: str = 'no_name_yet'
         self.parent: ActorAddress = None
         self.initialized: bool = False
         self.start_message_cls = start_message_cls
+
+    def log_critical(self, message: str):
+        extra_args = {'actor_name': self.name}
+        logging.critical(message, extra=extra_args)
+
+    def log_error(self, message: str):
+        extra_args = {'actor_name': self.name}
+        logging.error(message, extra=extra_args)
+
+    def log_warning(self, message: str):
+        extra_args = {'actor_name': self.name}
+        logging.warning(message, extra=extra_args)
+
+    def log_info(self, message: str):
+        extra_args = {'actor_name': self.name}
+        logging.info(message, extra=extra_args)
+
+    def log_debug(self, message: str):
+        extra_args = {'actor_name': self.name}
+        logging.debug(message, extra=extra_args)
+
 
     def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
         """
         When receiving a PingMessage, the actor answer with a OKMessage to its sender 
         """
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         self.send(sender, OKMessage(self.name))
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
         """
-        When receiving a StartMessage : 
+        When receiving a StartMessage :
           - if the actor is already initialized, answer with a ErrorMessage
           - otherwise initialize the actor with the abstract method _initialization and answer with an OKMessage
         """
-        print((self.name, message))
+        self.name = message.name
+        self.log_debug('received message ' + str(message))
         self.parent = sender
-        
+
         if self.initialized:
             self.send(sender, ErrorMessage(self.name, 'Actor already initialized'))
             return
@@ -93,18 +116,19 @@ class Actor(ActorTypeDispatcher):
         self.send(sender, OKMessage(self.name))
 
     def receiveMsg_ErrorMessage(self, message: ErrorMessage, sender: ActorAddress):
-        print((self.name, message))
-        print(message.error_message)
+        self.log_debug('received message ' + str(message))
+        self.log_error(str(message.error_message))
 
     def receiveUnrecognizedMessage(self, message: Any, sender: ActorAddress):
         """
         When receiving a message with a type that can't be handle, the actor answer with an ErrorMessage
         """
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         self.send(sender, ErrorMessage(self.name, "did not recognize the message type : " + str(type(message))))
 
     def _initialization(self, message: StartMessage):
-        self.name = message.name
+        return
+        # self.name = message.name
 
 
 class TimedActor(Actor):
@@ -128,17 +152,17 @@ class TimedActor(Actor):
         self.wakeupAfter(self._time_interval)
 
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
 
     def receiveMsg_WakeupMessage(self, message: WakeupMessage, sender: ActorAddress):
         """
         When receiving a WakeupMessage, launch the actor task
         """
-        print((self.name, message))
+        self.log_debug('received message ' + str(message))
         if self.initialized:
             self._launch_task()
         else:
-            #: log
+            self.log_error('received a wakeup message without being initialized before')
             raise ActorNotInitializedException()
 
     def _launch_task(self):
