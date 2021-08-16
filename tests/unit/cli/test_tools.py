@@ -69,8 +69,8 @@ def test_no_input_specified(mocked_sys_exit):
 def test_generate_puller_from_simple_config():
     """
     generate mongodb puller from this config :
-    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
-                                             'collection': 'tutu'}}}}
+    { 'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi', 'db': 'tata',
+                                             'collection': 'tutu'}}}
 
     Test if :
       - function return a dict containing one actor, its key is 'toto'
@@ -82,8 +82,8 @@ def test_generate_puller_from_simple_config():
       - database collection is tutu
 
     """
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}}
+    args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
+                                                                   'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     result = generator.generate(args)
 
@@ -104,10 +104,10 @@ def test_generate_puller_from_simple_config():
 def test_generate_two_pusher():
     """
     generate two mongodb puller from this config :
-    { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi', 'db': 'tata',
+    { 'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi', 'db': 'tata',
                                              'collection': 'tutu'},
-                                                             'titi': {'model': 'HWPCReport', 'name': 'titi', 'uri': 'titi', 'db': 'tata',
-                                             'collection': 'huhu'}}}}
+                                                             'titi': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi', 'db': 'tata',
+                                             'collection': 'huhu'}}}
 
     Test if :
       - function return a dict containing two actor, their key are 'toto' and 'titi'
@@ -119,10 +119,10 @@ def test_generate_two_pusher():
       - databases collection are tutu and huhu
 
     """
-    args =     { 'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto',
-                                                                                 'uri': 'titi', 'db': 'tata', 'collection': 'tutu'},
-                                                                        'titi': {'model': 'HWPCReport', 'name': 'titi',
-                                                                                 'uri': 'titi', 'db': 'tata', 'collection': 'huhu'}}}}
+    args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb',
+                                                                'uri': 'titi', 'db': 'tata', 'collection': 'tutu'},
+                                                       'titi': {'model': 'HWPCReport', 'type': 'mongodb',
+                                                                'uri': 'titi', 'db': 'tata', 'collection': 'huhu'}}}
     generator = PullerGenerator(None, [])
     result = generator.generate(args)
 
@@ -177,8 +177,8 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
 
 @patch('sys.exit', side_effect=SysExitException())
 def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(mocked_sys_exit):
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}}
+    args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
+                                                                   'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     generator.remove_model_factory('HWPCReport')
     with pytest.raises(SysExitException):
@@ -187,8 +187,8 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
 
 @patch('sys.exit', side_effect=SysExitException())
 def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(mocked_sys_exit):
-    args = {'verbose': True, 'stream': True, 'input': {'mongodb': {'toto': {'model': 'HWPCReport', 'name': 'toto', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}}
+    args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
+                                                                'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     generator.remove_db_factory('mongodb')
     with pytest.raises(SysExitException):

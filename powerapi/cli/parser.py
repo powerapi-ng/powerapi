@@ -474,6 +474,7 @@ class MainParser(Parser):
             args, subparse_result = subparser.subparse(args)
 
             acc[arg][subparser.name] = subparse_result
+            # acc[arg] = subparse_result
             return args, acc
 
         if component_type not in self.subparsers_group:
@@ -512,14 +513,14 @@ class MainParser(Parser):
                 raise NoNameSpecifiedForComponentException(component_type)
 
             component_name = subparse_result['name']
+            del subparse_result['name']
 
-            if subparser.name not in acc[arg]:
-                acc[arg][subparser.name] = {}
-
-            if component_name in acc[arg][subparser.name]:
+            if component_name in acc[arg]:
                 raise ComponentAlreadyExistException(component_name)
 
-            acc[arg][subparser.name][component_name] = subparse_result
+            acc[arg][component_name] = subparse_result
+            acc[arg][component_name]['type'] = subparser.name
+
             return args, acc
 
         if 'name' not in subparser.actions:

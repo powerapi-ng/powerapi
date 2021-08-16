@@ -194,7 +194,7 @@ def test_main_parser():
         check_parsing_result(parser, '-b', None)
 
 
-def test_subparser():
+def test_actor_subparser():
     """
     test to parse strings with a parser and retrieve the following results :
 
@@ -202,7 +202,7 @@ def test_subparser():
     - "-z" : UnknowArgException(z)
     - "-a" : {a: True}
     - "-a --sub toto -b" : NoNameSpecifiedForComponentException
-    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: {'toto' : {b: True}}}}
+    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
     - "-b" : BadContextException(b, [toto])
 
     Parser description :
@@ -228,13 +228,13 @@ def test_subparser():
     with pytest.raises(NoNameSpecifiedForComponentException):
         check_parsing_result(parser, '-a --sub toto -b', {})
 
-    check_parsing_result(parser, '-a --sub toto -b --name titi', {'a': True, 'sub': {'toto': {'titi': {'name': 'titi', 'b': True}}}})
+    check_parsing_result(parser, '-a --sub toto -b --name titi', {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
 
     with pytest.raises(BadContextException):
         check_parsing_result(parser, '-b', None)
 
 
-def test_formula_subparser():
+def test_component_subparser():
     """
     test to parse strings with a formula parser and retrieve the following results :
     - "" : {}
@@ -265,7 +265,7 @@ def test_create_two_component():
     --sub toto --name titi --sub toto -b --name tutu
 
     test if the result is :
-    {sub:{'toto' : {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b':False}}}}
+    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
 
     """
     parser = MainParser(help_arg=False)
@@ -275,7 +275,28 @@ def test_create_two_component():
     subparser.add_argument('n', 'name')
     parser.add_actor_subparser('sub', subparser)
 
-    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'toto': {'titi': {'name': 'titi'}, 'tutu': {'name': 'tutu', 'b': True}}}})
+    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
+
+def test_create_two_with_different_type_component():
+    """
+    Create two component with different type with the following cli :
+    --sub toto --name titi --sub tutu --name tete
+
+    test if the result is :
+    {sub:{'titi' : {'type': 'toto'}, 'tete': {'type': 'tutu'}}}
+
+    """
+    parser = MainParser(help_arg=False)
+    
+    subparser = ComponentSubParser('toto')
+    subparser.add_argument('n', 'name')
+    parser.add_actor_subparser('sub', subparser)
+
+    subparser = ComponentSubParser('tutu')
+    subparser.add_argument('n', 'name')
+    parser.add_actor_subparser('sub', subparser)
+
+    check_parsing_result(parser, '--sub toto --name titi --sub tutu --name tete', {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
 
 
 def test_create_component_that_already_exist():
@@ -284,8 +305,6 @@ def test_create_component_that_already_exist():
     --sub toto --name titi --sub toto --name titi
 
     test if an ComponentAlreadyExistException is raised
-
-
     """
     parser = MainParser(help_arg=False)
 
@@ -420,7 +439,7 @@ def test_add_component_subparser_that_aldready_exists():
     parser.add_component_subparser('toto', subparser)
     subparser2 = ComponentSubParser('titi')
     subparser2.add_argument('n', 'name')
-    
+
     with pytest.raises(AlreadyAddedArgumentException):
         parser.add_component_subparser('toto', subparser2)
 
@@ -435,10 +454,10 @@ def test_add_component_subparser_with_two_name():
     subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
     subparser.add_argument('n', 'name')
     parser.add_actor_subparser('sub', subparser)
-    check_parsing_result(parser, '--sub titi -a --name tutu', {'sub': {'titi': {'tutu': {'aaa': True, 'name': 'tutu'}}}})
+    check_parsing_result(parser, '--sub titi -a --name tutu', {'sub': {'tutu': {'aaa': True, 'type': 'titi'}}})
 
 
-def test_add_component_subparser_that_aldready_exists():
+def test_add_component_subparser_that_aldready_exists2():
     """
     Add a component_subparser with no argument 'name'
     test if a SubParserWithoutNameArgumentException is raised

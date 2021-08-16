@@ -106,19 +106,20 @@ def test_run(mocked_libvirt, mongo_database, supervisor):
     LOG_LEVEL = logging.DEBUG
     config = {'verbose': LOG_LEVEL,
               'stream': False,
-              'input': {'mongodb': {'puller': {'uri': MONGO_URI,
-                                               'db': MONGO_DATABASE_NAME,
-                                               'collection': MONGO_INPUT_COLLECTION_NAME,
-                                               'model': 'HWPCReport',
-                                               'name': 'puller',
-                                               }}},
-              'output': {'mongodb': {'pusher': {'uri': MONGO_URI,
-                                                'db': MONGO_DATABASE_NAME,
-                                                'collection': MONGO_OUTPUT_COLLECTION_NAME,
-                                                'model': 'PowerReport',
-                                                'name': 'pusher'}}},
-              'report_modifier': {'libvirt_mapper': {'uri': '',
-                                                     'domain_regexp': REGEXP}}}
+              'input': {'puller': {'type': 'mongodb',
+                                   'uri': MONGO_URI,
+                                   'db': MONGO_DATABASE_NAME,
+                                   'collection': MONGO_INPUT_COLLECTION_NAME,
+                                   'model': 'HWPCReport',
+                                   }},
+              'output': {'pusher': {'type': 'mongodb',
+                                    'uri': MONGO_URI,
+                                    'db': MONGO_DATABASE_NAME,
+                                    'collection': MONGO_OUTPUT_COLLECTION_NAME,
+                                    'model': 'PowerReport',
+                                    'name': 'pusher'}},
+    'report_modifier': {'libvirt_mapper': {'uri': '',
+                                           'domain_regexp': REGEXP}}}
 
     # Pusher
     pusher_generator = PusherGenerator()

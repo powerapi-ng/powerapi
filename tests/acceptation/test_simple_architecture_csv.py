@@ -132,11 +132,12 @@ def test_run(files, supervisor):
 
     config = {'verbose': LOG_LEVEL,
               'stream': False,
-              'input': {'csv': {'puller' : {'files': FILES,
-                                  'model': 'HWPCReport',
-                                  'name': 'puller',
-                                  }}},
-              'output': {'csv': {'pusher': {'model': 'PowerReport', 'name': 'pusher', 'directory': ROOT_PATH}}}}
+              'input': {'puller' : {'type': 'csv',
+                                    'files': FILES,
+                                    'model': 'HWPCReport',
+                                    'name': 'puller',
+                                    }},
+              'output': {'pusher': {'type': 'csv', 'model': 'PowerReport', 'name': 'pusher', 'directory': ROOT_PATH}}}
 
     # Pusher
     pusher_generator = PusherGenerator()

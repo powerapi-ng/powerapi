@@ -76,8 +76,8 @@ def test_generate_pusher_with_new_PowerReport_model_and_send_it_powerReport_must
     """
 
     config = {'verbose': True, 'stream': False,
-              'output': {'influxdb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
-                                                      'db': INFLUX_DBNAME}}}}
+              'output': {'test_pusher': {'type': 'influxdb', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
+                                                      'db': INFLUX_DBNAME}}}
 
     class PowerModelWithFormulaName(PowerModel):
 
