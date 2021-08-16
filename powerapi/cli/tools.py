@@ -128,8 +128,8 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_prom_output = ComponentSubParser('prom')
-        subparser_prom_output.add_argument('a', 'addr', help='specify server address')
         subparser_prom_output.add_argument('t', 'tags', help='specify report tags')
+        subparser_prom_output.add_argument('u', 'uri', help='specify server uri')
         subparser_prom_output.add_argument('p', 'port', help='specify server port', type=int)
         subparser_prom_output.add_argument('M', 'metric_name', help='speify metric name')
         subparser_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
@@ -142,8 +142,8 @@ class CommonCLIParser(MainParser):
                                      help_str='specify a database output : --db_output database_name ARG1 ARG2 ...')
 
         subparser_direct_prom_output = ComponentSubParser('direct_prom')
-        subparser_direct_prom_output.add_argument('a', 'addr', help='specify server address')
         subparser_direct_prom_output.add_argument('t', 'tags', help='specify report tags')
+        subparser_direct_prom_output.add_argument('a', 'uri', help='specify server uri')
         subparser_direct_prom_output.add_argument('p', 'port', help='specify server port', type=int)
         subparser_direct_prom_output.add_argument('M', 'metric_name', help='speify metric name')
         subparser_direct_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
@@ -229,19 +229,19 @@ class Generator:
 
         actors = {}
 
-        for component_type, components_list in config[self.component_group_name].items():
-            for component_name, component_config in components_list.items():
-                try:
-                    actors[component_name] = self._gen_actor(component_type, component_config, config)
-                except KeyError as exn:
-                    msg = 'CLI error : argument ' + exn.args[0]
-                    msg += ' needed with --output ' + component_type
-                    print(msg, file=sys.stderr)
-                    sys.exit()
+        for component_name, component_config in config[self.component_group_name].items():
+            component_type = component_config['type']
+            try:
+                actors[component_name] = self._gen_actor(component_type, component_config, config, component_name)
+            except KeyError as exn:
+                msg = 'CLI error : argument ' + exn.args[0]
+                msg += ' needed with --output ' + component_type
+                print(msg, file=sys.stderr)
+                sys.exit()
 
         return actors
 
-    def _gen_actor(self, component_name: str, component_config: Dict, main_config: Dict) -> Tuple[Type[Actor], StartMessage]:
+    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> Tuple[Type[Actor], StartMessage]:
         raise NotImplementedError()
 
 
@@ -305,9 +305,9 @@ class DBActorGenerator(Generator):
                                            files=[] if 'files' not in db_config else db_config['files']),
             'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'], db_config['db'], gen_tag_list(db_config)),
             'opentsdb': lambda db_config: OpenTSDB(db_config['model'], db_config['uri'], db_config['port'], db_config['metric_name']),
-            'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
+            'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['uri'], db_config['metric_name'],
                                                    db_config['metric_description'], db_config['aggregation_period'], gen_tag_list(db_config)),
-            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
+            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['uri'], db_config['metric_name'],
                                                                 db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
         }

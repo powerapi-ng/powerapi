@@ -59,9 +59,16 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
     test if stored data have tag with formula_name
     """
 
-    config = {'verbose': True, 'stream': False,
-              'output': {'influxdb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
-                                                      'db': INFLUX_DBNAME}}}}
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'influxdb',
+                                         'tags': 'socket',
+                                         'model': 'PowerReport',
+                                         'name': 'test_pusher',
+                                         'uri': INFLUX_URI,
+                                         'port': INFLUX_PORT,
+                                         'db': INFLUX_DBNAME}}
+              }
 
 
     generator = PusherGenerator()

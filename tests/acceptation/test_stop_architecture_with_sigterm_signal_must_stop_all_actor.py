@@ -79,9 +79,19 @@ def filter_rule(msg):
 class MainProcess(Process):
 
     def run(self):
-        config = {'verbose': True, 'stream': True,
-                  'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
-                  'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
+        config = {'verbose': True,
+                  'stream': True,
+                  'output': {'test_pusher': {'type': 'mongodb',
+                                             'model': 'PowerReport',
+                                             'name': 'test_pusher',
+                                             'uri': MONGO_URI,
+                                             'db': MONGO_DATABASE_NAME,
+                                             'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+                  'input': {'test_puller': {'type': 'mongodb',
+                                             'model': 'HWPCReport',
+                                             'uri': MONGO_URI,
+                                             'db': MONGO_DATABASE_NAME,
+                                             'collection': MONGO_INPUT_COLLECTION_NAME}}
                   }
         supervisor = Supervisor()
 

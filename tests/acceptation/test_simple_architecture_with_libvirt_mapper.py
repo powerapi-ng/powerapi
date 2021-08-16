@@ -90,8 +90,6 @@ def check_db():
             {'timestamp': ts, 'sensor': report['sensor'],
              'target': UUID_1}) == 2
 
-
-
 def filter_rule(msg):
     return True
 
@@ -125,17 +123,17 @@ def launch_simple_architecture(config, supervisor):
 def test_run(mocked_libvirt, mongo_database, shutdown_system):
     config = {'verbose': True,
               'stream': False,
-              'input': {'mongodb': {'test_puller': {'uri': MONGO_URI,
-                                               'db': MONGO_DATABASE_NAME,
-                                               'collection': MONGO_INPUT_COLLECTION_NAME,
-                                               'model': 'HWPCReport',
-                                               'name': 'test_puller',
-                                               }}},
-              'output': {'mongodb': {'test_pusher': {'uri': MONGO_URI,
-                                                'db': MONGO_DATABASE_NAME,
-                                                'collection': MONGO_OUTPUT_COLLECTION_NAME,
-                                                'model': 'PowerReport',
-                                                'name': 'test_pusher'}}},
+              'input': {'puller': {'type': 'mongodb',
+                                   'uri': MONGO_URI,
+                                   'db': MONGO_DATABASE_NAME,
+                                   'collection': MONGO_INPUT_COLLECTION_NAME,
+                                   'model': 'HWPCReport',
+                                   }},
+              'output': {'pusher': {'type': 'mongodb',
+                                    'uri': MONGO_URI,
+                                    'db': MONGO_DATABASE_NAME,
+                                    'collection': MONGO_OUTPUT_COLLECTION_NAME,
+                                    'model': 'PowerReport'}},
               'report_modifier': {'libvirt_mapper': {'uri': '',
                                                      'domain_regexp': REGEXP}}
               }

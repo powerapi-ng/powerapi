@@ -123,9 +123,19 @@ def mongodb_content():
     return extract_rapl_reports_with_2_sockets(10)
         
 def test_run_mongo(mongo_database, shutdown_system):
-    config = {'verbose': True, 'stream': False,
-              'output': {'mongodb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
-              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'mongodb',
+                                         'tags': 'socket',
+                                         'model': 'PowerReport',
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+              'input': {'test_puller': {'type': 'mongodb',
+                                        'model': 'HWPCReport',
+                                        'uri': MONGO_URI,
+                                        'db': MONGO_DATABASE_NAME,
+                                        'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
     supervisor = Supervisor()
@@ -158,9 +168,19 @@ def check_influx_db(influx_client):
 
 
 def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
-    config = {'verbose': True, 'stream': False,
-              'output': {'influxdb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT, 'db': INFLUX_DBNAME}}},
-              'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'influxdb',
+                                         'tags': 'socket',
+                                         'model': 'PowerReport',
+                                         'uri': INFLUX_URI,
+                                         'port': INFLUX_PORT,
+                                         'db': INFLUX_DBNAME}},
+              'input': {{'test_puller': {'type': 'mongodb',
+                                         'model': 'HWPCReport',
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'collection': MONGO_INPUT_COLLECTION_NAME}}}
               }
 
     supervisor = Supervisor()
@@ -220,9 +240,17 @@ def check_output_file():
 
 
 def test_run_csv_to_csv(files, shutdown_system):
-    config = {'verbose': True, 'stream': False,
-              'output': {'csv': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'pusher', 'directory': OUTPUT_PATH}}},
-              'input': {'csv': {'test_puller': {'files': FILES, 'model': 'HWPCReport', 'name': 'puller'}}},
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'csv',
+                                         'tags': 'socket',
+                                         'model': 'PowerReport',
+                                         'name': 'pusher',
+                                         'directory': OUTPUT_PATH}},
+              'input': {'test_puller': {'type': 'csv',
+                                        'files': FILES,
+                                        'model': 'HWPCReport',
+                                        'name': 'puller'}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
@@ -249,10 +277,16 @@ def check_db_socket():
 
 
 def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
-    config = {'verbose': True, 'stream': False,
-              'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME,
-                                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
-              'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'puller'}}},
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'mongodb',
+                                         'model': 'PowerReport',
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+              'input': {'test_puller': {'type': 'socket',
+                                        'port': unused_tcp_port,
+                                        'model': 'HWPCReport'}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
@@ -262,10 +296,16 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     check_db_socket()
 
 def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
-    config = {'verbose': True, 'stream': False,
-              'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME,
-                                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
-              'input': {'socket': {'test_puller': {'port': unused_tcp_port, 'model': 'HWPCReport', 'name': 'test_puller'}}},
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'mongodb',
+                                         'model': 'PowerReport',
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+              'input': {'test_puller': {'type': 'socket',
+                                        'port': unused_tcp_port,
+                                        'model': 'HWPCReport'}},
               }
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
