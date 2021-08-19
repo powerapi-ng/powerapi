@@ -65,7 +65,6 @@ from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
-from powerapi.report_model import HWPCModel, PowerModel
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.tools import PusherGenerator, PullerGenerator
@@ -87,8 +86,7 @@ class MainProcess(Process):
         supervisor = Supervisor()
 
         def term_handler(_, __):
-            supervisor.kill_actors()
-            print('KILL ACTORS !!!!!!!')
+            supervisor.shutdown()
             exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)

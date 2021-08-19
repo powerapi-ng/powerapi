@@ -26,13 +26,15 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List, Tuple
 
-from powerapi.report.report import Report, DeserializationFail
+from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON
+
+
+CSV_HEADER_HWPC = CSV_HEADER_COMMON + ['socket', 'cpu']
 
 
 class HWPCReport(Report):
@@ -79,21 +81,78 @@ class HWPCReport(Report):
     def __repr__(self) -> str:
         return 'HWCPReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
 
+
     @staticmethod
-    def deserialize(data: Dict) -> HWPCReport:
+    def from_json(data: Dict) -> HWPCReport:
         """
         Generate a report using the given data.
         :param data: Dictionary containing the report attributes
         :return: The HWPC report initialized with the given data
         """
         try:
-            ts = datetime.strptime(data['timestamp'], "%Y-%m-%dT%H:%M:%S.%f") if type(data['timestamp']) == str else data['timestamp']
-            report = HWPCReport(ts, data['sensor'], data['target'], data['groups'])
-        except KeyError:
-            raise DeserializationFail()
+            ts = Report._extract_timestamp(data['timestamp'])
+            return HWPCReport(ts, data['sensor'], data['target'], data['groups'])
+        except KeyError as exn:
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
 
-        return report
+    @staticmethod
+    def to_json(report: HWPCReport) -> Dict:
+        return report.__dict__
 
+    @staticmethod
+    def from_mongodb(data: Dict) -> HWPCReport:
+        return HWPCReport.from_json(data)
+
+    @staticmethod
+    def to_mongodb(report: HWPCReport) -> Dict:
+        return HWPCReport.to_json(report)
+
+    @staticmethod
+    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> HWPCReport:
+        sensor_name = None
+        target = None
+        timestamp = None
+        groups = {}
+
+        for file_name, row in lines:
+            group_name = file_name[:-4] if file_name[len(file_name)-4:] == '.csv' else file_name
+            try:
+                if sensor_name is None:
+                    sensor_name = row['sensor']
+                else:
+                    if sensor_name != row['sensor']:
+                        raise BadInputData('csv line with different sensor name are mixed into one report')
+                if target is None:
+                    target = row['target']
+                else:
+                    if target != row['target']:
+                        raise BadInputData('csv line with different target are mixed into one report')
+                if timestamp is None:
+                    timestamp = HWPCReport._extract_timestamp(row['timestamp'])
+                else:
+                    print(timestamp)
+                    print(HWPCReport._extract_timestamp(row['timestamp']))
+                    if timestamp != HWPCReport._extract_timestamp(row['timestamp']):
+                        raise BadInputData('csv line with different timestamp are mixed into one report')
+                    
+                if group_name not in groups:
+                    groups[group_name] = {}
+
+                if row['socket'] not in groups[group_name]:
+                    groups[group_name][row['socket']] = {}
+
+                if row['cpu'] not in groups[group_name][row['socket']]:
+                    groups[group_name][row['socket']][row['cpu']] = {}
+
+                for key, value in row.items():
+                    if key not in CSV_HEADER_HWPC:
+                        groups[group_name][
+                            row['socket']][row['cpu']][key] = int(value)
+
+            except KeyError as exn:
+                raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
+
+        return HWPCReport(timestamp, sensor_name, target, groups)
 
 #############################
 # REPORT CREATION FUNCTIONS #

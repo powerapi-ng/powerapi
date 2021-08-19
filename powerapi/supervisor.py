@@ -123,13 +123,9 @@ class Supervisor:
         for _ in self.pushers:
             self.system.listen()
 
-    def kill_actors(self):
-        print('TERMINATE ACTORS')
-        print(list(self.actors.items()))
-        for name, actor in self.actors.items():
-            print('TERMINATE ACTOR ' + name)
-            self.system.tell(actor, ActorExitRequest())
-        print('END TERMINATION')
+    def shutdown(self):
+        self.system.shutdown()
+
 
     def monitor(self):
         """

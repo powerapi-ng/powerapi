@@ -33,12 +33,9 @@ try:
 except ImportError:
     logging.getLogger().info("PyMongo is not installed.")
 
-from typing import List
+from typing import List, Type
 from powerapi.database.base_db import BaseDB, DBError, IterDB
 from powerapi.report import Report
-from powerapi.report_model import ReportModel
-
-
 
 
 class MongoBadDBError(DBError):
@@ -56,10 +53,10 @@ class MongoIterDB(IterDB):
     Class for iterating in a MongoDB class
     """
 
-    def __init__(self, db, report_model, stream_mode):
+    def __init__(self, db, report_type, stream_mode):
         """
         """
-        super().__init__(db, report_model, stream_mode)
+        IterDB.__init__(self, db, report_type, stream_mode)
 
         #: (pymongo.Cursor): Cursor which return data
         self.cursor = None
@@ -87,7 +84,7 @@ class MongoIterDB(IterDB):
                 raise StopIteration()
 
 
-        return self.report_model.get_type().deserialize(self.report_model.from_mongodb(json))
+        return self.report_type.from_mongodb(json)
 
 
 class MongoDB(BaseDB):
@@ -97,8 +94,9 @@ class MongoDB(BaseDB):
     Allow to handle a MongoDB database in reading or writing.
     """
 
-    def __init__(self, uri: str, db_name: str, collection_name: str):
+    def __init__(self, report_type: Type[Report], uri: str, db_name: str, collection_name: str):
         """
+        :param report_type:        Type of the report handled by this database
         :param uri:             URI of the MongoDB server
 
         :param db_name:         database name in the mongodb
@@ -107,7 +105,7 @@ class MongoDB(BaseDB):
         :param collection_name: collection name in the mongodb
                                     (ex: "sensor")
         """
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, report_type)
 
         #: (str): URI of the mongodb server
         self.uri = uri
@@ -150,27 +148,25 @@ class MongoDB(BaseDB):
 
         self.collection = self.mongo_client[self.db_name][self.collection_name]
 
-    def iter(self, report_model: ReportModel, stream_mode: bool) -> MongoIterDB:
+    def iter(self, stream_mode: bool) -> MongoIterDB:
         """
         Create the iterator for get the data
         """
-        return MongoIterDB(self, report_model, stream_mode)
+        return MongoIterDB(self, self.report_type, stream_mode)
 
-    def save(self, report: Report, report_model: ReportModel):
+    def save(self, report: Report):
         """
         Override from BaseDB
 
         :param report: Report to save
-        :param report_model: ReportModel
         """
-        self.collection.insert_one(report_model.to_mongodb(report.serialize()))
+        self.collection.insert_one(self.report_type.to_mongodb(report))
 
-    def save_many(self, reports: List[Report], report_model: ReportModel):
+    def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
 
         :param reports: Batch of data.
-        :param report_model: ReportModel
         """
-        serialized_reports = list(map(lambda r: report_model.to_mongodb(r.serialize()), reports))
+        serialized_reports = list(map(lambda r: self.report_type.to_mongodb(r), reports))
         self.collection.insert_many(serialized_reports)

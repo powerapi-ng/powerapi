@@ -26,10 +26,41 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from thespian.actors import ActorAddress, ActorExitRequest
 
-from powerapi.report_model.report_model import ReportModel, BadInputData
-from powerapi.report_model.report_model import CSV_HEADER_COMMON, CSV_HEADER_HWPC, CSV_HEADER_POWER
-from powerapi.report_model.hwpc_model import HWPCModel
-from powerapi.report_model.power_model import PowerModel
-from powerapi.report_model.formula_model import FormulaModel
-from powerapi.report_model.control_model import ControlModel
+from powerapi.actor import Actor, InitializationException
+from powerapi.message import PusherStartMessage, EndMessage
+from powerapi.database import DBError
+from powerapi.report import PowerReport
+
+
+class PusherActor(Actor):
+    """
+    PusherActor class
+
+    The Pusher allow to save Report sent by Formula.
+    """
+
+    def __init__(self):
+        Actor.__init__(self, PusherStartMessage)
+        self.database = None
+        self.report_model = None
+
+    def _initialization(self, message: PusherStartMessage):
+        Actor._initialization(self, message)
+        self.database = message.database
+        self.report_model = message.report_model
+
+        try:
+            self.database.connect()
+        except DBError as error:
+            raise InitializationException(error.msg)
+
+    def receiveMsg_PowerReport(self, message: PowerReport, sender: ActorAddress):
+        self.log_debug('received message ' + str(message))
+        self.database.save(message)
+
+    def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+        self.log_debug('received message ' + str(message))
+        self.send(self.parent, EndMessage(self.name))
+        self.send(self.myAddress, ActorExitRequest())

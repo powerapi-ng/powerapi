@@ -37,8 +37,8 @@ from powerapi.pusher import PusherActor
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
 from powerapi.actor import InitializationException
-from powerapi.report_model import ReportModel
 from powerapi.dispatch_rule import DispatchRule
+from powerapi.report import Report
 
 from powerapi.test_utils.actor import system, puller_start_message, pusher_start_message, dispatcher_start_message
 from powerapi.test_utils.dummy_actor import CrashInitActor
@@ -77,8 +77,8 @@ def database():
     return SilentFakeDB()
 
 @pytest.fixture
-def report_model():
-    return ReportModel()
+def report_type():
+    return Report
 
     
 class TestSupervisorWithPuller(BaseSupervisorTest):
@@ -121,9 +121,9 @@ class TestSupervisorWithDispatcher(BaseSupervisorTest):
     def formula_values(self):
         return None
     @pytest.fixture
-    def route_table(self, report_model):
+    def route_table(self, report_type):
         route_table = RouteTable()
-        route_table.dispatch_rule(type(report_model), DispatchRule(primary=True))
+        route_table.dispatch_rule(type(report_type), DispatchRule(primary=True))
         return route_table
     @pytest.fixture
     def start_message(self, dispatcher_start_message):

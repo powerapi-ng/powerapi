@@ -32,10 +32,9 @@ try:
 except ImportError:
     logging.getLogger().info("opentsdb-py is not installed.")
 
-from typing import List
+from typing import List, Type
 
 from powerapi.report import PowerReport, Report
-from powerapi.report_model import ReportModel
 from powerapi.database import BaseDB, DBError
 
 
@@ -50,20 +49,18 @@ class OpenTSDB(BaseDB):
     Allow to handle an OpenTSDB database to save PowerReport.
     """
 
-    def __init__(self, host: str, port, metric_name: str):
+    def __init__(self, report_type: Type[Report], host: str, port, metric_name: str):
         """
-        :param str host:             host of the OpenTSDB server
-        :param int port:            port of the OpenTSDB server
+        :param host:             host of the OpenTSDB server
+        :param port:            port of the OpenTSDB server
 
-        :param str metric_name:         mectric name to store
+        :param metric_name:         mectric name to store
 
 
-        :param report_model:        XXXModel object. Allow to read specific
-                                    report with a specific format in a database
-        :type report_model:         powerapi.ReportModel
+        :param report_type:        type of report handled by this database
 
         """
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, report_type)
         self.host = host
         self.port = port
         self.metric_name = metric_name
@@ -79,7 +76,6 @@ class OpenTSDB(BaseDB):
         been created without failure.
 
         """
-
         # close connection if reload
         if self.client is not None:
             self.client.close()
@@ -90,17 +86,16 @@ class OpenTSDB(BaseDB):
         if not self.client.is_connected() and not self.client.is_alive():
             raise CantConnectToOpenTSDBException('connexion error')
 
-    def save(self, report: PowerReport, report_model: ReportModel):
+    def save(self, report: PowerReport):
         """
         Override from BaseDB
 
         :param report: Report to save
-        :param report_model: ReportModel
         """
         self.client.send(self.metric_name, report.power, timestamp=int(report.timestamp.timestamp()),
                          host=report.target)
 
-    def save_many(self, reports: List[Report], report_model: ReportModel):
+    def save_many(self, reports: List[Report]):
         """
         Save a batch of data
 
@@ -109,4 +104,4 @@ class OpenTSDB(BaseDB):
         """
 
         for report in reports:
-            self.save(report, report_model)
+            self.save(report)

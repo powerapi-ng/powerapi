@@ -30,16 +30,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
-from powerapi.exception import PowerAPIException
+from typing import Dict, List
+from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
 
-class DeserializationFail(PowerAPIException):
+CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
+
+
+class BadInputData(PowerAPIExceptionWithMessage):
     """
-    Exception raised when the
-    in the good format
+    Exception raised when input data can't be converted to a Report
     """
+    
 
 
 class Report(Message):
@@ -73,18 +76,24 @@ class Report(Message):
                 self.sensor == other.sensor and
                 self.target == other.target)
 
-    def serialize(self) -> Dict:
-        """
-        Serialize the report in JSON.
-        :return: A string containing the report in JSON format
-        """
-        return self.__dict__
+    @staticmethod
+    def get_tags() -> List[str]:
+        return ['target', 'sensor']
+
 
     @staticmethod
-    def deserialize(data: Dict) -> Report:
-        """
-        Generate a report using the given data.
+    def to_json(report: Report) -> Dict:
+        return report.__dict__
 
-        :param dict json_data: JSON report.
-        """
-        raise NotImplementedError()
+    @staticmethod
+    def _extract_timestamp(ts):
+        if isinstance(ts, str):
+            try:
+                return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
+            except ValueError as exn:
+                try:
+                    return datetime.fromtimestamp(int(ts)/1000)
+                except ValueError:
+                    raise BadInputData(exn.args)
+        if isinstance(ts, datetime):
+            return ts

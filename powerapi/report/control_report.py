@@ -58,10 +58,13 @@ class ControlReport(Report):
         return 'ControlReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters)
 
     @staticmethod
-    def deserialize(data: Dict) -> ControlReport:
-        """
-        Generate a report using the given data.
-        :param data: Dictionary containing the report attributes
-        :return: The Formula report initialized with the given data
-        """
+    def from_json(data: Dict) -> ControlReport:
         return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'])
+
+    @staticmethod
+    def from_mongodb(data: Dict) -> ControlReport:
+        return ControlReport.from_json(data)
+
+    @staticmethod
+    def to_mongodb(report: ControlReport) -> Dict:
+        return report.__dict__

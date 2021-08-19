@@ -35,7 +35,7 @@ class PowerAPIException(Exception):
     pass
 
 
-class PowerAPIExceptionWithMessage(Exception):
+class PowerAPIExceptionWithMessage(PowerAPIException):
     """
     PowerAPIException base class
     """

@@ -37,12 +37,6 @@ from powerapi.test_utils.abstract_test import AbstractTestActorWithDB
 from powerapi.test_utils.report.power import POWER_REPORT_1
 from powerapi.test_utils.actor import system
 
-###########################################################
-#### DU CODE A été enlevié ici, voir le github ############
-###########################################################
-
-
-
 class TestPuller(AbstractTestActorWithDB):
 
     @pytest.fixture
@@ -75,47 +69,3 @@ class TestPuller(AbstractTestActorWithDB):
     def test_send_EndMessage_to_started_pusher_make_it_forward_to_supervisor(self, system, started_actor, pipe_out):
         system.tell(started_actor, EndMessage('system'))
         assert isinstance(system.listen(1), EndMessage)
-
-
-
-    # @define_buffer_size(0)
-    # def test_send_one_report_to_pusher_with_0sized_buffer_make_it_save_the_report(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     assert fake_db.q.get(timeout=1) == [REPORT1]
-
-    # @define_buffer_size(1)
-    # def test_send_one_report_to_pusher_with_1sized_buffer_make_it_not_save_the_report(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     with pytest.raises(Empty):
-    #         fake_db.q.get(timeout=1)
-
-    # @define_buffer_size(1)
-    # def test_send_two_report_to_pusher_with_1sized_buffer_make_it_save_the_reports_in_one_call(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     started_actor.send_data(REPORT2)
-    #     assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
-
-    # @define_delay(0)
-    # def test_send_one_report_to_pusher_with_0delay_make_it_save_the_reports(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     assert fake_db.q.get(timeout=1) == [REPORT1]
-
-    # @define_delay(2000)
-    # def test_send_two_report_to_pusher_with_2seconde_delay_make_it_not_save_the_reports(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     started_actor.send_data(REPORT2)
-    #     with pytest.raises(Empty):
-    #         fake_db.q.get(timeout=1)
-
-    # @define_delay(2000)
-    # def test_send_two_report__with_two_second_between_messages_to_pusher_with_2seconde_delay_make_it_save_the_report(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT1)
-    #     time.sleep(2)
-    #     started_actor.send_data(REPORT2)
-    #     assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
-
-    # @define_buffer_size(1)
-    # def test_send_two_report_in_wrong_time_order_to_a_pusher_make_it_save_them_in_good_order(self, started_actor, fake_db):
-    #     started_actor.send_data(REPORT2)
-    #     started_actor.send_data(REPORT1)
-    #     assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]

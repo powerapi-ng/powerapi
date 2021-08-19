@@ -56,10 +56,18 @@ class FormulaReport(Report):
         return 'FormulaReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.metadata)
 
     @staticmethod
-    def deserialize(data: Dict) -> FormulaReport:
+    def from_json(data: Dict) -> FormulaReport:
         """
         Generate a report using the given data.
         :param data: Dictionary containing the report attributes
         :return: The Formula report initialized with the given data
         """
         return FormulaReport(data['timestamp'], data['sensor'], data['target'], data['metadata'])
+
+    @staticmethod
+    def from_mongodb(data: Dict) -> FormulaReport:
+        return FormulaReport.from_json(data)
+
+    @staticmethod
+    def to_mongodb(report: FormulaReport) -> Dict:
+        return report.__dict__

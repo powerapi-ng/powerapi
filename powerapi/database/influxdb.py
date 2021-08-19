@@ -35,13 +35,12 @@ try:
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")
 
-from typing import List
+from typing import List, Type
 
 
 from powerapi.database import BaseDB, DBError
 
 from powerapi.report import Report
-from powerapi.report_model import ReportModel
 
 class CantConnectToInfluxDBException(DBError):
     pass
@@ -54,20 +53,18 @@ class InfluxDB(BaseDB):
     Allow to handle a InfluxDB database in reading or writing.
     """
 
-    def __init__(self, uri: str, port, db_name: str):
+    def __init__(self, report_type: Type[Report], uri: str, port, db_name: str):
         """
-        :param str url:             URL of the InfluxDB server
-        :param int port:            port of the InfluxDB server
+        :param url:             URL of the InfluxDB server
+        :param port:            port of the InfluxDB server
 
-        :param str db_name:         database name in the influxdb
+        :param db_name:         database name in the influxdb
                                     (ex: "powerapi")
 
-        :param report_model:        XXXModel object. Allow to read specific
-                                    report with a specific format in a database
-        :type report_model:         powerapi.ReportModel
+        :param report_type:        Type of the report handled by this database
 
         """
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, report_type)
         self.uri = uri
         self.port = port
         self.db_name = db_name
@@ -89,7 +86,6 @@ class InfluxDB(BaseDB):
         been created without failure.
 
         """
-
         # close connection if reload
         if self.client is not None:
             self.client.close()
@@ -106,18 +102,17 @@ class InfluxDB(BaseDB):
 
         self.client.create_database(self.db_name)
 
-    def save(self, report: Report, report_model: ReportModel):
+    def save(self, report: Report):
         """
         Override from BaseDB
 
         :param report: Report to save
-        :param report_model: ReportModel
         """
-        data = report_model.to_influxdb(report.serialize())
+        data = self.report_type.to_influxdb(report)
         self.client.write_points([data])
 
 
-    def save_many(self, reports: List[Report], report_model: ReportModel):
+    def save_many(self, reports: List[Report]):
         """
         Save a batch of data
 
@@ -125,5 +120,5 @@ class InfluxDB(BaseDB):
         :param report_model: ReportModel
         """
 
-        data_list = list(map(lambda r: report_model.to_influxdb(r.serialize()), reports))
+        data_list = list(map(lambda r: self.report_type.to_influxdb(r), reports))
         self.client.write_points(data_list)

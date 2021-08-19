@@ -36,12 +36,10 @@ from thespian.actors import ActorSystem, ActorAddress, ActorExitRequest
 
 
 from powerapi.actor import TimedActor, InitializationException
+from powerapi.report import BadInputData
 from powerapi.exception import PowerAPIException
 from powerapi.database import BaseDB, DBError, SocketDB
 from powerapi.filter import Filter, RouterWithoutRuleException
-from powerapi.report.report import DeserializationFail
-from powerapi.report_model import ReportModel
-from powerapi.report_model.report_model import BadInputData
 from powerapi.message import PullerStartMessage, EndMessage
 
 
@@ -82,7 +80,7 @@ class PullerActor(TimedActor):
                 logging.basicConfig(level=logging.DEBUG)
                 # self.database.connect() ???
                 self.loop.run_until_complete(self.database.connect())
-            self.database_it = self.database.iter(self.report_model, self.stream_mode)
+            self.database_it = self.database.iter(self.stream_mode)
 
 
         except DBError as error:
@@ -113,7 +111,7 @@ class PullerActor(TimedActor):
                 else:
                     self._terminate()
                     return
-            except (BadInputData, DeserializationFail):
+            except BadInputData:
                 pass
         self.wakeupAfter(self._time_interval)
 

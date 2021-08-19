@@ -40,7 +40,7 @@ from powerapi.cli.parser import store_true
 from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
-from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
+from powerapi.report import HWPCReport, PowerReport, FormulaReport, ControlReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -281,24 +281,24 @@ class DBActorGenerator(Generator):
     def __init__(self, component_group_name):
         Generator.__init__(self, component_group_name)
         self.model_factory = {
-            'HWPCReport': HWPCModel(),
-            'PowerReport': PowerModel(),
-            'FormulaReport': FormulaModel(),
-            'ControlReport': ControlModel(),
+            'HWPCReport': HWPCReport,
+            'PowerReport': PowerReport,
+            'FormulaReport': FormulaReport,
+            'ControlReport': ControlReport,
         }
 
         self.db_factory = {
-            'mongodb': lambda db_config: MongoDB(db_config['uri'], db_config['db'], db_config['collection']),
-            'socket': lambda db_config: SocketDB(db_config['port']),
-            'csv': lambda db_config: CsvDB(current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+            'mongodb': lambda db_config: MongoDB(db_config['model'], db_config['uri'], db_config['db'], db_config['collection']),
+            'socket': lambda db_config: SocketDB(db_config['model'], db_config['port']),
+            'csv': lambda db_config: CsvDB(db_config['model'], current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb': lambda db_config: InfluxDB(db_config['uri'], db_config['port'], db_config['db']),
-            'opentsdb': lambda db_config: OpenTSDB(db_config['uri'], db_config['port'], db_config['metric_name']),
-            'prom': lambda db_config: PrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
-                                                   db_config['metric_description'], self.model_factory[db_config['model']], db_config['aggregation_period']),
-            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['port'], db_config['addr'], db_config['metric_name'],
-                                                          db_config['metric_description'], self.model_factory[db_config['model']]),
-            'virtiofs': lambda db_config: VirtioFSDB(db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
+            'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'], db_config['db']),
+            'opentsdb': lambda db_config: OpenTSDB(db_config['model'], db_config['uri'], db_config['port'], db_config['metric_name']),
+            'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
+                                                   db_config['metric_description'], db_config['aggregation_period']),
+            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
+                                                                db_config['metric_description']),
+            'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
         }
 
     def remove_model_factory(self, model_name):
@@ -326,8 +326,9 @@ class DBActorGenerator(Generator):
 
 
     def _gen_actor(self, db_name, db_config, main_config):
-        db = self._generate_db(db_name, db_config, main_config)
         model = self.model_factory[db_config['model']]
+        db_config['model'] = model
+        db = self._generate_db(db_name, db_config, main_config)
         name = db_config['name']
         start_message = self._start_message_factory(name, db, model, main_config['stream'], main_config['verbose'])
         actor = self._actor_factory(db_config)

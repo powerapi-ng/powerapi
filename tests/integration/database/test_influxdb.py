@@ -30,8 +30,7 @@ import datetime
 import pytest
 
 from powerapi.database import InfluxDB, CantConnectToInfluxDBException
-from powerapi.report_model import PowerModel, BadInputData
-from powerapi.report import PowerReport
+from powerapi.report import PowerReport, BadInputData
 from powerapi.test_utils.db.influx import influx_database, get_all_reports, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT
 from powerapi.test_utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_power_report
 
@@ -42,20 +41,6 @@ POWER_REPORT_1 = PowerReport(datetime.datetime.fromtimestamp(1), SENSOR_NAME,
                              TARGET_NAME, 0, 100, {})
 POWER_REPORT_2 = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME,
                              TARGET_NAME, 0, 100, {})
-
-
-def bad_serialize():
-    return {
-        'measurement': 'power_consumption',
-        'tags': {'target': TARGET_NAME},
-        'time': str(datetime.datetime.fromtimestamp(100)),
-        'fields': {
-            'power': 100
-        }}
-
-
-BAD_POWER_REPORT = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME, TARGET_NAME, 0, 100, {})
-BAD_POWER_REPORT.serialize = bad_serialize
 
 
 def define_influxdb_content(content):
@@ -82,7 +67,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture()
 def database():
-    db = InfluxDB(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
     yield db
     db.client.close()
 
@@ -106,7 +91,7 @@ def test_invalid_uri_connection():
 
     Test if an CantConnectToInfluxDBException is raise
     """
-    db = InfluxDB('tqldjslqskjd', INFLUX_PORT, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, 'tqldjslqskjd', INFLUX_PORT, INFLUX_DBNAME)
     with pytest.raises(CantConnectToInfluxDBException):
         db.connect()
 
@@ -119,7 +104,7 @@ def test_invalid_port_connection():
 
     Test if an CantConnectToInfluxDBException is raise
     """
-    db = InfluxDB(INFLUX_URI, 1234, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, INFLUX_URI, 1234, INFLUX_DBNAME)
 
     with pytest.raises(CantConnectToInfluxDBException):
         db.connect()
@@ -159,19 +144,6 @@ def check_db_reports(client, input_reports):
         assert input_r.power == output_r['power']
 
 
-def test_write_one_bad_report_in_empty_db(influx_database, database):
-    """
-    call the save method with One PowerReport with no sensor field
-
-    test if a BadInputData is raise and the database is still empty
-    """
-    database.connect()
-    with pytest.raises(BadInputData):
-        database.save(BAD_POWER_REPORT, PowerModel())
-
-    assert get_all_reports(influx_database, INFLUX_DBNAME) == []
-
-
 def test_write_one_report_in_empty_db(influx_database, database):
     """
     call the save method with One PowerReport
@@ -179,7 +151,7 @@ def test_write_one_report_in_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
-    database.save(POWER_REPORT_1, PowerModel())
+    database.save(POWER_REPORT_1)
 
     check_db_reports(influx_database, [POWER_REPORT_1])
 
@@ -191,42 +163,14 @@ def test_write_many_report_in_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
-    database.save_many([POWER_REPORT_1, POWER_REPORT_2], PowerModel())
+    database.save_many([POWER_REPORT_1, POWER_REPORT_2])
 
     check_db_reports(influx_database, [POWER_REPORT_1, POWER_REPORT_2])
-
-
-def test_one_good_one_bad_reports_in_empty_db(influx_database, database):
-    """
-    call the save_many method on a list composed with one good formated power
-    report and one bad formated power report (missing sensor field)
-
-    test if a BadInputData is raise and the database is still empty
-
-    """
-    database.connect()
-    with pytest.raises(BadInputData):
-        database.save_many([POWER_REPORT_1, BAD_POWER_REPORT], PowerModel())
-    assert get_all_reports(influx_database, INFLUX_DBNAME) == []
 
 
 ###############################
 # REPORT WRITING NON EMPTY DB #
 ###############################
-@define_influxdb_content(gen_json_power_report(1))
-def test_write_one_bad_report_in_non_empty_db(influx_database, database):
-    """
-    call the save method with One PowerReport with no sensor field
-
-    test if a BadInputData is raise and the database is still empty
-    """
-    database.connect()
-    with pytest.raises(BadInputData):
-        database.save(BAD_POWER_REPORT, PowerModel())
-
-    check_db_reports(influx_database, [POWER_REPORT_0])
-
-
 @define_influxdb_content(gen_json_power_report(1))
 def test_write_one_report_in_non_empty_db(influx_database, database):
     """
@@ -235,7 +179,7 @@ def test_write_one_report_in_non_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
-    database.save(POWER_REPORT_1, PowerModel())
+    database.save(POWER_REPORT_1)
 
     check_db_reports(influx_database, [POWER_REPORT_0, POWER_REPORT_1])
 
@@ -248,21 +192,6 @@ def test_write_many_report_in_non_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
-    database.save_many([POWER_REPORT_1, POWER_REPORT_2], PowerModel())
+    database.save_many([POWER_REPORT_1, POWER_REPORT_2])
 
     check_db_reports(influx_database, [POWER_REPORT_0, POWER_REPORT_1, POWER_REPORT_2])
-
-
-@define_influxdb_content(gen_json_power_report(1))
-def test_one_good_one_bad_reports_in_non_empty_db(influx_database, database):
-    """
-    call the save_many method on a list composed with one good formated power
-    report and one bad formated power report (missing sensor field)
-
-    test if a BadInputData is raise and the database is still empty
-
-    """
-    database.connect()
-    with pytest.raises(BadInputData):
-        database.save_many([POWER_REPORT_1, BAD_POWER_REPORT], PowerModel())
-    check_db_reports(influx_database, [POWER_REPORT_0])

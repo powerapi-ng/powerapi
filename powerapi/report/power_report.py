@@ -30,9 +30,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, List, Tuple, Any
 
-from powerapi.report import Report
+from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData
+
+
+CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
 
 
 class PowerReport(Report):
@@ -56,6 +59,10 @@ class PowerReport(Report):
         self.socket = socket
         self.core = core
 
+    @staticmethod
+    def get_tags() -> List[str]:
+        return Report.get_tags() + ['socket']
+
     def __repr__(self) -> str:
 
         socket = str(self.socket)
@@ -63,12 +70,97 @@ class PowerReport(Report):
         return 'PowerReport(%s, %s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, socket, self.power, self.metadata)
 
     @staticmethod
-    def deserialize(data: Dict) -> PowerReport:
-        """
-        Generate a report using the given data.
-        :param Dict data: Dictionary containing the report attributes
-        :return: The Power report initialized with the given data
-        """
-        socket_id = data['socket'] if 'socket' in data else -1
+    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
 
-        return PowerReport(data['timestamp'], data['sensor'], data['target'], socket_id, data['power'], data['metadata'])
+        if len(lines) != 1:
+            raise BadInputData('a power report could only be parsed from one csv line')
+        file_name, row = lines[0]
+
+        try:
+            sensor_name = row['sensor']
+            target = row['target']
+            timestamp = Report._extract_timestamp(row['timestamp'])
+            power = float(row['power'])
+            socket = int(row['socket'])
+            core = -1 if 'core' not in row else row['core']
+            metadata = {}
+
+            for key in row.keys():
+                if key not in CSV_HEADER_POWER:
+                    metadata[key] = row[key]
+            return PowerReport(timestamp, sensor_name, target, socket, power, metadata, core=core)
+
+        except KeyError as exn:
+            raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
+
+    @staticmethod
+    def to_csv_lines(report : PowerReport) -> Tuple[List[str], Dict]:
+        line = {
+            'sensor': report.sensor,
+            'target': report.target,
+            'timestamp': int(datetime.timestamp(report.timestamp) * 1000),
+            'socket': report.socket,
+            'power': report.power
+        }
+        for key, val in report.metadata.items():
+            line[key] = val
+
+        final_dict = {'PowerReport': [line]}
+        return CSV_HEADER_POWER, final_dict
+
+    @staticmethod
+    def to_virtiofs_db(report: PowerReport) -> Tuple[str, str]:
+        """
+        return a tuple containing the power value and the name of the file to store the value.
+        """
+        filename = 'power_consumption_package' + str(report.socket)
+        power = report.power
+        return filename, power
+
+    def _gen_tag(self):
+        tags = {'sensor': self.sensor,
+                'target': self.target,
+                'socket': self.socket
+                }
+
+        for metadata_name in self._keept_metadata():
+            if metadata_name not in self.metadata:
+                pass
+            else:
+                tags[metadata_name] = self.metadata[metadata_name]
+
+        return tags
+
+    def _keept_metadata(self):
+        """
+        return the list of metadata named that must be keept while converting powerReport to influxdb format
+        """
+        return ()
+
+    @staticmethod
+    def to_influxdb(report: PowerReport) -> Dict:
+        return {
+            'measurement': 'power_consumption',
+            'tags': report._gen_tag(),
+            'time': str(report.timestamp),
+            'fields': {
+                'power': report.power
+            }
+        }
+
+    @staticmethod
+    def to_prometheus(report: PowerReport) -> Dict:
+        return {
+            'tags': report._gen_tag(),
+            'time': int(report.timestamp.timestamp()),
+            'value': report.power
+        }
+
+    @staticmethod
+    def to_mongodb(report: PowerReport) -> Dict:
+        return PowerReport.to_json(report)
+
+    @staticmethod
+    def from_mongodb(data: Dict) -> Report:
+        return PowerReport.from_json(data)
+

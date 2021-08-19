@@ -35,7 +35,6 @@ import requests
 import pytest
 
 from powerapi.database import DirectPrometheusDB
-from powerapi.report_model import PowerModel
 from powerapi.report import PowerReport
 
 PORT = 9999
@@ -82,11 +81,11 @@ class DirectPrometheusServer(multiprocessing.Process):
         self.q = q
 
     def run(self):
-        db = DirectPrometheusDB(PORT, ADDR, METRIC, DESC, PowerModel())
+        db = DirectPrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, )
         db.connect()
         while True:
             report_list = self.q.get()
-            db.save_many(report_list, PowerModel())
+            db.save_many(report_list)
 
 @pytest.fixture
 def db():
@@ -106,7 +105,7 @@ def test_create_direct_prometheus_db_and_connect_it_must_launch_web_server_on_gi
 
 
 def test_create_direct_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address():
-    db = DirectPrometheusDB(PORT, ADDR, METRIC, DESC, PowerModel())
+    db = DirectPrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC)
     with pytest.raises(requests.exceptions.ConnectionError):
         r = requests.get(URL)
 

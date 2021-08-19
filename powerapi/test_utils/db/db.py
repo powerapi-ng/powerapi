@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.database import BaseDB, DBError
+from powerapi.report import Report
 
 class FakeDBError(Exception):
     pass
@@ -35,7 +36,7 @@ class FakeDBError(Exception):
 class FakeDB(BaseDB):
 
     def __init__(self, content=[], pipe=None, *args, **kwargs):
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, Report)
         self._content = content
         self.pipe = pipe
         self.exceptions = [FakeDBError]
@@ -44,14 +45,14 @@ class FakeDB(BaseDB):
         if self.pipe is not None:
             self.pipe.send('connected')
 
-    def iter(self, report_model, stream_mode):
+    def iter(self, stream_mode):
         return self._content.__iter__()
 
-    def save(self, report, report_model):
+    def save(self, report):
         if self.pipe is not None:
             self.pipe.send(report)
 
-    def save_many(self, reports, report_model):
+    def save_many(self, reports):
         if self.pipe is not None:
             self.pipe.send(reports)
 
@@ -60,25 +61,25 @@ class SilentFakeDB(BaseDB):
     An empty Database that don't send log message
     """
     def __init__(self, content=[], pipe=None, *args, **kwargs):
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, Report)
         self._content = []
     def connect(self):
         pass
 
-    def iter(self, report_model, stream_mode):
+    def iter(self, stream_mode):
         return self._content.__iter__()
 
-    def save(self, report, report_model):
+    def save(self, report):
         pass
 
-    def save_many(self, reports, report_model):
+    def save_many(self, reports):
         pass
 
 
 class CrashDB(BaseDB):
 
     def __init__(self, *args, **kwargs):
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, Report)
 
     def connect(self):
         raise DBError('crash')
@@ -96,14 +97,14 @@ def define_database(database):
     return wrap
 
 
-def define_report_model(report_model):
+def define_report_type(report_type):
     """
-    Decorator to set the _report_model
+    Decorator to set the _report_type
     attribute for individuel tests.
 
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
     """
     def wrap(func):
-        setattr(func, '_report_model', report_model)
+        setattr(func, '_report_type', report_type)
         return func
     return wrap

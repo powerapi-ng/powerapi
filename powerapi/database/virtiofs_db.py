@@ -29,11 +29,11 @@
 import re
 import os
 
-from typing import List
+from typing import List, Type
 
 from powerapi.database import BaseDB, DBError
 from powerapi.report import Report
-from powerapi.report_model import ReportModel
+
 
 class DirectoryDoesNotExistForVirtioFS(DBError):
     """
@@ -41,6 +41,7 @@ class DirectoryDoesNotExistForVirtioFS(DBError):
     """
     def __init__(self, directory):
         DBError.__init__(self, 'No such file or directory : ' + directory)
+
 
 class VirtioFSDB(BaseDB):
     """
@@ -50,8 +51,7 @@ class VirtioFSDB(BaseDB):
 
     A regular expression must be given by the VM manager to extract vm name from target name. VM name is used to find directory that contains the output file.
     """
-
-    def __init__(self, vm_name_regexp: str, root_directory_name: str, vm_directory_name_prefix : str  = '', vm_directory_name_suffix : str = ''):
+    def __init__(self, report_type: Type[Report], vm_name_regexp: str, root_directory_name: str, vm_directory_name_prefix : str  = '', vm_directory_name_suffix : str = ''):
         """
         :param vm_name_regexp:           regexp used to extract vm name from report. The regexp must match the name of the target in the HWPC-report and a group must 
         :param root_directory_name:      directory where VM directory will be stored
@@ -76,12 +76,12 @@ class VirtioFSDB(BaseDB):
         if not os.path.exists(self.root_directory_name):
             raise DirectoryDoesNotExistForVirtioFS(self.root_directory_name)
 
-    def save(self, report: Report, report_model: ReportModel):
+    def save(self, report: Report):
         directory_name = self._generate_vm_directory_name(report.target)
         if directory_name is None:
             return
 
-        vm_filename, power = report_model.to_virtiofs_db(report)
+        vm_filename, power = self.report_type.to_virtiofs_db(report)
         vm_filename_path =self.root_directory_name + '/' + directory_name + '/'
         if not os.path.exists(vm_filename_path):
             raise DirectoryDoesNotExistForVirtioFS(vm_filename_path)
@@ -90,6 +90,6 @@ class VirtioFSDB(BaseDB):
         vm_file.write(str(power))
         vm_file.close()
 
-    def save_many(self, reports: List[Report], report_model: ReportModel):
+    def save_many(self, reports: List[Report]):
         for report in reports:
-            self.save(report, report_model)
+            self.save(report)

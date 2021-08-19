@@ -153,12 +153,13 @@ class TimedActor(Actor):
 
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
         self.log_debug('received message ' + str(message))
+        self.log_debug('I m dead')
 
     def receiveMsg_WakeupMessage(self, message: WakeupMessage, sender: ActorAddress):
         """
         When receiving a WakeupMessage, launch the actor task
         """
-        self.log_debug('received message ' + str(message))
+        # self.log_debug('received message ' + str(message))
         if self.initialized:
             self._launch_task()
         else:

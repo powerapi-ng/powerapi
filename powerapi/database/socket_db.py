@@ -30,9 +30,12 @@ import asyncio
 from queue import Queue, Empty
 from threading import Thread
 from socket import socket
+from typing import Type
+import json
 
 from . import IterDB, BaseDB
 from powerapi.utils import JsonStream
+from powerapi.report import Report
 
 BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 0.5
@@ -40,25 +43,23 @@ SOCKET_TIMEOUT = 0.5
 
 class SocketDB(BaseDB):
 
-    def __init__(self, port):
-        BaseDB.__init__(self)
-        self.asynchrone=True
+    def __init__(self, report_type: Type[Report], port: int):
+        BaseDB.__init__(self, report_type)
+        self.asynchrone = True
         self.queue = None
-        # self.loop = asyncio.get_event_loop()
         self.port = port
         self.server = None
 
     async def connect(self):
         self.queue = asyncio.Queue()
-        # self.queue = Queue()
         self.server = await asyncio.start_server(self.gen_server_callback(), host='127.0.0.1', port=self.port)
 
     async def stop(self):
         self.server.close()
         await self.server.wait_closed()
 
-    def iter(self, report_model, stream_mode):
-        return IterSocketDB(report_model, stream_mode, self.queue)
+    def iter(self, stream_mode):
+        return IterSocketDB(self.report_type, stream_mode, self.queue)
 
     def gen_server_callback(self):
         async def callback(stream_reader, _):
@@ -78,10 +79,10 @@ class IterSocketDB(IterDB):
     iterator connected to a socket that receive report from a sensor
     """
 
-    def __init__(self, report_model, stream_mode, queue):
+    def __init__(self, report_type, stream_mode, queue):
         """
         """
-        IterDB.__init__(self, None, report_model, stream_mode)
+        IterDB.__init__(self, None, report_type, stream_mode)
 
         self.queue = queue
 
@@ -95,10 +96,10 @@ class IterSocketDB(IterDB):
         """
         """
         try:
-            json = await asyncio.wait_for(self.queue.get(), 2)
+            json_str = await asyncio.wait_for(self.queue.get(), 2)
             # json = self.queue.get_nowait()
             # self.queue.get()
-            report = self.report_model.get_type().deserialize(self.report_model.from_json(json))
+            report = self.report_type.from_json(json.loads(json_str))
             return report
         # except Empty:
         except asyncio.TimeoutError:

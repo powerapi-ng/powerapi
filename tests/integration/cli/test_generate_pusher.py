@@ -30,7 +30,6 @@ import pytest
 
 from thespian.actors import ActorExitRequest
 
-from powerapi.report_model import PowerModel
 from powerapi.report import PowerReport
 from powerapi.cli.tools import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
@@ -51,14 +50,14 @@ def influxdb_content():
     return []
 
 
-class PowerModelWithFormulaName(PowerModel):
+class PowerReportWithFormulaName(PowerReport):
 
     def _influxdb_keept_metadata(self):
-        return PowerModel._influxdb_keept_metadata(self) + ('formula_name',)
+        return PowerReport._keept_metadata(self) + ('formula_name',)
 
 
 
-def test_generate_pusher_with_new_PowerReport_model_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
+def test_generate_pusher_with_new_PowerReport_class_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
     """
     Create a PusherGenerator that generate pusher with a PowerReportModel that keep formula_name metadata in PowerReport
     Generate a pusher connected to an influxDB
@@ -73,7 +72,7 @@ def test_generate_pusher_with_new_PowerReport_model_and_send_it_a_powerReport_mu
 
     generator = PusherGenerator()
     generator.remove_model_factory('PowerReport')
-    generator.add_model_factory('PowerReport', PowerModelWithFormulaName())
+    generator.add_model_factory('PowerReport', PowerReportWithFormulaName)
 
     actors = generator.generate(config)
     pusher_cls, pusher_start_message = actors['test_pusher']

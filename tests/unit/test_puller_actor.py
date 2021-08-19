@@ -87,9 +87,6 @@ def filter_rule(report):
 
 class TestPuller(AbstractTestActorWithDB):
 
-
-    
-
     @pytest.fixture
     def fake_dispatcher(self, system, dummy_pipe_in):
         dispatcher = system.createActor(DummyActor)

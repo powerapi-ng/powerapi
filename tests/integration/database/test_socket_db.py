@@ -35,7 +35,7 @@ import time
 import pytest
 
 from powerapi.database import SocketDB
-from powerapi.report_model import HWPCModel
+from powerapi.report import HWPCReport
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
@@ -67,7 +67,7 @@ def assert_report_equals(hwpc_report, json_report):
 
 @pytest.fixture
 async def socket_db(unused_tcp_port):
-    socket_db = SocketDB(unused_tcp_port)
+    socket_db = SocketDB(HWPCReport, unused_tcp_port)
     await socket_db.connect()
     yield socket_db
     await socket_db.stop()
@@ -80,7 +80,7 @@ async def test_read_one_json_object_received_from_the_socket(socket_db, unused_t
     client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
-    iterator = socket_db.iter(HWPCModel(), False)
+    iterator = socket_db.iter(False)
 
     report = await iterator.__anext__()
     assert_report_equals(report, json_reports[0])
@@ -92,7 +92,7 @@ async def test_read_two_json_object_received_from_the_socket(socket_db, unused_t
     client = ClientThread(json_reports, unused_tcp_port)
     client.start()
 
-    iterator = socket_db.iter(HWPCModel(), False)
+    iterator = socket_db.iter(False)
 
     report = await iterator.__anext__()
     assert_report_equals(report, json_reports[0])

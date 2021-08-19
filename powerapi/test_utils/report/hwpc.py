@@ -31,7 +31,6 @@ from typing import Dict, List
 
 from powerapi.report import HWPCReport, create_socket_report, create_report_root, create_group_report, create_core_report
 import powerapi.test_utils.report as parent_module
-from powerapi.report_model import HWPCModel
 from powerapi.test_utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
 ###################
@@ -100,7 +99,7 @@ def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
     """
     path = parent_module.__path__[0]
     json_file = open(path + '/hwpc.json', 'r')
-    reports = list(map(HWPCReport.deserialize, json.load(json_file)['reports']))
+    reports = list(map(HWPCReport.from_json, json.load(json_file)['reports']))
 
     json_file.close()
     return reports[:number_of_reports]

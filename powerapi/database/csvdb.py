@@ -30,10 +30,9 @@
 import csv
 import os
 
-from typing import List
-from powerapi.report import Report
+from typing import List, Type
+from powerapi.report.report import Report, CSV_HEADER_COMMON
 from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.report_model.report_model import CSV_HEADER_COMMON, ReportModel
 from powerapi.exception import PowerAPIException
 from powerapi.utils import utils
 
@@ -128,15 +127,14 @@ class CsvIterDB(IterDB):
         """
         Allow to get the next data
         """
-        # Dict to return
-        json = {}
-
+        raw_data = []
         # Get the current timestamp
         current_timestamp = self.saved_timestamp
         previous_target = None
         # For all files
-        for path_file in self.filenames:
 
+        for path_file in self.filenames:
+            
             # While timestamp is lower or equal
             while True:
 
@@ -146,7 +144,7 @@ class CsvIterDB(IterDB):
                 # If nothing more, break
                 if row is None:
                     # If the first file a no next file, just stop the iteration
-                    if not json and path_file == self.filenames[0]:
+                    if not raw_data and path_file == self.filenames[0]:
                         # Close files
                         for filename in self.filenames:
                             if self.tmp_read[filename]['file'] is not None:
@@ -164,6 +162,10 @@ class CsvIterDB(IterDB):
                         self.saved_timestamp = row_timestamp
                     break # move to next file
 
+                if row_timestamp < current_timestamp:
+                    self.tmp_read[path_file]['next_line'] = self._next(path_file)
+                    continue
+
                 if previous_target is not None:
                     if row['target'] != previous_target:
                         break # move to next file
@@ -171,23 +173,20 @@ class CsvIterDB(IterDB):
                     previous_target = row['target']
 
                 # Else if it's the same, we merge
-                utils.dict_merge(
-                    json,
-                    self.report_model.from_csvdb(path_file.split('/')[-1], row))
-
+                raw_data.append((path_file.split('/')[-1], row))
                 # Next line
                 self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
-        if not json:
+        if not raw_data:
             # Close files
             for filename in self.filenames:
                 if self.tmp_read[filename]['file'] is not None:
                     self.tmp_read[filename]['file'].close()
             raise StopIteration()
 
-        data = self.report_model.get_type().deserialize(json)
+        report = self.report_type.from_csv_lines(raw_data)
 
-        return data
+        return report
 
 
 class CsvDB(BaseDB):
@@ -198,11 +197,11 @@ class CsvDB(BaseDB):
     a CsvDB instance can be define by his ReportModel and its current path
     """
 
-    def __init__(self, current_path="/tmp/csvdbtest", files=[]):
+    def __init__(self, report_type: Type[Report], current_path="/tmp/csvdbtest", files=[]):
         """
         :param current_path: Current path where read/write files
         """
-        super().__init__()
+        BaseDB.__init__(self, report_type)
 
         #: (list): list of file name .csv
         self.filenames = []
@@ -250,11 +249,11 @@ class CsvDB(BaseDB):
     # Override from BaseDB #
     ########################
 
-    def iter(self, report_model: ReportModel, stream_mode: bool) -> CsvIterDB:
+    def iter(self, stream_mode: bool) -> CsvIterDB:
         """
         Create the iterator for get the data
         """
-        return CsvIterDB(self, self.filenames, report_model, stream_mode)
+        return CsvIterDB(self, self.filenames, self.report_type, stream_mode)
 
     def connect(self):
         """
@@ -264,24 +263,24 @@ class CsvDB(BaseDB):
         """
         pass
 
-    def save(self, report: Report, report_model: ReportModel):
+    def save(self, report: Report):
         """
         Allow to save a serialized_report in the db
 
         :param report: Report
         :param report_model: ReportModel
         """
-        serialized_report = report.serialize()
-        csv_header, data = report_model.to_csvdb(serialized_report)
+        csv_header, data = self.report_type.to_csv_lines(report)
 
         # If the repository doesn't exist, create it
-        rep_path = self.current_path + serialized_report['sensor'] + "-" + serialized_report['target']
+        rep_path = self.current_path + report.sensor + "-" + report.target
         try:
             os.makedirs(rep_path)
         except FileExistsError:
             pass
 
         for filename, values in data.items():
+            print(values)
             rep_path_with_file = rep_path + '/' + filename + '.csv'
 
             # Get the header and check if it's ok
@@ -309,7 +308,7 @@ class CsvDB(BaseDB):
                     writer.writerow(value)
                     csvfile.close()
 
-    def save_many(self, reports: List[Report], report_model: ReportModel):
+    def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of report
 
@@ -318,4 +317,4 @@ class CsvDB(BaseDB):
         """
         # TODO: Inefficient
         for report in reports:
-            self.save(report, report_model)
+            self.save(report)
