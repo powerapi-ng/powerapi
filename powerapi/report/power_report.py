@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -43,7 +42,7 @@ class PowerReport(Report):
     PowerReport stores the power estimation information.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, socket: int, power: float, metadata: Dict[str, Any], core: int = -1):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: Dict[str, Any]):
         """
         Initialize a Power report using the given parameters.
         :param datetime timestamp: Report timestamp
@@ -56,18 +55,25 @@ class PowerReport(Report):
 
         self.metadata = metadata
         self.power = power
-        self.socket = socket
-        self.core = core
-
-    @staticmethod
-    def get_tags() -> List[str]:
-        return Report.get_tags() + ['socket']
 
     def __repr__(self) -> str:
 
         socket = str(self.socket)
         
-        return 'PowerReport(%s, %s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, socket, self.power, self.metadata)
+        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, self.metadata)
+
+    @staticmethod
+    def from_json(data: Dict) -> Report:
+        """
+        Generate a report using the given data.
+        :param data: Dictionary containing the report attributes
+        :return: The HWPC report initialized with the given data
+        """
+        try:
+            ts = Report._extract_timestamp(data['timestamp'])
+            return PowerReport(ts, data['sensor'], data['target'], data['power'], data['metadata'])
+        except KeyError as exn:
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
 
     @staticmethod
     def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
@@ -88,22 +94,23 @@ class PowerReport(Report):
             for key in row.keys():
                 if key not in CSV_HEADER_POWER:
                     metadata[key] = row[key]
-            return PowerReport(timestamp, sensor_name, target, socket, power, metadata, core=core)
+            return PowerReport(timestamp, sensor_name, target, power, metadata)
 
         except KeyError as exn:
             raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
 
     @staticmethod
-    def to_csv_lines(report : PowerReport) -> Tuple[List[str], Dict]:
+    def to_csv_lines(report: PowerReport, tags: List[str]) -> Tuple[List[str], Dict]:
         line = {
             'sensor': report.sensor,
             'target': report.target,
             'timestamp': int(datetime.timestamp(report.timestamp) * 1000),
-            'socket': report.socket,
             'power': report.power
         }
-        for key, val in report.metadata.items():
-            line[key] = val
+        for tag in tags:
+            if tag not in report.metadata:
+                raise BadInputData('no tag ' + tag + ' in power report')
+            line[tag] = report.metadata[tag]
 
         final_dict = {'PowerReport': [line]}
         return CSV_HEADER_POWER, final_dict
@@ -113,35 +120,30 @@ class PowerReport(Report):
         """
         return a tuple containing the power value and the name of the file to store the value.
         """
-        filename = 'power_consumption_package' + str(report.socket)
+        if 'socket' not in report:
+            raise BadInputData('no tag socket in power report')
+        filename = 'power_consumption_package' + str(report['socket'])
         power = report.power
         return filename, power
 
-    def _gen_tag(self):
+    def _gen_tag(self, metadata_keept):
         tags = {'sensor': self.sensor,
-                'target': self.target,
-                'socket': self.socket
+                'target': self.target
                 }
 
-        for metadata_name in self._keept_metadata():
+        for metadata_name in metadata_keept:
             if metadata_name not in self.metadata:
-                pass
+                raise BadInputData('no tag ' + tag + ' in power report')
             else:
                 tags[metadata_name] = self.metadata[metadata_name]
 
         return tags
 
-    def _keept_metadata(self):
-        """
-        return the list of metadata named that must be keept while converting powerReport to influxdb format
-        """
-        return ()
-
     @staticmethod
-    def to_influxdb(report: PowerReport) -> Dict:
+    def to_influxdb(report: PowerReport, tags: List[str]) -> Dict:
         return {
             'measurement': 'power_consumption',
-            'tags': report._gen_tag(),
+            'tags': report._gen_tag(tags),
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -149,9 +151,9 @@ class PowerReport(Report):
         }
 
     @staticmethod
-    def to_prometheus(report: PowerReport) -> Dict:
+    def to_prometheus(report: PowerReport, tags: List[str]) -> Dict:
         return {
-            'tags': report._gen_tag(),
+            'tags': report._gen_tag(tags),
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }

@@ -129,6 +129,7 @@ class CommonCLIParser(MainParser):
 
         subparser_prom_output = ComponentSubParser('prom')
         subparser_prom_output.add_argument('a', 'addr', help='specify server address')
+        subparser_prom_output.add_argument('t', 'tags', help='specify report tags')
         subparser_prom_output.add_argument('p', 'port', help='specify server port', type=int)
         subparser_prom_output.add_argument('M', 'metric_name', help='speify metric name')
         subparser_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
@@ -142,6 +143,7 @@ class CommonCLIParser(MainParser):
 
         subparser_direct_prom_output = ComponentSubParser('direct_prom')
         subparser_direct_prom_output.add_argument('a', 'addr', help='specify server address')
+        subparser_direct_prom_output.add_argument('t', 'tags', help='specify report tags')
         subparser_direct_prom_output.add_argument('p', 'port', help='specify server port', type=int)
         subparser_direct_prom_output.add_argument('M', 'metric_name', help='speify metric name')
         subparser_direct_prom_output.add_argument('d', 'metric_description', help='specify metric description', default='energy consumption')
@@ -156,12 +158,15 @@ class CommonCLIParser(MainParser):
                                           help='specify directory where where output  csv files will be writen')
         subparser_csv_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                           default='PowerReport')
+
+        subparser_csv_output.add_argument('t', 'tags', help='specify report tags')
         subparser_csv_output.add_argument('n', 'name', help='specify pusher name', default='pusher_csv')
         self.add_actor_subparser('output', subparser_csv_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_influx_output = ComponentSubParser('influxdb')
         subparser_influx_output.add_argument('u', 'uri', help='specify InfluxDB uri')
+        subparser_influx_output.add_argument('t', 'tags', help='specify report tags')
         subparser_influx_output.add_argument('d', 'db', help='specify InfluxDB database name')
         subparser_influx_output.add_argument('p', 'port', help='specify InfluxDB connection port', type=int)
         subparser_influx_output.add_argument('m', 'model', help='specify data type that will be storen in the database',
@@ -276,6 +281,12 @@ class DatabaseNameDoesNotExist(PowerAPIException):
         self.database_name = database_name
 
 
+def gen_tag_list(db_config: Dict):
+    if 'tags' not in db_config:
+        return []
+    return db_config['tags'].split(',')
+
+
 class DBActorGenerator(Generator):
 
     def __init__(self, component_group_name):
@@ -290,14 +301,14 @@ class DBActorGenerator(Generator):
         self.db_factory = {
             'mongodb': lambda db_config: MongoDB(db_config['model'], db_config['uri'], db_config['db'], db_config['collection']),
             'socket': lambda db_config: SocketDB(db_config['model'], db_config['port']),
-            'csv': lambda db_config: CsvDB(db_config['model'], current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+            'csv': lambda db_config: CsvDB(db_config['model'], gen_tag_list(db_config), current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'], db_config['db']),
+            'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'], db_config['db'], gen_tag_list(db_config)),
             'opentsdb': lambda db_config: OpenTSDB(db_config['model'], db_config['uri'], db_config['port'], db_config['metric_name']),
             'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
-                                                   db_config['metric_description'], db_config['aggregation_period']),
+                                                   db_config['metric_description'], db_config['aggregation_period'], gen_tag_list(db_config)),
             'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['addr'], db_config['metric_name'],
-                                                                db_config['metric_description']),
+                                                                db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
         }
 

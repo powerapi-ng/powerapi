@@ -130,8 +130,6 @@ class HWPCReport(Report):
                 if timestamp is None:
                     timestamp = HWPCReport._extract_timestamp(row['timestamp'])
                 else:
-                    print(timestamp)
-                    print(HWPCReport._extract_timestamp(row['timestamp']))
                     if timestamp != HWPCReport._extract_timestamp(row['timestamp']):
                         raise BadInputData('csv line with different timestamp are mixed into one report')
                     

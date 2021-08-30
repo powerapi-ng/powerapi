@@ -126,7 +126,6 @@ class Supervisor:
     def shutdown(self):
         self.system.shutdown()
 
-
     def monitor(self):
         """
         wait for an actor to send an EndMessage or for an actor to crash

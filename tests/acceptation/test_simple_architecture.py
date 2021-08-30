@@ -124,7 +124,7 @@ def mongodb_content():
         
 def test_run_mongo(mongo_database, shutdown_system):
     config = {'verbose': True, 'stream': False,
-              'output': {'mongodb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
+              'output': {'mongodb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_OUTPUT_COLLECTION_NAME}}},
               'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
               }
 
@@ -159,7 +159,7 @@ def check_influx_db(influx_client):
 
 def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
     config = {'verbose': True, 'stream': False,
-              'output': {'influxdb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT, 'db': INFLUX_DBNAME}}},
+              'output': {'influxdb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT, 'db': INFLUX_DBNAME}}},
               'input': {'mongodb': {'test_puller': {'model': 'HWPCReport', 'name': 'test_puller', 'uri': MONGO_URI, 'db': MONGO_DATABASE_NAME, 'collection': MONGO_INPUT_COLLECTION_NAME}}}
               }
 
@@ -221,7 +221,7 @@ def check_output_file():
 
 def test_run_csv_to_csv(files, shutdown_system):
     config = {'verbose': True, 'stream': False,
-              'output': {'csv': {'test_pusher': {'model': 'PowerReport', 'name': 'pusher', 'directory': OUTPUT_PATH}}},
+              'output': {'csv': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'pusher', 'directory': OUTPUT_PATH}}},
               'input': {'csv': {'test_puller': {'files': FILES, 'model': 'HWPCReport', 'name': 'puller'}}},
               }
     supervisor = Supervisor()

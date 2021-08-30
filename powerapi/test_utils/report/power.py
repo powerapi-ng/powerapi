@@ -33,7 +33,7 @@ from powerapi.report import PowerReport
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'target_test'
 
-POWER_REPORT_1 = PowerReport(0, SENSOR_NAME, TARGET_NAME, 0, 1234, {"metadata1": "truc", "metadata2": "oui"})
+POWER_REPORT_1 = PowerReport(0, SENSOR_NAME, TARGET_NAME, 1234, {'socket': 0, 'metadata1': 'truc', 'metadata2': 'oui'})
 
 def gen_json_power_report(number_of_reports):
     """ generate number_of_reports power report with json format

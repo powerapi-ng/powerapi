@@ -47,19 +47,19 @@ URL = 'http://' + ADDR + ':' + str(PORT) + '/metrics'
 TARGET1 = 'targetA'
 TARGET2 = 'targetB'
 
-REPORTA_1 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 0), 0, TARGET1, 0, 10, {})
-REPORTA_2 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 1), 0, TARGET1, 0, 20, {})
-REPORTA_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET1, 0, 30, {})
-REPORTA_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET1, 0, 40, {})
-REPORTA_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET1, 0, 50, {})
-REPORTA_6 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 5), 0, TARGET1, 0, 60, {})
-REPORTA_7 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 6), 0, TARGET1, 0, 70, {})
+REPORTA_1 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 0), 0, TARGET1, 10, {'socket': 0})
+REPORTA_2 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 1), 0, TARGET1, 20, {'socket': 0})
+REPORTA_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET1, 30, {'socket': 0})
+REPORTA_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET1, 40, {'socket': 0})
+REPORTA_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET1, 50, {'socket': 0})
+REPORTA_6 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 5), 0, TARGET1, 60, {'socket': 0})
+REPORTA_7 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 6), 0, TARGET1, 70, {'socket': 0})
 
-REPORTB_1 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 0), 0, TARGET2, 0, 40, {})
-REPORTB_2 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 1), 0, TARGET2, 0, 60, {})
-REPORTB_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET2, 0, 70, {})
-REPORTB_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET2, 0, 80, {})
-REPORTB_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET2, 0, 90, {})
+REPORTB_1 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 0), 0, TARGET2, 40, {'socket': 0})
+REPORTB_2 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 1), 0, TARGET2, 60, {'socket': 0})
+REPORTB_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET2, 70, {'socket': 0})
+REPORTB_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET2, 80, {'socket': 0})
+REPORTB_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET2, 90, {'socket': 0})
 
 def extract_metrics(metric_prefix, url):
     time.sleep(0.5)
@@ -84,7 +84,7 @@ class Prometheus_server(multiprocessing.Process):
         self.q = q
 
     def run(self):
-        db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG)
+        db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
         db.connect()
         while True:
             report_list = self.q.get()
@@ -108,7 +108,7 @@ def test_create_prometheus_db_and_connect_it_must_launch_web_server_on_given_add
 
 
 def test_create_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address():
-    db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG)
+    db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
     with pytest.raises(requests.exceptions.ConnectionError):
         r = requests.get(URL)
 

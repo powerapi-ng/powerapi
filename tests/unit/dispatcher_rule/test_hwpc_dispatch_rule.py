@@ -182,7 +182,6 @@ def test_get_formula_id_socket_rule_report_3(report_3):
     the method must return this list :
     [('toto','1'), ('toto','2')]
     """
-    print(report_3.groups)
     ids = HWPCDispatchRule(HWPCDepthLevel.SOCKET).get_formula_id(report_3)
     validate_formula_id(ids, [('toto', '1'), ('toto', '2')])
 

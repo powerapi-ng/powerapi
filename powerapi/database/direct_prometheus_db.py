@@ -44,18 +44,20 @@ class DirectPrometheusDB(BaseDB):
     Could only be used with a pusher actor
     """
 
-    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str, metric_description: str):
+    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str, metric_description: str, tags: List[str]):
         """
         :param address:             address that expose the metric
         :param port:
         :param metric_name:
         :param metric_description:  short sentence that describe the metric
+        :param tags: metadata used to tag metric
         """
         BaseDB.__init__(self, report_type)
         self.address = address
         self.port = port
         self.metric_name = metric_name
         self.metric_description = metric_description
+        self.tags = tags
 
         self.energy_metric = None
 
@@ -67,19 +69,19 @@ class DirectPrometheusDB(BaseDB):
         """
         Start a HTTP server exposing one metric
         """
-        self.energy_metric = Gauge(self.metric_name, self.metric_description, self.report_type.get_tags())
+        self.energy_metric = Gauge(self.metric_name, self.metric_description, ['sensor', 'target'] + self.tags)
         start_http_server(self.port)
 
     def _expose_data(self, key, measure):
-        kwargs = {label: measure['tags'][label] for label in self.report_type.get_tags()}
+        kwargs = {label: measure['tags'][label] for label in measure['tags']}
         try:
             self.energy_metric.labels(**kwargs).set(measure['value'])
         except TypeError:
             self.energy_metric.labels(kwargs).set(measure['value'])
 
     def _report_to_measure_and_key(self, report):
-        value = self.report_type.to_prometheus(report)
-        key = ''.join([str(value['tags'][tag]) for tag in self.report_type.get_tags()])
+        value = self.report_type.to_prometheus(report, self.tags)
+        key = ''.join([str(value['tags'][tag]) for tag in value['tags']])
         return key, value
 
     def _update_exposed_measure(self):
@@ -105,7 +107,7 @@ class DirectPrometheusDB(BaseDB):
             
         self._expose_data(key, measure)
         if key not in self.measure_for_current_period:
-            args = [measure['tags'][label] for label in self.report_type.get_tags()]
+            args = [measure['tags'][label] for label in measure['tags']]
             self.measure_for_current_period[key] = args
 
     def save_many(self, reports: List[Report]):

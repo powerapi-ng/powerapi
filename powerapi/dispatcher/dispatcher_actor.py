@@ -141,7 +141,8 @@ class DispatcherActor(Actor):
         poison_message = message.poisonMessage
         for formula_name, (formula, blocking_detector) in self.formula_pool.items():
             if sender == formula:
-                self.log_debug('received poison messsage from formula ' + formula_name + ' : ' + str(poison_message))
+                self.log_debug('poison_message')
+                self.log_debug('received poison messsage from formula ' + formula_name + ' for message ' + str(poison_message) + 'with this error stack : ' + message.details)
                 blocking_detector.notify_poison_received(poison_message)
                 self.log_debug('formula ' + formula_name + ' is blocked : ' + str(blocking_detector.is_blocked()))
                 if blocking_detector.is_blocked():

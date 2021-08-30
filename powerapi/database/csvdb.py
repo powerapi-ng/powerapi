@@ -197,7 +197,7 @@ class CsvDB(BaseDB):
     a CsvDB instance can be define by his ReportModel and its current path
     """
 
-    def __init__(self, report_type: Type[Report], current_path="/tmp/csvdbtest", files=[]):
+    def __init__(self, report_type: Type[Report], tags: List[str], current_path="/tmp/csvdbtest", files=[]):
         """
         :param current_path: Current path where read/write files
         """
@@ -212,6 +212,7 @@ class CsvDB(BaseDB):
         #: (int): allow to know if we read a new report, or the same
         #: current timestamp
         self.saved_timestamp = utils.timestamp_to_datetime(0)
+        self.tags = tags
 
         self.add_files(files)
 
@@ -270,7 +271,7 @@ class CsvDB(BaseDB):
         :param report: Report
         :param report_model: ReportModel
         """
-        csv_header, data = self.report_type.to_csv_lines(report)
+        csv_header, data = self.report_type.to_csv_lines(report, self.tags)
 
         # If the repository doesn't exist, create it
         rep_path = self.current_path + report.sensor + "-" + report.target
@@ -280,7 +281,6 @@ class CsvDB(BaseDB):
             pass
 
         for filename, values in data.items():
-            print(values)
             rep_path_with_file = rep_path + '/' + filename + '.csv'
 
             # Get the header and check if it's ok

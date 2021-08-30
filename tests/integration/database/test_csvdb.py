@@ -118,7 +118,7 @@ def gen_hwpc_report():
 def gen_power_report():
     global CPT
     CPT += 1
-    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, -1, 0.11, {"metadata1": "truc", "metadata2": "oui"})
+    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11, {'socket': -1, 'metadata1': 'truc', 'metadata2': 'oui'})
 
 ##################
 #    FIXTURES    #
@@ -152,12 +152,12 @@ def corrupted_csvdb():
 
 @pytest.fixture()
 def power_csvdb():
-    return CsvDB(PowerReport, current_path=os.getcwd())
+    return CsvDB(PowerReport, ['socket'], current_path=os.getcwd())
 
 
 @pytest.fixture()
 def hwpc_csvdb():
-    return CsvDB(HWPCReport, current_path=os.getcwd())
+    return CsvDB(HWPCReport, ['socket'], current_path=os.getcwd())
 
 
 ##################
@@ -287,7 +287,7 @@ class TestCsvDB():
         """
         Try to save a PowerReport with an existent file and a corrupted header
         """
-        csvdb = CsvDB(PowerReport, current_path=PATH_TO_SAVE)
+        csvdb = CsvDB(PowerReport, ['socket'], current_path=PATH_TO_SAVE)
         csvdb.connect()
 
         # Try to save one PowerReport
@@ -299,7 +299,7 @@ class TestCsvDB():
         """
         Save a PowerReport from an basic object
         """
-        csvdb = CsvDB(PowerReport, current_path=PATH_TO_SAVE)
+        csvdb = CsvDB(PowerReport, ['socket'], current_path=PATH_TO_SAVE)
         csvdb.connect()
 
         power_reports = list()
@@ -315,7 +315,7 @@ class TestCsvDB():
 
         # Read the the csvdb and compare the data
         reading_power_reports = []
-        csvdb_read = CsvDB(PowerReport, current_path=PATH_TO_SAVE)
+        csvdb_read = CsvDB(PowerReport, ['socket'], current_path=PATH_TO_SAVE)
         csvdb_read.add_file(PATH_TO_SAVE + SENSOR + "-" + TARGET + "/PowerReport.csv")
         csvdb_read.connect()
         csvdb_read_iter = csvdb_read.iter(False)

@@ -345,7 +345,6 @@ class TestDispatcher(AbstractTestActor):
         for _ in range(4):
             _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
 
-        print('=========================================')
         system.tell(started_actor, REPORT_3)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == REPORT_3
@@ -367,7 +366,6 @@ class TestDispatcher(AbstractTestActor):
         # make formula crash
         system.tell(dispatcher_with_formula, REPORT_1)
         b, a = recv_from_pipe(dummy_pipe_out, 0.5)
-        print('1' +str((b,a)))
         system.tell(dispatcher_with_formula, REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == 'crash'

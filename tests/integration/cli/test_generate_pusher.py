@@ -43,21 +43,15 @@ TARGET_NAME = 'system'
 
 @pytest.fixture
 def power_report():
-    return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 1, 0.11, {"metadata1": "azerty", "metadata2": "qwerty"})
+    return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 0.11, {'socket': 1, 'metadata1': 'azerty', 'metadata2': 'qwerty'})
 
 @pytest.fixture
 def influxdb_content():
     return []
 
 
-class PowerReportWithFormulaName(PowerReport):
 
-    def _influxdb_keept_metadata(self):
-        return PowerReport._keept_metadata(self) + ('formula_name',)
-
-
-
-def test_generate_pusher_with_new_PowerReport_class_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
+def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
     """
     Create a PusherGenerator that generate pusher with a PowerReportModel that keep formula_name metadata in PowerReport
     Generate a pusher connected to an influxDB
@@ -66,20 +60,19 @@ def test_generate_pusher_with_new_PowerReport_class_and_send_it_a_powerReport_mu
     """
 
     config = {'verbose': True, 'stream': False,
-              'output': {'influxdb': {'test_pusher': {'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
+              'output': {'influxdb': {'test_pusher': {'tags': 'socket', 'model': 'PowerReport', 'name': 'test_pusher', 'uri': INFLUX_URI, 'port': INFLUX_PORT,
                                                       'db': INFLUX_DBNAME}}}}
 
 
     generator = PusherGenerator()
     generator.remove_model_factory('PowerReport')
-    generator.add_model_factory('PowerReport', PowerReportWithFormulaName)
+    generator.add_model_factory('PowerReport', PowerReport)
 
     actors = generator.generate(config)
     pusher_cls, pusher_start_message = actors['test_pusher']
 
     pusher = system.createActor(pusher_cls)
     system.ask(pusher, pusher_start_message)
-
     system.tell(pusher, power_report)
     import time
     time.sleep(0.1)

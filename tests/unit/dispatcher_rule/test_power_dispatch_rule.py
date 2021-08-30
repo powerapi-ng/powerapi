@@ -37,7 +37,7 @@ TARGET1 = 'target1'
 
 @pytest.fixture
 def report1_socket0():
-    return PowerReport(TS1, SENSOR1, TARGET1, 0, 1234, {}, core=0)
+    return PowerReport(TS1, SENSOR1, TARGET1, 1234, {'socket': 0, 'core': 0})
 
 
 def validate_formula_id(formula_id_list, validation_list):

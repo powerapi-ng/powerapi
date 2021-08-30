@@ -36,11 +36,11 @@ from powerapi.test_utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_
 
 
 POWER_REPORT_0 = PowerReport(datetime.datetime.fromtimestamp(0), SENSOR_NAME,
-                             TARGET_NAME, 0, 100, {})
+                             TARGET_NAME, 100, {'socket': 0})
 POWER_REPORT_1 = PowerReport(datetime.datetime.fromtimestamp(1), SENSOR_NAME,
-                             TARGET_NAME, 0, 100, {})
+                             TARGET_NAME, 100, {'socket': 0})
 POWER_REPORT_2 = PowerReport(datetime.datetime.fromtimestamp(2), SENSOR_NAME,
-                             TARGET_NAME, 0, 100, {})
+                             TARGET_NAME, 100, {'socket': 0})
 
 
 def define_influxdb_content(content):
@@ -67,7 +67,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture()
 def database():
-    db = InfluxDB(PowerReport, INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, ['socket'])
     yield db
     db.client.close()
 
@@ -91,7 +91,7 @@ def test_invalid_uri_connection():
 
     Test if an CantConnectToInfluxDBException is raise
     """
-    db = InfluxDB(PowerReport, 'tqldjslqskjd', INFLUX_PORT, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, 'tqldjslqskjd', INFLUX_PORT, INFLUX_DBNAME, ['socket'])
     with pytest.raises(CantConnectToInfluxDBException):
         db.connect()
 
@@ -104,7 +104,7 @@ def test_invalid_port_connection():
 
     Test if an CantConnectToInfluxDBException is raise
     """
-    db = InfluxDB(PowerReport, INFLUX_URI, 1234, INFLUX_DBNAME)
+    db = InfluxDB(PowerReport, INFLUX_URI, 1234, INFLUX_DBNAME, ['socket'])
 
     with pytest.raises(CantConnectToInfluxDBException):
         db.connect()

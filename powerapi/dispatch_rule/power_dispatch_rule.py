@@ -51,10 +51,10 @@ def extract_id_from_report(report, depth):
         return (report.sensor,)
 
     if depth == PowerDepthLevel.SOCKET:
-        return extract_id_from_report(report, depth - 1) + (report.socket,)
+        return extract_id_from_report(report, depth - 1) + (report.metadata['socket'],)
 
     if depth == PowerDepthLevel.CORE:
-        return extract_id_from_report(report, depth - 1) + (report.core,)
+        return extract_id_from_report(report, depth - 1) + (report.metadata['core'],)
     
 class PowerDispatchRule(DispatchRule):
     """

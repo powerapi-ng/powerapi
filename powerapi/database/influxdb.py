@@ -53,7 +53,7 @@ class InfluxDB(BaseDB):
     Allow to handle a InfluxDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], uri: str, port, db_name: str):
+    def __init__(self, report_type: Type[Report], uri: str, port, db_name: str, tags: List[str]):
         """
         :param url:             URL of the InfluxDB server
         :param port:            port of the InfluxDB server
@@ -62,13 +62,15 @@ class InfluxDB(BaseDB):
                                     (ex: "powerapi")
 
         :param report_type:        Type of the report handled by this database
+        :param tags: metadata used to tag metric
 
         """
         BaseDB.__init__(self, report_type)
         self.uri = uri
         self.port = port
         self.db_name = db_name
-
+        self.tags = tags
+        
         self.client = None
 
     def _ping_client(self):
@@ -108,9 +110,10 @@ class InfluxDB(BaseDB):
 
         :param report: Report to save
         """
-        data = self.report_type.to_influxdb(report)
+        data = self.report_type.to_influxdb(report, self.tags)
+        for tag in data['tags']:
+            data['tags'][tag] = str(data['tags'][tag])
         self.client.write_points([data])
-
 
     def save_many(self, reports: List[Report]):
         """
@@ -120,5 +123,5 @@ class InfluxDB(BaseDB):
         :param report_model: ReportModel
         """
 
-        data_list = list(map(lambda r: self.report_type.to_influxdb(r), reports))
+        data_list = list(map(lambda r: self.report_type.to_influxdb(r, self.tags), reports))
         self.client.write_points(data_list)
