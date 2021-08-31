@@ -176,11 +176,11 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
                                          'uri': INFLUX_URI,
                                          'port': INFLUX_PORT,
                                          'db': INFLUX_DBNAME}},
-              'input': {{'test_puller': {'type': 'mongodb',
+              'input': {'test_puller': {'type': 'mongodb',
                                          'model': 'HWPCReport',
                                          'uri': MONGO_URI,
                                          'db': MONGO_DATABASE_NAME,
-                                         'collection': MONGO_INPUT_COLLECTION_NAME}}}
+                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
     supervisor = Supervisor()

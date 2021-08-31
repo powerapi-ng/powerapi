@@ -159,7 +159,7 @@ class TimedActor(Actor):
         """
         When receiving a WakeupMessage, launch the actor task
         """
-        # self.log_debug('received message ' + str(message))
+        self.log_debug('received message ' + str(message))
         if self.initialized:
             self._launch_task()
         else:

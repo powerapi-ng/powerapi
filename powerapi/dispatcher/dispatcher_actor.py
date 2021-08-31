@@ -141,7 +141,6 @@ class DispatcherActor(Actor):
         poison_message = message.poisonMessage
         for formula_name, (formula, blocking_detector) in self.formula_pool.items():
             if sender == formula:
-                self.log_debug('poison_message')
                 self.log_debug('received poison messsage from formula ' + formula_name + ' for message ' + str(poison_message) + 'with this error stack : ' + message.details)
                 blocking_detector.notify_poison_received(poison_message)
                 self.log_debug('formula ' + formula_name + ' is blocked : ' + str(blocking_detector.is_blocked()))
@@ -225,6 +224,7 @@ class DispatcherActor(Actor):
             self.send(self.myAddress, ActorExitRequest())
 
     def receiveMsg_ErrorMessage(self, message: ErrorMessage, sender: ActorAddress):
+        self.log_debug('received error message ' + str(message))
         self.formula_waiting_service.remove_formula(message.sender_name)
 
     def receiveMsg_OKMessage(self, message: OKMessage, sender: ActorAddress):
@@ -234,9 +234,9 @@ class DispatcherActor(Actor):
         self.formula_pool[formula_name] = (sender, BlockingDetector())
         for message in waiting_messages:
             self._send_message(formula_name, message)
-    
 
     def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+        self.log_debug('received message ' + str(message))
         self._exit_mode = True
         for _, (formula, __) in self.formula_pool.items():
             self.send(formula, EndMessage(self.name))

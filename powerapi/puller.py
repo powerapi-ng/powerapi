@@ -45,7 +45,7 @@ from powerapi.message import PullerStartMessage, EndMessage
 
 class PullerActor(TimedActor):
     def __init__(self):
-        TimedActor.__init__(self, PullerStartMessage, 1)
+        TimedActor.__init__(self, PullerStartMessage, 0.5)
 
         self.database = None
         self.report_filter = None
@@ -90,7 +90,7 @@ class PullerActor(TimedActor):
         for report_modifier in self.report_modifier_list:
             report = report_modifier.modify_report(report)
         return report
-        
+
     def _launch_task(self):
         """
         Initialize the database and connect all dispatcher to the
@@ -104,16 +104,16 @@ class PullerActor(TimedActor):
                 for dispatcher in dispatchers:
                     self.log_debug('send report ' + str(report) + 'to ' + str(dispatcher))
                     self.send(dispatcher, report)
-
+                self.wakeupAfter(self._time_interval)
+                return
             except StopIteration:
                 if self.stream_mode:
                     self.wakeupAfter(self._time_interval)
-                else:
-                    self._terminate()
                     return
+                self._terminate()
+                return
             except BadInputData:
                 pass
-        self.wakeupAfter(self._time_interval)
 
     def _terminate(self):
         self.send(self.parent, EndMessage(self.name))
