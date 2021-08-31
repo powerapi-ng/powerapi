@@ -57,10 +57,7 @@ class PowerReport(Report):
         self.power = power
 
     def __repr__(self) -> str:
-
-        socket = str(self.socket)
-        
-        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, self.metadata)
+        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, str(self.metadata))
 
     @staticmethod
     def from_json(data: Dict) -> Report:

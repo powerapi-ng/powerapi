@@ -83,7 +83,14 @@ LOG_DEF = {
 
 class Supervisor:
 
-    def __init__(self):
+    def __init__(self, verbose_mode: bool):
+
+        if verbose_mode:
+            LOG_DEF['handlers']['h1']['level'] = logging.DEBUG
+            LOG_DEF['handlers']['h2']['level'] = logging.DEBUG
+        else:
+            LOG_DEF['handlers']['h1']['level'] = logging.INFO
+            LOG_DEF['handlers']['h2']['level'] = logging.INFO
 
         self.system = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
         self.pushers = {}

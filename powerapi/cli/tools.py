@@ -336,12 +336,11 @@ class DBActorGenerator(Generator):
         return self.db_factory[db_name](db_config)
 
 
-    def _gen_actor(self, db_name, db_config, main_config):
+    def _gen_actor(self, db_name, db_config, main_config, actor_name):
         model = self.model_factory[db_config['model']]
         db_config['model'] = model
         db = self._generate_db(db_name, db_config, main_config)
-        name = db_config['name']
-        start_message = self._start_message_factory(name, db, model, main_config['stream'], main_config['verbose'])
+        start_message = self._start_message_factory(actor_name, db, model, main_config['stream'], main_config['verbose'])
         actor = self._actor_factory(db_config)
         return (actor, start_message)
 

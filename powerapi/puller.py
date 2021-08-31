@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,30 +29,30 @@
 
 import logging
 import asyncio
-import time
-from datetime import timedelta
-from threading import Thread
-from thespian.actors import ActorSystem, ActorAddress, ActorExitRequest
 
+from thespian.actors import ActorExitRequest
 
 from powerapi.actor import TimedActor, InitializationException
 from powerapi.report import BadInputData
-from powerapi.exception import PowerAPIException
-from powerapi.database import BaseDB, DBError, SocketDB
-from powerapi.filter import Filter, RouterWithoutRuleException
+from powerapi.database import DBError
 from powerapi.message import PullerStartMessage, EndMessage
 
 
 class PullerActor(TimedActor):
+    """
+    Actor used to pull data from sources.
+
+    A puller Actor is configured to pull data from one type of sources
+    """
     def __init__(self):
-        TimedActor.__init__(self, PullerStartMessage, 1)
+        TimedActor.__init__(self, PullerStartMessage, 0.5)
 
         self.database = None
         self.report_filter = None
-        self.report_model = None
         self.stream_mode = None
         self.database_it = None
         self.report_modifier_list = None
+        self.loop = None
 
         self._number_of_message_before_sleeping = 10
 
@@ -61,7 +61,6 @@ class PullerActor(TimedActor):
 
         self.database = start_message.database
         self.report_filter = start_message.report_filter
-        self.report_model = start_message.report_model
         self.stream_mode = start_message.stream_mode
         self.report_modifier_list = start_message.report_modifier_list
 
@@ -78,19 +77,16 @@ class PullerActor(TimedActor):
                 asyncio.set_event_loop(self.loop)
                 self.loop.set_debug(enabled=True)
                 logging.basicConfig(level=logging.DEBUG)
-                # self.database.connect() ???
                 self.loop.run_until_complete(self.database.connect())
             self.database_it = self.database.iter(self.stream_mode)
-
-
         except DBError as error:
-            raise InitializationException(error.msg)
+            raise InitializationException(error.msg) from error
 
     def _modify_report(self, report):
         for report_modifier in self.report_modifier_list:
             report = report_modifier.modify_report(report)
         return report
-        
+
     def _launch_task(self):
         """
         Initialize the database and connect all dispatcher to the
@@ -104,23 +100,22 @@ class PullerActor(TimedActor):
                 for dispatcher in dispatchers:
                     self.log_debug('send report ' + str(report) + 'to ' + str(dispatcher))
                     self.send(dispatcher, report)
-
+                self.wakeupAfter(self._time_interval)
+                return
             except StopIteration:
                 if self.stream_mode:
                     self.wakeupAfter(self._time_interval)
-                else:
-                    self._terminate()
                     return
+                self._terminate()
+                return
             except BadInputData:
                 pass
-        self.wakeupAfter(self._time_interval)
 
     def _terminate(self):
         self.send(self.parent, EndMessage(self.name))
         for _, dispatcher in self.report_filter.filters:
             self.send(dispatcher, EndMessage(self.name))
         self.send(self.myAddress, ActorExitRequest())
-
 
     def _pull_database(self):
         if self.database.asynchrone:
