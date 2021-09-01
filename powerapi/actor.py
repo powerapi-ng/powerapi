@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -33,26 +33,32 @@ from datetime import timedelta
 
 from thespian.actors import ActorTypeDispatcher, ActorAddress, ActorExitRequest, WakeupMessage
 
-from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage, EndMessage
+from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage
 from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
+
 
 class InitializationException(PowerAPIExceptionWithMessage):
     """
     Exception raised when an actor failed to initialize itself
     """
 
+
 class ActorNotInitializedException(PowerAPIException):
     """
     Exception raised when a non initialized actor received a message that is not a StartMessage
     """
 
+
 class Actor(ActorTypeDispatcher):
     """
-    PowerAPI abstract Actor class
-
-    implement basic actor behaviour
+    PowerAPI Actor Abstract Class
     """
     def __init__(self, start_message_cls: Type[StartMessage]):
+        """
+        This method must be used only in a daughter class constructor
+
+        :param start_message_cls: Type of the message that will be used to initialize the actor
+        """
         ActorTypeDispatcher.__init__(self)
         self.name: str = 'no_name_yet'
         self.parent: ActorAddress = None
@@ -60,29 +66,43 @@ class Actor(ActorTypeDispatcher):
         self.start_message_cls = start_message_cls
 
     def log_critical(self, message: str):
+        """
+        send a critical message to the log actor
+        """
         extra_args = {'actor_name': self.name}
         logging.critical(message, extra=extra_args)
 
     def log_error(self, message: str):
+        """
+        send an error message to the log actor
+        """
         extra_args = {'actor_name': self.name}
         logging.error(message, extra=extra_args)
 
     def log_warning(self, message: str):
+        """
+        send a warning message to the log actor
+        """
         extra_args = {'actor_name': self.name}
         logging.warning(message, extra=extra_args)
 
     def log_info(self, message: str):
+        """
+        send an information message to the log actor
+        """
         extra_args = {'actor_name': self.name}
         logging.info(message, extra=extra_args)
 
     def log_debug(self, message: str):
+        """
+        send a debug message to the log actor
+        """
         extra_args = {'actor_name': self.name}
         logging.debug(message, extra=extra_args)
 
-
     def receiveMsg_PingMessage(self, message: PingMessage, sender: ActorAddress):
         """
-        When receiving a PingMessage, the actor answer with a OKMessage to its sender 
+        When receiving a PingMessage, the actor answer with a OKMessage to its sender
         """
         self.log_debug('received message ' + str(message))
         self.send(sender, OKMessage(self.name))
@@ -102,21 +122,23 @@ class Actor(ActorTypeDispatcher):
             return
 
         if not isinstance(message, self.start_message_cls):
-            self.send(sender, ErrorMessage(self.name, 'use '+ self.start_message_cls.__name__ + ' instead of StartMessage'))
+            self.send(sender, ErrorMessage(self.name, 'use ' + self.start_message_cls.__name__ + ' instead of StartMessage'))
             return
 
         try:
             self._initialization(message)
-        except InitializationException as e:
-            self.send(sender, ErrorMessage(self.name, e.msg))
+        except InitializationException as exn:
+            self.send(sender, ErrorMessage(self.name, exn.msg))
             self.send(self.myAddress, ActorExitRequest())
             return
 
         self.initialized = True
         self.send(sender, OKMessage(self.name))
 
-    def receiveMsg_ErrorMessage(self, message: ErrorMessage, sender: ActorAddress):
-        self.log_debug('received message ' + str(message))
+    def receiveMsg_ErrorMessage(self, message: ErrorMessage, _: ActorAddress):
+        """
+        When receiving an error message send it to the log actor
+        """
         self.log_error(str(message.error_message))
 
     def receiveUnrecognizedMessage(self, message: Any, sender: ActorAddress):
@@ -126,9 +148,14 @@ class Actor(ActorTypeDispatcher):
         self.log_debug('received message ' + str(message))
         self.send(sender, ErrorMessage(self.name, "did not recognize the message type : " + str(type(message))))
 
-    def _initialization(self, message: StartMessage):
-        return
-        # self.name = message.name
+    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, _: ActorAddress):
+        """
+        When receive ActorExitRequestMessage log it and exit
+        """
+        self.log_debug('received message ' + str(message))
+
+    def _initialization(self, start_message: StartMessage):
+        pass
 
 
 class TimedActor(Actor):
@@ -151,15 +178,10 @@ class TimedActor(Actor):
         Actor.receiveMsg_StartMessage(self, message, sender)
         self.wakeupAfter(self._time_interval)
 
-    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
-        self.log_debug('received message ' + str(message))
-        self.log_debug('I m dead')
-
-    def receiveMsg_WakeupMessage(self, message: WakeupMessage, sender: ActorAddress):
+    def receiveMsg_WakeupMessage(self, message: WakeupMessage, _: ActorAddress):
         """
         When receiving a WakeupMessage, launch the actor task
         """
-        self.log_debug('received message ' + str(message))
         if self.initialized:
             self._launch_task()
         else:
