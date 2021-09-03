@@ -44,23 +44,27 @@ class PusherActor(Actor):
     def __init__(self):
         Actor.__init__(self, PusherStartMessage)
         self.database = None
-        self.report_model = None
 
-    def _initialization(self, message: PusherStartMessage):
-        Actor._initialization(self, message)
-        self.database = message.database
-        self.report_model = message.report_model
+    def _initialization(self, start_message: PusherStartMessage):
+        Actor._initialization(self, start_message)
+        self.database = start_message.database
 
         try:
             self.database.connect()
         except DBError as error:
-            raise InitializationException(error.msg)
+            raise InitializationException(error.msg) from error
 
-    def receiveMsg_PowerReport(self, message: PowerReport, sender: ActorAddress):
+    def receiveMsg_PowerReport(self, message: PowerReport, _: ActorAddress):
+        """
+        When receiving a PowerReport save it to database
+        """
         self.log_debug('received message ' + str(message))
         self.database.save(message)
 
-    def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+    def receiveMsg_EndMessage(self, message: EndMessage, _: ActorAddress):
+        """
+        When receiving an EndMessage notify the ActorSystem and Kill itself
+        """
         self.log_debug('received message ' + str(message))
         self.send(self.parent, EndMessage(self.name))
         self.send(self.myAddress, ActorExitRequest())
