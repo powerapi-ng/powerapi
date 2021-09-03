@@ -138,7 +138,7 @@ def test_run_mongo(mongo_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 
@@ -183,7 +183,7 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
                                          'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 
@@ -252,7 +252,7 @@ def test_run_csv_to_csv(files, shutdown_system):
                                         'model': 'HWPCReport',
                                         'name': 'puller'}},
               }
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
     check_output_file()
@@ -288,7 +288,7 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
                                         'port': unused_tcp_port,
                                         'model': 'HWPCReport'}},
               }
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
@@ -307,7 +307,7 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
                                         'port': unused_tcp_port,
                                         'model': 'HWPCReport'}},
               }
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
