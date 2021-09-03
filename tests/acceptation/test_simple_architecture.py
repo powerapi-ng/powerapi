@@ -121,7 +121,7 @@ def check_mongo_db():
 @pytest.fixture
 def mongodb_content():
     return extract_rapl_reports_with_2_sockets(10)
-        
+
 def test_run_mongo(mongo_database, shutdown_system):
     config = {'verbose': True,
               'stream': False,
@@ -177,10 +177,10 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
                                          'port': INFLUX_PORT,
                                          'db': INFLUX_DBNAME}},
               'input': {'test_puller': {'type': 'mongodb',
-                                         'model': 'HWPCReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
+                                        'model': 'HWPCReport',
+                                        'uri': MONGO_URI,
+                                        'db': MONGO_DATABASE_NAME,
+                                        'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
     supervisor = Supervisor(config['verbose'])
@@ -195,7 +195,7 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
 ##############
 def check_output_file():
     input_file = open(ROOT_PATH + 'rapl2.csv', 'r')
-    output_file = open(OUTPUT_PATH + 'grvingt-12-system/PowerReport.csv', 'r')
+    output_file = open(OUTPUT_PATH + 'all/PowerReport.csv', 'r')
 
     # line count
     l_output = -1
@@ -313,3 +313,29 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
     client.start()
     supervisor.monitor()
     check_db_socket()
+
+
+##############
+# Socket to CSV #
+##############
+
+
+def test_run_socket_to_csv(unused_tcp_port,shutdown_system):
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'csv',
+                                         'tags': 'socket',
+                                         'model': 'PowerReport',
+                                         'name': 'pusher',
+                                         'directory': OUTPUT_PATH}},
+              'input': {'test_puller': {'type': 'socket',
+                                        'port': unused_tcp_port,
+                                        'model': 'HWPCReport'
+                                        }},
+              }
+    supervisor = Supervisor(config['verbose'])
+    launch_simple_architecture(config, supervisor)
+    client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+    client.start()
+    supervisor.monitor()
+    check_output_file()
