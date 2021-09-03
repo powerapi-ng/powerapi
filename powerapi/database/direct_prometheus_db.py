@@ -43,7 +43,6 @@ class DirectPrometheusDB(BaseDB):
     Database that expose received data as metric in order to be scrapped by a prometheus instance
     Could only be used with a pusher actor
     """
-
     def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str, metric_description: str, tags: List[str]):
         """
         :param address:             address that expose the metric
@@ -65,6 +64,9 @@ class DirectPrometheusDB(BaseDB):
         self.exposed_measure = {}
         self.measure_for_current_period = {}
 
+    def __iter__(self):
+        raise NotImplementedError()
+
     def connect(self):
         """
         Start a HTTP server exposing one metric
@@ -72,7 +74,7 @@ class DirectPrometheusDB(BaseDB):
         self.energy_metric = Gauge(self.metric_name, self.metric_description, ['sensor', 'target'] + self.tags)
         start_http_server(self.port)
 
-    def _expose_data(self, key, measure):
+    def _expose_data(self, _, measure):
         kwargs = {label: measure['tags'][label] for label in measure['tags']}
         try:
             self.energy_metric.labels(**kwargs).set(measure['value'])
@@ -85,15 +87,13 @@ class DirectPrometheusDB(BaseDB):
         return key, value
 
     def _update_exposed_measure(self):
-        updated_exposed_measure = {}
-
         for key in self.exposed_measure:
             if key not in self.measure_for_current_period:
                 args = self.exposed_measure[key]
                 self.energy_metric.remove(*args)
         self.exposed_measure = self.measure_for_current_period
         self.measure_for_current_period = {}
-        
+
     def save(self, report: Report):
         """
         Override from BaseDB
@@ -104,7 +104,7 @@ class DirectPrometheusDB(BaseDB):
         if self.current_ts != measure['time']:
             self.current_ts = measure['time']
             self._update_exposed_measure()
-            
+
         self._expose_data(key, measure)
         if key not in self.measure_for_current_period:
             args = [measure['tags'][label] for label in measure['tags']]

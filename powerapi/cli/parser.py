@@ -26,8 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import getopt
+import sys
 from copy import deepcopy
 
 from powerapi.exception import PowerAPIException
@@ -42,9 +42,9 @@ def _extract_minus(arg):
 def _cast_argument_value(arg_name, val, action):
     if not action.is_flag:
         try:
-            return action.type(val)
-        except ValueError:
-            raise BadTypeException(arg_name, action.type)
+            return action.arg_type(val)
+        except ValueError as exn:
+            raise BadTypeException(arg_name, action.arg_type) from exn
     return val
 
 
@@ -62,6 +62,9 @@ def _find_longest_name(names):
 # EXCEPTION #
 #############
 class ParserException(PowerAPIException):
+    """
+    Base Exception for parser error
+    """
     def __init__(self, argument_name):
         PowerAPIException.__init__(self)
         self.argument_name = argument_name
@@ -77,16 +80,6 @@ class ComponentAlreadyExistException(ParserException):
     """
     Exception raised when attempting to parse a substring to create a component with a name that already exist
     """
-
-
-class BadValueException(ParserException):
-    """
-    Exception raised when attempting to parse a value that doens't respect the
-    check function of its argument
-    """
-    def __init__(self, argument_name, msg):
-        ParserException.__init__(self, argument_name)
-        self.msg = msg
 
 
 class SubParserWithoutNameArgumentException(PowerAPIException):
@@ -138,13 +131,11 @@ class UnknowArgException(ParserException):
 
 class BadTypeException(ParserException):
     """
-    Exception raised when an argument is parsed with a value of an incorrect
-    type
-
+    Exception raised when an argument is parsed with a value of an incorrect type
     """
-    def __init__(self, argument_name, type):
+    def __init__(self, argument_name, arg_type):
         ParserException.__init__(self, argument_name)
-        self.type_name = type.__name__
+        self.type_name = arg_type.__name__
         self.article = 'an' if self.type_name in ('a', 'e', 'i', 'o', 'u', 'y') else 'a'
 
 
@@ -189,38 +180,41 @@ class ParserAction:
     """
     Action binded to an argument
     """
-    def __init__(self, name_list, is_flag, action, default_value, check_fun,
-                 check_msg, help_str, type):
+    def __init__(self, name_list, is_flag, action, default_value, help_str, arg_type):
         self.name_list = name_list
         self.is_flag = is_flag
         self.action = action
         self.default_value = default_value
-        self.check_fun = check_fun
-        self.check_msg = check_msg
         self.help_str = help_str
-        self.type = type
+        self.arg_type = arg_type
 
 
 class SubParserGroup:
-
+    """"""
     def __init__(self, group_name, help_str=''):
         self.group_name = group_name
         self.help_str = help_str
         self.subparsers = {}
 
     def contains(self, name):
+        """"""
         return name in self.subparsers
 
     def add_subparser(self, name, subparser):
+        """"""
         self.subparsers[name] = subparser
 
     def get_subparser(self, name):
+        """"""
         return self.subparsers[name]
 
     def __iter__(self):
         return iter(self.subparsers.items())
 
     def get_help(self):
+        """
+        return help string
+        """
         s = self.group_name + ' details :\n'
         for subparser_name, subparser in self.subparsers.items():
             s += '  --' + self.group_name + ' ' + subparser_name + ':\n'
@@ -231,14 +225,14 @@ class SubParserGroup:
 
 
 class Parser:
-
+    """"""
     def __init__(self):
         self.actions = {}
         self.default_values = {}
         self.action_list = []
 
     def add_argument(self, *names, flag=False, action=store_val, default=None,
-                     check=None, check_msg='', help='', type=str):
+                     help='', type=str):
         """add an optional argument to the parser that will activate an action
 
         :param str *names: names of the optional argument that will be bind to
@@ -257,13 +251,6 @@ class Parser:
 
         :param default: the default value attached to this argument
 
-        :param lambda check: function that is called to validate the value
-                             required by the argument this function take one
-                             parameter (the value) and return a boolean
-
-        :param str check msg: message displayed when the caught value doesn't
-                              respect the check function
-
         :param str help: string that describe the argument
 
         :param type type: type of the value that the argument must catch
@@ -273,8 +260,7 @@ class Parser:
                                                added to this parser
 
         """
-        parser_action = ParserAction(list(names), flag, action, default, check,
-                                     check_msg, help, type)
+        parser_action = ParserAction(list(names), flag, action, default, help, type)
 
         for name in names:
             if name in self.actions:
@@ -295,7 +281,7 @@ class Parser:
             s += ' : ' + action.help_str + '\n'
         return s
 
-    def _unknow_argument_behaviour(self, arg, val, args, acc):
+    def _unknow_argument_behaviour(self, arg_name, val, args, acc):
         raise NotImplementedError()
 
     def _parse(self, args, acc):
@@ -311,21 +297,18 @@ class Parser:
             arg_long_name = _find_longest_name(action.name_list)
             val = _cast_argument_value(arg_long_name, val, action)
 
-            # check value
-            if action.check_fun is not None and not action.check_fun(val):
-                raise BadValueException(arg_long_name, action.check_msg)
             args, acc = action.action(arg_long_name, val, args, acc)
 
         return args, acc
 
 
 class ComponentSubParser(Parser):
-
+    """"""
     def __init__(self, name):
         Parser.__init__(self)
         self.name = name
 
-    def _unknow_argument_behaviour(self, arg, val, args, acc):
+    def _unknow_argument_behaviour(self, arg_name, val, args, acc):
         return args, acc
 
     def subparse(self, token_list):
@@ -346,13 +329,15 @@ class ComponentSubParser(Parser):
 
         return self._parse(token_list, local_result)
 
-
     def get_help(self):
+        """
+        return help string
+        """
         return self._get_action_list_str('    ')
 
 
 class MainParser(Parser):
-
+    """"""
     def __init__(self, help_arg=True):
         """
         :param bool help_arg: if True, add a -h/--help argument that display help
@@ -383,18 +368,14 @@ class MainParser(Parser):
 
         :raise BadTypeException: when an argument is parsed with a value of an
                                  incorrect type
-
-        :raise BadValueException: when a value that doens't respect the check
-                                  function of its argument is parsed
-
         """
         try:
             args, _ = getopt.getopt(args, self.short_arg, self.long_arg)
         except getopt.GetoptError as exn:
             if 'recognized' in exn.msg:
-                raise UnknowArgException(exn.opt)
+                raise UnknowArgException(exn.opt) from exn
             elif 'requires' in exn.msg:
-                raise MissingValueException(exn.opt)
+                raise MissingValueException(exn.opt) from exn
 
         # retirer les moins
         args = list(map(lambda x: (_extract_minus(x[0]), x[1]), args))
@@ -404,7 +385,7 @@ class MainParser(Parser):
             for arg_name, _ in args:
                 if arg_name in ('h', 'help'):
                     print(self.get_help())
-                    exit(0)
+                    sys.exit(0)
 
         acc = deepcopy(self.default_values)
 
@@ -412,6 +393,9 @@ class MainParser(Parser):
         return acc
 
     def get_help(self):
+        """
+        return help string
+        """
         s = 'main arguments:\n'
         s += self._get_action_list_str('  ')
         s += '\n'
@@ -448,11 +432,8 @@ class MainParser(Parser):
             else:
                 self.long_arg.append(gen_name(name))
 
-    def add_argument(self, *names, flag=False, action=store_val, default=None,
-                     check=None, help='', type=str):
-        Parser.add_argument(self, *names, flag=flag, action=action,
-                            default=default, check=check, help=help,
-                            type=type)
+    def add_argument(self, *names, flag=False, action=store_val, default=None, help='', type=str):
+        Parser.add_argument(self, *names, flag=flag, action=action, default=default, help=help, type=type)
         self._add_argument_names(names, flag)
 
     def add_component_subparser(self, component_type, subparser, help_str=''):
@@ -488,7 +469,6 @@ class MainParser(Parser):
 
         for action_name, action in subparser.actions.items():
             self._add_argument_names([action_name], action.is_flag)
-
 
     def add_actor_subparser(self, component_type, subparser, help_str=''):
         """

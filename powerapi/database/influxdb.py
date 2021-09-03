@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 import logging
 try:
     from influxdb import InfluxDBClient
-    from requests.exceptions import ConnectionError
+    from requests.exceptions import ConnectionError as InfluxConnectionError
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")
 
@@ -42,8 +42,11 @@ from powerapi.database import BaseDB, DBError
 
 from powerapi.report import Report
 
+
 class CantConnectToInfluxDBException(DBError):
-    pass
+    """
+    Exception raised to notify that connection to the influx database is impossible
+    """
 
 
 class InfluxDB(BaseDB):
@@ -70,8 +73,11 @@ class InfluxDB(BaseDB):
         self.port = port
         self.db_name = db_name
         self.tags = tags
-        
+
         self.client = None
+
+    def __iter__(self):
+        raise NotImplementedError()
 
     def _ping_client(self):
         if hasattr(self.client, 'ping'):
@@ -95,8 +101,8 @@ class InfluxDB(BaseDB):
         self.client = InfluxDBClient(host=self.uri, port=self.port, database=self.db_name)
         try:
             self._ping_client()
-        except ConnectionError:
-            raise CantConnectToInfluxDBException('connexion error')
+        except InfluxConnectionError as exn:
+            raise CantConnectToInfluxDBException('connexion error') from exn
 
         for db in self.client.get_list_database():
             if db['name'] == self.db_name:

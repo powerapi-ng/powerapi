@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,9 @@ from powerapi.database import BaseDB, DBError
 
 
 class CantConnectToOpenTSDBException(DBError):
-    pass
+    """
+    Exception raised to notify that connection to the opentsdb database is impossible
+    """
 
 
 class OpenTSDB(BaseDB):
@@ -66,6 +68,9 @@ class OpenTSDB(BaseDB):
         self.metric_name = metric_name
 
         self.client = None
+
+    def __iter__(self):
+        raise NotImplementedError()
 
     def connect(self):
         """

@@ -27,4 +27,4 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.formula.formula_actor import FormulaActor, FormulaValues, DomainValues
-from .abstract_cpu_dram_formula import AbstractCpuDramFormula, CpuDramDomainValues
+from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula, CpuDramDomainValues

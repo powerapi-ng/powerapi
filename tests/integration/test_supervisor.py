@@ -44,9 +44,11 @@ from powerapi.test_utils.actor import system, puller_start_message, pusher_start
 from powerapi.test_utils.dummy_actor import CrashInitActor
 from powerapi.test_utils.db import SilentFakeDB
 
+VERBOSE_MODE=True
+
 @pytest.fixture
 def supervisor(system):
-    return Supervisor()
+    return Supervisor(VERBOSE_MODE)
 
 
 def rule(r):
@@ -57,7 +59,7 @@ def rule(r):
 def test_monitor_a_puller_actor_in_non_stream_mode_with_an_empty_database_must_return(system, supervisor):
     filter = Filter()
     filter.filter(rule, None)
-    supervisor.launch(PullerActor, PullerStartMessage('system', 'test_puller', SilentFakeDB(), filter, None, False))
+    supervisor.launch(PullerActor, PullerStartMessage('system', 'test_puller', SilentFakeDB(), filter, False))
     supervisor.monitor()
 
 

@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,13 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from queue import Queue, Empty
-from threading import Thread
-from socket import socket
-from typing import Type
+from typing import Type, List
 import json
 
-from . import IterDB, BaseDB
+from powerapi.database import IterDB, BaseDB
 from powerapi.utils import JsonStream
 from powerapi.report import Report
 
@@ -42,6 +39,9 @@ SOCKET_TIMEOUT = 0.5
 
 
 class SocketDB(BaseDB):
+    """
+    Database that act as a server that expose a socket where data source will push data
+    """
 
     def __init__(self, report_type: Type[Report], port: int):
         BaseDB.__init__(self, report_type)
@@ -52,16 +52,19 @@ class SocketDB(BaseDB):
 
     async def connect(self):
         self.queue = asyncio.Queue()
-        self.server = await asyncio.start_server(self.gen_server_callback(), host='127.0.0.1', port=self.port)
+        self.server = await asyncio.start_server(self._gen_server_callback(), host='127.0.0.1', port=self.port)
 
     async def stop(self):
+        """
+        stop server connection
+        """
         self.server.close()
         await self.server.wait_closed()
 
     def iter(self, stream_mode):
         return IterSocketDB(self.report_type, stream_mode, self.queue)
 
-    def gen_server_callback(self):
+    def _gen_server_callback(self):
         async def callback(stream_reader, _):
             stream = JsonStream(stream_reader)
             while True:
@@ -72,6 +75,15 @@ class SocketDB(BaseDB):
                 # self.queue.put(json_str)
 
         return callback
+
+    def __iter__(self):
+        raise NotImplementedError()
+
+    def save(self, report: Report):
+        raise NotImplementedError()
+
+    def save_many(self, reports: List[Report]):
+        raise NotImplementedError()
 
 
 class IterSocketDB(IterDB):
@@ -87,14 +99,9 @@ class IterSocketDB(IterDB):
         self.queue = queue
 
     def __aiter__(self):
-        """
-        """
         return self
 
     async def __anext__(self):
-    # def __next__(self):
-        """
-        """
         try:
             json_str = await asyncio.wait_for(self.queue.get(), 2)
             # json = self.queue.get_nowait()

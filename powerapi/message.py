@@ -27,17 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
-from typing import Dict, Any, Type, Callable, List
+from typing import Type, List
 from typing import TYPE_CHECKING
-
-from thespian.actors import ActorAddress
 
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
     from powerapi.report_model import ReportModel
     from powerapi.dispatcher import RouteTable
-    from powerapi.formula import FormulaValues, FormulaActor, FormulaValues, DomainValues
+    from powerapi.formula import FormulaActor, FormulaValues, DomainValues
     from powerapi.report_modifier import ReportModifier
 
 
@@ -47,7 +45,7 @@ class Message:
     """
     def __init__(self, sender_name: str):
         self.sender_name = sender_name
-    
+
     def __str__(self):
         raise NotImplementedError()
 
@@ -69,7 +67,7 @@ class OKMessage(Message):
     """
     def __init__(self, sender_name: str):
         Message.__init__(self, sender_name)
-    
+
     def __str__(self):
         return "OKMessage"
 
@@ -114,18 +112,33 @@ class EndMessage(Message):
 
 
 class PullerStartMessage(StartMessage):
-    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, report_model: ReportModel, stream_mode: bool, report_modifier_list: List[ReportModifier] = []):
+    """
+    Message used to start a Puller actor
+    """
+    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, stream_mode: bool, report_modifiers: List[ReportModifier] = []):
+        """
+        :param sender_name: name of the actor that send the message
+        :param name: puller actor name
+        :param database: database used by the puller to pull report
+        :param report_filter: report filter used to filter reports
+        :param stream_mode: True if stream mode is enabled
+        :param report_modifier_list: list of ReportModifier used to modify report before sending them to dispatcher
+        """
         StartMessage.__init__(self, sender_name, name)
         self.database = database
         self.report_filter = report_filter
-        self.report_model = report_model
         self.stream_mode = stream_mode
-        self.report_modifier_list = report_modifier_list
+        self.report_modifier_list = report_modifiers
 
 
 class DispatcherStartMessage(StartMessage):
+    """
+    Message used to start Dispatcher actor
+    """
     def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaValues, route_table: RouteTable, device_id: str):
         """
+        :param sender_name: name of the actor that send the message
+        :param name: puller actor name
         :param formula_class: Class of the formula the dispatcher handle
         :param formula_values: Values that will be always passed to formula for initialization
         :param route_table: Dispatcher's Route table
@@ -139,19 +152,30 @@ class DispatcherStartMessage(StartMessage):
 
 
 class FormulaStartMessage(StartMessage):
+    """
+    Message used to start formula actor
+    """
     def __init__(self, sender_name: str, name: str, formula_values: FormulaValues, domain_values: DomainValues):
+        """
+        :param sender_name: name of the actor that send the message
+        :param name: puller actor name
+        :param formula_values: values used by formula for initialization (depend of the formula class)
+        :param domain_values: domain of the formula (depend of the formula class)
+        """
         StartMessage.__init__(self, sender_name, name)
         self.values = formula_values
         self.domain_values = domain_values
 
 
 class PusherStartMessage(StartMessage):
-    def __init__(self, sender_name: str, name: str, database: BaseDB, report_model: ReportModel):
+    """
+    Message used to start a Pusher actor
+    """
+    def __init__(self, sender_name: str, name: str, database: BaseDB):
         """
-        :param str name: Pusher name.
-        :param Report report_model: ReportModel
+        :param sender_name: name of the actor that send the message
+        :param name: puller actor name
         :param BaseDB database: Database use for saving data.
         """
         StartMessage.__init__(self, sender_name, name)
         self.database = database
-        self.report_model = report_model

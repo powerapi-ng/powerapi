@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,8 @@ from enum import Enum
 
 from powerapi.report import Report
 
-class State(Enum):
+
+class _State(Enum):
     INIT = 1
     BLOCKED_INTER_1 = 2
     BLOCKED_INTER_2 = 3
@@ -44,38 +45,46 @@ class BlockingDetector:
     A formula is defined as blocked if a three message sequence raise an exception when they are received by the formula.
     """
     def __init__(self):
-        self.state = State.INIT
+        self.state = _State.INIT
         self.last_poison_message_id = None
         self.max_id_value = 10000
         self.last_message_id = 0
 
     def notify_poison_received(self, message: Report):
-        if self.state == State.INIT:
-            self.state = State.BLOCKED_INTER_1
+        """
+        notify the blocking detector that a poison message was received
+        :param message: message that make the formula crash
+        """
+        if self.state == _State.INIT:
+            self.state = _State.BLOCKED_INTER_1
         elif message.dispatcher_report_id == self.last_poison_message_id + 1:
-            if self.state == State.BLOCKED_INTER_1:
-                self.state = State.BLOCKED_INTER_2
-            elif self.state == State.BLOCKED_INTER_2:
-                self.state = State.BLOCKED
-            elif self.state == State.BLOCKED:
-                self.state = State.FINAL
-        elif self.state != State.BLOCKED and self.state != State.FINAL:
-            self.state = State.BLOCKED_INTER_1
-
+            if self.state == _State.BLOCKED_INTER_1:
+                self.state = _State.BLOCKED_INTER_2
+            elif self.state == _State.BLOCKED_INTER_2:
+                self.state = _State.BLOCKED
+            elif self.state == _State.BLOCKED:
+                self.state = _State.FINAL
+        elif self.state != _State.BLOCKED and self.state != _State.FINAL:
+            self.state = _State.BLOCKED_INTER_1
 
         if message.dispatcher_report_id == self.max_id_value:
             self.last_poison_message_id = -1
         else:
-            self.last_poison_message_id = message.dispatcher_report_id 
+            self.last_poison_message_id = message.dispatcher_report_id
 
     def is_blocked(self) -> bool:
-        return self.state == State.BLOCKED
+        """
+        :return: True if the formula is considered as blocked
+        """
+        return self.state == _State.BLOCKED
 
-    def get_message_id(self):
+    def get_message_id(self) -> int:
+        """
+        :return: a new id for message send to formula in order to keep message order
+        """
         message_id = self.last_message_id
         if self.last_message_id == self.max_id_value:
             self.last_message_id = 0
         else:
             self.last_message_id += 1
         return message_id
-    

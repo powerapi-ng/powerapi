@@ -144,12 +144,11 @@ def test_run_mongo(mongo_database, shutdown_system):
                                          'collection': MONGO_OUTPUT_COLLECTION_NAME}},
               'input': {'test_puller': {'type': 'mongodb',
                                         'model': 'HWPCReport',
-                                        'name': 'test_puller',
                                         'uri': MONGO_URI,
                                         'db': MONGO_DATABASE_NAME,
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 

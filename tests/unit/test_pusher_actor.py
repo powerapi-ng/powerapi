@@ -54,10 +54,10 @@ class TestPuller(AbstractTestActorWithDB):
 
     @pytest.fixture
     def actor_start_message(self, system, actor, fake_db):
-        return PusherStartMessage('system', 'pusher_test', fake_db, None)
+        return PusherStartMessage('system', 'pusher_test', fake_db)
 
     def test_starting_actor_with_db_that_crash_when_connected_must_answer_error_message(self, system, actor, crash_db):
-        start_msg = PusherStartMessage('system', 'pusher_test', crash_db, None)
+        start_msg = PusherStartMessage('system', 'pusher_test', crash_db)
         msg = system.ask(actor, start_msg)
         assert isinstance(msg, ErrorMessage)
         assert msg.error_message == 'crash'
