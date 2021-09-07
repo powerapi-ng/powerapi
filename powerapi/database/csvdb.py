@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -94,7 +94,7 @@ class CsvIterDB(IterDB):
                 self.tmp_read[filename]['file'] = open(filename)
                 self.tmp_read[filename]['reader'] = csv.DictReader(self.tmp_read[filename]['file'])
             except FileNotFoundError as error:
-                raise CsvBadFilePathError(error)
+                raise CsvBadFilePathError(error) from error
             self.tmp_read[filename]['next_line'] = self._next(filename)
 
             # Check common key
@@ -123,6 +123,11 @@ class CsvIterDB(IterDB):
         except StopIteration:
             return None
 
+    def _close_file(self):
+        for filename in self.filenames:
+            if self.tmp_read[filename]['file'] is not None:
+                self.tmp_read[filename]['file'].close()
+
     def __next__(self) -> Report:
         """
         Allow to get the next data
@@ -134,10 +139,8 @@ class CsvIterDB(IterDB):
         # For all files
 
         for path_file in self.filenames:
-            
             # While timestamp is lower or equal
             while True:
-
                 # Get the next line
                 row = self.tmp_read[path_file]['next_line']
 
@@ -145,10 +148,7 @@ class CsvIterDB(IterDB):
                 if row is None:
                     # If the first file a no next file, just stop the iteration
                     if not raw_data and path_file == self.filenames[0]:
-                        # Close files
-                        for filename in self.filenames:
-                            if self.tmp_read[filename]['file'] is not None:
-                                self.tmp_read[filename]['file'].close()
+                        self._close_file()
                         raise StopIteration()
                     else:
                         break
@@ -178,10 +178,7 @@ class CsvIterDB(IterDB):
                 self.tmp_read[path_file]['next_line'] = self._next(path_file)
 
         if not raw_data:
-            # Close files
-            for filename in self.filenames:
-                if self.tmp_read[filename]['file'] is not None:
-                    self.tmp_read[filename]['file'].close()
+            self._close_file()
             raise StopIteration()
 
         report = self.report_type.from_csv_lines(raw_data)
@@ -262,7 +259,6 @@ class CsvDB(BaseDB):
 
         Nothing to do with CSV, because it's just files operations.
         """
-        pass
 
     def save(self, report: Report):
         """
@@ -284,7 +280,6 @@ class CsvDB(BaseDB):
             rep_path_with_file = rep_path + '/' + filename + '.csv'
 
             # Get the header and check if it's ok
-            # TODO: inefficient
             for value in values:
                 header = csv_header + sorted(list(set([event_key for event_key, _ in value.items()]) - set(csv_header)))
                 header_exist = False
@@ -315,6 +310,5 @@ class CsvDB(BaseDB):
         :param reports: Batch of report.
         :param report_model: ReportModel
         """
-        # TODO: Inefficient
         for report in reports:
             self.save(report)

@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,19 +31,30 @@ from typing import Dict, Type, Tuple
 from thespian.actors import ActorAddress, ActorExitRequest
 
 from powerapi.actor import Actor
-from powerapi.message import FormulaStartMessage, EndMessage, OKMessage
+from powerapi.message import FormulaStartMessage, EndMessage
+
 
 class FormulaValues:
+    """
+    values used to initialize formula actor
+    """
     def __init__(self, pushers: Dict[str, ActorAddress]):
         self.pushers = pushers
 
+
 class DomainValues:
+    """
+    values that describe the device that the formula compute the power consumption for
+    """
     def __init__(self, device_id: str, formula_id: Tuple):
         self.device_id = device_id
         self.sensor = formula_id[0]
 
 
 class FormulaActor(Actor):
+    """
+    Abstract actor class used to implement formula actor that compute power consumption of a device from Reports
+    """
     def __init__(self, start_message_cls: Type[FormulaStartMessage]):
         Actor.__init__(self, start_message_cls)
         self.pushers: Dict[str, ActorAddress] = None
@@ -56,10 +67,16 @@ class FormulaActor(Actor):
         self.device_id = start_message.domain_values.device_id
         self.sensor = start_message.domain_values.sensor
 
-    def receiveMsg_EndMessage(self, message: EndMessage, sender: ActorAddress):
+    def receiveMsg_EndMessage(self, message: EndMessage, _: ActorAddress):
+        """
+        when receiving a EndMessage kill itself
+        """
         self.log_debug('received message ' + str(message))
         self.send(self.myAddress, ActorExitRequest())
 
     @staticmethod
     def gen_domain_values(device_id: str, formula_id: Tuple) -> DomainValues:
+        """
+        generate domain values of the formula from device and formula id
+        """
         return DomainValues(device_id, formula_id)

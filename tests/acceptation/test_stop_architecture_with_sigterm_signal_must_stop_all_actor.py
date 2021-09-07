@@ -83,7 +83,6 @@ class MainProcess(Process):
                   'stream': True,
                   'output': {'test_pusher': {'type': 'mongodb',
                                              'model': 'PowerReport',
-                                             'name': 'test_pusher',
                                              'uri': MONGO_URI,
                                              'db': MONGO_DATABASE_NAME,
                                              'collection': MONGO_OUTPUT_COLLECTION_NAME}},
@@ -93,7 +92,7 @@ class MainProcess(Process):
                                              'db': MONGO_DATABASE_NAME,
                                              'collection': MONGO_INPUT_COLLECTION_NAME}}
                   }
-        supervisor = Supervisor()
+        supervisor = Supervisor(config['verbose'])
 
         def term_handler(_, __):
             supervisor.shutdown()

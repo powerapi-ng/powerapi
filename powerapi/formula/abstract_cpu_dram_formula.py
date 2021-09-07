@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -26,13 +26,16 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import re
 from typing import Type, Tuple
 
-from powerapi.formula import FormulaActor, DomainValues
+from powerapi.formula.formula_actor import FormulaActor, DomainValues
 from powerapi.message import FormulaStartMessage
 
+
 class CpuDramDomainValues(DomainValues):
+    """
+    Socket values for device with socket and core domains
+    """
 
     def __init__(self, device_id: str, formula_id: Tuple):
         DomainValues.__init__(self, device_id, formula_id)

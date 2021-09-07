@@ -86,7 +86,7 @@ def pytest_generate_tests(metafunc):
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_report_type(PowerReport)
 def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok_message(system, pusher, database, report_type):
-    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database, report_type))
+    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database))
     assert isinstance(answer, OKMessage)
 
 
@@ -96,5 +96,5 @@ def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok
 ])
 @define_report_type(PowerReport)
 def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(system, pusher, database, report_type):
-    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database, report_type))
+    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database))
     assert isinstance(answer, ErrorMessage)

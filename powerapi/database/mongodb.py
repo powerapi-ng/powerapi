@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import logging
 try:
     import pymongo
@@ -82,7 +81,6 @@ class MongoIterDB(IterDB):
             json = self.db.collection.find_one_and_delete({})
             if json is None:
                 raise StopIteration()
-
 
         return self.report_type.from_mongodb(json)
 
@@ -143,8 +141,8 @@ class MongoDB(BaseDB):
         # Check if hostname:port work
         try:
             self.mongo_client.admin.command('ismaster')
-        except pymongo.errors.ServerSelectionTimeoutError:
-            raise MongoBadDBError(self.uri)
+        except pymongo.errors.ServerSelectionTimeoutError as exn:
+            raise MongoBadDBError(self.uri) from exn
 
         self.collection = self.mongo_client[self.db_name][self.collection_name]
 
@@ -168,5 +166,5 @@ class MongoDB(BaseDB):
 
         :param reports: Batch of data.
         """
-        serialized_reports = list(map(lambda r: self.report_type.to_mongodb(r), reports))
+        serialized_reports = list(map(self.report_type.to_mongodb, reports))
         self.collection.insert_many(serialized_reports)

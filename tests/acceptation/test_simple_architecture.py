@@ -245,12 +245,10 @@ def test_run_csv_to_csv(files, shutdown_system):
               'output': {'test_pusher': {'type': 'csv',
                                          'tags': 'socket',
                                          'model': 'PowerReport',
-                                         'name': 'pusher',
                                          'directory': OUTPUT_PATH}},
               'input': {'test_puller': {'type': 'csv',
                                         'files': FILES,
-                                        'model': 'HWPCReport',
-                                        'name': 'puller'}},
+                                        'model': 'HWPCReport'}},
               }
     supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
