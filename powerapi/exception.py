@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@ class PowerAPIException(Exception):
     """
     PowerAPIException base class
     """
-    pass
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
@@ -40,4 +39,5 @@ class PowerAPIExceptionWithMessage(PowerAPIException):
     PowerAPIException base class
     """
     def __init__(self, msg):
+        PowerAPIException.__init__(self)
         self.msg = msg

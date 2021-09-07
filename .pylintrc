@@ -60,7 +60,11 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=R0903, R0902, C0200
+disable=R0903, R0902, C0200,
+	 C0114, C0103, R1705, R0913,
+	 W0102, C0112, R1720, R0915,
+	 W0237, R1732, W1514, R1718,
+	 C0206, W0236, W0223,
 	print-statement,
         parameter-unpacking,
         unpacking-in-except,
@@ -326,7 +330,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=160
 
 # Maximum number of lines in a module.
 max-module-lines=1000

@@ -138,7 +138,7 @@ def test_run(mocked_libvirt, mongo_database, shutdown_system):
                                                      'domain_regexp': REGEXP}}
               }
 
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 

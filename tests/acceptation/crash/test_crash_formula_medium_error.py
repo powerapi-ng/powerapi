@@ -158,7 +158,7 @@ def test_run_mongo(mongo_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor()
+    supervisor = Supervisor(config['verbose'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 

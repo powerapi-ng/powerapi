@@ -29,6 +29,12 @@
 from powerapi.exception import PowerAPIException
 
 
+class PrimaryDispatchRuleRuleAlreadyDefinedException(PowerAPIException):
+    """
+    Exception raised when trying to define a primary dispatch rule on a route table that have already one
+    """
+
+
 class RouteTable:
     """
     Structure that map a :class:`Report<powerapi.report.Report>` type to a
@@ -72,6 +78,5 @@ class RouteTable:
             if self.primary_dispatch_rule is not None:
                 raise PrimaryDispatchRuleRuleAlreadyDefinedException()
             self.primary_dispatch_rule = dispatch_rule
-
 
         self.route_table.append((report_class, dispatch_rule))

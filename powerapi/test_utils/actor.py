@@ -66,8 +66,8 @@ def puller(system):
 
 
 @pytest.fixture()
-def puller_start_message(database, report_filter, report_type, stream_mode):
-    return PullerStartMessage('system', PULLER_NAME, database, report_filter, report_type, stream_mode)
+def puller_start_message(database, report_filter, stream_mode):
+    return PullerStartMessage('system', PULLER_NAME, database, report_filter, stream_mode)
 
 
 @pytest.fixture()
@@ -85,7 +85,7 @@ def pusher(system):
 
 @pytest.fixture()
 def pusher_start_message(database, report_type):
-    return PusherStartMessage('system', PUSHER_NAME, database, report_type)
+    return PusherStartMessage('system', PUSHER_NAME, database)
 
 
 @pytest.fixture()

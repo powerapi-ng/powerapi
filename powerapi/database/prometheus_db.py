@@ -46,7 +46,8 @@ class PrometheusDB(BaseDB):
     Could only be used with a pusher actor
     """
 
-    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str, metric_description: str, aggregation_periode: int, tags: List[str]):
+    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str,
+                 metric_description: str, aggregation_periode: int, tags: List[str]):
         """
         :param address:             address that expose the metric
         :param port:
@@ -74,6 +75,9 @@ class PrometheusDB(BaseDB):
         self.current_period_end = 0
 
         self.buffer = StatBuffer(aggregation_periode)
+
+    def __iter__(self):
+        raise NotImplementedError()
 
     def connect(self):
         """

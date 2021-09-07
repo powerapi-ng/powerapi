@@ -28,7 +28,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.report import Report
 
-class ReportModifier:
 
+class ReportModifier:
+    """
+    Abstract class for object used by puller to modify reports before sending them to dispatcher
+    """
     def modify_report(self, report: Report) -> Report:
+        """
+        modify the given report
+        """
         raise NotImplementedError()

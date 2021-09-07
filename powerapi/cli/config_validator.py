@@ -26,13 +26,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Dict
 import logging
+import os
+
+from typing import Dict
+
 
 class ConfigValidator:
+    """
+    Validate powerapi config and initialize missing default values
+    """
     @staticmethod
     def validate(config: Dict):
-
+        """
+        Validate powerapi config and initialize missing default values
+        """
         if 'verbose' not in config:
             config['verbose'] = logging.NOTSET
         if 'stream' not in config:
@@ -40,12 +48,12 @@ class ConfigValidator:
         if 'output' not in config:
             logging.error("no output configuration found")
             return False
-        
+
         for output_type in config['output']:
             output_config = config['output'][output_type]
-            if 'model' not in  output_config:
+            if 'model' not in output_config:
                 output_config['model'] = 'HWPCReport'
-            if 'name' not in  output_config:
+            if 'name' not in output_config:
                 output_config['name'] = 'default_pusher'
 
         if 'input' not in config:
@@ -58,5 +66,16 @@ class ConfigValidator:
                 input_config['model'] = 'PowerReport'
             if 'name' not in input_config:
                 input_config['name'] = 'default_puller'
+
+        if not ConfigValidator._validate_input(config):
+            return False
         return True
-        
+
+    @staticmethod
+    def _validate_input(config: Dict):
+        for _, input_config in config['input'].items():
+            if input_config['type'] == 'csv':
+                for file_name in input_config['files']:
+                    if not os.access(file_name, os.R_OK):
+                        return False
+        return True

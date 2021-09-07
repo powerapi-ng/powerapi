@@ -112,11 +112,11 @@ class TestPuller(AbstractTestActorWithDB):
 
     @pytest.fixture
     def actor_start_message(self, system, actor, fake_db, fake_filter):
-        return PullerStartMessage('system', 'puller_test', fake_db, fake_filter, None, False)
+        return PullerStartMessage('system', 'puller_test', fake_db, fake_filter, False)
 
     def test_create_puller_with_router_without_rules_must_raise_RouterWithoutRuleException(self, system, empty_filter, fake_db):
         puller = system.createActor(PullerActor)
-        puller_start_message = PullerStartMessage('system', 'puller_test', fake_db, empty_filter, None, False)
+        puller_start_message = PullerStartMessage('system', 'puller_test', fake_db, empty_filter, False)
         answer = system.ask(puller, puller_start_message)
         assert isinstance(answer, ErrorMessage)
         assert answer.error_message == 'filter without rules'
@@ -141,7 +141,7 @@ class TestPuller(AbstractTestActorWithDB):
 
     def test_starting_actor_in_stream_mode_dont_terminate_itself_after_empty_db(self, system, actor, fake_db, fake_filter):
         assert is_actor_alive(system, actor)
-        puller_start_message = PullerStartMessage('system', 'puller_test', fake_db, fake_filter, None, True)
+        puller_start_message = PullerStartMessage('system', 'puller_test', fake_db, fake_filter, True)
         answer = system.ask(actor, puller_start_message)
         time.sleep(1)
         assert is_actor_alive(system, actor)

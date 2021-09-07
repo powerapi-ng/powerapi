@@ -29,11 +29,11 @@
 import logging
 import sys
 
-from typing import List, Type
+from typing import Type
 
-from thespian.actors import ActorSystem, ActorAddress, ActorExitRequest
+from thespian.actors import ActorSystem
 
-from powerapi.message import OKMessage, ErrorMessage, StartMessage, EndMessage, PingMessage
+from powerapi.message import OKMessage, ErrorMessage, StartMessage, EndMessage
 from powerapi.actor import InitializationException, Actor
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.pusher import PusherActor
@@ -47,14 +47,26 @@ class ActorCrashedException(PowerAPIExceptionWithMessage):
     """
 
 
-class actorLogFilter(logging.Filter):
-    def filter(self, logrecord):
-        return 'actor_name' in logrecord.__dict__
+class ActorLogFilter(logging.Filter):
+    """
+    Log filter
+    """
+    def filter(self, record):
+        """
+        filter logs that was produced by actor
+        """
+        return 'actor_name' in record.__dict__
 
 
-class notActorLogFilter(logging.Filter):
-    def filter(self, logrecord):
-        return 'actorAddress' not in logrecord.__dict__
+class NotActorLogFilter(logging.Filter):
+    """
+    Log filter
+    """
+    def filter(self, record):
+        """
+        filter logs that was not produced by actor
+        """
+        return 'actorAddress' not in record.__dict__
 
 
 LOG_DEF = {
@@ -63,8 +75,8 @@ LOG_DEF = {
         'normal': {'format': '%(levelname)s::%(created)s::ROOT::%(message)s'},
         'actor': {'format': '%(levelname)s::%(created)s::%(actor_name)s::%(message)s'}},
     'filters': {
-        'isActorLog': {'()': actorLogFilter},
-        'notActorLog': {'()': notActorLogFilter}},
+        'isActorLog': {'()': ActorLogFilter},
+        'notActorLog': {'()': NotActorLogFilter}},
     'handlers': {
         'h1': {'class': 'logging.StreamHandler',
                'stream': sys.stdout,
@@ -81,10 +93,16 @@ LOG_DEF = {
     'loggers': {'': {'handlers': ['h1', 'h2'], 'level': logging.DEBUG}}
 }
 
+
 class Supervisor:
-
+    """
+    Interface with Actor system
+    Used to launch, stop and monitor actors
+    """
     def __init__(self, verbose_mode: bool):
-
+        """
+        :param verbose_mode: Specify the log level : True -> DEBUG False -> INFO
+        """
         if verbose_mode:
             LOG_DEF['handlers']['h1']['level'] = logging.DEBUG
             LOG_DEF['handlers']['h2']['level'] = logging.DEBUG
@@ -111,19 +129,22 @@ class Supervisor:
 
         if isinstance(answer, OKMessage):
             self._add_actor(address, name, actor_cls)
+            logging.info('launch %s actor', name)
             return address
-        if isinstance(answer, ErrorMessage):
+        elif isinstance(answer, ErrorMessage):
             raise InitializationException(answer.error_message)
+        print(answer)
+        raise InitializationException("Unknow message type : " + str(type(answer)))
 
     def _add_actor(self, address, name, actor_cls):
-        if actor_cls is PusherActor:
+        if issubclass(actor_cls, PusherActor):
             self.pushers[name] = address
-        elif actor_cls is PullerActor:
+        elif issubclass(actor_cls, PullerActor):
             self.pullers[name] = address
-        elif actor_cls is DispatcherActor:
+        elif issubclass(actor_cls, DispatcherActor):
             self.dispatchers[name] = address
         else:
-            raise AttributeError('Actor is not a DispatcherActor, PusherActor of PullerActor')
+            raise AttributeError('Actor is not a DispatcherActor, PusherActor or PullerActor')
         self.actors[name] = address
 
     def _wait_actors(self):
@@ -131,6 +152,9 @@ class Supervisor:
             self.system.listen()
 
     def shutdown(self):
+        """
+        Shutdown the entire actor system and all the actors
+        """
         self.system.shutdown()
 
     def monitor(self):
@@ -145,5 +169,4 @@ class Supervisor:
                 self._wait_actors()
                 return
             else:
-                #: todo log ici
-                pass
+                logging.error("Unknow message type : %s", str(type(msg)))

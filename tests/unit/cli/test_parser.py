@@ -33,7 +33,7 @@ from powerapi.cli.parser import store_true
 from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
 from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, ComponentAlreadyExistException
 from powerapi.cli.parser import SubParserWithoutNameArgumentException, NoNameSpecifiedForComponentException
-from powerapi.cli.parser import TooManyArgumentNamesException, BadValueException
+from powerapi.cli.parser import TooManyArgumentNamesException
 
 
 ###############
@@ -364,20 +364,6 @@ def test_add_two_short_name():
     parser = MainParser(help_arg=False)
     with pytest.raises(TooManyArgumentNamesException):
         parser.add_argument('coco', 'dodo')
-
-
-# check tests #
-def test_add_two_short_name():
-    """
-    Parse an argument with a value that doesn't respect the check function of
-    this argument. Test if a BadValueException is raised
-
-    """
-    parser = MainParser(help_arg=False)
-    parser.add_argument('coco', type=int, check=lambda x: x > 2)
-
-    with pytest.raises(BadValueException):
-        parser.parse('--coco 1'.split())
 
 
 # Type tests #

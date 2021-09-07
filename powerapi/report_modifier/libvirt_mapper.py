@@ -33,16 +33,19 @@ try:
     from libvirt import openReadOnly, libvirtError
 except ImportError:
     logging.getLogger().info("libvirt-python is not installed.")
-    libvirtError = Exception
+    libvirtError = None
     openReadOnly = None
 
-from . import ReportModifier
+from powerapi.report_modifier.report_modifier import ReportModifier
+
 
 class LibvirtMapper(ReportModifier):
+    """
+    Report modifier which modifi target with libvirt id by open stak uuid
+    """
 
     def __init__(self, uri: str, regexp: str):
         self.regexp = re.compile(regexp)
-
         daemon_uri = None if uri == '' else uri
         self.libvirt = openReadOnly(daemon_uri)
 

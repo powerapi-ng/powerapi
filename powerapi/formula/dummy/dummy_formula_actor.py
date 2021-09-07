@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,16 +27,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
-from typing import Dict, Tuple
+from typing import Dict
 
 from thespian.actors import ActorAddress
 
-from powerapi.formula import AbstractCpuDramFormula, FormulaValues, CpuDramDomainValues
+from powerapi.formula import AbstractCpuDramFormula, FormulaValues
 from powerapi.report import Report, PowerReport
 from powerapi.message import FormulaStartMessage
 
 
 class DummyFormulaValues(FormulaValues):
+    """
+    Formula values with configurable sleeping time for dummy formula
+    """
     def __init__(self, pushers: Dict[str, ActorAddress], sleeping_time: int):
         FormulaValues.__init__(self, pushers)
         self.sleeping_time = sleeping_time
@@ -61,9 +64,12 @@ class DummyFormulaActor(AbstractCpuDramFormula):
         AbstractCpuDramFormula._initialization(self, message)
         self.sleeping_time = message.values.sleeping_time
 
-    def receiveMsg_Report(self, message: Report, sender: ActorAddress):
+    def receiveMsg_Report(self, message: Report, _: ActorAddress):
+        """
+        When receiving a report sleep for a given time and produce a power report with a power consumption of 42W
+        """
         self.log_debug('received message ' + str(message))
         time.sleep(self.sleeping_time)
-        power_report =  PowerReport(message.timestamp, message.sensor, message.target, 42, {'socket': self.socket})
+        power_report = PowerReport(message.timestamp, message.sensor, message.target, 42, {'socket': self.socket})
         for _, pusher in self.pushers.items():
             self.send(pusher, power_report)
