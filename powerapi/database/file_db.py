@@ -126,7 +126,6 @@ class FileDB(BaseDB):
         """
         raise DBError("FileDB do not support save method")
 
-
     def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
