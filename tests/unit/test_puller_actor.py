@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -125,7 +125,7 @@ class TestPuller(AbstractTestActorWithDB):
     def test_start_actor_with_db_that_contains_2_report_make_actor_send_reports_to_dispatcher(self, system, started_actor, fake_dispatcher, content, dummy_pipe_out):
 
         for report in content:
-            assert dummy_pipe_out.recv() == ('dispatcher', report)
+            assert recv_from_pipe(dummy_pipe_out, 2) == ('dispatcher', report)
 
     def test_starting_actor_in_non_stream_mode_make_it_terminate_itself_after_empty_db(self, system, started_actor):
         time.sleep(1)

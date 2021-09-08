@@ -178,7 +178,7 @@ class TimedActor(Actor):
         Actor.receiveMsg_StartMessage(self, message, sender)
         self.wakeupAfter(self._time_interval)
 
-    def receiveMsg_WakeupMessage(self, message: WakeupMessage, _: ActorAddress):
+    def receiveMsg_WakeupMessage(self, _: WakeupMessage, __: ActorAddress):
         """
         When receiving a WakeupMessage, launch the actor task
         """

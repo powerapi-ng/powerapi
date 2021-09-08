@@ -121,7 +121,6 @@ class InfluxDB(BaseDB):
         Save a batch of data
 
         :param reports: Batch of data.
-        :param report_model: ReportModel
         """
 
         data_list = list(map(lambda r: self.report_type.to_influxdb(r, self.tags), reports))

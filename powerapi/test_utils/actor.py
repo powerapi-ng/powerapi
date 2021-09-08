@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
 from powerapi.formula import FormulaActor
 from powerapi.message import PusherStartMessage, PullerStartMessage, DispatcherStartMessage, FormulaStartMessage
-from powerapi.message import PingMessage, StartMessage, OKMessage
+from powerapi.message import PingMessage, OKMessage
 from powerapi.supervisor import LOG_DEF
 
 
@@ -45,14 +45,22 @@ PULLER_NAME = 'test_puller'
 DISPATCHER_NAME = 'test_dispatcher'
 DISPATCHER_DEVICE_ID = 'test_device'
 
+
 @pytest.fixture
 def system():
+    """
+    fixture that start an Actor system with log enabled before launching the test and shutdown it after the test end
+    """
     syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
     yield syst
     syst.shutdown()
 
+
 @pytest.fixture
 def shutdown_system():
+    """
+    fixture that shutdown all multiproQeueuBase actor system after the test end
+    """
     yield None
     syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
     syst.shutdown()
@@ -60,6 +68,9 @@ def shutdown_system():
 
 @pytest.fixture()
 def puller(system):
+    """
+    fixture that create a PullerActor before launching the test and stop it after the test end
+    """
     actor = system.createActor(PullerActor)
     yield actor
     system.tell(actor, ActorExitRequest())
@@ -67,34 +78,53 @@ def puller(system):
 
 @pytest.fixture()
 def puller_start_message(database, report_filter, stream_mode):
+    """
+    return a puller start message
+    """
     return PullerStartMessage('system', PULLER_NAME, database, report_filter, stream_mode)
 
 
 @pytest.fixture()
 def started_puller(system, puller, puller_start_message):
+    """
+    fixture that create and start a PullerActor and actor before launching the test and stop it after the test end
+    """
     system.ask(puller, puller_start_message)
     return puller
 
 
 @pytest.fixture()
 def pusher(system):
+    """
+    fixture that create a PusherActor before launching the test and stop it after the test end
+    """
     actor = system.createActor(PusherActor)
     yield actor
     system.tell(actor, ActorExitRequest())
 
 
 @pytest.fixture()
-def pusher_start_message(database, report_type):
+def pusher_start_message(database):
+    """
+    return a pusher start message
+    """
     return PusherStartMessage('system', PUSHER_NAME, database)
 
 
 @pytest.fixture()
 def started_pusher(system, pusher, pusher_start_message):
+    """
+    fixture that create and start a PusherActor and actor before launching the test and stop it after the test end
+    """
     system.ask(pusher, pusher_start_message)
     return pusher
 
+
 @pytest.fixture()
 def dispatcher(system):
+    """
+    fixture that create a DispatcherActor before launching the test and stop it after the test end
+    """
     actor = system.createActor(DispatcherActor)
     yield actor
     system.tell(actor, ActorExitRequest())
@@ -102,10 +132,17 @@ def dispatcher(system):
 
 @pytest.fixture()
 def dispatcher_start_message(formula_class, formula_values, route_table):
+    """
+    return a dispatcher start message
+    """
     return DispatcherStartMessage('system', DISPATCHER_NAME, formula_class, formula_values, route_table, DISPATCHER_DEVICE_ID)
+
 
 @pytest.fixture()
 def started_dispatcher(system, dispatcher, dispatcher_start_message):
+    """
+    fixture that create and start a DispatcherActor and actor before launching the test and stop it after the test end
+    """
     system.ask(dispatcher, dispatcher_start_message)
     return dispatcher
 
@@ -118,6 +155,9 @@ class CrashFormula(FormulaActor):
         FormulaActor.__init__(self, FormulaStartMessage)
 
     def receiveMsg_Report(self, message: Report, sender: ActorAddress):
+        """
+        crash when receiving a report
+        """
         raise Exception()
 
 
@@ -126,5 +166,4 @@ def is_actor_alive(system, actor_address, time=1):
     wait the actor to terminate or 0.5 secondes and return its is_alive value
     """
     msg = system.ask(actor_address, PingMessage('system'), time)
-    print(msg)
     return isinstance(msg, OKMessage)

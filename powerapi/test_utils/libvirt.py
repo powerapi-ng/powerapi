@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import pytest
-
 try:
     from libvirt import libvirtError
 except ImportError:
@@ -45,15 +43,27 @@ UUID_1 = '123-456-789-1011'
 
 
 class MockedDomain:
+    """
+    Mocked libvirt domain that contain only uuid string
+    """
     def __init__(self, uuid_str):
         self.uuid_str = uuid_str
 
     def UUIDString(self):
+        """
+        mocked UUIDString method
+        """
         return self.uuid_str
 
 
 class MockedLibvirt:
+    """
+    Mocked libvirt client
+    """
     def lookupByName(self, domain_name):
+        """
+        :return: MockedDomain with UUID_1
+        """
         if domain_name == DOMAIN_NAME_1:
             return MockedDomain(UUID_1)
         raise libvirtError('')

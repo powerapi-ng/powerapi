@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,7 @@ class ClientThread(Thread):
         for msg in self.msg_list:
             self.socket.send(bytes(json.dumps(msg), 'utf-8'))
         self.socket.close()
+
 
 class ClientThreadDelay(Thread):
     """

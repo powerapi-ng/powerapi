@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,9 @@ FILES = [ROOT_PATH + 'core2.csv',
 
 @pytest.fixture
 def files():
+    """
+    fixture that remove csv files used by test module before launching the test and after the test end
+    """
     os.system('rm -Rf ' + OUTPUT_PATH + 'grvingt-12-system')
     yield None
     os.system('rm -Rf ' + OUTPUT_PATH + 'grvingt-12-system')
-    return None

@@ -105,7 +105,6 @@ class OpenTSDB(BaseDB):
         Save a batch of data
 
         :param reports: Batch of data.
-        :param report_model: ReportModel
         """
 
         for report in reports:

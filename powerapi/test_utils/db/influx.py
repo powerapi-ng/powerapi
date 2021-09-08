@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -26,12 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import datetime
-
 import pytest
 
 from influxdb import InfluxDBClient
-from ..report.power import SENSOR_NAME, TARGET_NAME
+
 
 INFLUX_URI = 'localhost'
 INFLUX_PORT = 8086
@@ -40,26 +38,34 @@ INFLUX_DBNAME = 'acceptation_test'
 
 @pytest.fixture()
 def influx_database(influxdb_content):
+    """
+    connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
+    after test end, delete the data
+    """
     client = InfluxDBClient(host=INFLUX_URI, port=INFLUX_PORT)
-    delete_db(client, INFLUX_DBNAME)
-    init_db(client, influxdb_content)
+    _delete_db(client, INFLUX_DBNAME)
+    _init_db(client, influxdb_content)
     yield client
-    delete_db(client, INFLUX_DBNAME)
+    _delete_db(client, INFLUX_DBNAME)
 
 
-def init_db(client, content):
+def _init_db(client, content):
+
     if content != []:
         client.create_database(INFLUX_DBNAME)
         client.switch_database(INFLUX_DBNAME)
         client.write_points(content)
 
-    
-def delete_db(client, db_name):
+
+def _delete_db(client, db_name):
     client.drop_database(db_name)
     client.close()
 
 
 def get_all_reports(client, db_name):
+    """
+    get all points stored in the database during test execution
+    """
     client.switch_database(db_name)
     result = client.query('SELECT * FROM "power_consumption"')
     return list(result.get_points())

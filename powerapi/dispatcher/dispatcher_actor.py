@@ -32,12 +32,12 @@ from thespian.actors import ActorAddress, ActorExitRequest, ChildActorExited, Po
 
 from powerapi.actor import Actor, InitializationException
 from powerapi.formula import FormulaActor, FormulaValues
-from powerapi.dispatcher import RouteTable
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.utils import Tree
 from powerapi.report import Report
 from powerapi.message import StartMessage, DispatcherStartMessage, FormulaStartMessage, EndMessage, ErrorMessage, OKMessage
 from powerapi.dispatcher.blocking_detector import BlockingDetector
+from powerapi.dispatcher.route_table import RouteTable
 
 
 def _clean_list(id_list):

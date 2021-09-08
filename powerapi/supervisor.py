@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -133,7 +133,6 @@ class Supervisor:
             return address
         elif isinstance(answer, ErrorMessage):
             raise InitializationException(answer.error_message)
-        print(answer)
         raise InitializationException("Unknow message type : " + str(type(answer)))
 
     def _add_actor(self, address, name, actor_cls):

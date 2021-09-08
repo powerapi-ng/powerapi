@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,13 @@ TARGET_NAME = 'target_test'
 
 POWER_REPORT_1 = PowerReport(0, SENSOR_NAME, TARGET_NAME, 1234, {'socket': 0, 'metadata1': 'truc', 'metadata2': 'oui'})
 
+
 def gen_json_power_report(number_of_reports):
-    """ generate number_of_reports power report with json format
+    """
+    generate number_of_reports power report with json format
+    each power report have the same sensor, target and power value (100W)
+    only the timestamp is different.
+    timestamp is generated from 01/01/1970 0:00.0 for the first report and is incremented by 1s for each returned report
     """
     reports = []
     for ts in range(number_of_reports):

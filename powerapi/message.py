@@ -33,7 +33,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
-    from powerapi.report_model import ReportModel
     from powerapi.dispatcher import RouteTable
     from powerapi.formula import FormulaActor, FormulaValues, DomainValues
     from powerapi.report_modifier import ReportModifier

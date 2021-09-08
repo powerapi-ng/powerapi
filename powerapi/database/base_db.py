@@ -90,8 +90,6 @@ class BaseDB:
     def iter(self, stream_mode: bool) -> IterDB:
         """
         Create the iterator for get the data
-        :param report_model: Object that herit from ReportModel and define
-                             the type of Report
         :param stream_mode: Define if we read in stream mode
         """
         raise NotImplementedError()
@@ -101,7 +99,6 @@ class BaseDB:
         Allow to save a json input in the db
 
         :param report: Report
-        :param report_model: ReportModel
         """
         raise NotImplementedError()
 
@@ -110,6 +107,5 @@ class BaseDB:
         Allow to save a batch of data
 
         :param reports: Batch of Serialized Report
-        :param report_model: ReportModel
         """
         raise NotImplementedError()

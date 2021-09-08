@@ -33,6 +33,7 @@ from powerapi.report import HWPCReport
 import powerapi.test_utils.report as parent_module
 from powerapi.test_utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
+
 ###################
 # Report Creation #
 ###################
@@ -48,10 +49,11 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     json_file.close()
     return reports['reports'][:number_of_reports]
 
+
 def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
-    This file contain hwpc reports , recorded on a two socket host, with events : 
+    This file contain hwpc reports , recorded on a two socket host, with events :
     - RAPL_PKG
     - MPERF
     - APERF
@@ -68,11 +70,12 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Di
     json_file.close()
     return reports['reports'][:number_of_reports]
 
+
 def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_all_vm_target.json
 
-    This file contain hwpc reports , recorded on a two socket host, with events : 
+    This file contain hwpc reports , recorded on a two socket host, with events :
     - RAPL_PKG
     - MPERF
     - APERF
@@ -90,7 +93,8 @@ def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict
     json_file = open(path + '/hwpc_all_vm_target.json', 'r')
     reports = json.load(json_file)
     json_file.close()
-    return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2,  reports['reports']))[:number_of_reports]
+    return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2, reports['reports']))[:number_of_reports]
+
 
 def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
     """

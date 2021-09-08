@@ -30,6 +30,15 @@
 from typing import Dict, List, Tuple
 import numpy as np
 
+
+def _compute_stats(values: List[float]) -> Tuple[float, float, float, float]:
+    """
+    compute mean, std, min, max from a list of float
+    """
+    np_values = np.array([value['value'] for value in values])
+    return np_values.mean(), np_values.std(), np_values.min(), np_values.max()
+
+
 class StatBuffer:
     """
     Buffer that store timeseries values and compute statistics on it
@@ -73,13 +82,6 @@ class StatBuffer:
 
         return (last_measure['time'] - first_measure['time']) >= self.aggregation_periode
 
-    def _compute_stats(self, values: List[float]) -> Tuple[float, float, float, float]:
-        """
-        :return: mean, std, min, max
-        """
-        np_values = np.array([value['value'] for value in values])
-        return np_values.mean(), np_values.std(), np_values.min(), np_values.max()
-
     def _split_values(self, values: List[Dict]):
         time_of_first_measure = values[0]['time']
 
@@ -116,7 +118,7 @@ class StatBuffer:
 
         values, self.buffer[key] = self._split_values(self.buffer[key])
 
-        mean, std, min, max = self._compute_stats(values)
+        mean, std, min, max = _compute_stats(values)
 
         return {
             'mean': mean,

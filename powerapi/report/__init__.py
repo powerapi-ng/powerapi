@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,5 +29,5 @@
 
 from powerapi.report.report import Report, BadInputData
 from powerapi.report.power_report import PowerReport
-from powerapi.report.hwpc_report import *
+from powerapi.report.hwpc_report import HWPCReport
 from powerapi.report.control_report import ControlReport

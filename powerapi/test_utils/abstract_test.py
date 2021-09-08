@@ -40,6 +40,7 @@ from .actor import system, is_actor_alive
 
 LOGGER_NAME = 'thespian_test_logger'
 
+
 def recv_from_pipe(pipe, timeout):
     """
     add timeout to function pipe.recv
