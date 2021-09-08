@@ -29,7 +29,7 @@
 
 from enum import IntEnum
 
-from powerapi.dispatch_rule import DispatchRule
+from .dispatch_rule import DispatchRule
 
 
 class HWPCDepthLevel(IntEnum):

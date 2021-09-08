@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -81,7 +81,6 @@ class HWPCReport(Report):
     def __repr__(self) -> str:
         return 'HWCPReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
 
-
     @staticmethod
     def from_json(data: Dict) -> HWPCReport:
         """
@@ -93,7 +92,7 @@ class HWPCReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return HWPCReport(ts, data['sensor'], data['target'], data['groups'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document') from exn
 
     @staticmethod
     def to_json(report: HWPCReport) -> Dict:
@@ -101,38 +100,46 @@ class HWPCReport(Report):
 
     @staticmethod
     def from_mongodb(data: Dict) -> HWPCReport:
+        """
+        :return: a HWPCReport from a dictionary pulled from mongodb
+        """
         return HWPCReport.from_json(data)
 
     @staticmethod
     def to_mongodb(report: HWPCReport) -> Dict:
+        """
+        :return: a dictionary, that can be stored into a mongodb, from a given HWPCReport
+        """
         return HWPCReport.to_json(report)
 
     @staticmethod
-    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> HWPCReport:
+    def from_csv_lines(lines: List[Tuple[str, Dict[str, str]]]) -> HWPCReport:
+        """
+        :param lines: list of pre-parsed lines. a line is a tuple composed with :
+                         - the file name where the line were read
+                         - a dictionary where key is column name and value is the value read from the line
+        :return: a HWPCReport that contains value from the given lines
+        """
         sensor_name = None
         target = None
         timestamp = None
         groups = {}
 
         for file_name, row in lines:
-            group_name = file_name[:-4] if file_name[len(file_name)-4:] == '.csv' else file_name
+            group_name = file_name[:-4] if file_name[len(file_name) - 4:] == '.csv' else file_name
             try:
                 if sensor_name is None:
                     sensor_name = row['sensor']
+                    target = row['target']
+                    timestamp = HWPCReport._extract_timestamp(row['timestamp'])
                 else:
                     if sensor_name != row['sensor']:
                         raise BadInputData('csv line with different sensor name are mixed into one report')
-                if target is None:
-                    target = row['target']
-                else:
                     if target != row['target']:
                         raise BadInputData('csv line with different target are mixed into one report')
-                if timestamp is None:
-                    timestamp = HWPCReport._extract_timestamp(row['timestamp'])
-                else:
                     if timestamp != HWPCReport._extract_timestamp(row['timestamp']):
                         raise BadInputData('csv line with different timestamp are mixed into one report')
-                    
+
                 if group_name not in groups:
                     groups[group_name] = {}
 
@@ -148,42 +155,6 @@ class HWPCReport(Report):
                             row['socket']][row['cpu']][key] = int(value)
 
             except KeyError as exn:
-                raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
+                raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name) from exn
 
         return HWPCReport(timestamp, sensor_name, target, groups)
-
-#############################
-# REPORT CREATION FUNCTIONS #
-#############################
-
-
-def create_core_report(core_id, event_id, event_value, events=None):
-    id_str = str(core_id)
-    data = {id_str: {}}
-    if events is not None:
-        data[id_str] = events
-        return data
-    data[id_str] = {event_id: event_value}
-    return data
-
-
-def create_socket_report(socket_id, core_list):
-    id_str = str(socket_id)
-    data = {id_str: {}}
-    for core in core_list:
-        data[id_str].update(core)
-    return data
-
-
-def create_group_report(group_id, socket_list):
-    group = {}
-    for socket in socket_list:
-        group.update(socket)
-    return (group_id, group)
-
-
-def create_report_root(group_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='system'):
-    sensor = HWPCReport(timestamp=timestamp, sensor=sensor, target=target, groups={})
-    for (group_id, group) in group_list:
-        sensor.groups[group_id] = group
-    return sensor

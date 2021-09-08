@@ -35,7 +35,7 @@ except ImportError:
 from typing import List, Type
 
 from powerapi.report import PowerReport, Report
-from powerapi.database import BaseDB, DBError
+from .base_db import BaseDB, DBError
 
 
 class CantConnectToOpenTSDBException(DBError):

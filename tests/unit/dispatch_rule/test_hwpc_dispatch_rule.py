@@ -1,39 +1,36 @@
-"""
-Copyright (c) 2018, INRIA
-Copyright (c) 2018, University of Lille
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# 
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# 
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.#
+from datetime import datetime
+from copy import deepcopy
 import pytest
-from powerapi.report import *
+from powerapi.report import HWPCReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-
-
 """
 Test HWPCDispatcheRule
 
@@ -47,6 +44,37 @@ each report could be associated with a RAPL group that contain one socket and
 one CPU
 
 """
+
+def create_core_report(core_id, event_id, event_value, events=None):
+    id_str = str(core_id)
+    data = {id_str: {}}
+    if events is not None:
+        data[id_str] = events
+        return data
+    data[id_str] = {event_id: event_value}
+    return data
+
+
+def create_socket_report(socket_id, core_list):
+    id_str = str(socket_id)
+    data = {id_str: {}}
+    for core in core_list:
+        data[id_str].update(core)
+    return data
+
+
+def create_group_report(group_id, socket_list):
+    group = {}
+    for socket in socket_list:
+        group.update(socket)
+    return (group_id, group)
+
+
+def create_report_root(group_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='system'):
+    sensor = HWPCReport(timestamp=timestamp, sensor=sensor, target=target, groups={})
+    for (group_id, group) in group_list:
+        sensor.groups[group_id] = group
+    return sensor
 
 CPU_1 = create_core_report('1', 'e0', '0')
 CPU_2 = create_core_report('2', 'e0', '1')
@@ -107,7 +135,7 @@ def validate_formula_id(formula_id_list, validation_list):
     """
     assert len(formula_id_list) == len(validation_list)
     formula_id_list.sort()
-
+    
     for a, b in zip(formula_id_list, validation_list):
         assert a == b
 
@@ -128,11 +156,10 @@ def test_init_fields_name_test():
     assert HWPCDispatchRule(HWPCDepthLevel.CORE).fields == ['sensor', 'socket',
                                                             'core']
 
+
 ####################################
 # TEST DISPATCH BY ROOT AND TARGET #
 ####################################
-
-
 def test_get_formula_id_sensor_rule(report):
     """
     get formula id from reports with a rule that dispatch by sensor :
@@ -210,7 +237,7 @@ def test_get_formula_id_cpu_rule_report_2(report_2):
     get formula id from report2 with a rule that dispatch by cpu :
 
     the method must return this list :
-    [('toto','1', '1'), ('toto','2', '2')]
+    [('toto','1', '1'), ('toto','1', '2')]
     """
     ids = HWPCDispatchRule(HWPCDepthLevel.CORE).get_formula_id(report_2)
     validate_formula_id(ids, [('toto', '1', '1'), ('toto', '1', '2')])

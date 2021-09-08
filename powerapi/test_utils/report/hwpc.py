@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 import json
 from typing import Dict, List
 
-from powerapi.report import HWPCReport, create_socket_report, create_report_root, create_group_report, create_core_report
+from powerapi.report import HWPCReport
 import powerapi.test_utils.report as parent_module
 from powerapi.test_utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 

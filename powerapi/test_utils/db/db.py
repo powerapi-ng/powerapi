@@ -34,6 +34,9 @@ class FakeDBError(Exception):
     pass
 
 class FakeDB(BaseDB):
+    """
+    A fake database that send information throug a pipe when its api is used
+    """
 
     def __init__(self, content=[], pipe=None, *args, **kwargs):
         BaseDB.__init__(self, Report)
@@ -42,6 +45,9 @@ class FakeDB(BaseDB):
         self.exceptions = [FakeDBError]
 
     def connect(self):
+        """
+        send the string connected through the pipe
+        """
         if self.pipe is not None:
             self.pipe.send('connected')
 
@@ -49,20 +55,27 @@ class FakeDB(BaseDB):
         return self._content.__iter__()
 
     def save(self, report):
+        """
+        send the saved report through the pipe
+        """
         if self.pipe is not None:
             self.pipe.send(report)
 
     def save_many(self, reports):
+        """
+        send the saved reports through the pipe
+        """
         if self.pipe is not None:
             self.pipe.send(reports)
 
+
 class SilentFakeDB(BaseDB):
     """
-    An empty Database that don't send log message
+    An empty Database that don't send information through the pipe
     """
     def __init__(self, content=[], pipe=None, *args, **kwargs):
         BaseDB.__init__(self, Report)
-        self._content = []
+        self._content = content
     def connect(self):
         pass
 
@@ -77,12 +90,15 @@ class SilentFakeDB(BaseDB):
 
 
 class CrashDB(BaseDB):
-
+    """
+    FakeDB that crash when using its connect method
+    """
     def __init__(self, *args, **kwargs):
         BaseDB.__init__(self, Report)
 
     def connect(self):
         raise DBError('crash')
+
 
 def define_database(database):
     """
@@ -90,6 +106,7 @@ def define_database(database):
     attribute for individual tests.
 
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
+    ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
     """
     def wrap(func):
         setattr(func, '_database', database)
@@ -103,6 +120,7 @@ def define_report_type(report_type):
     attribute for individuel tests.
 
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
+    ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
     """
     def wrap(func):
         setattr(func, '_report_type', report_type)

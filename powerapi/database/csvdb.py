@@ -160,7 +160,7 @@ class CsvIterDB(IterDB):
                 if row_timestamp > current_timestamp:
                     if path_file == self.filenames[-1]:
                         self.saved_timestamp = row_timestamp
-                    break # move to next file
+                    break  # move to next file
 
                 if row_timestamp < current_timestamp:
                     self.tmp_read[path_file]['next_line'] = self._next(path_file)
@@ -168,7 +168,7 @@ class CsvIterDB(IterDB):
 
                 if previous_target is not None:
                     if row['target'] != previous_target:
-                        break # move to next file
+                        break  # move to next file
                 else:
                     previous_target = row['target']
 

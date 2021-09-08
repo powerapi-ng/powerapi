@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from typing import Tuple
 from enum import IntEnum
 
-from powerapi.dispatch_rule import DispatchRule
+from powerapi.report import PowerReport
+
+from .dispatch_rule import DispatchRule
 
 
 class PowerDepthLevel(IntEnum):
@@ -43,7 +45,10 @@ class PowerDepthLevel(IntEnum):
     CORE = 2
 
 
-def extract_id_from_report(report, depth):
+def extract_id_from_report(report: PowerReport, depth: PowerDepthLevel) -> Tuple:
+    """
+    :return: a report id generated from the report and the given depth
+    """
     if depth == PowerDepthLevel.TARGET:
         return (report.target,)
 
@@ -53,9 +58,9 @@ def extract_id_from_report(report, depth):
     if depth == PowerDepthLevel.SOCKET:
         return extract_id_from_report(report, depth - 1) + (report.metadata['socket'],)
 
-    if depth == PowerDepthLevel.CORE:
-        return extract_id_from_report(report, depth - 1) + (report.metadata['core'],)
-    
+    return extract_id_from_report(report, depth - 1) + (report.metadata['core'],)
+
+
 class PowerDispatchRule(DispatchRule):
     """
     Group by rule for HWPC report
@@ -74,7 +79,6 @@ class PowerDispatchRule(DispatchRule):
             return ['target']
 
         return ['sensor', 'socket', 'core'][:(self.depth + 1)]
-        
 
     def get_formula_id(self, report):
         return [extract_id_from_report(report, self.depth)]

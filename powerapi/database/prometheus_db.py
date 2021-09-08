@@ -27,17 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
+from typing import List, Type
 try:
     from prometheus_client import start_http_server, Gauge
 except ImportError:
     logging.getLogger().info("prometheus-client is not installed.")
 
-from typing import List, Type
-
-from powerapi.database import BaseDB
-
 from powerapi.report import Report
 from powerapi.utils import StatBuffer
+from .base_db import BaseDB
 
 
 class PrometheusDB(BaseDB):

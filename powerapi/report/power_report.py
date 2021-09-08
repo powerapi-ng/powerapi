@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -70,11 +70,16 @@ class PowerReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return PowerReport(ts, data['sensor'], data['target'], data['power'], data['metadata'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document') from exn
 
     @staticmethod
     def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
-
+        """
+        :param lines: list of pre-parsed lines. a line is a tuple composed with :
+                         - the file name where the line were read
+                         - a dictionary where key is column name and value is the value read from the line
+        :return: a PowerReport that contains value from the given lines
+        """
         if len(lines) != 1:
             raise BadInputData('a power report could only be parsed from one csv line')
         file_name, row = lines[0]
@@ -84,8 +89,6 @@ class PowerReport(Report):
             target = row['target']
             timestamp = Report._extract_timestamp(row['timestamp'])
             power = float(row['power'])
-            socket = int(row['socket'])
-            core = -1 if 'core' not in row else row['core']
             metadata = {}
 
             for key in row.keys():
@@ -94,10 +97,18 @@ class PowerReport(Report):
             return PowerReport(timestamp, sensor_name, target, power, metadata)
 
         except KeyError as exn:
-            raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
+            raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name) from exn
 
     @staticmethod
     def to_csv_lines(report: PowerReport, tags: List[str]) -> Tuple[List[str], Dict]:
+        """
+        convert a power report into csv lines
+        :param report: Report that will be converted into csv lines
+        :param tags: metadata added as columns in csv file
+        :return: list of pre-parsed lines. a line is a tuple composed with :
+                   - the file name where the line were read
+                   - a dictionary where key is column name and value is the value read from the line
+        """
         line = {
             'sensor': report.sensor,
             'target': report.target,
@@ -130,7 +141,7 @@ class PowerReport(Report):
 
         for metadata_name in metadata_keept:
             if metadata_name not in self.metadata:
-                raise BadInputData('no tag ' + tag + ' in power report')
+                raise BadInputData('no tag ' + metadata_name + ' in power report')
             else:
                 tags[metadata_name] = self.metadata[metadata_name]
 
@@ -138,6 +149,9 @@ class PowerReport(Report):
 
     @staticmethod
     def to_influxdb(report: PowerReport, tags: List[str]) -> Dict:
+        """
+        :return: a dictionary, that can be stored into an influxdb, from a given PowerReport
+        """
         return {
             'measurement': 'power_consumption',
             'tags': report._gen_tag(tags),
@@ -149,6 +163,9 @@ class PowerReport(Report):
 
     @staticmethod
     def to_prometheus(report: PowerReport, tags: List[str]) -> Dict:
+        """
+        :return: a dictionary, that can be stored into a prometheus instance, from a given PowerReport
+        """
         return {
             'tags': report._gen_tag(tags),
             'time': int(report.timestamp.timestamp()),
@@ -157,9 +174,14 @@ class PowerReport(Report):
 
     @staticmethod
     def to_mongodb(report: PowerReport) -> Dict:
+        """
+        :return: a dictionary, that can be stored into a mongodb, from a given PowerReport
+        """
         return PowerReport.to_json(report)
 
     @staticmethod
     def from_mongodb(data: Dict) -> Report:
+        """
+        :return: a PowerReport from a dictionary pulled from mongodb
+        """
         return PowerReport.from_json(data)
-
