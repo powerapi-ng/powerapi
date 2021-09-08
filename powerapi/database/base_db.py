@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from typing import List, Type
 from powerapi.report import Report
 from powerapi.exception import PowerAPIExceptionWithMessage
@@ -91,8 +90,6 @@ class BaseDB:
     def iter(self, stream_mode: bool) -> IterDB:
         """
         Create the iterator for get the data
-        :param report_model: Object that herit from ReportModel and define
-                             the type of Report
         :param stream_mode: Define if we read in stream mode
         """
         raise NotImplementedError()
@@ -102,7 +99,6 @@ class BaseDB:
         Allow to save a json input in the db
 
         :param report: Report
-        :param report_model: ReportModel
         """
         raise NotImplementedError()
 
@@ -111,6 +107,5 @@ class BaseDB:
         Allow to save a batch of data
 
         :param reports: Batch of Serialized Report
-        :param report_model: ReportModel
         """
         raise NotImplementedError()

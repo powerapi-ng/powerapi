@@ -30,9 +30,10 @@ import asyncio
 from typing import Type, List
 import json
 
-from powerapi.database import IterDB, BaseDB
+
 from powerapi.utils import JsonStream
 from powerapi.report import Report
+from .base_db import IterDB, BaseDB, DBError
 
 BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 0.5
@@ -77,13 +78,13 @@ class SocketDB(BaseDB):
         return callback
 
     def __iter__(self):
-        raise NotImplementedError()
+        raise DBError('Socket db don\'t support __iter__ method')
 
     def save(self, report: Report):
-        raise NotImplementedError()
+        raise DBError('Socket db don\'t support save method')
 
     def save_many(self, reports: List[Report]):
-        raise NotImplementedError()
+        raise DBError('Socket db don\'t support save_many method')
 
 
 class IterSocketDB(IterDB):

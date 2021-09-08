@@ -26,21 +26,16 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
 import logging
+from typing import List, Type
 try:
     from influxdb import InfluxDBClient
     from requests.exceptions import ConnectionError as InfluxConnectionError
 except ImportError:
     logging.getLogger().info("influx-client is not installed.")
 
-from typing import List, Type
-
-
-from powerapi.database import BaseDB, DBError
-
 from powerapi.report import Report
+from .base_db import BaseDB, DBError
 
 
 class CantConnectToInfluxDBException(DBError):
@@ -126,7 +121,6 @@ class InfluxDB(BaseDB):
         Save a batch of data
 
         :param reports: Batch of data.
-        :param report_model: ReportModel
         """
 
         data_list = list(map(lambda r: self.report_type.to_influxdb(r, self.tags), reports))

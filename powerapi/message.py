@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
-    from powerapi.report_model import ReportModel
     from powerapi.dispatcher import RouteTable
     from powerapi.formula import FormulaActor, FormulaValues, DomainValues
     from powerapi.report_modifier import ReportModifier

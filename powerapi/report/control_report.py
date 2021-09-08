@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,13 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, List
 
-from powerapi.report import Report
+from .report import Report
 
 
 class ControlReport(Report):
@@ -59,12 +58,21 @@ class ControlReport(Report):
 
     @staticmethod
     def from_json(data: Dict) -> ControlReport:
+        """
+        :return: a dictionary, that can be converted into json format, from a given ControlReport
+        """
         return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'])
 
     @staticmethod
     def from_mongodb(data: Dict) -> ControlReport:
+        """
+        :return: a ControlReport from a dictionary pulled from mongodb
+        """
         return ControlReport.from_json(data)
 
     @staticmethod
     def to_mongodb(report: ControlReport) -> Dict:
+        """
+        :return: a dictionary, that can be stored into a mongodb, from a given ControlReport
+        """
         return report.__dict__

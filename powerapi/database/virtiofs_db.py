@@ -31,8 +31,8 @@ import os
 
 from typing import List, Type
 
-from powerapi.database import BaseDB, DBError
 from powerapi.report import Report
+from .base_db import BaseDB, DBError
 
 
 class DirectoryDoesNotExistForVirtioFS(DBError):
@@ -47,18 +47,20 @@ class VirtioFSDB(BaseDB):
     """
     write power consumption of virtual machine in a file shared with the virtual machine
 
-    The File will be written in a directory created by the VM manager. 
+    The File will be written in a directory created by the VM manager.
 
     A regular expression must be given by the VM manager to extract vm name from target name. VM name is used to find directory that contains the output file.
     """
-    def __init__(self, report_type: Type[Report], vm_name_regexp: str, root_directory_name: str, vm_directory_name_prefix : str  = '', vm_directory_name_suffix : str = ''):
+    def __init__(self, report_type: Type[Report], vm_name_regexp: str, root_directory_name: str,
+                 vm_directory_name_prefix: str = '', vm_directory_name_suffix: str = ''):
         """
-        :param vm_name_regexp:           regexp used to extract vm name from report. The regexp must match the name of the target in the HWPC-report and a group must 
+        :param vm_name_regexp:           regexp used to extract vm name from report. The regexp must match the name of the target
+                                         in the HWPC-report and a group must
         :param root_directory_name:      directory where VM directory will be stored
         :param vm_directory_name_prefix: first part of the VM directory name
         :param vm_directory_name_suffix: last part of the VM directory name
         """
-        BaseDB.__init__(self)
+        BaseDB.__init__(self, report_type)
 
         self.vm_name_regexp = re.compile(vm_name_regexp)
         self.root_directory_name = root_directory_name
@@ -82,7 +84,7 @@ class VirtioFSDB(BaseDB):
             return
 
         vm_filename, power = self.report_type.to_virtiofs_db(report)
-        vm_filename_path =self.root_directory_name + '/' + directory_name + '/'
+        vm_filename_path = self.root_directory_name + '/' + directory_name + '/'
         if not os.path.exists(vm_filename_path):
             raise DirectoryDoesNotExistForVirtioFS(vm_filename_path)
 

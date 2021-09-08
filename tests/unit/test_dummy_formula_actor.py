@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,6 @@ class TestDummyFormula(AbstractTestActor):
         report1 = Report(1, 2, 3)
         system.tell(started_actor, report1)
 
-        _, msg = dummy_pipe_out.recv()
+        _, msg = recv_from_pipe(dummy_pipe_out, 2)
         assert isinstance(msg, PowerReport)
         assert msg.power == 42

@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 from powerapi.database.base_db import BaseDB, IterDB, DBError
 from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
 from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
@@ -36,4 +35,4 @@ from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 from powerapi.database.prometheus_db import PrometheusDB
 from powerapi.database.virtiofs_db import VirtioFSDB
 from powerapi.database.direct_prometheus_db import DirectPrometheusDB
-from .socket_db import SocketDB
+from powerapi.database.socket_db import SocketDB

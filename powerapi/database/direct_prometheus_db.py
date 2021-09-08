@@ -34,8 +34,8 @@ try:
 except ImportError:
     logging.getLogger().info("prometheus-client is not installed.")
 
-from powerapi.database import BaseDB
 from powerapi.report import Report
+from .base_db import BaseDB
 
 
 class DirectPrometheusDB(BaseDB):

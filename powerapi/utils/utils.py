@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 import collections.abc as collections
 import datetime
 
+
 def timestamp_to_datetime(timestamp):
     """
     Create datetime from a timestamp value
@@ -37,7 +38,7 @@ def timestamp_to_datetime(timestamp):
     :param int timestamp:
     :rtype: datetime.datetime
     """
-    return datetime.datetime.fromtimestamp(timestamp/1000)
+    return datetime.datetime.fromtimestamp(timestamp / 1000)
 
 
 def datetime_to_timestamp(date):
@@ -47,7 +48,7 @@ def datetime_to_timestamp(date):
     :param datetime.datetime date:
     :rtype: int
     """
-    return int(datetime.datetime.timestamp(date)*1000)
+    return int(datetime.datetime.timestamp(date) * 1000)
 
 
 def dict_merge(dict1, dict2):

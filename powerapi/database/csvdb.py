@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import csv
 import os
 
@@ -65,10 +64,10 @@ class CsvIterDB(IterDB):
     This class allows to browse a database as an iterable
     """
 
-    def __init__(self, db, filenames, report_model, stream_mode):
+    def __init__(self, db, filenames, report_type, stream_mode):
         """
         """
-        super().__init__(db, report_model, stream_mode)
+        super().__init__(db, report_type, stream_mode)
 
         self.filenames = filenames
 
@@ -160,7 +159,7 @@ class CsvIterDB(IterDB):
                 if row_timestamp > current_timestamp:
                     if path_file == self.filenames[-1]:
                         self.saved_timestamp = row_timestamp
-                    break # move to next file
+                    break  # move to next file
 
                 if row_timestamp < current_timestamp:
                     self.tmp_read[path_file]['next_line'] = self._next(path_file)
@@ -168,7 +167,7 @@ class CsvIterDB(IterDB):
 
                 if previous_target is not None:
                     if row['target'] != previous_target:
-                        break # move to next file
+                        break  # move to next file
                 else:
                     previous_target = row['target']
 
@@ -191,7 +190,7 @@ class CsvDB(BaseDB):
     CsvDB class herited from BaseDB
 
     This class define the behaviour for reading some csv file.
-    a CsvDB instance can be define by his ReportModel and its current path
+    a CsvDB instance can be define by its current path
     """
 
     def __init__(self, report_type: Type[Report], tags: List[str], current_path="/tmp/csvdbtest", files=[]):
@@ -265,7 +264,6 @@ class CsvDB(BaseDB):
         Allow to save a serialized_report in the db
 
         :param report: Report
-        :param report_model: ReportModel
         """
         csv_header, data = self.report_type.to_csv_lines(report, self.tags)
 
@@ -308,7 +306,6 @@ class CsvDB(BaseDB):
         Allow to save a batch of report
 
         :param reports: Batch of report.
-        :param report_model: ReportModel
         """
         for report in reports:
             self.save(report)

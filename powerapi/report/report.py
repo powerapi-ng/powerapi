@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
@@ -42,7 +42,6 @@ class BadInputData(PowerAPIExceptionWithMessage):
     """
     Exception raised when input data can't be converted to a Report
     """
-    
 
 
 class Report(Message):
@@ -57,6 +56,7 @@ class Report(Message):
         :param str sensor: Sensor name.
         :param str target: Target name.
         """
+        Message.__init__(self, None)
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
@@ -77,12 +77,10 @@ class Report(Message):
                 self.target == other.target)
 
     @staticmethod
-    def get_tags() -> List[str]:
-        return ['target', 'sensor']
-
-
-    @staticmethod
     def to_json(report: Report) -> Dict:
+        """
+        :return: a json dictionary, that can be converted into json format, from a given Report
+        """
         return report.__dict__
 
     @staticmethod
@@ -90,10 +88,12 @@ class Report(Message):
         if isinstance(ts, str):
             try:
                 return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
-            except ValueError as exn:
+            except ValueError:
                 try:
-                    return datetime.fromtimestamp(int(ts)/1000)
-                except ValueError:
-                    raise BadInputData(exn.args)
+                    return datetime.fromtimestamp(int(ts) / 1000)
+                except ValueError as exn:
+                    raise BadInputData(exn.args) from exn
         if isinstance(ts, datetime):
             return ts
+
+        raise BadInputData('timestamp must be a datetime.datetime or a string')

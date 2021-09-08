@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -30,16 +30,24 @@ import logging
 
 import pytest
 
-from thespian.actors import Actor, ActorSystem, ActorExitRequest
+from thespian.actors import Actor, ActorExitRequest
 
-from powerapi.message import PingMessage, StartMessage, OKMessage, ErrorMessage
+from powerapi.message import StartMessage, OKMessage, ErrorMessage
 from powerapi.actor import Actor as PowerapiActor, InitializationException
 from powerapi.formula import DomainValues
 
-LOGGER_NAME='thespian_test_logger'
+LOGGER_NAME = 'thespian_test_logger'
+
 
 @pytest.fixture
 def logger(system, dummy_pipe_in):
+    """
+    fixture that return a DummyActor
+
+    A DummyActor is an actor that send every received message to the pytest process through a pipe
+    This type of actor is usefull to unit test actor that interact with other actors.
+    It may tests if the tested actor send the correct message to the actor it must interact with
+    """
     logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
     system.tell(logger_actor, DummyStartMessage('system', 'logger', dummy_pipe_in))
     yield logger_actor
@@ -47,6 +55,10 @@ def logger(system, dummy_pipe_in):
 
 
 class DummyStartMessage(StartMessage):
+    """
+    Message used to start a DummyActor
+    :param pipe: pipe used to send message to pytest process
+    """
     def __init__(self, sender_name, name, pipe):
         StartMessage.__init__(self, sender_name, name)
         self.pipe = pipe
@@ -59,9 +71,12 @@ class DummyActor(Actor):
     def __init__(self):
         Actor.__init__(self)
         self.pipe = None
-
+        self.name = None
 
     def receiveMessage(self, message, sender):
+        """
+        when receive a message, send it to the pytest process through a pipe
+        """
         if isinstance(message, DummyStartMessage):
             self.pipe = message.pipe
             self.name = message.name
@@ -72,13 +87,20 @@ class DummyActor(Actor):
 
 class DummyFormulaActor(Actor):
     """
-    Formula that forward received message to fake pusher
+    A fake FormulaActor that is connected to a DummyActor (a fake pusher)
     """
     def __init__(self):
+        Actor.__init__(self)
         self.name = None
         self.fake_puller = None
 
     def receiveMessage(self, message, sender):
+        """
+        When receiving a message :
+        if its a Start message containing initialization values : initailize the DummyFormula
+        if its an ActorExitRequest : notify the pusher that the Dummyformula die
+        if its an other type of message : forward it to the fake pusher
+        """
         logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
         if isinstance(message, StartMessage):
             self.name = message.name
@@ -96,7 +118,9 @@ class DummyFormulaActor(Actor):
 
 
 class CrashException(Exception):
-    pass
+    """
+    Exception raised by formla to make it crash
+    """
 
 
 class CrashFormulaActor(DummyFormulaActor):
@@ -107,8 +131,6 @@ class CrashFormulaActor(DummyFormulaActor):
         DummyFormulaActor.__init__(self)
         self.report_received = 0
 
-    
-        
     def receiveMessage(self, message, sender):
         logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
         if isinstance(message, StartMessage):
@@ -128,7 +150,7 @@ class CrashFormulaActor(DummyFormulaActor):
 
 class CrashInitFormulaActor(DummyFormulaActor):
     """
-    Formula that at initialization end answer ErrorMessage to StartMessage
+    Formula answer ErrorMessage to StartMessage
     Like DummyFormulaActor, it will forward received Message to fake pusher
     """
     def __init__(self):
@@ -148,7 +170,7 @@ class CrashInitFormulaActor(DummyFormulaActor):
 
 class DummyPowerapiActor(PowerapiActor):
     """
-    Actor that have the same thant a basic powerapi actor
+    Actor that have the same API than a basic powerapi actor
     """
 
     def __init__(self):
@@ -157,7 +179,7 @@ class DummyPowerapiActor(PowerapiActor):
 
 class CrashInitActor(DummyPowerapiActor):
     """
-    Basic powerapi actor that crash a initialisation
+    Basic powerapi actor that crash at initialisation
     """
     def _initialization(self, msg):
         raise InitializationException('error')
@@ -165,10 +187,13 @@ class CrashInitActor(DummyPowerapiActor):
 
 class CrashActor(DummyPowerapiActor):
     """
-    Basic powerapi actor that crash after 2s
+    Basic powerapi actor that crash 2s after initialization
     """
-    def _initialization(self, msg):
+    def _initialization(self, _):
         self.wakeupAfter(2)
 
     def receiveMsg_WakeupMessage(self, message, sender):
+        """
+        crash after being waked up by system, 2s after initialization
+        """
         raise CrashException()
