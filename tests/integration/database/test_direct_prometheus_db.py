@@ -87,13 +87,15 @@ class DirectPrometheusServer(multiprocessing.Process):
             report_list = self.q.get()
             db.save_many(report_list)
 
+
 def _gen_serv(unused_tcp_port_factory):
     port = unused_tcp_port_factory()
     q = multiprocessing.Queue()
     p = DirectPrometheusServer(q, port)
     p.start()
     return port, q, p
-            
+
+
 @pytest.fixture
 def db_info(unused_tcp_port_factory):
     """

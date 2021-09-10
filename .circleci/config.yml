@@ -37,7 +37,7 @@ jobs:
       - run:
           name: run tests
           command: |
-            # . venv/bin/activate
+            . venv/bin/activate
             python3 setup.py test
 
   publish-release:
