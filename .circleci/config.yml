@@ -8,7 +8,7 @@ jobs:
 
       # Service image for integration tests
       - image: circleci/mongo:4.0
-      - image: influxdb:1.5
+      - image: influxdb:1.8
     working_directory: ~/repo
 
     steps:
@@ -17,9 +17,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "setup.cfg" }}
+            - v2-dependencies-{{ checksum "setup.cfg" }}
             # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - v2-dependencies-
 
       - run:
           name: install dependencies
@@ -31,7 +31,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "setup.cfg" }}
+          key: v2-dependencies-{{ checksum "setup.cfg" }}
 
       # Run unit and integration tests
       - run:
