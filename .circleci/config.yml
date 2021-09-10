@@ -4,11 +4,11 @@ jobs:
   build:
     docker:
       # Language image for build and unit tests
-      - image: circleci/python:3.8
+      - image: powerapi/powerapi-ci
 
       # Service image for integration tests
       - image: circleci/mongo:4.0
-      - image: influxdb:1.5
+      - image: influxdb:1.8
     working_directory: ~/repo
 
     steps:
@@ -17,28 +17,27 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "setup.cfg" }}
+            - v2-dependencies-{{ checksum "setup.cfg" }}
             # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - v2-dependencies-
 
       - run:
           name: install dependencies
           command: |
-            # python3 -m venv venv
-            # . venv/bin/activate
-            sudo apt install python3-libvirt
-            pip3 install -e ".[mongodb, influxdb, prometheus]"
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install -e ".[mongodb, influxdb, prometheus, libvirt]"
 
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "setup.cfg" }}
+          key: v2-dependencies-{{ checksum "setup.cfg" }}
 
       # Run unit and integration tests
       - run:
           name: run tests
           command: |
-            # . venv/bin/activate
+            . venv/bin/activate
             python3 setup.py test
 
   publish-release:
