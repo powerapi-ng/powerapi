@@ -134,6 +134,7 @@ class Actor(ActorTypeDispatcher):
 
         self.initialized = True
         self.send(sender, OKMessage(self.name))
+        self.log_info(self.name + ' started')
 
     def receiveMsg_ErrorMessage(self, message: ErrorMessage, _: ActorAddress):
         """
@@ -145,7 +146,7 @@ class Actor(ActorTypeDispatcher):
         """
         When receiving a message with a type that can't be handle, the actor answer with an ErrorMessage
         """
-        self.log_debug('received message ' + str(message))
+        self.log_warning('received unrecognized message : ' + str(message))
         self.send(sender, ErrorMessage(self.name, "did not recognize the message type : " + str(type(message))))
 
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, _: ActorAddress):
@@ -153,6 +154,7 @@ class Actor(ActorTypeDispatcher):
         When receive ActorExitRequestMessage log it and exit
         """
         self.log_debug('received message ' + str(message))
+        self.log_info(self.name + ' exit')
 
     def _initialization(self, start_message: StartMessage):
         pass

@@ -70,7 +70,9 @@ class PowerReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return PowerReport(ts, data['sensor'], data['target'], data['power'], data['metadata'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document') from exn
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document', data) from exn
+        except ValueError as exn:
+            raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
     def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
@@ -81,7 +83,7 @@ class PowerReport(Report):
         :return: a PowerReport that contains value from the given lines
         """
         if len(lines) != 1:
-            raise BadInputData('a power report could only be parsed from one csv line')
+            raise BadInputData('a power report could only be parsed from one csv line', None)
         file_name, row = lines[0]
 
         try:
@@ -97,7 +99,9 @@ class PowerReport(Report):
             return PowerReport(timestamp, sensor_name, target, power, metadata)
 
         except KeyError as exn:
-            raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name) from exn
+            raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name, row) from exn
+        except ValueError as exn:
+            raise BadInputData(exn.args[0], row) from exn
 
     @staticmethod
     def to_csv_lines(report: PowerReport, tags: List[str]) -> Tuple[List[str], Dict]:
@@ -117,7 +121,7 @@ class PowerReport(Report):
         }
         for tag in tags:
             if tag not in report.metadata:
-                raise BadInputData('no tag ' + tag + ' in power report')
+                raise BadInputData('no tag ' + tag + ' in power report', report)
             line[tag] = report.metadata[tag]
 
         final_dict = {'PowerReport': [line]}
@@ -129,7 +133,7 @@ class PowerReport(Report):
         return a tuple containing the power value and the name of the file to store the value.
         """
         if 'socket' not in report:
-            raise BadInputData('no tag socket in power report')
+            raise BadInputData('no tag socket in power report', report)
         filename = 'power_consumption_package' + str(report['socket'])
         power = report.power
         return filename, power
@@ -141,7 +145,7 @@ class PowerReport(Report):
 
         for metadata_name in metadata_keept:
             if metadata_name not in self.metadata:
-                raise BadInputData('no tag ' + metadata_name + ' in power report')
+                raise BadInputData('no tag ' + metadata_name + ' in power report', self)
             else:
                 tags[metadata_name] = self.metadata[metadata_name]
 

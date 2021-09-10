@@ -82,7 +82,7 @@ def launch_simple_architecture(config, supervisor):
     pusher_generator = PusherGenerator()
     pusher_info = pusher_generator.generate(config)
     pusher_cls, pusher_start_message = pusher_info['test_pusher']
-    
+
     pusher = supervisor.launch(pusher_cls, pusher_start_message)
 
     # Dispatcher
@@ -195,7 +195,7 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
 ##############
 def check_output_file():
     input_file = open(ROOT_PATH + 'rapl2.csv', 'r')
-    output_file = open(OUTPUT_PATH + 'all/PowerReport.csv', 'r')
+    output_file = open(OUTPUT_PATH + 'grvingt-12-system/PowerReport.csv', 'r')
 
     # line count
     l_output = -1
@@ -316,9 +316,46 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
 ##############
 # Socket to CSV #
 ##############
+def check_output_file2():
+    input_reports = extract_rapl_reports_with_2_sockets(10)
+    output_file = open(OUTPUT_PATH + 'test_sensor-all/PowerReport.csv', 'r')
 
+    # line count
+    l_output = -1
+    for _ in output_file:
+        l_output += 1
 
-def test_run_socket_to_csv(unused_tcp_port,shutdown_system):
+    assert len(input_reports) * 2 == l_output
+    output_file.seek(0)
+
+    output_file.readline()
+
+    # split socket0 report from socket1 report
+    output_socket0 = []
+    output_socket1 = []
+
+    for output_line in map(lambda x: x.split(','), output_file):
+        if output_line[4] == '\0\n':
+            output_socket0.append(output_line)
+        else:
+            output_socket1.append(output_line)
+
+    # check value
+    for report, output_line_s0, output_line_s1 in zip(input_reports, output_socket0, output_socket1):
+        ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
+        assert ts == output_line_s0[0]
+        assert ts == output_line_s1[0]
+
+        assert report['sensor'] == output_line_s0[1]
+        assert report['sensor'] == output_line_s1[1]
+
+        assert report['target'] == output_line_s0[2]
+        assert report['target'] == output_line_s1[2]
+
+        int(output_line_s0[3]) == 42
+        int(output_line_s1[3]) == 42
+
+def test_run_socket_to_csv(unused_tcp_port, files, shutdown_system):
     config = {'verbose': True,
               'stream': False,
               'output': {'test_pusher': {'type': 'csv',
@@ -336,4 +373,4 @@ def test_run_socket_to_csv(unused_tcp_port,shutdown_system):
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
     supervisor.monitor()
-    check_output_file()
+    check_output_file2()

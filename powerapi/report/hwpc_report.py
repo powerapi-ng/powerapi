@@ -92,7 +92,9 @@ class HWPCReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return HWPCReport(ts, data['sensor'], data['target'], data['groups'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document') from exn
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document', data) from exn
+        except ValueError as exn:
+            raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
     def to_json(report: HWPCReport) -> Dict:
@@ -134,27 +136,32 @@ class HWPCReport(Report):
                     timestamp = HWPCReport._extract_timestamp(row['timestamp'])
                 else:
                     if sensor_name != row['sensor']:
-                        raise BadInputData('csv line with different sensor name are mixed into one report')
+                        raise BadInputData('csv line with different sensor name are mixed into one report', row)
                     if target != row['target']:
-                        raise BadInputData('csv line with different target are mixed into one report')
+                        raise BadInputData('csv line with different target are mixed into one report', row)
                     if timestamp != HWPCReport._extract_timestamp(row['timestamp']):
-                        raise BadInputData('csv line with different timestamp are mixed into one report')
+                        raise BadInputData('csv line with different timestamp are mixed into one report', row)
 
-                if group_name not in groups:
-                    groups[group_name] = {}
-
-                if row['socket'] not in groups[group_name]:
-                    groups[group_name][row['socket']] = {}
-
-                if row['cpu'] not in groups[group_name][row['socket']]:
-                    groups[group_name][row['socket']][row['cpu']] = {}
-
-                for key, value in row.items():
-                    if key not in CSV_HEADER_HWPC:
-                        groups[group_name][
-                            row['socket']][row['cpu']][key] = int(value)
+                HWPCReport._create_group(row, groups, group_name)
 
             except KeyError as exn:
-                raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name) from exn
+                raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name, row) from exn
+            except ValueError as exn:
+                raise BadInputData(exn.args[0], row) from exn
 
         return HWPCReport(timestamp, sensor_name, target, groups)
+
+    @staticmethod
+    def _create_group(row, groups, group_name):
+        if group_name not in groups:
+            groups[group_name] = {}
+
+        if row['socket'] not in groups[group_name]:
+            groups[group_name][row['socket']] = {}
+
+        if row['cpu'] not in groups[group_name][row['socket']]:
+            groups[group_name][row['socket']][row['cpu']] = {}
+
+        for key, value in row.items():
+            if key not in CSV_HEADER_HWPC:
+                groups[group_name][row['socket']][row['cpu']][key] = int(value)

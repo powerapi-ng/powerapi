@@ -42,6 +42,9 @@ class BadInputData(PowerAPIExceptionWithMessage):
     """
     Exception raised when input data can't be converted to a Report
     """
+    def __init__(self, msg, input_data):
+        PowerAPIExceptionWithMessage.__init__(self, msg)
+        self.input_data = input_data
 
 
 class Report(Message):
@@ -89,11 +92,8 @@ class Report(Message):
             try:
                 return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
-                try:
-                    return datetime.fromtimestamp(int(ts) / 1000)
-                except ValueError as exn:
-                    raise BadInputData(exn.args) from exn
+                return datetime.fromtimestamp(int(ts) / 1000)
         if isinstance(ts, datetime):
             return ts
 
-        raise BadInputData('timestamp must be a datetime.datetime or a string')
+        raise ValueError('timestamp must be a datetime.datetime or a string')
