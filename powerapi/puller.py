@@ -106,10 +106,13 @@ class PullerActor(TimedActor):
                 if self.stream_mode:
                     self.wakeupAfter(self._time_interval)
                     return
+                self.log_info('input source empty, stop system')
                 self._terminate()
                 return
-            except BadInputData:
-                pass
+            except BadInputData as exn:
+                log_line = 'BadinputData exception raised for input data' + str(exn.input_data)
+                log_line += ' with message : ' + exn.msg
+                self.log_warning(log_line)
 
     def _terminate(self):
         self.send(self.parent, EndMessage(self.name))

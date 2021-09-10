@@ -31,7 +31,7 @@ import pytest
 
 import powerapi.test_utils.db as parent_module
 
-OUTPUT_PATH = '/tmp/'
+OUTPUT_PATH = '/tmp/powerapi_test_csv/'
 ROOT_PATH = parent_module.__path__[0] + '/csv_files/'
 FILES = [ROOT_PATH + 'core2.csv',
          ROOT_PATH + "rapl2.csv",
@@ -43,6 +43,7 @@ def files():
     """
     fixture that remove csv files used by test module before launching the test and after the test end
     """
-    os.system('rm -Rf ' + OUTPUT_PATH + 'grvingt-12-system')
+    os.system('rm -Rf ' + OUTPUT_PATH)
+    os.system('mkdir -p ' + OUTPUT_PATH)
     yield None
-    os.system('rm -Rf ' + OUTPUT_PATH + 'grvingt-12-system')
+    os.system('rm -Rf ' + OUTPUT_PATH)

@@ -150,17 +150,18 @@ class DispatcherActor(Actor):
                 log_line += 'with this error stack : ' + message.details
                 self.log_debug(log_line)
                 blocking_detector.notify_poison_received(poison_message)
-                self.log_debug('formula ' + formula_name + ' is blocked : ' + str(blocking_detector.is_blocked()))
                 if blocking_detector.is_blocked():
+                    self.log_debug('formula ' + formula_name + ' is blocked : ' + str(blocking_detector.is_blocked()))
                     self.log_debug('restart formula ' + formula_name)
+                    self.log_error('formula ' + formula_name + ' is blocked after this error : ' + message.details)
                     self._restart_formula(formula_name)
                     return
 
-    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, _: ActorAddress):
+    def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, sender: ActorAddress):
         """
         When receiving ActorExitRequest, forward it to all formula
         """
-        self.log_debug('received message ' + str(message))
+        Actor.receiveMsg_ActorExitRequest(self, message, sender)
         for _, (formula, __) in self.formula_pool.items():
             self.send(formula, ActorExitRequest())
         for _, formula in self.formula_waiting_service.get_all_formula():
@@ -203,7 +204,7 @@ class DispatcherActor(Actor):
                     self._send_message(formula_name, message)
                 except KeyError:
                     formula_name = self._gen_formula_name(formula_id)
-                    self.log_debug('create formula ' + formula_name)
+                    self.log_info('create formula ' + formula_name)
                     formula = self._create_formula(formula_id, formula_name)
                     self.formula_name_service.add(formula_id, formula_name)
                     self.formula_waiting_service.add(formula_name, formula)
@@ -238,7 +239,7 @@ class DispatcherActor(Actor):
         """
         When receiving an ErrorMessage after trying to start a formula, remove formula from waiting service
         """
-        self.log_debug('received error message ' + str(message))
+        self.log_info('error while trying to start ' + message.sender_name + ' : ' + message.error_message)
         self.formula_waiting_service.remove_formula(message.sender_name)
 
     def receiveMsg_OKMessage(self, message: OKMessage, sender: ActorAddress):
@@ -251,6 +252,7 @@ class DispatcherActor(Actor):
         self.formula_pool[formula_name] = (sender, BlockingDetector())
         for waiting_msg in waiting_messages:
             self._send_message(formula_name, waiting_msg)
+        self.log_info('formula ' + formula_name + 'started')
 
     def receiveMsg_EndMessage(self, message: EndMessage, _: ActorAddress):
         """
