@@ -24,7 +24,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            apt install libvirt-dev libvirt-daemon libvirt-clients
+            sudo apt install libvirt-dev libvirt-daemon libvirt-clients
             python3 -m venv venv
             . venv/bin/activate
             pip3 install wheel
