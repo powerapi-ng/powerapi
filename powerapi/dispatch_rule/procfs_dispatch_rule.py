@@ -26,14 +26,51 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.database.base_db import BaseDB, IterDB, DBError
-from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
-from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
-from powerapi.database.mongodb import MongoDB, MongoBadDBError
-from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
-from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
-from powerapi.database.prometheus_db import PrometheusDB
-from powerapi.database.virtiofs_db import VirtioFSDB
-from powerapi.database.direct_prometheus_db import DirectPrometheusDB
-from powerapi.database.socket_db import SocketDB
-from powerapi.database.file_db import FileDB
+from typing import Tuple
+from enum import IntEnum
+
+from powerapi.report import ProcfsReport
+
+from .dispatch_rule import DispatchRule
+
+
+class ProcfsDepthLevel(IntEnum):
+    """
+    Enumeration that specify which report level use to group by the reports
+    """
+
+    TARGET = -1
+    SENSOR = 0
+
+
+def extract_id_from_report(report: ProcfsReport, depth: ProcfsDepthLevel) -> Tuple:
+    """
+    :return: a report id generated from the report and the given depth
+    """
+    if depth == ProcfsDepthLevel.TARGET:
+        return (report.target,)
+
+    return (report.sensor,)
+
+
+class ProcfsDispatchRule(DispatchRule):
+    """
+    Group by rule for Procfs report
+    """
+    def __init__(self, depth: ProcfsDepthLevel, primary=False):
+        """
+        :param depth:
+        :type depth: ProcfsDepthLevel
+        """
+        DispatchRule.__init__(self, primary)
+        self.depth = depth
+        self.fields = self._set_field()
+
+    def _set_field(self):
+        if self.depth == ProcfsDepthLevel.TARGET:
+            return ['target']
+
+        return ['sensor']
+
+    def get_formula_id(self, report):
+        return [extract_id_from_report(report, self.depth)]

@@ -48,7 +48,7 @@ def recv_from_pipe(pipe, timeout):
     if pipe.poll(timeout):
         return pipe.recv()
     else:
-        return None
+        return None,None
 
 
 class UnknowMessage:

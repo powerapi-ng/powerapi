@@ -289,7 +289,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
     def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, system, started_actor, logger, dummy_pipe_out):
         system.tell(started_actor, REPORT_1)
-        assert recv_from_pipe(dummy_pipe_out, 0.5) is None
+        assert recv_from_pipe(dummy_pipe_out, 0.5) ==  (None,None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(self, system, started_actor, dummy_pipe_out):
@@ -303,7 +303,7 @@ class TestDispatcher(AbstractTestActor):
         system.tell(dispatcher_with_formula, REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == REPORT_1
-        assert recv_from_pipe(dummy_pipe_out, 0.5) is None
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report2, DispatchRule2A())])
@@ -315,7 +315,7 @@ class TestDispatcher(AbstractTestActor):
         assert msg1 == REPORT_2
         assert msg2 == REPORT_2
 
-        assert recv_from_pipe(dummy_pipe_out, 0.5) is None
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, system, started_actor, dummy_pipe_out):
@@ -349,7 +349,7 @@ class TestDispatcher(AbstractTestActor):
         system.tell(started_actor, REPORT_3)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == REPORT_3
-        assert recv_from_pipe(dummy_pipe_out, 0.5) is None
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_ActorExitRequest_make_dispatcher_forward_it_to_formula(self, system, dispatcher_with_two_formula, logger, dummy_pipe_out):
@@ -415,7 +415,7 @@ class TestDispatcher(AbstractTestActor):
         start_message =  DispatcherStartMessage('system', 'dispatcher', CrashInitFormulaActor, values, route_table, 'test_device')
         system.ask(actor, start_message)
         system.tell(actor, REPORT_1)
-        assert recv_from_pipe(dummy_pipe_out, 0.5) is None
+        assert recv_from_pipe(dummy_pipe_out, 0.5)  == (None,None)
 
 
 #############################################
