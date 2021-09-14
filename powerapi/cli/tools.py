@@ -219,18 +219,18 @@ class Generator:
         Generate an actor class and actor start message from config dict
         """
         if self.component_group_name not in config:
-            print('CLI error : no ' + self.component_group_name + ' specified', file=sys.stderr)
+            print('CONFIG error : no ' + self.component_group_name + ' specified', file=sys.stderr)
             sys.exit()
 
         actors = {}
 
         for component_name, component_config in config[self.component_group_name].items():
-            component_type = component_config['type']
             try:
+                component_type = component_config['type']
                 actors[component_name] = self._gen_actor(component_type, component_config, config, component_name)
             except KeyError as exn:
-                msg = 'CLI error : argument ' + exn.args[0]
-                msg += ' needed with --output ' + component_type
+                msg = 'CONFIG error : argument ' + exn.args[0]
+                msg += ' needed with output ' + component_type
                 print(msg, file=sys.stderr)
                 sys.exit()
 
@@ -350,10 +350,23 @@ class DBActorGenerator(Generator):
         self.model_factory[db_name] = db_factory
 
     def _generate_db(self, db_name, db_config, _):
-        return self.db_factory[db_name](db_config)
+        if db_name not in self.db_factory:
+            msg = 'CONFIG error : database type ' + db_name + 'unknow'
+            print(msg, file=sys.stderr)
+            sys.exit()
+        else:
+            return self.db_factory[db_name](db_config)
+
+    def _generate_model(self, model_name, db_config):
+        if model_name not in self.model_factory:
+            msg = 'CONFIG error : model type ' + model_name + 'unknow'
+            print(msg, file=sys.stderr)
+            sys.exit()
+        else:
+            return self.model_factory[db_config['model']]
 
     def _gen_actor(self, db_name, db_config, main_config, actor_name):
-        model = self.model_factory[db_config['model']]
+        model = self._generate_model(db_config['model'], db_config)
         db_config['model'] = model
         db = self._generate_db(db_name, db_config, main_config)
         start_message = self._start_message_factory(actor_name, db, model, main_config['stream'], main_config['verbose'])
