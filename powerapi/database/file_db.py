@@ -29,9 +29,11 @@
 
 import logging
 from typing import List, Type
+import os
+import json
 from powerapi.database.base_db import BaseDB, DBError, IterDB
 from powerapi.report import Report
-import os
+
 
 class FileBadDBError(DBError):
     """
@@ -48,12 +50,13 @@ class FileIterDB(IterDB):
     Class for iterating in a file
     """
 
-    def __init__(self, db, report_type, stream_mode):
+    def __init__(self, db, report_type, stream_mode, filename):
         """
         """
         IterDB.__init__(self, db, report_type, stream_mode)
         self.previousJson = ""
         self.__iter__()
+        self.filename = filename
 
     def __iter__(self):
         """
@@ -68,19 +71,20 @@ class FileIterDB(IterDB):
         """
 
         file_object = open(self.filename, "r")
-        json = file_object.read()
+        json_str= file_object.read()
+        file_object.close()
 
-        if json is None:
+        if json_str is None:
             raise StopIteration()
 
-        if json == self.previousJson:
+        if json_str == self.previousJson:
             logging.error("Error : Report did not change since last read")
             raise StopIteration()
 
 
-        self.previousJson = json
+        self.previousJson = json_str
 
-        return self.report_type.from_json(json)
+        return self.report_type.from_json(json.loads(json_str))
 
 
 class FileDB(BaseDB):
@@ -90,7 +94,7 @@ class FileDB(BaseDB):
     Allow to handle a FileDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], filename: str)
+    def __init__(self, report_type: Type[Report], filename: str):
         """
         :param report_type:        Type of the report handled by this database
         :param filename:        Name of the file containing the report
@@ -116,7 +120,7 @@ class FileDB(BaseDB):
         """
         Create the iterator for get the data
         """
-        return FileIterDB(self, self.report_type, stream_mode)
+        return FileIterDB(self, self.report_type, stream_mode, self.filename)
 
     def save(self, report: Report):
         """
@@ -126,6 +130,7 @@ class FileDB(BaseDB):
         """
         raise DBError("FileDB do not support save method")
 
+
     def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
@@ -133,3 +138,4 @@ class FileDB(BaseDB):
         :param reports: Batch of data.
         """
         raise DBError("FileDB do not support save_many method")
+        

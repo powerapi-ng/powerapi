@@ -38,8 +38,8 @@ from powerapi.cli.parser import store_true
 from powerapi.cli.parser import MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
-from powerapi.report import HWPCReport, PowerReport, ControlReport
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
+from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
@@ -97,6 +97,16 @@ class CommonCLIParser(MainParser):
         subparser_csv_input.add_argument('n', 'name', help='specify puller name', default='puller_csv')
         self.add_actor_subparser('input', subparser_csv_input,
                                  help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
+
+        subparser_file_input = ComponentSubParser('filedb')
+        subparser_file_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
+                                         default='PowerReport')
+        subparser_file_input.add_argument('n', 'filename', help='specify file name')
+        self.add_actor_subparser('input', subparser_file_input,
+                                 help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
+
 
         subparser_virtiofs_output = ComponentSubParser('virtiofs')
         help_str = 'regexp used to extract vm name from report.'
@@ -299,6 +309,7 @@ class DBActorGenerator(Generator):
             'HWPCReport': HWPCReport,
             'PowerReport': PowerReport,
             'ControlReport': ControlReport,
+            'ProcfsReport': ProcfsReport
         }
 
         self.db_factory = {
@@ -315,6 +326,7 @@ class DBActorGenerator(Generator):
                                                                 db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'],
                                                      db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
+            'filedb': lambda db_config : FileDB(db_config['model'], db_config['filename'])
         }
 
     def remove_model_factory(self, model_name):

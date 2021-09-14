@@ -110,7 +110,7 @@ class Supervisor:
             LOG_DEF['handlers']['h1']['level'] = logging.INFO
             LOG_DEF['handlers']['h2']['level'] = logging.INFO
 
-        self.system = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
+        self.system = ActorSystem(systemBase='multiprocQueueBase', logDefs= LOG_DEF)
         self.pushers = {}
         self.pullers = {}
         self.dispatchers = {}
