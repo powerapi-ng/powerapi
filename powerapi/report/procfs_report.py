@@ -81,7 +81,7 @@ class ProcfsReport(Report):
         """
         try:
             ts = Report._extract_timestamp(data['timestamp'])
-            return ProcfsReport(ts, data['sensor'], data['target'], data['usage'])
+            return ProcfsReport(ts, data['sensor'], data['target'], data['usage'], data['global_cpu_usage'])
         except KeyError as exn:
             raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
 
