@@ -92,7 +92,11 @@ class Report(Message):
             try:
                 return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
-                return datetime.fromtimestamp(int(ts) / 1000)
+                try:
+                    return datetime.fromtimestamp(int(ts) / 1000)
+                except ValueError:
+                    ValueError('timestamp string have to be formated with the following format "%Y-%m-%dT%H:%M:%S.%f"')
+
         if isinstance(ts, datetime):
             return ts
 
