@@ -1,4 +1,4 @@
-name: CI
+name: test_ci
 
 on: [push, pull_request]
 
@@ -44,3 +44,11 @@ jobs:
         run: python3 setup.py test
       - name: lint with flake8
         run: flake8 powerapi
+      - name: lint with pylint
+        run: pylint powerapi
+  build_pip:
+    runs-on: ubuntu-latest
+    if: github.event.release
+    needs: lint_and_test
+    steps:
+      - run: echo TAG $GITHUB_REF
