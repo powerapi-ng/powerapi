@@ -38,7 +38,31 @@ from powerapi.utils import StatBuffer
 from .base_db import BaseDB
 
 
-class PrometheusDB(BaseDB):
+class BasePrometheusDB(BaseDB):
+    """
+    Base class to expose data to prometheus instance
+    """
+    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str,
+                 metric_description: str, tags: List[str]):
+        BaseDB.__init__(self, report_type)
+        self.address = address
+        self.port = port
+        self.metric_name = metric_name
+        self.metric_description = metric_description
+        self.tags = tags
+
+    def _init_metrics(self):
+        raise NotImplementedError()
+
+    def connect(self):
+        """
+        Start a HTTP server exposing metrics
+        """
+        self._init_metrics()
+        start_http_server(self.port)
+
+
+class PrometheusDB(BasePrometheusDB):
     """
     Database that expose received data as metric in order to be scrapped by a prometheus instance
     Could only be used with a pusher actor
@@ -54,13 +78,8 @@ class PrometheusDB(BaseDB):
         :param aggregation_periode: number of second for the value must be aggregated before compute statistics on them
         :param tags: metadata used to tag metric
         """
-        BaseDB.__init__(self, report_type)
-        self.address = address
-        self.port = port
-        self.metric_name = metric_name
-        self.metric_description = metric_description
+        BasePrometheusDB.__init__(self, report_type, port, address, metric_name, metric_description, tags)
         self.aggregation_periode = aggregation_periode
-        self.tags = tags
         self.final_tags = ['sensor', 'target'] + tags
 
         self.mean_metric = None
@@ -77,16 +96,11 @@ class PrometheusDB(BaseDB):
     def __iter__(self):
         raise NotImplementedError()
 
-    def connect(self):
-        """
-        Start a HTTP server exposing one metric
-        """
-
+    def _init_metrics(self):
         self.mean_metric = Gauge(self.metric_name + '_mean', self.metric_description + '(MEAN)', self.final_tags)
         self.std_metric = Gauge(self.metric_name + '_std', self.metric_description + '(STD)', self.final_tags)
         self.min_metric = Gauge(self.metric_name + '_min', self.metric_description + '(MIN)', self.final_tags)
         self.max_metric = Gauge(self.metric_name + '_max', self.metric_description + '(MAX)', self.final_tags)
-        start_http_server(self.port)
 
     def _expose_data(self, key):
         aggregated_value = self.buffer.get_stats(key)

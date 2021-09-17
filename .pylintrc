@@ -7,7 +7,7 @@ extension-pkg-whitelist=
 
 # Add files or directories to the blacklist. They should be base names, not
 # paths.
-ignore=CVS
+ignore=CVS, test_utils
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
@@ -65,6 +65,7 @@ disable=R0903, R0902, C0200,
 	 W0102, C0112, R1720, R0915,
 	 W0237, R1732, W1514, R1718,
 	 C0206, W0236, W0223, W1201,
+	 W0622, W0212,
 	print-statement,
         parameter-unpacking,
         unpacking-in-except,
