@@ -8,6 +8,11 @@ jobs:
     strategy:
       matrix:
         python-version: [3.9]
+    services:
+      - mongo:
+          image: mongo:latest
+      - influx:
+          image: influxdb:1.8
     steps:
       - name: install environment
         run: |
