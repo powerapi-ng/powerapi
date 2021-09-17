@@ -53,7 +53,7 @@ class ProcfsReport(Report):
 
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: Dict, global_cpu_usage : float):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: Dict, global_cpu_usage: float):
         """
         Initialize an Procfs report using the given parameters.
         :param datetime timestamp: Timestamp of the report
@@ -67,10 +67,9 @@ class ProcfsReport(Report):
         #: (dict): Events groups
         self.usage = usage
         self.global_cpu_usage = global_cpu_usage
+
     def __repr__(self) -> str:
         return 'ProcfsReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.usage.keys()))
-
-
 
     @staticmethod
     def from_json(data: Dict) -> ProcfsReport:
@@ -83,7 +82,7 @@ class ProcfsReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return ProcfsReport(ts, data['sensor'], data['target'], data['usage'], data['global_cpu_usage'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document')
+            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document', data) from exn
 
     @staticmethod
     def to_json(report: ProcfsReport) -> Dict:
@@ -103,26 +102,26 @@ class ProcfsReport(Report):
         target = None
         timestamp = None
         usage = {}
+        global_cpu_usage = None
 
         for file_name, row in lines:
-            cgroup_name = file_name[:-4] if file_name[len(file_name)-4:] == '.csv' else file_name
+            cgroup_name = file_name[:-4] if file_name[len(file_name) - 4:] == '.csv' else file_name
             try:
                 if sensor_name is None:
                     sensor_name = row['sensor']
                 else:
                     if sensor_name != row['sensor']:
-                        raise BadInputData('csv line with different sensor name are mixed into one report')
+                        raise BadInputData('csv line with different sensor name are mixed into one report', {})
                 if target is None:
                     target = row['target']
                 else:
                     if target != row['target']:
-                        raise BadInputData('csv line with different target are mixed into one report')
+                        raise BadInputData('csv line with different target are mixed into one report', {})
                 if timestamp is None:
                     timestamp = ProcfsReport._extract_timestamp(row['timestamp'])
                 else:
                     if timestamp != ProcfsReport._extract_timestamp(row['timestamp']):
-                        raise BadInputData('csv line with different timestamp are mixed into one report')
-
+                        raise BadInputData('csv line with different timestamp are mixed into one report', {})
 
                 if global_cpu_usage is None:
                     global_cpu_usage = row['global_cpu_usage']
@@ -136,8 +135,6 @@ class ProcfsReport(Report):
                 for key, value in row.items():
                     if key not in CSV_HEADER_PROCFS:
                         usage[cgroup_name][key] = int(value)
-
-
 
             except KeyError as exn:
                 raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name)
@@ -175,7 +172,7 @@ class ProcfsReport(Report):
 
 
 def create_report_root(cgroup_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='all'):
-    sensor = ProcfsReport(timestamp=timestamp, sensor=sensor, target=target, usage={}, global_cpu_usage = 0)
+    sensor = ProcfsReport(timestamp=timestamp, sensor=sensor, target=target, usage={}, global_cpu_usage=0)
     for (cgroup_id, cpu_usage) in cgroup_list:
         sensor.usage[cgroup_id] = cpu_usage
     return sensor

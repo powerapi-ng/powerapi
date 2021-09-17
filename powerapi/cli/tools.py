@@ -98,15 +98,12 @@ class CommonCLIParser(MainParser):
         self.add_actor_subparser('input', subparser_csv_input,
                                  help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
-
         subparser_file_input = ComponentSubParser('filedb')
         subparser_file_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
-                                         default='PowerReport')
+                                          default='PowerReport')
         subparser_file_input.add_argument('n', 'filename', help='specify file name')
         self.add_actor_subparser('input', subparser_file_input,
                                  help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
-
-
 
         subparser_virtiofs_output = ComponentSubParser('virtiofs')
         help_str = 'regexp used to extract vm name from report.'
@@ -326,7 +323,7 @@ class DBActorGenerator(Generator):
                                                                 db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'],
                                                      db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
-            'filedb': lambda db_config : FileDB(db_config['model'], db_config['filename'])
+            'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename'])
         }
 
     def remove_model_factory(self, model_name):
