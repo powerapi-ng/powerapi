@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from queue import Queue
-import datetime
+
 from powerapi.exception import PowerAPIException
 
 
