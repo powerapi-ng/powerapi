@@ -154,7 +154,8 @@ class CrashFormula(FormulaActor):
     def __init__(self):
         FormulaActor.__init__(self, FormulaStartMessage)
 
-    def receiveMsg_Report(self, message: Report, sender: ActorAddress):
+    @staticmethod
+    def receiveMsg_Report(message: Report, sender: ActorAddress):
         """
         crash when receiving a report
         """

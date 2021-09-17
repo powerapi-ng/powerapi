@@ -92,7 +92,7 @@ class HWPCReport(Report):
             ts = Report._extract_timestamp(data['timestamp'])
             return HWPCReport(ts, data['sensor'], data['target'], data['groups'])
         except KeyError as exn:
-            raise BadInputData('no field ' + str(exn.args[0]) + ' in json document', data) from exn
+            raise BadInputData('HWPC report require field ' + str(exn.args[0]) + ' in json document', data) from exn
         except ValueError as exn:
             raise BadInputData(exn.args[0], data) from exn
 

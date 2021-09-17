@@ -64,7 +64,7 @@ class BlockingDetector:
                 self.state = _State.BLOCKED
             elif self.state == _State.BLOCKED:
                 self.state = _State.FINAL
-        elif self.state != _State.BLOCKED and self.state != _State.FINAL:
+        elif self.state not in (_State.BLOCKED, _State.FINAL):
             self.state = _State.BLOCKED_INTER_1
 
         if message.dispatcher_report_id == self.max_id_value:

@@ -71,7 +71,7 @@ class FileIterDB(IterDB):
         """
 
         file_object = open(self.filename, "r")
-        json_str= file_object.read()
+        json_str = file_object.read()
         file_object.close()
 
         if json_str is None:
@@ -80,7 +80,6 @@ class FileIterDB(IterDB):
         if json_str == self.previousJson:
             logging.error("Error : Report did not change since last read")
             raise StopIteration()
-
 
         self.previousJson = json_str
 
@@ -102,9 +101,7 @@ class FileDB(BaseDB):
 
         BaseDB.__init__(self, report_type)
 
-
         self.filename = filename
-
 
     def connect(self):
         """
@@ -114,7 +111,6 @@ class FileDB(BaseDB):
         """
         if not os.path.exists(self.filename):
             raise FileBadDBError(self.filename)
-
 
     def iter(self, stream_mode: bool) -> FileIterDB:
         """
@@ -130,7 +126,6 @@ class FileDB(BaseDB):
         """
         raise DBError("FileDB do not support save method")
 
-
     def save_many(self, reports: List[Report]):
         """
         Allow to save a batch of data
@@ -138,4 +133,3 @@ class FileDB(BaseDB):
         :param reports: Batch of data.
         """
         raise DBError("FileDB do not support save_many method")
-        

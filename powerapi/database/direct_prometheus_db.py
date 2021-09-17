@@ -30,15 +30,15 @@ import logging
 from typing import List, Type
 
 try:
-    from prometheus_client import start_http_server, Gauge
+    from prometheus_client import Gauge
 except ImportError:
     logging.getLogger().info("prometheus-client is not installed.")
 
 from powerapi.report import Report
-from .base_db import BaseDB
+from .prometheus_db import BasePrometheusDB
 
 
-class DirectPrometheusDB(BaseDB):
+class DirectPrometheusDB(BasePrometheusDB):
     """
     Database that expose received data as metric in order to be scrapped by a prometheus instance
     Could only be used with a pusher actor
@@ -51,12 +51,7 @@ class DirectPrometheusDB(BaseDB):
         :param metric_description:  short sentence that describe the metric
         :param tags: metadata used to tag metric
         """
-        BaseDB.__init__(self, report_type)
-        self.address = address
-        self.port = port
-        self.metric_name = metric_name
-        self.metric_description = metric_description
-        self.tags = tags
+        BasePrometheusDB.__init__(self, report_type, port, address, metric_name, metric_description, tags)
 
         self.energy_metric = None
 
@@ -67,12 +62,8 @@ class DirectPrometheusDB(BaseDB):
     def __iter__(self):
         raise NotImplementedError()
 
-    def connect(self):
-        """
-        Start a HTTP server exposing one metric
-        """
+    def _init_metrics(self):
         self.energy_metric = Gauge(self.metric_name, self.metric_description, ['sensor', 'target'] + self.tags)
-        start_http_server(self.port)
 
     def _expose_data(self, _, measure):
         kwargs = {label: measure['tags'][label] for label in measure['tags']}
