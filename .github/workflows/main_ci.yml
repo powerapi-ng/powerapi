@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.9]
     steps:
       - name: install environment
         run: |
@@ -22,7 +22,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-$GITHUB_REF
+          key: ${{ runner.os }}-pip-${{ hashFiles('powerapi/__init__.json') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
