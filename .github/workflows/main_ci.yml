@@ -44,5 +44,3 @@ jobs:
         run: python3 setup.py test
       - name: lint with flake8
         run: flake8 powerapi
-      - name: lint with pylint
-        run: pylint powerapi
