@@ -39,7 +39,7 @@ from powerapi.cli.parser import BadValueException, MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report_model import HWPCModel, PowerModel, FormulaModel, ControlModel
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB2 ,InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.report_modifier import LibvirtMapper
@@ -166,6 +166,20 @@ class CommonCLIParser(MainParser):
         subparser_influx_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb')
         self.add_actor_subparser('output', subparser_influx_output,
                                      help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
+
+        subparser_influx2_output = ComponentSubParser('influxdb2')
+        subparser_influx2_output.add_argument('u', 'uri', help='specify InfluxDB2 uri. Examples: \'localhost\'')
+        subparser_influx2_output.add_argument('b', 'bucket', help='specify InfluxDB2 bucket name')
+        subparser_influx2_output.add_argument('p', 'port', help='specify InfluxDB2 connection port', type=int)
+        subparser_influx2_output.add_argument('t', 'token', help='specify the auth token to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('o', 'org', help='specify the name of the organization used to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('m', 'model', help='specify data type that will be stored in the database',
+                                             default='PowerReport')
+        subparser_influx2_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb2')
+        self.add_actor_subparser('output', subparser_influx2_output,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+
 
         subparser_opentsdb_output = ComponentSubParser('opentsdb')
         subparser_opentsdb_output.add_argument('u', 'uri', help='specify openTSDB host')
@@ -294,6 +308,7 @@ class DBActorGenerator(Generator):
             'direct_prom': lambda db_config: DirectPrometheusDB(db_config['port'], db_config['uri'], db_config['metric_name'],
                                                           db_config['metric_description'], self.model_factory[db_config['model']]),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['vm_name_regexp'], db_config['root_directory_name'], db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
+            'influxdb2': lambda db_config: InfluxDB2( db_config['uri'], db_config["port"] , db_config["token"], db_config["org"] ,db_config["bucket"] ),
         }
 
     def remove_model_factory(self, model_name):

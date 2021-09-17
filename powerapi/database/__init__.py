@@ -36,4 +36,5 @@ from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 from powerapi.database.prometheus_db import PrometheusDB
 from powerapi.database.virtiofs_db import VirtioFSDB
 from powerapi.database.direct_prometheus_db import DirectPrometheusDB
+from powerapi.database.influxdb2 import InfluxDB2, CantConnectToInfluxDB2Exception
 from .socket_db import SocketDB
