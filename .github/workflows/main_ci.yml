@@ -42,3 +42,7 @@ jobs:
           pip3 install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Test with pytest
         run: python3 setup.py test
+      - name: lint with flake8
+        run: flake8 powerapi
+      - name: lint with pylint
+        run: pylint powerapi
