@@ -18,7 +18,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ GITHUB_REF }}
+          key: ${{ runner.os }}-pip-$GITHUB_REF
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
