@@ -18,7 +18,7 @@ jobs:
         ports:
           - 8086:8086
     steps:
-      - name: install environment
+      - name: Install environment
         run: |
           sudo apt-get update
           sudo apt install -y libvirt-dev
@@ -42,9 +42,9 @@ jobs:
           pip3 install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Test with pytest
         run: python3 setup.py test
-      - name: lint with flake8
+      - name: Lint with flake8
         run: flake8 powerapi
-      - name: lint with pylint
+      - name: Lint with pylint
         run: pylint powerapi
   build_pip:
     runs-on: ubuntu-latest
