@@ -52,6 +52,6 @@ jobs:
     needs: lint_and_test
     steps:
       - name: Check tag and module version before push to pypi
-      - run: |
+        run: |
           GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
           python3 -c "import os, powerapi; exit(os.environ.get('GIT_TAG', '?')[1:] != powerapi.__version__)"
