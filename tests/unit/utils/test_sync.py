@@ -74,8 +74,9 @@ def test_request_while_no_pair_available_return_None():
 def test_request_while_report_missing_return_correct_data():
     timestamp = datetime.date(1970,1,1)
     timedet = datetime.timedelta(1)
+    delay = datetime.timedelta(1)
 
-    sync = Sync(type1,type2,timedet)
+    sync = Sync(type1,type2,delay)
 
     sync.add_report(Report1(timestamp,"",""))
     sync.add_report(Report1(timestamp + timedet,"","") )
@@ -109,11 +110,13 @@ def test_request_correct_use_return_correct_data():
         r = sync.request()
 
 
-def test_with_real_reports(procfs_timeline, power_timeline ):
+def test_send_timeline_of_reports_receive_right_pair(procfs_timeline, power_timeline ):
     timedet = datetime.timedelta(250)
     sync = Sync(lambda x: isinstance(x, PowerReport),
                 lambda x: isinstance(x, ProcfsReport),
                 timedet)
+
+    sum = 0
 
     r = power_timeline[0]
     sync.add_report(PowerReport.from_json(r))
@@ -121,11 +124,17 @@ def test_with_real_reports(procfs_timeline, power_timeline ):
     sync.add_report(PowerReport.from_json(r))
 
     for i in range(len(power_timeline) - 2):
-        r = power_timeline[i+2]
+        r = power_timeline[i + 2]
         sync.add_report(PowerReport.from_json(r))
 
         r = procfs_timeline[i]
         sync.add_report(ProcfsReport.from_json(r))
+
+        r = sync.request()
+        assert r is not None
+        report1, report2 = r
+        assert abs(report1.timestamp - report2.timestamp) <= timedet
+        sum += 1
 
     r = procfs_timeline[-2]
     sync.add_report(ProcfsReport.from_json(r))
@@ -133,13 +142,39 @@ def test_with_real_reports(procfs_timeline, power_timeline ):
     r = procfs_timeline[-1]
     sync.add_report(ProcfsReport.from_json(r))
 
+    assert sum == len(power_timeline) - 2
 
-    r = sync.request()
+
+def test_send_report_in_special_order_receive_right_pair(procfs_timeline, power_timeline ):
+    timedet = datetime.timedelta(250)
+    sync = Sync(lambda x: isinstance(x, PowerReport),
+                lambda x: isinstance(x, ProcfsReport),
+                timedet)
+
     sum = 0
-    while r != None:
-        report1,report2 = r
+
+    r = power_timeline[0]
+    sync.add_report(PowerReport.from_json(r))
+    r = power_timeline[1]
+    sync.add_report(PowerReport.from_json(r))
+
+    for i in range(len(power_timeline) - 2):
+        r = power_timeline[i + 2]
+        sync.add_report(PowerReport.from_json(r))
+
+        r = procfs_timeline[i]
+        sync.add_report(ProcfsReport.from_json(r))
+
+        r = sync.request()
+        assert r is not None
+        report1, report2 = r
         assert abs(report1.timestamp - report2.timestamp) <= timedet
         sum += 1
-        r = sync.request()
 
-    assert sum == len(power_timeline)
+    r = procfs_timeline[-2]
+    sync.add_report(ProcfsReport.from_json(r))
+
+    r = procfs_timeline[-1]
+    sync.add_report(ProcfsReport.from_json(r))
+
+    assert sum == len(power_timeline) - 2
