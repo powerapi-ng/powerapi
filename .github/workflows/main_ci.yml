@@ -1,7 +1,10 @@
 name: test_ci
 
-on: [push, pull_request, release]
-
+on:
+  push:
+  pull_request:
+  release:
+    type: [published]
 jobs:
   lint_and_test:
     runs-on: ubuntu-latest
@@ -51,6 +54,14 @@ jobs:
     if: github.event.release
     needs: lint_and_test
     steps:
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('powerapi/__init__.json') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
       - name: Check tag and module version before push to pypi
         run: |
           GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
