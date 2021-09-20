@@ -26,9 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from queue import Queue
-
+import datetime
+import logging
+import sys
 from powerapi.exception import PowerAPIException
 
 
@@ -39,6 +39,15 @@ class WrongFormatReport(PowerAPIException):
     def __init__(self, report_type):
         PowerAPIException.__init__(self)
         self.report_type = report_type
+
+
+class WrongTypeParameter(PowerAPIException):
+    """
+    Exception raised when Sync is instantiate with a parameter of the wrong type
+    """
+    def __init__(self, parameter: str):
+        PowerAPIException.__init__(self)
+        self.parameter = parameter
 
 
 class Sync():
@@ -59,12 +68,39 @@ class Sync():
         maximal delay, in second, that is allowed between two report to pair them
         """
 
+        if not isinstance(delay, datetime.timedelta):
+            raise WrongTypeParameter("delay")
+
         self.delay = delay
         self.type1 = type1
         self.type2 = type2
-        self.type1_buff = Queue()
-        self.type2_buff = Queue()
-        self.pair_ready = Queue()
+        self.type1_buff = []
+        self.type2_buff = []
+        self.pair_ready = []
+
+    def insert_report(self, report, main_buff, secondary_buff):
+        """
+        Insert report in the buff and delete obsolete one
+        If a pair is found store it it the dedicated buff
+        """
+        second_report = main_buff[0]
+        diff = abs(report.timestamp - second_report.timestamp)
+
+        while diff > self.delay:
+            if report.timestamp > second_report.timestamp:
+                main_buff.pop(0)
+                second_report = main_buff[0]
+                diff = abs(report.timestamp - second_report.timestamp)
+
+            if report.timestamp < second_report.timestamp:
+                return None
+
+            if len(main_buff) == 0:
+                secondary_buff.append(report)
+                return None
+
+            main_buff.pop(0)
+            self.pair_ready.append((report, second_report))  # report are in order (type1,type2)
 
     def add_report(self, report):
         """
@@ -72,49 +108,29 @@ class Sync():
         If there is a report that can be paired with it then it do so
         Else the report is stored in the buffer
         """
+
+        if report in self.type2_buff or report in self.type2_buff:
+            logging.error("Duplicate message")
+            sys.exit(0)
+
         if self.type1(report):
-            print("Receive type1 message")
-            if self.type2_buff.qsize() == 0:
-                self.type1_buff.put(report)
+            if len(self.type2_buff) == 0:
+                self.type1_buff.append(report)
             else:
-                second_report = self.type2_buff.get()
-                diff = abs(report.timestamp - second_report.timestamp)
-
-                while diff > self.delay:
-                    if self.type2_buff.qsize() == 0:
-                        self.type1_buff.put(report)
-                        return None
-
-                    second_report = self.type2_buff.get()
-                    diff = abs(report.timestamp - second_report.timestamp)
-
-                self.pair_ready.put((report, second_report))  # report are in order (type1,type2)
+                self.insert_report(report, self.type2_buff, self.type1_buff)
         elif self.type2(report):
-            print("Receive type2 message")
-            if self.type1_buff.qsize() == 0:
-                self.type2_buff.put(report)
+            if len(self.type1_buff) == 0:
+                self.type2_buff.append(report)
             else:
-                second_report = self.type1_buff.get()
-                diff = abs(report.timestamp - second_report.timestamp)
-
-                while diff > self.delay:
-                    if self.type1_buff.qsize() == 0:
-                        self.type2_buff.put(report)
-                        return None
-
-                    second_report = self.type1_buff.get()
-                    diff = abs(report.timestamp - second_report.timestamp)
-
-                self.pair_ready.put((second_report, report))  # report are in order (type1,type2)
+                self.insert_report(report, self.type1_buff, self.type2_buff)
         else:
             raise WrongFormatReport(type(report))
-        return None
 
     def request(self):
         """
             Request a pair of report
             Return None if there is no pair available
         """
-        if self.pair_ready.qsize() > 0:
-            return self.pair_ready.get()
+        if len(self.pair_ready) > 0:
+            return self.pair_ready.pop(0)
         return None

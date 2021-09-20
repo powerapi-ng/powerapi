@@ -371,6 +371,7 @@ class FormulaNameService:
         :param tuple formula_id: Key corresponding to a Formula
         :return: a Formula name
         """
+
         return self.formula_name[formula_id]
 
     def get_formula_id(self, formula_name_to_find: str) -> Tuple:
