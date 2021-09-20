@@ -29,7 +29,8 @@
 
 import pytest
 from powerapi.utils.sync import Sync
-from powerapi.report import Report
+from powerapi.report import Report, ProcfsReport, PowerReport
+from powerapi.test_utils.reports import power_timeline, procfs_timeline
 import datetime
 
 class Report1(Report):
@@ -106,3 +107,39 @@ def test_request_correct_use_return_correct_data():
         report1,report2 = r
         assert abs(report1.timestamp - report2.timestamp) <= timedet
         r = sync.request()
+
+
+def test_with_real_reports(procfs_timeline, power_timeline ):
+    timedet = datetime.timedelta(250)
+    sync = Sync(lambda x: isinstance(x, PowerReport),
+                lambda x: isinstance(x, ProcfsReport),
+                timedet)
+
+    r = power_timeline[0]
+    sync.add_report(PowerReport.from_json(r))
+    r = power_timeline[1]
+    sync.add_report(PowerReport.from_json(r))
+
+    for i in range(len(power_timeline) - 2):
+        r = power_timeline[i+2]
+        sync.add_report(PowerReport.from_json(r))
+
+        r = procfs_timeline[i]
+        sync.add_report(ProcfsReport.from_json(r))
+
+    r = procfs_timeline[-2]
+    sync.add_report(ProcfsReport.from_json(r))
+
+    r = procfs_timeline[-1]
+    sync.add_report(ProcfsReport.from_json(r))
+
+
+    r = sync.request()
+    sum = 0
+    while r != None:
+        report1,report2 = r
+        assert abs(report1.timestamp - report2.timestamp) <= timedet
+        sum += 1
+        r = sync.request()
+
+    assert sum == len(power_timeline)

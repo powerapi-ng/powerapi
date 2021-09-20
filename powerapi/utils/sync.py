@@ -73,6 +73,7 @@ class Sync():
         Else the report is stored in the buffer
         """
         if self.type1(report):
+            print("Receive type1 message")
             if self.type2_buff.qsize() == 0:
                 self.type1_buff.put(report)
             else:
@@ -88,8 +89,8 @@ class Sync():
                     diff = abs(report.timestamp - second_report.timestamp)
 
                 self.pair_ready.put((report, second_report))  # report are in order (type1,type2)
-
         elif self.type2(report):
+            print("Receive type2 message")
             if self.type1_buff.qsize() == 0:
                 self.type2_buff.put(report)
             else:
@@ -105,7 +106,6 @@ class Sync():
                     diff = abs(report.timestamp - second_report.timestamp)
 
                 self.pair_ready.put((second_report, report))  # report are in order (type1,type2)
-
         else:
             raise WrongFormatReport(type(report))
         return None
