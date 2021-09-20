@@ -56,6 +56,10 @@ jobs:
     if: github.event.release
     needs: lint_and_test
     steps:
+      - name: Install environment
+        run: |
+          sudo apt-get update
+          sudo apt install -y libvirt-dev
       - uses: actions/checkout@v2
       - name: Cache pip
         uses: actions/cache@v2
