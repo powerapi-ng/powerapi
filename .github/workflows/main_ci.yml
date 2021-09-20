@@ -75,7 +75,7 @@ jobs:
         run: |
           export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
           echo $GIT_TAG
-          python3 -c "import os, powerapi; print(os.environ.get('GIT_TAG', '?')[1:]); exit(os.environ.get('GIT_TAG', '?')[1:] != powerapi.__version__)"
+          python3 -c "import os, powerapi; print(os.environ.get('GIT_TAG', '?')); exit(os.environ.get('GIT_TAG', '?')[1:] != powerapi.__version__)"
       - name: Prepare environement
         run: pip install -U pip twine
       - name: Init .pypirc
