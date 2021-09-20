@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pylint
-          pip3 install -e ".[mongodb, influxdb, prometheus, libvirt]"
+          pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Test with pytest
         run: echo ok
       - name: Lint with flake8
@@ -51,6 +51,8 @@ jobs:
         run: echo ok # pylint powerapi
   build_pypi:
     runs-on: ubuntu-latest
+    env:
+      PYPI_PASS: ${{ secrets.PYPI_PASS }}
     if: github.event.release
     needs: lint_and_test
     steps:
@@ -62,7 +64,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
+      - name: Install powerapi
+        run: pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Check tag and module version before push to pypi
         run: |
           GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
           python3 -c "import os, powerapi; exit(os.environ.get('GIT_TAG', '?')[1:] != powerapi.__version__)"
+      - name: Prepare environement
+        run: pip install -U pip twine
+      - name: Init .pypirc
+        run: |
+          echo -e "[pypi]" >> ~/.pypirc
+          echo -e "username = powerapi" >> ~/.pypirc
+          echo -e "password = $PYPI_PASS >> ~/.pypirc
+      - name: Generate package
+        run: python3 setup.py sdist bdist_wheel
+      - name: Upload to pypi
+        run: twine upload dist/*
+        
+          
