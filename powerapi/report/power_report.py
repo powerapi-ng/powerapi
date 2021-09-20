@@ -29,9 +29,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Tuple, Any
+from typing import Dict, Any, List, Tuple
 
-from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData
+from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData, CsvLines
 
 
 CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
@@ -76,7 +76,7 @@ class PowerReport(Report):
             raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
-    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
+    def from_csv_lines(lines: CsvLines) -> PowerReport:
         """
         :param lines: list of pre-parsed lines. a line is a tuple composed with :
                          - the file name where the line were read
@@ -105,7 +105,7 @@ class PowerReport(Report):
             raise BadInputData(exn.args[0], row) from exn
 
     @staticmethod
-    def to_csv_lines(report: PowerReport, tags: List[str]) -> Tuple[List[str], Dict]:
+    def to_csv_lines(report: PowerReport, tags: List[str]) -> CsvLines:
         """
         convert a power report into csv lines
         :param report: Report that will be converted into csv lines

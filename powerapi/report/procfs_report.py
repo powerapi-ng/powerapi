@@ -31,9 +31,9 @@ from __future__ import annotations
 
 
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict
 
-from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON
+from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
 
 
 CSV_HEADER_PROCFS = CSV_HEADER_COMMON + ['socket', 'cpu']
@@ -99,7 +99,7 @@ class ProcfsReport(Report):
         return ProcfsReport.to_json(report)
 
     @staticmethod
-    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> ProcfsReport:
+    def from_csv_lines(lines: CsvLines) -> ProcfsReport:
         """ Extract a ProcfsReport from a csv"""
         sensor_name = None
         target = None

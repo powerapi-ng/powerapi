@@ -1,13 +1,16 @@
-name: test_ci
+name: Push/PR workflow
 
-on: [push, pull_request]
-
+on:
+  push:
+  pull_request:
+env:
+  repository: https://github.com/powerapi-ng/powerapi
 jobs:
   lint_and_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.7]
     services:
       mongo:
         image: mongo:latest
@@ -18,10 +21,10 @@ jobs:
         ports:
           - 8086:8086
     steps:
-      - name: Install environment
+      - name: Install tools
         run: |
-          sudo apt-get update
-          sudo apt install -y libvirt-dev
+          sudo apt update
+          sudo apt install -y libvirt-dev procps
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -31,24 +34,26 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('powerapi/__init__.json') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install dependencies
         run: |
+          python3 -m venv venv
+          . venv/bin/activate
           python -m pip install --upgrade pip
           pip install flake8 pylint
-          pip3 install -e ".[mongodb, influxdb, prometheus, libvirt]"
+          pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Test with pytest
-        run: python3 setup.py test
+        run: |
+          . venv/bin/activate
+          python setup.py test
       - name: Lint with flake8
-        run: flake8 powerapi
+        run: |
+          . venv/bin/activate
+          flake8 powerapi
       - name: Lint with pylint
-        run: pylint powerapi
-  build_pip:
-    runs-on: ubuntu-latest
-    if: github.event.release
-    needs: lint_and_test
-    steps:
-      - run: echo TAG $GITHUB_REF
+        run: |
+          . venv/bin/activate
+          pylint powerapi

@@ -133,7 +133,7 @@ def test_run_mongo(mongo_database, shutdown_system):
     time.sleep(3)
     os.system('kill ' + str(process.pid))
     time.sleep(3)
-    a = subprocess.run(['ps', 'ax'], capture_output=True)
-    b = subprocess.run(['grep', 'Thespian'], input=a.stdout, capture_output=True)
+    a = subprocess.run(['ps', 'ax'], stdout=subprocess.PIPE)
+    b = subprocess.run(['grep', 'Thespian'], input=a.stdout, stdout=subprocess.PIPE)
     assert b.stdout == b''
     
