@@ -73,7 +73,7 @@ jobs:
         run: pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Check tag and module version before push to pypi
         run: |
-          GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
+          export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
           echo $GIT_TAG
           python3 -c "import os, powerapi; print(os.environ.get('GIT_TAG', '?')[1:]); exit(os.environ.get('GIT_TAG', '?')[1:] != powerapi.__version__)"
       - name: Prepare environement
@@ -87,5 +87,3 @@ jobs:
         run: python3 setup.py sdist bdist_wheel
       - name: Upload to pypi
         run: twine upload dist/*
-        
-          
