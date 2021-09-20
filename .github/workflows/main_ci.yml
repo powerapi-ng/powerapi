@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   release:
-    type: [published]
+    types: [published]
 jobs:
   lint_and_test:
     runs-on: ubuntu-latest
