@@ -9,7 +9,7 @@ jobs:
   lint_and_test:
     runs-on: ubuntu-latest
     container:
-      image: powerapi/powerapi-ci
+      image: powerapi/powerapi-base-ci
     strategy:
       matrix:
         python-version: [3.9]
@@ -23,10 +23,6 @@ jobs:
         ports:
           - 8086:8086
     steps:
-      # - name: Install environment
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt install -y libvirt-dev
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -110,54 +106,55 @@ jobs:
           push: true
           file: Dockerfile-pypy
           tags: powerapi/powerapi-pypy:latest, powerapi/powerapi:pypy-${{needs.check_release.outputs.version}}
-  # build_deb_package:
-    # name: Build debian binary package and upload them to the github release
-    # strategy:
-    #   matrix:
-    #     python-version: [3.9]
-    # if: github.event.release
-    # runs-on: ubuntu-latest
-    # needs: check_release
-    # steps:
-    #   - name: Install Environement
-    #     run: |
-    #       sudo apt-get update
-    #       sudo apt install -y libvirt-dev build-essential devscripts debhelper dpatch python3-dev libncurses-dev swig python3-stdeb dh-python
-    #   - name: Set up Python ${{ matrix.python-version }}
-    #     uses: actions/setup-python@v2
-    #     with:
-    #       python-version: ${{ matrix.python-version }}
-    #   - uses: actions/checkout@v2
-    #   - name: Cache pip
-    #     uses: actions/cache@v2
-    #     with:
-    #       path: ~/.cache/pip
-    #       key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
-    #       restore-keys: |
-    #         ${{ runner.os }}-pip-
-    #         ${{ runner.os }}-
-    #     - name: Remove tests
-    #       run: |
-    #         rm -R ./tests
-    #         sed -i 's/setup_requires =//g' setup.cfg
-    #         sed -i 's/pytest-runner >=3.9.2//g' setup.cfg
-    #         sed -i 's/test = pytest//g' setup.cfg
-    #         sed -i 's/\[aliases\]//g' setup.cfg
-    #         sed -i 's/test_suite = tests//g' setup.cfg
-    #         sed -i 's/tests_require =//g' setup.cfg
-    #         sed -i 's/pytest >=3.9.2//g' setup.cfg
-    #         sed -i 's/pytest-asyncio >=0.14.0//g' setup.cfg
-    #         sed -i 's/mock >=2.0//g' setup.cfg
-    #         sed -i 's/requests >=2.0//g' setup.cfg
-    #       - name: Install powerapi
-    #         run: python3 -m pip install .
-    #       - name: Create source package
-    #         run: |
-    #           python3 setup.py --command-packages=stdeb.command sdist_dsc
-    #           sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-$VERSION/debian/control
-    #       - name: Build binary package
-    #         run: |
-    #           $(echo ${{ matrix.python-version }} | sed -e 's/\.//g')
-    #           cd ./deb_dist/powerapi-$VERSION
-    #           dpkg-buildpackage
-    #           mv python3-powerapi_$VERSION-1_all.deb python3-powerapi_$VERSION-1_all.deb
+  build_deb_package:
+    name: Build debian binary package and upload them to the github release
+    strategy:
+      matrix:
+        python-version: [3.9]
+    if: github.event.release
+    runs-on: ubuntu-latest
+    needs: check_release
+    container:
+      image: powerapi/powerapi-build-deb
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v2
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Remove tests
+        run: |
+          rm -R ./tests
+          sed -i 's/setup_requires =//g' setup.cfg
+          sed -i 's/pytest-runner >=3.9.2//g' setup.cfg
+          sed -i 's/test = pytest//g' setup.cfg
+          sed -i 's/\[aliases\]//g' setup.cfg
+          sed -i 's/test_suite = tests//g' setup.cfg
+          sed -i 's/tests_require =//g' setup.cfg
+          sed -i 's/pytest >=3.9.2//g' setup.cfg
+          sed -i 's/pytest-asyncio >=0.14.0//g' setup.cfg
+          sed -i 's/mock >=2.0//g' setup.cfg
+          sed -i 's/requests >=2.0//g' setup.cfg
+      - name: Install powerapi
+        run: python3 -m pip install .
+      - name: Create source package
+        run: |
+          python3 setup.py --command-packages=stdeb.command sdist_dsc
+          sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-:${{needs.check_release.outputs.version}}/debian/control
+      - name: Build binary package and upload it github release page
+        run: |
+          VERSION=${{needs.check_release.outputs.version}}
+          PYTHON_VERSION=$(echo ${{ matrix.python-version }} | sed -e 's/\.//g')
+          cd ./deb_dist/powerapi-$VERSION
+          dpkg-buildpackage
+          cd ..
+          mv python3-powerapi_$VERSION-1_all.deb python$PYTHON_VERSION-powerapi_$VERSION-1_all.deb
+          gh release upload v$VERSION python$PYTHON_VERSION-powerapi_$VERSION-1_all.deb
