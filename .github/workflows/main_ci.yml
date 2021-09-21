@@ -53,12 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.release
     needs: lint_and_test
+    outptus:
+      version: ${{ steps.step2.outputs.version }}
     steps:
       - uses: actions/checkout@v2
       - name: Check tag and package version
+        id: step2
         run: |
           export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
           test $GIT_TAG ==  $(grep __version__ powerapi/__init__.py | cut -d \" -f 2)
+          echo "::set-output name=version::$GIT_TAG"
   build_pypi:
     runs-on: ubuntu-latest
     env:
@@ -78,8 +82,8 @@ jobs:
         run: python3 setup.py sdist bdist_wheel
       - name: Upload to pypi
         run: twine upload dist/*
-  push_to_docker_hub:
-    name: Push Docker image to Docker Hub
+  build_and_push_to_dockerHub:
+    name: Build and push docker image to DockerHub
     if: github.event.release
     runs-on: ubuntu-latest
     needs: check_release
@@ -90,17 +94,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-        with:
-          images: my-docker-hub-namespace/my-docker-hub-repository
-      
-      - name: Build and push Docker image
+      - name: Build and push Cpython image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          file: Dockerfile-cpython
+          tags: powerapi/powerapi:latest, powerapi/powerapi:${{needs.check_release.outputs.version}}
+      - name: Build and push pypy image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: true
+          file: Dockerfile-pypy
+          tags: powerapi/powerapi-pypy:latest, powerapi/powerapi-pypy:${{needs.check_release.outputs.version}}
