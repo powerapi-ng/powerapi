@@ -23,6 +23,8 @@ jobs:
         ports:
           - 8086:8086
     steps:
+      - name: set up new GITHUB_WORKSPACE
+        run: export GITHUB_WORKSPACE=/srv/powerapi
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -53,7 +55,7 @@ jobs:
     needs: lint_and_test
     outputs:
       version: ${{ steps.step2.outputs.version }}
-    steps:
+      steps:
       - uses: actions/checkout@v2
       - name: Check tag and package version
         id: step2
@@ -117,6 +119,8 @@ jobs:
     container:
       image: powerapi/powerapi-build-deb
     steps:
+      - name: set up new GITHUB_WORKSPACE
+        run: export GITHUB_WORKSPACE=/srv/powerapi
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
