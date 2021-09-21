@@ -23,10 +23,10 @@ jobs:
         ports:
           - 8086:8086
     steps:
-      - name: Install environment
-        run: |
-          sudo apt-get update
-          sudo apt install -y libvirt-dev
+      # - name: Install environment
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt install -y libvirt-dev
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
