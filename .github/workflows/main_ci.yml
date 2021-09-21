@@ -49,32 +49,22 @@ jobs:
         run: echo ok # flake8 powerapi
       - name: Lint with pylint
         run: echo ok # pylint powerapi
+  check_release:
+    runs-on: ubuntu-latest
+    if: github.event.release
+    needs: lint_and_test
+    steps:
+      - name: Check tag and package version
+        run: |
+          export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
+          test $GIT_TAG ==  $(grep __version__ powerapi/__init__.py | cut -d \" -f 2)
   build_pypi:
     runs-on: ubuntu-latest
     env:
       PYPI_PASS: ${{ secrets.PYPI_PASS }}
     if: github.event.release
-    needs: lint_and_test
+    needs: check_release
     steps:
-      - name: Install environment
-        run: |
-          sudo apt-get update
-          sudo apt install -y libvirt-dev
-      - uses: actions/checkout@v2
-      - name: Cache pip
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('powerapi/__init__.json') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
-      - name: Install powerapi
-        run: pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
-      - name: Check tag and module version before push to pypi
-        run: |
-          export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
-          python3 -c "import os, powerapi; print(os.environ.get('GIT_TAG', '?')); print(powerapi.__version__); exit(os.environ.get('GIT_TAG', '?') != powerapi.__version__)"
       - name: Prepare environement
         run: pip install -U pip twine
       - name: Init .pypirc
@@ -90,15 +80,14 @@ jobs:
     name: Push Docker image to Docker Hub
     if: github.event.release
     runs-on: ubuntu-latest
-    needs: lint_and_test
+    needs: check_release
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      
       - name: Log in to Docker Hub
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
-          username: ${{ secrets.DOCKER_USERNAMEE }}
+          username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Extract metadata (tags, labels) for Docker
