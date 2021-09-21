@@ -388,8 +388,8 @@ class MainParser(Parser):
                                   function of its argument is parsed
 
         """
-        print("Parsing arguments!")
-        print(args)
+        
+        
         try:
             args, _ = getopt.getopt(args, self.short_arg, self.long_arg)
         except getopt.GetoptError as exn:
