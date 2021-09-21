@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.release
     needs: lint_and_test
-    outptus:
+    outputs:
       version: ${{ steps.step2.outputs.version }}
     steps:
       - uses: actions/checkout@v2
