@@ -40,6 +40,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: |
+          python3 -m venv venv
+          . venv/bin/activate
           python -m pip install --upgrade pip
           pip install flake8 pylint
           pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
@@ -79,7 +81,10 @@ jobs:
           echo -e "username = powerapi" >> ~/.pypirc
           echo -e "password = $PYPI_PASS" >> ~/.pypirc
       - name: Generate package
-        run: python3 setup.py sdist bdist_wheel
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          python3 setup.py sdist bdist_wheel
       - name: Upload to pypi
         run: twine upload dist/*
   build_and_push_to_dockerHub:
@@ -146,9 +151,13 @@ jobs:
           sed -i 's/mock >=2.0//g' setup.cfg
           sed -i 's/requests >=2.0//g' setup.cfg
       - name: Install powerapi
-        run: python3 -m pip install .
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          python3 -m pip install .
       - name: Create source package
         run: |
+          . venv/bin/activate
           python3 setup.py --command-packages=stdeb.command sdist_dsc
           sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-:${{needs.check_release.outputs.version}}/debian/control
       - name: Build binary package and upload it github release page
