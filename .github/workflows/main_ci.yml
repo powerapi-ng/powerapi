@@ -163,6 +163,7 @@ jobs:
           sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-${{needs.check_release.outputs.version}}/debian/control
       - name: Build binary package and upload it github release page
         run: |
+          . venv/bin/activate
           VERSION=${{needs.check_release.outputs.version}}
           PYTHON_VERSION=$(echo ${{ matrix.python-version }} | sed -e 's/\.//g')
           cd ./deb_dist/powerapi-$VERSION
