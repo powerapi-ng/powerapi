@@ -89,8 +89,6 @@ class Sync():
         while diff > self.delay:
             if report.timestamp > second_report.timestamp:
                 main_buff.pop(0)
-                second_report = main_buff[0]
-                diff = abs(report.timestamp - second_report.timestamp)
 
             if report.timestamp < second_report.timestamp:
                 return None
@@ -99,8 +97,13 @@ class Sync():
                 secondary_buff.append(report)
                 return None
 
-            main_buff.pop(0)
+            second_report = main_buff[0]
+            diff = abs(report.timestamp - second_report.timestamp)
+
+        if self.type1(report):
             self.pair_ready.append((report, second_report))  # report are in order (type1,type2)
+        else:
+            self.pair_ready.append((second_report, report))
 
     def add_report(self, report):
         """
