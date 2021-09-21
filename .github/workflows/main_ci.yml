@@ -55,7 +55,7 @@ jobs:
     needs: lint_and_test
     outputs:
       version: ${{ steps.step2.outputs.version }}
-      steps:
+    steps:
       - uses: actions/checkout@v2
       - name: Check tag and package version
         id: step2
