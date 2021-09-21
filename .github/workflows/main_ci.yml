@@ -158,6 +158,7 @@ jobs:
       - name: Create source package
         run: |
           . venv/bin/activate
+          python3 -m pip install stdeb
           python3 setup.py --command-packages=stdeb.command sdist_dsc
           sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-:${{needs.check_release.outputs.version}}/debian/control
       - name: Build binary package and upload it github release page
