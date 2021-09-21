@@ -110,7 +110,7 @@ jobs:
           push: true
           file: Dockerfile-pypy
           tags: powerapi/powerapi-pypy:latest, powerapi/powerapi:pypy-${{needs.check_release.outputs.version}}
-  build_deb_package:
+  # build_deb_package:
     # name: Build debian binary package and upload them to the github release
     # strategy:
     #   matrix:
