@@ -46,11 +46,17 @@ jobs:
           pip install flake8 pylint
           pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
       - name: Test with pytest
-        run: python setup.py test
+        run: |
+          . venv/bin/activate
+          python setup.py test
       - name: Lint with flake8
-        run: flake8 powerapi
+        run: |
+          . venv/bin/activate
+          flake8 powerapi
       - name: Lint with pylint
-        run: pylint powerapi
+        run: |
+          . venv/bin/activate
+          pylint powerapi
   # check_release:
   #   runs-on: ubuntu-latest
   #   if: github.event.release
