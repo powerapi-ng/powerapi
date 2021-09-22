@@ -11,6 +11,6 @@ RUN cd /tmp/powerapi && \
     sed -i 's/from __future__ import annotations//g' $(find powerapi/ -name "*.py") && \
     sed -i 's/python_requires = >= 3\.[0-9]/python_requires = >= 3.6/g' setup.cfg
 
-RUN pypy3 -m pip install --user --no-cache-dir "/tmp/powerapi[mongodb, influxdb, opentsdb, prometheus]" && rm -r /tmp/powerapi
+RUN pypy3 -m pip install --user --no-cache-dir "/tmp/powerapi[mongodb, influxdb, influxdb2, opentsdb, prometheus]" && rm -r /tmp/powerapi
 
 ENTRYPOINT ["/bin/echo", "This Docker image should be used as a base for another image and should not be executed directly."]

@@ -39,7 +39,7 @@ from powerapi.cli.parser import MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException
 from powerapi.cli.parser import UnknowArgException
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, InfluxDB2, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
@@ -183,6 +183,18 @@ class CommonCLIParser(MainParser):
         subparser_opentsdb_output.add_argument('n', 'name', help='specify pusher name', default='pusher_opentsdb')
         self.add_actor_subparser('output', subparser_opentsdb_output,
                                  help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
+        
+        subparser_influx2_output = ComponentSubParser('influxdb2')
+        subparser_influx2_output.add_argument('u', 'uri', help='specify InfluxDB2 uri. Examples: \'localhost\'')
+        subparser_influx2_output.add_argument('b', 'bucket', help='specify InfluxDB2 bucket name')
+        subparser_influx2_output.add_argument('p', 'port', help='specify InfluxDB2 connection port', type=int)
+        subparser_influx2_output.add_argument('t', 'token', help='specify the auth token to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('o', 'org', help='specify the name of the organization used to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('m', 'model', help='specify data type that will be stored in the database',
+                                             default='PowerReport')
+        subparser_influx2_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb2')
+        self.add_actor_subparser('output', subparser_influx2_output,
+                                     help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
     def parse_argv(self):
         """
@@ -323,7 +335,8 @@ class DBActorGenerator(Generator):
                                                                 db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'],
                                                      db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
-            'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename'])
+            'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename']),
+            'influxdb2': lambda db_config: InfluxDB2( db_config['uri'], db_config["port"] , db_config["token"], db_config["org"] ,db_config["bucket"] )
         }
 
     def remove_model_factory(self, model_name):
