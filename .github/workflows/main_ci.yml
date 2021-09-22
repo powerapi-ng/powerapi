@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: powerapi/powerapi-base-ci
-      ports: [27017:27017, 8086:8086]
+      ports:
+        - 27017:27017
+        - 8086:8086
     strategy:
       matrix:
         python-version: [3.9]
