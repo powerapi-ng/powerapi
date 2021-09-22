@@ -24,7 +24,7 @@ jobs:
           - 8086:8086
     steps:
       - name: Install tools
-        run: apt install -y libvirt-dev procps
+        run: sudo apt install -y libvirt-dev procps
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
