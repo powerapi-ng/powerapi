@@ -10,21 +10,21 @@ env:
 jobs:
   lint_and_test:
     runs-on: ubuntu-latest
-    container:
-      image: powerapi/powerapi-base-ci
     strategy:
       matrix:
         python-version: [3.9]
     services:
       mongo:
         image: mongo:latest
-        # ports:
-        #   - 27017:27017
+        ports:
+          - 27017:27017
       influx:
         image: influxdb:1.8
-        # ports:
-        #   - 8086:8086
+        ports:
+          - 8086:8086
     steps:
+      - name: Install tools
+        run: apt install -y libvirt-dev procps
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
