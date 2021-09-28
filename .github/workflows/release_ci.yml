@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-    branches:
-      - ci-migration
 env:
   repository: https://github.com/powerapi-ng/powerapi
 jobs:
@@ -195,14 +193,6 @@ jobs:
         with:
           name: deb_package
           path: ~/deb
-      - name: Create pre-changelog
-        id: pre-changelog
-        uses: TriPSs/conventional-changelog-action@v3
-        with:
-          github-token: ${{ secrets.github_token }}
-          preset: angular
-          output-file: ~/pre-changelog.md
-          release-count: 2
       - name: Create Changelog
         env:
           CHANGELOG_CONTENT: ${{ steps.changelog.outputs.clean_changelog }}
@@ -220,4 +210,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{needs.check_release.outputs.version}}
-        run: gh release create $VERSION -d -t $VERSION -F ~/final-changelog.md ~/deb/*
+        run: gh release create v$VERSION -d -t v$VERSION -F ~/final-changelog.md ~/deb/*
