@@ -26,6 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
+
 import pytest
 
 from thespian.actors import ActorExitRequest
@@ -81,8 +83,7 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
     pusher = system.createActor(pusher_cls)
     system.ask(pusher, pusher_start_message)
     system.tell(pusher, power_report)
-    import time
-    time.sleep(0.1)
+    time.sleep(0.3)
     system.tell(pusher, ActorExitRequest())
     influx_database.switch_database(INFLUX_DBNAME)
     reports = list(influx_database.query('SELECT * FROM "power_consumption"').get_points(tags={'socket': '1'}))
