@@ -99,6 +99,7 @@ jobs:
         run: |
           python3 -m venv venv
           . venv/bin/activate
+          sudo apt-get install python3-dev python3-wheel -y
           python3 setup.py sdist bdist_wheel
       - name: Upload to pypi
         run: twine upload dist/*
