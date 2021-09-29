@@ -34,7 +34,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Convert to python3.6 code
         if: ${{ matrix.python-version == 3.6 }}
-        run: ./to_36.sh
+        run: |
+          wget https://raw.githubusercontent.com/powerapi-ng/powerapi-ci-env/main/to_36.sh
+          /bin/bash to_36.sh virtualwatts
       - name: Cache pip
         uses: actions/cache@v2
         with:
@@ -160,15 +162,18 @@ jobs:
           sed -i 's/mock >=2.0//g' setup.cfg
           sed -i 's/requests >=2.0//g' setup.cfg
       - name: Convert to python3.6 code
-        run: ./to_36.sh
+        run: |
+          wget https://raw.githubusercontent.com/powerapi-ng/powerapi-ci-env/main/to_36.sh
+          /bin/bash to_36.sh virtualwatts
       - name: Create source package
         run: |
-          apt install -y python3-setuptools python3-stdeb python3-numpy
           mkdir package
           mv LICENSE README.md contributing.md powerapi setup.* package/
           tar czvf powerapi.tar.gz package
           py2dsc powerapi.tar.gz
           sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-${{needs.check_release.outputs.version}}/debian/control
+          cp .deb_postinst ./deb_dist/powerapi-${{needs.check_release.outputs.version}}/debian/python3-powerapi.postinst
+
       - name: Build binary package and upload it github release page
         env:
           VERSION: ${{needs.check_release.outputs.version}}
