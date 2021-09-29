@@ -101,7 +101,8 @@ class CommonCLIParser(MainParser):
         subparser_file_input = ComponentSubParser('filedb')
         subparser_file_input.add_argument('m', 'model', help='specify data type that will be storen in the database',
                                           default='PowerReport')
-        subparser_file_input.add_argument('n', 'filename', help='specify file name')
+        subparser_file_input.add_argument('f', 'filename', help='specify file name')
+        subparser_file_input.add_argument('n', 'name', help='specify pusher name', default='pusher_virtiofs')
         self.add_actor_subparser('input', subparser_file_input,
                                  help_str='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
