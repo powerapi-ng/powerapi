@@ -195,8 +195,7 @@ class CommonCLIParser(MainParser):
             print(msg, file=sys.stderr)
 
         except BadTypeException as exn:
-            msg = 'CLI error : argument ' + exn.argument_name + ' : expect '
-            msg += exn.article + ' ' + exn.type_name
+            msg = "Configuration error : " + exn.msg
             print(msg, file=sys.stderr)
 
         except UnknowArgException as exn:
