@@ -357,7 +357,7 @@ class DBActorGenerator(Generator):
         """
         if db_name in self.model_factory:
             raise DatabaseNameAlreadyUsed(db_name)
-        self.model_factory[db_name] = db_factory
+        self.db_factory[db_name] = db_factory
 
     def _generate_db(self, db_name, db_config, _):
         if db_name not in self.db_factory:
