@@ -226,7 +226,7 @@ class MainConfigParser(ConfigParser):
             if filename is not None:
                 conf = self._parse_file(filename)
             else:
-                conf = self._parse_cli(args)
+                conf = self._parse_cli(args[1:])
             conf = self._validate(conf)
 
         except MissingValueException as exn:

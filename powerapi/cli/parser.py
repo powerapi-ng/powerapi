@@ -371,6 +371,19 @@ class MainParser(Parser):
         if help_arg:
             self.add_argument('h', 'help', flag=True, action=None)
 
+    def get_help(self):
+        """
+        return help string
+        """
+        s = 'main arguments:\n'
+        s += self._get_action_list_str('  ')
+        s += '\n'
+
+        for _, subparser_group in self.subparsers_group.items():
+            s += subparser_group.get_help()
+
+        return s
+
     def parse(self, args):
         """
         :param str args: string that contains the arguments and their values
@@ -401,6 +414,7 @@ class MainParser(Parser):
         args = list(map(lambda x: (_extract_minus(x[0]), x[1]), args))
 
         # verify if help argument exists in args
+
         if self.help_arg:
             for arg_name, _ in args:
                 if arg_name in ('h', 'help'):
@@ -410,20 +424,8 @@ class MainParser(Parser):
         acc = deepcopy(self.default_values)
 
         args, acc = self._parse(args, acc)
+
         return acc
-
-    def get_help(self):
-        """
-        return help string
-        """
-        s = 'main arguments:\n'
-        s += self._get_action_list_str('  ')
-        s += '\n'
-
-        for _, subparser_group in self.subparsers_group.items():
-            s += subparser_group.get_help()
-
-        return s
 
     def _unknow_argument_behaviour(self, arg_name, val, args, acc):
         good_contexts = []
