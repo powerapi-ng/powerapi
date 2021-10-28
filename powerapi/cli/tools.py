@@ -66,11 +66,12 @@ class CommonCLIParser(MainConfigParser):
                           help='enable verbose mode')
         self.add_argument('s', 'stream', flag=True, action=store_true, default=False, help='enable stream mode')
 
-        # subparser_libvirt_mapper_modifier = SubConfigParser('libvirt_mapper')
-        # subparser_libvirt_mapper_modifier.add_argument('u', 'uri', help='libvirt daemon uri', default='')
-        # subparser_libvirt_mapper_modifier.add_argument('d', 'domain_regexp', help='regexp used to extract domain from cgroup string')
-        # self.add_subparser('report_modifier', subparser_libvirt_mapper_modifier,
-        #                    help='Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...')
+        subparser_libvirt_mapper_modifier = SubConfigParser('libvirt_mapper')
+        subparser_libvirt_mapper_modifier.add_argument('u', 'uri', help='libvirt daemon uri', default='')
+        subparser_libvirt_mapper_modifier.add_argument('d', 'domain_regexp', help='regexp used to extract domain from cgroup string')
+        subparser_libvirt_mapper_modifier.add_argument('n', 'name', help='')
+        self.add_subparser('report_modifier', subparser_libvirt_mapper_modifier,
+                           help='Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...')
 
         subparser_mongo_input = SubConfigParser('mongodb')
         subparser_mongo_input.add_argument('u', 'uri', help='specify MongoDB uri')
