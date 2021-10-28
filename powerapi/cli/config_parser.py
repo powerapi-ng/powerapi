@@ -52,12 +52,12 @@ class ConfigParserArg:
     """
     Parser abstraction that retrieve the config.
     """
-    def __init__(self, name_list: list, is_flag: bool, default_value, help_str: str, arg_type: Type, mandatory: bool):
+    def __init__(self, name_list: list, is_flag: bool, default_value, help: str, type: Type, mandatory: bool):
         self.names = name_list
         self.is_flag = is_flag
         self.default_value = default_value
-        self.help_str = help_str
-        self.arg_type = arg_type
+        self.help = help
+        self.type = type
         self.is_mandatory = mandatory
 
 
@@ -78,17 +78,17 @@ class ConfigParser:
         return mand_arg
 
     def add_argument(self, *names, flag=False, action=store_val, default=None,
-                     help_str='', arg_type=str, mandatory=False):
+                     help='', type=str, mandatory=False):
         """
         Add an argument to the parser and its specification
         """
-        parser_val = ConfigParserArg(list(names), flag, default, help_str, arg_type, mandatory)
+        parser_val = ConfigParserArg(list(names), flag, default, help, type, mandatory)
 
         name = _find_longest_name(names)
         if name in self.args:
             raise AlreadyAddedArgumentException(name)
         self.args[name] = parser_val
-        self.cli_parser.add_argument(*names, flag=flag, action=action, default=default, help=help_str, type=arg_type)
+        self.cli_parser.add_argument(*names, flag=flag, action=action, default=default, help=help, type=type)
 
 
 class SubConfigParser(ConfigParser):
@@ -115,8 +115,8 @@ class SubConfigParser(ConfigParser):
             for _, waited_value in self.args.items():
                 if args in waited_value.names:
                     # check type
-                    if not isinstance(value, waited_value.arg_type):
-                        raise BadTypeException(args, waited_value.arg_type)
+                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
+                        raise BadTypeException(args, waited_value.type)
 
         for args, value in self.args.items():
             is_precised = False
@@ -139,7 +139,7 @@ class MainConfigParser(ConfigParser):
         self.subparser = {}
         self.cli_parser = MainParser()
 
-    def add_subparser(self, name, subparser: SubConfigParser, help_str=''):
+    def add_subparser(self, name, subparser: SubConfigParser, help=''):
 
         """
         Add a SubParser to call when <name> is encoutered
@@ -154,7 +154,7 @@ class MainConfigParser(ConfigParser):
 
         self.subparser[name][subparser.name] = subparser
 
-        self.cli_parser.add_actor_subparser(name, subparser.cli_parser, help_str)
+        self.cli_parser.add_actor_subparser(name, subparser.cli_parser, help)
 
     def _parse_cli(self, cli_line):
         return self.cli_parser.parse(cli_line)
@@ -186,8 +186,8 @@ class MainConfigParser(ConfigParser):
                 if args in waited_value.names:
                     is_an_arg = True
                     # check type
-                    if not isinstance(value, waited_value.arg_type):
-                        raise BadTypeException(args, waited_value.arg_type)
+                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
+                        raise BadTypeException(args, waited_value.type)
 
             if not is_an_arg:
                 raise UnknowArgException(args)

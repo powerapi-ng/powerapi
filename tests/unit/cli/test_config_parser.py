@@ -213,7 +213,7 @@ def test_main_parser_validate():
     - subparser toto binded to the argument sub with sub arguments : None
     """
     parser = MainConfigParser()
-    parser.add_argument('a', arg_type=bool, flag=True, action=store_true)
+    parser.add_argument('a', type=bool, flag=True, action=store_true)
 
     dic = {
         "z": True
@@ -285,7 +285,7 @@ def test_actor_subparser_validate():
     - subparser toto binded to the argument sub with sub arguments : -b and --name
     """
     parser = MainConfigParser()
-    parser.add_argument('a', arg_type=bool,flag=True, action=store_true)
+    parser.add_argument('a', type=bool,flag=True, action=store_true)
 
     subparser = SubConfigParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
@@ -448,7 +448,7 @@ def test_argument_with_val_validate():
 
 def test_type_cli():
     parser = MainConfigParser()
-    parser.add_argument('c', arg_type=int)
+    parser.add_argument('c', type=int)
 
     with pytest.raises(BadTypeException):
         check_parsing_cli_result(parser, '-c string', {'c':'string'})
@@ -458,7 +458,7 @@ def test_type_cli():
 
 def test_type_validate():
     parser = MainConfigParser()
-    parser.add_argument('c', arg_type=int)
+    parser.add_argument('c', type=int)
 
 
     str_dic = {'c': 'string'}
@@ -527,7 +527,7 @@ def test_other_type():
 
     """
     parser = MainConfigParser()
-    parser.add_argument('a', arg_type=int)
+    parser.add_argument('a', type=int)
     result = parser.parse('-a 1'.split())
     assert len(result) == 1
     assert 'a' in result
@@ -540,7 +540,7 @@ def test_cant_convert_to_type():
     contains only this argument with a value that is not an int test if an
     """
     parser = MainConfigParser()
-    parser.add_argument('a', arg_type=int)
+    parser.add_argument('a', type=int)
 
     with pytest.raises(BadTypeException):
         parser._parse_cli('-a a'.split())
@@ -597,3 +597,11 @@ def test_parse_empty_string_default_value():
     assert result['a'] == 1
 
 
+def test_default_validate():
+    parser = MainConfigParser()
+    parser.add_argument('c', type=int, default=1)
+
+    default_dic = {}
+    one_dic = {'c': 1}
+
+    assert parser._validate(default_dic) == one_dic
