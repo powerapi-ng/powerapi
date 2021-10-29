@@ -55,7 +55,7 @@ class Generator:
         """
         if self.component_group_name not in config:
             print('CONFIG error : no ' + self.component_group_name + ' specified', file=sys.stderr)
-            sys.exit()
+            raise PowerAPIException('CONFIG error : no ' + self.component_group_name + ' specified')
 
         actors = {}
 
@@ -67,7 +67,7 @@ class Generator:
                 msg = 'CONFIG error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
                 print(msg, file=sys.stderr)
-                sys.exit()
+                raise PowerAPIException(msg)
 
         return actors
 
@@ -190,7 +190,7 @@ class DBActorGenerator(Generator):
         if db_name not in self.db_factory:
             msg = 'CONFIG error : database type ' + db_name + 'unknow'
             print(msg, file=sys.stderr)
-            sys.exit()
+            raise PowerAPIException(msg)
         else:
             return self.db_factory[db_name](db_config)
 
@@ -198,7 +198,7 @@ class DBActorGenerator(Generator):
         if model_name not in self.model_factory:
             msg = 'CONFIG error : model type ' + model_name + 'unknow'
             print(msg, file=sys.stderr)
-            sys.exit()
+            raise PowerAPIException(msg)
         else:
             return self.model_factory[db_config['model']]
 
