@@ -38,7 +38,8 @@ from powerapi.cli.parser import MissingValueException
 from powerapi.cli.parser import BadTypeException, BadContextException, MissingArgumentException
 from powerapi.cli.parser import UnknowArgException, AlreadyAddedArgumentException, AlreadyAddedSubparserException
 from powerapi.cli.parser import store_val
-from powerapi.cli.parser import  _find_longest_name
+from powerapi.cli.parser import _find_longest_name
+
 
 def extract_file_names(arg, val, args, acc):
     """

@@ -31,8 +31,8 @@ import sys
 
 from mock import Mock, patch
 
-from powerapi.cli.tools import PullerGenerator, PusherGenerator, DBActorGenerator
-from powerapi.cli.tools import ModelNameDoesNotExist, DatabaseNameDoesNotExist
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, DBActorGenerator
+from powerapi.cli.generator import ModelNameDoesNotExist, DatabaseNameDoesNotExist
 from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
 from powerapi.message import PullerStartMessage, PusherStartMessage

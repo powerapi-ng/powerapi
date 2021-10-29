@@ -67,7 +67,7 @@ from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
-from powerapi.cli.tools import PusherGenerator, PullerGenerator
+from powerapi.cli.generator import PusherGenerator, PullerGenerator
 from powerapi.test_utils.actor import shutdown_system
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database

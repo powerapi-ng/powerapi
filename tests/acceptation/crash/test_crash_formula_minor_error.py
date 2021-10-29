@@ -54,7 +54,7 @@ from thespian.actors import ActorAddress
 
 from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
 from powerapi.report import Report, PowerReport, HWPCReport
-from powerapi.cli.tools import PusherGenerator, PullerGenerator
+from powerapi.cli.generator import PusherGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.message import DispatcherStartMessage

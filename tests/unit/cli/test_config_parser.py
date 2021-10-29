@@ -513,7 +513,7 @@ def test_default_type():
     """
     parser = MainConfigParser()
     parser.add_argument('a')
-    result = parser.parse('-a 1'.split())
+    result = parser.parse('python -a 1'.split())
     assert len(result) == 1
     assert 'a' in result
     assert isinstance(result['a'], str)
@@ -528,7 +528,7 @@ def test_other_type():
     """
     parser = MainConfigParser()
     parser.add_argument('a', type=int)
-    result = parser.parse('-a 1'.split())
+    result = parser.parse('python -a 1'.split())
     assert len(result) == 1
     assert 'a' in result
     assert isinstance(result['a'], int)
