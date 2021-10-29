@@ -33,7 +33,7 @@ import pytest
 from thespian.actors import ActorExitRequest
 
 from powerapi.report import PowerReport
-from powerapi.cli.tools import PusherGenerator
+from powerapi.cli.generator import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
 from powerapi.test_utils.actor import system
 from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database

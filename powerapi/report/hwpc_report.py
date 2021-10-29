@@ -115,7 +115,7 @@ class HWPCReport(Report):
         return HWPCReport.to_json(report)
 
     @staticmethod
-    def from_csv_lines(lines: CsvLines) -> HWPCReport:
+    def from_csv_lines(lines: List[Tuple[str, Dict[str, str]]]) -> HWPCReport:
         """
         :param lines: list of pre-parsed lines. a line is a tuple composed with :
                          - the file name where the line were read

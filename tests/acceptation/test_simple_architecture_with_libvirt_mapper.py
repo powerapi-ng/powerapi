@@ -66,7 +66,7 @@ from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
-from powerapi.cli.tools import PusherGenerator, PullerGenerator, ReportModifierGenerator
+from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
 from powerapi.test_utils.actor import shutdown_system
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME

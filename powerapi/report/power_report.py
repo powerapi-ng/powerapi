@@ -76,7 +76,7 @@ class PowerReport(Report):
             raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
-    def from_csv_lines(lines: CsvLines) -> PowerReport:
+    def from_csv_lines(lines: List[Tuple[str, Dict]]) -> PowerReport:
         """
         :param lines: list of pre-parsed lines. a line is a tuple composed with :
                          - the file name where the line were read
@@ -105,7 +105,7 @@ class PowerReport(Report):
             raise BadInputData(exn.args[0], row) from exn
 
     @staticmethod
-    def to_csv_lines(report: PowerReport, tags: List[str]) -> CsvLines:
+    def to_csv_lines(report: PowerReport, tags: List[str]) -> Tuple[List[str], Dict]:
         """
         convert a power report into csv lines
         :param report: Report that will be converted into csv lines

@@ -108,6 +108,27 @@ class AlreadyAddedArgumentException(ParserException):
         self.msg = 'Parser already contain an argument ' + argument_name
 
 
+class AlreadyAddedSubparserException(ParserException):
+    """
+    Exception raised when attempting to add an argument to a parser that already
+    have this argument
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Parser already contain SubParser with name ' + argument_name
+
+
+class MissingArgumentException(ParserException):
+    """
+    Exception raised when a mandatory argument is missing
+    """
+
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Argument ' + argument_name + ' is missing'
+
+
 class MissingValueException(ParserException):
     """
     Exception raised when an argument that require a value is caught without
@@ -135,8 +156,7 @@ class BadTypeException(ParserException):
     """
     def __init__(self, argument_name, arg_type):
         ParserException.__init__(self, argument_name)
-        self.type_name = arg_type.__name__
-        self.article = 'an' if self.type_name in ('a', 'e', 'i', 'o', 'u', 'y') else 'a'
+        self.msg = argument_name + " expect " + arg_type.__name__
 
 
 class BadContextException(ParserException):
@@ -351,6 +371,19 @@ class MainParser(Parser):
         if help_arg:
             self.add_argument('h', 'help', flag=True, action=None)
 
+    def get_help(self):
+        """
+        return help string
+        """
+        s = 'main arguments:\n'
+        s += self._get_action_list_str('  ')
+        s += '\n'
+
+        for _, subparser_group in self.subparsers_group.items():
+            s += subparser_group.get_help()
+
+        return s
+
     def parse(self, args):
         """
         :param str args: string that contains the arguments and their values
@@ -381,6 +414,7 @@ class MainParser(Parser):
         args = list(map(lambda x: (_extract_minus(x[0]), x[1]), args))
 
         # verify if help argument exists in args
+
         if self.help_arg:
             for arg_name, _ in args:
                 if arg_name in ('h', 'help'):
@@ -390,20 +424,8 @@ class MainParser(Parser):
         acc = deepcopy(self.default_values)
 
         args, acc = self._parse(args, acc)
+
         return acc
-
-    def get_help(self):
-        """
-        return help string
-        """
-        s = 'main arguments:\n'
-        s += self._get_action_list_str('  ')
-        s += '\n'
-
-        for _, subparser_group in self.subparsers_group.items():
-            s += subparser_group.get_help()
-
-        return s
 
     def _unknow_argument_behaviour(self, arg_name, val, args, acc):
         good_contexts = []

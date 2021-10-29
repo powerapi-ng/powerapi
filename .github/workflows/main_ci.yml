@@ -1,0 +1,181 @@
+name: test_ci
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+env:
+  repository: https://github.com/powerapi-ng/powerapi
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+      influx:
+        image: influxdb:1.8
+        ports:
+          - 8086:8086
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt install -y libvirt-dev procps
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install flake8 pylint
+          pip install -e ".[mongodb, influxdb, prometheus, libvirt]"
+      - name: Test with pytest
+        run: |
+          . venv/bin/activate
+          python setup.py test
+      - name: Lint with flake8
+        run: |
+          . venv/bin/activate
+          flake8 powerapi
+      - name: Lint with pylint
+        run: |
+          . venv/bin/activate
+          pylint powerapi
+  # check_release:
+  #   runs-on: ubuntu-latest
+  #   if: github.event.release
+  #   needs: lint_and_test
+  #   outputs:
+  #     version: ${{ steps.step2.outputs.version }}
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Check tag and package version
+  #       id: step2
+  #       run: |
+  #         export GIT_TAG=$(echo $GITHUB_REF | sed -e 's/refs\/tags\/v//g')
+  #         test $GIT_TAG ==  $(grep __version__ powerapi/__init__.py | cut -d \" -f 2)
+  #         echo "::set-output name=version::$GIT_TAG"
+  # build_pypi:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     PYPI_PASS: ${{ secrets.PYPI_PASS }}
+  #   if: github.event.release
+  #   needs: check_release
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Prepare environement
+  #       run: pip install -U pip twine
+  #     - name: Init .pypirc
+  #       run: |
+  #         echo -e "[pypi]" >> ~/.pypirc
+  #         echo -e "username = powerapi" >> ~/.pypirc
+  #         echo -e "password = $PYPI_PASS" >> ~/.pypirc
+  #     - name: Generate package
+  #       run: |
+  #         python3 -m venv venv
+  #         . venv/bin/activate
+  #         python3 setup.py sdist bdist_wheel
+  #     - name: Upload to pypi
+  #       run: twine upload dist/*
+  # build_and_push_to_dockerHub:
+  #   name: Build and push docker image to DockerHub
+  #   if: github.event.release
+  #   runs-on: ubuntu-latest
+  #   needs: check_release
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Log in to Docker Hub
+  #       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Build and push Cpython image
+  #       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+  #       with:
+  #         context: .
+  #         push: true
+  #         file: Dockerfile-cpython
+  #         tags: powerapi/powerapi:latest, powerapi/powerapi:${{needs.check_release.outputs.version}}
+  #     - name: Build and push pypy image
+  #       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+  #       with:
+  #         context: .
+  #         push: true
+  #         file: Dockerfile-pypy
+  #         tags: powerapi/powerapi-pypy:latest, powerapi/powerapi:pypy-${{needs.check_release.outputs.version}}
+  # build_deb_package:
+  #   name: Build debian binary package and upload them to the github release
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.9]
+  #   if: github.event.release
+  #   runs-on: ubuntu-latest
+  #   needs: check_release
+  #   container:
+  #     image: powerapi/powerapi-build-deb
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: Cache pip
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-
+  #           ${{ runner.os }}-
+  #     - name: Remove tests
+  #       run: |
+  #         rm -R ./tests
+  #         sed -i 's/setup_requires =//g' setup.cfg
+  #         sed -i 's/pytest-runner >=3.9.2//g' setup.cfg
+  #         sed -i 's/test = pytest//g' setup.cfg
+  #         sed -i 's/\[aliases\]//g' setup.cfg
+  #         sed -i 's/test_suite = tests//g' setup.cfg
+  #         sed -i 's/tests_require =//g' setup.cfg
+  #         sed -i 's/pytest >=3.9.2//g' setup.cfg
+  #         sed -i 's/pytest-asyncio >=0.14.0//g' setup.cfg
+  #         sed -i 's/mock >=2.0//g' setup.cfg
+  #         sed -i 's/requests >=2.0//g' setup.cfg
+  #     - name: Install powerapi
+  #       run: |
+  #         python3 -m venv venv
+  #         . venv/bin/activate
+  #         python3 -m pip install .
+  #     - name: Create source package
+  #       run: |
+  #         . venv/bin/activate
+  #         python3 -m pip install setuptools stdeb
+  #         python3 setup.py --command-packages=stdeb.command sdist_dsc
+  #         sed -i '/Depends: ${misc:Depends}, ${python3:Depends}/a Suggests: python3-libvirt,python3-pymongo,python3-prometheus-client,python3-influxdb' ./deb_dist/powerapi-${{needs.check_release.outputs.version}}/debian/control
+  #     - name: Build binary package and upload it github release page
+  #       run: |
+  #         . venv/bin/activate
+  #         VERSION=${{needs.check_release.outputs.version}}
+  #         PYTHON_VERSION=$(echo ${{ matrix.python-version }} | sed -e 's/\.//g')
+  #         cd ./deb_dist/powerapi-$VERSION
+  #         dpkg-buildpackage
+  #         cd ..
+  #         mv python3-powerapi_$VERSION-1_all.deb python$PYTHON_VERSION-powerapi_$VERSION-1_all.deb
+  #         gh release upload v$VERSION python$PYTHON_VERSION-powerapi_$VERSION-1_all.deb

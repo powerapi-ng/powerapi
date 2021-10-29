@@ -31,6 +31,7 @@ from __future__ import annotations
 
 
 from datetime import datetime
+
 from typing import Dict
 
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
