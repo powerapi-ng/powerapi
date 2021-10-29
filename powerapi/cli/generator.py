@@ -67,7 +67,7 @@ class Generator:
                 msg = 'Configuration error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
                 print(msg, file=sys.stderr)
-                raise PowerAPIException(msg)
+                raise PowerAPIException(msg) from exn
 
         return actors
 
