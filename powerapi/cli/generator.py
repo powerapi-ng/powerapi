@@ -54,8 +54,8 @@ class Generator:
         Generate an actor class and actor start message from config dict
         """
         if self.component_group_name not in config:
-            print('CONFIG error : no ' + self.component_group_name + ' specified', file=sys.stderr)
-            raise PowerAPIException('CONFIG error : no ' + self.component_group_name + ' specified')
+            print('Configuration error : no ' + self.component_group_name + ' specified', file=sys.stderr)
+            raise PowerAPIException('Configuration error : no ' + self.component_group_name + ' specified')
 
         actors = {}
 
@@ -64,7 +64,7 @@ class Generator:
                 component_type = component_config['type']
                 actors[component_name] = self._gen_actor(component_type, component_config, config, component_name)
             except KeyError as exn:
-                msg = 'CONFIG error : argument ' + exn.args[0]
+                msg = 'Configuration error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
                 print(msg, file=sys.stderr)
                 raise PowerAPIException(msg)
@@ -188,7 +188,7 @@ class DBActorGenerator(Generator):
 
     def _generate_db(self, db_name, db_config, _):
         if db_name not in self.db_factory:
-            msg = 'CONFIG error : database type ' + db_name + 'unknow'
+            msg = 'Configuration error : database type ' + db_name + ' unknow'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
         else:
@@ -196,7 +196,7 @@ class DBActorGenerator(Generator):
 
     def _generate_model(self, model_name, db_config):
         if model_name not in self.model_factory:
-            msg = 'CONFIG error : model type ' + model_name + 'unknow'
+            msg = 'Configuration error : model type ' + model_name + ' unknow'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
         else:

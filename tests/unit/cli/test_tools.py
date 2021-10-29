@@ -36,7 +36,7 @@ from powerapi.cli.generator import ModelNameDoesNotExist, DatabaseNameDoesNotExi
 from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
 from powerapi.message import PullerStartMessage, PusherStartMessage
-
+from powerapi.exception import PowerAPIException
 ####################
 # PULLER GENERATOR #
 ####################
@@ -50,7 +50,7 @@ def test_generate_puller_from_empty_config_dict_call_sys_exit(mocked_sys_exit):
     args = {}
     generator = PullerGenerator(None, [])
 
-    with pytest.raises(SysExitException):
+    with pytest.raises(PowerAPIException):
         generator.generate(args)
 
 
@@ -170,7 +170,7 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
                                                                    'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     generator.remove_model_factory('HWPCReport')
-    with pytest.raises(SysExitException):
+    with pytest.raises(PowerAPIException):
         result = generator.generate(args)
 
 
@@ -180,5 +180,5 @@ def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_i
                                                                 'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     generator.remove_db_factory('mongodb')
-    with pytest.raises(SysExitException):
+    with pytest.raises(PowerAPIException):
         result = generator.generate(args)

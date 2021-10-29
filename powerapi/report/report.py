@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, NewType, Tuple, List
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
