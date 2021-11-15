@@ -55,7 +55,7 @@ class LibvirtMapper(ReportModifier):
             domain_name = result.groups(0)[0]
             try:
                 domain = self.libvirt.lookupByName(domain_name)
-                report.metadata["domain_id"] = domain.UUIDString()
+                report.target = domain.UUIDString()
             except libvirtError:
                 pass
         return report
