@@ -126,3 +126,24 @@ def test_create_hwpc_report_from_csv_without_socket_field_raise_BadInputData():
     csv_lines = [('rapl', {'sensor': 'toto', 'timestamp': '1970-09-01T09:09:09.543', 'target': 'all', 'cpu': '7', 'RAPL_VALUE': '1234'})]
     with pytest.raises(BadInputData):
         report = HWPCReport.from_csv_lines(csv_lines)
+
+############
+# METADATA #
+############
+
+def test_creating_report_with_metadata():
+    report = HWPCReport(('1970-09-01T09:09:10.543'), 'toto', 'all', {}, {"tag": 1})
+    assert report.metadata["tag"] == 1
+
+def test_create_report_from_json_with_metadata():
+    json_input = extract_rapl_reports_with_2_sockets(1)[0]
+    json_input["metadata"] = {}
+    json_input["metadata"]["tag"] = 1
+    report = HWPCReport.from_json(json_input)
+    assert report.metadata["tag"] == 1
+
+
+def test_create_report_from_csv_with_metadata():
+    csv_lines = [('rapl', {'sensor': 'toto', 'timestamp': '1970-09-01T09:09:09.543', 'target': 'all', 'socket': '0', 'cpu': '7', 'RAPL_VALUE': '1234', 'tag':1})]
+    report = HWPCReport.from_csv_lines(csv_lines)
+    assert report.metadata["tag"] == 1

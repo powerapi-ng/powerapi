@@ -460,9 +460,8 @@ def test_type_validate():
     parser = MainConfigParser()
     parser.add_argument('c', type=int)
 
-
     str_dic = {'c': 'string'}
-    int_dic = {'c': 1}
+    int_dic = {'c': 42}
 
     with pytest.raises(BadTypeException):
         parser._validate(str_dic)

@@ -32,12 +32,12 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from typing import Dict
+from typing import Dict, Any
 
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
 
 
-CSV_HEADER_PROCFS = CSV_HEADER_COMMON + ['socket', 'cpu']
+CSV_HEADER_PROCFS = CSV_HEADER_COMMON + ['socket', 'cpu', 'usage', 'global_cpu_usage']
 
 
 class ProcfsReport(Report):
@@ -54,7 +54,7 @@ class ProcfsReport(Report):
 
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: Dict, global_cpu_usage: float):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: Dict, global_cpu_usage: float, metadata: Dict[str, Any] = {}):
         """
         Initialize an Procfs report using the given parameters.
         :param datetime timestamp: Timestamp of the report
@@ -63,14 +63,14 @@ class ProcfsReport(Report):
         :param Dict[str,float] usage : CGroup name and cpu_usage
         :param float global_cpu_usage : The global CPU usage, with untracked process
         """
-        Report.__init__(self, timestamp, sensor, target)
+        Report.__init__(self, timestamp, sensor, target, metadata)
 
         #: (dict): Events groups
         self.usage = usage
         self.global_cpu_usage = global_cpu_usage
 
     def __repr__(self) -> str:
-        return 'ProcfsReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.usage.keys()))
+        return 'ProcfsReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.usage.keys()), str(self.metadata))
 
     @staticmethod
     def from_json(data: Dict) -> ProcfsReport:
@@ -81,9 +81,12 @@ class ProcfsReport(Report):
         """
         try:
             ts = Report._extract_timestamp(data['timestamp'])
-            return ProcfsReport(ts, data['sensor'], data['target'], data['usage'], data['global_cpu_usage'])
+            metadata = {} if 'metadata' not in data else data['metadata']
+            return ProcfsReport(ts, data['sensor'], data['target'], data['usage'], data['global_cpu_usage'], metadata)
         except KeyError as exn:
             raise BadInputData('no field ' + str(exn.args[0]) + ' in json document', data) from exn
+        except ValueError as exn:
+            raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
     def to_json(report: ProcfsReport) -> Dict:
@@ -107,14 +110,14 @@ class ProcfsReport(Report):
         timestamp = None
         usage = {}
         global_cpu_usage = None
-
+        metadata = {}
         for file_name, row in lines:
             cgroup_name = file_name[:-4] if file_name[len(file_name) - 4:] == '.csv' else file_name
             try:
                 if sensor_name is None:
                     sensor_name = row['sensor']
                     target = row['target']
-                    timestamp = ProcfsReport._extract_timestamp(row['timestamp'])
+                    timestamp = Report._extract_timestamp(row['timestamp'])
                     global_cpu_usage = row['global_cpu_usage']
                 else:
                     if sensor_name != row['sensor']:
@@ -128,48 +131,21 @@ class ProcfsReport(Report):
 
                 ProcfsReport._create_cgroup(row, cgroup_name, usage)
 
+                for key, value in row.items():
+                    if key not in CSV_HEADER_PROCFS:
+                        metadata[key] = value
+
             except KeyError as exn:
                 raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name, {}) from exn
+            except ValueError as exn:
+                raise BadInputData(exn.args[0], row) from exn
 
-        return ProcfsReport(timestamp, sensor_name, target, usage, global_cpu_usage)
+        return ProcfsReport(timestamp, sensor_name, target, usage, global_cpu_usage, metadata)
 
     @staticmethod
-    def _create_cgroup(row, cgroup_name, usage):
+    def _create_cgroup(_, cgroup_name, usage):
         if cgroup_name not in usage:
             usage[cgroup_name] = {}
-
-        for key, value in row.items():
-            if key not in CSV_HEADER_PROCFS:
-                usage[cgroup_name][key] = int(value)
-
-#############################
-# REPORT CREATION FUNCTIONS #
-#############################
-
-
-# def create_core_report(core_id, event_id, event_value, events=None):
-#     id_str = str(core_id)
-#     data = {id_str: {}}
-#     if events is not None:
-#         data[id_str] = events
-#         return data
-#     data[id_str] = {event_id: event_value}
-#     return data
-
-
-# def create_socket_report(socket_id, core_list):
-#     id_str = str(socket_id)
-#     data = {id_str: {}}
-#     for core in core_list:
-#         data[id_str].update(core)
-#     return data
-
-
-# def create_group_report(group_id, socket_list):
-#     group = {}
-#     for socket in socket_list:
-#         group.update(socket)
-#     return (group_id, group)
 
 
 def create_report_root(cgroup_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='all'):

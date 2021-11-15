@@ -29,7 +29,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Any
 
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
 
@@ -65,7 +65,7 @@ class HWPCReport(Report):
         }
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: Dict[str, Dict]):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: Dict[str, Dict], metadata: Dict[str, Any] = {}):
         """
         Initialize an HWPC report using the given parameters.
         :param datetime timestamp: Timestamp of the report
@@ -73,13 +73,13 @@ class HWPCReport(Report):
         :param str target: Target name
         :param Dict groups: Events groups
         """
-        Report.__init__(self, timestamp, sensor, target)
+        Report.__init__(self, timestamp, sensor, target, metadata)
 
         #: (dict): Events groups
         self.groups = groups
 
     def __repr__(self) -> str:
-        return 'HWCPReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
+        return 'HWCPReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.groups.keys()), str(self.metadata))
 
     @staticmethod
     def from_json(data: Dict) -> HWPCReport:
@@ -90,7 +90,8 @@ class HWPCReport(Report):
         """
         try:
             ts = Report._extract_timestamp(data['timestamp'])
-            return HWPCReport(ts, data['sensor'], data['target'], data['groups'])
+            metadata = {} if 'metadata' not in data else data['metadata']
+            return HWPCReport(ts, data['sensor'], data['target'], data['groups'], metadata)
         except KeyError as exn:
             raise BadInputData('HWPC report require field ' + str(exn.args[0]) + ' in json document', data) from exn
         except ValueError as exn:
@@ -126,6 +127,7 @@ class HWPCReport(Report):
         target = None
         timestamp = None
         groups = {}
+        metadata = {}
 
         for file_name, row in lines:
             group_name = file_name[:-4] if file_name[len(file_name) - 4:] == '.csv' else file_name
@@ -144,15 +146,20 @@ class HWPCReport(Report):
 
                 HWPCReport._create_group(row, groups, group_name)
 
+                for key, value in row.items():
+                    if key not in CSV_HEADER_HWPC:
+                        metadata[key] = value
+
             except KeyError as exn:
                 raise BadInputData('missing field ' + str(exn.args[0]) + ' in csv file ' + file_name, row) from exn
             except ValueError as exn:
                 raise BadInputData(exn.args[0], row) from exn
 
-        return HWPCReport(timestamp, sensor_name, target, groups)
+        return HWPCReport(timestamp, sensor_name, target, groups, metadata)
 
     @staticmethod
     def _create_group(row, groups, group_name):
+
         if group_name not in groups:
             groups[group_name] = {}
 
@@ -161,7 +168,3 @@ class HWPCReport(Report):
 
         if row['cpu'] not in groups[group_name][row['socket']]:
             groups[group_name][row['socket']][row['cpu']] = {}
-
-        for key, value in row.items():
-            if key not in CSV_HEADER_HWPC:
-                groups[group_name][row['socket']][row['cpu']][key] = int(value)

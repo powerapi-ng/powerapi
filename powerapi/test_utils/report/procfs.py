@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) 2021, INRIA
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
@@ -28,15 +30,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import datetime
 
-from powerapi.report import PowerReport
+from powerapi.report import ProcfsReport
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'target_test'
 
-POWER_REPORT_1 = PowerReport(0, SENSOR_NAME, TARGET_NAME, 1234, {'socket': 0, 'metadata1': 'truc', 'metadata2': 'oui'})
 
-
-def gen_json_power_report(number_of_reports):
+def gen_json_procfs_report(number_of_reports):
     """
     generate number_of_reports power report with json format
     each power report have the same sensor, target and power value (100W)
@@ -49,10 +49,17 @@ def gen_json_power_report(number_of_reports):
         tmstp = tmstp_tmp[:tmstp_tmp.index(' ')] + 'T' + tmstp_tmp[tmstp_tmp.index(' ') + 1:] + '.0'
         reports.append(
             {
-                "timestamp": tmstp,
-                "sensor": SENSOR_NAME,
-                "target": TARGET_NAME,
-                "power": 42,
+            "timestamp": tmstp,
+            "sensor": "formula_group",
+            "target": ["firefox_cgroup", "emacs_cgroup",
+                       "zsh_cgroup", "mongo_cgroup"],
+            "usage": {
+                "firefox_cgroup": 8.36,
+                "emacs_cgroup": 5.52,
+                "zsh_cgroup": 0.01,
+                "mongo_cgroup": 0.64,
+            },
+            "global_cpu_usage": 27.610000000000014,
             }
         )
     return reports

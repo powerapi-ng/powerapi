@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, NewType, Tuple, List
+from typing import Dict, NewType, Tuple, List, Any
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
@@ -53,7 +53,7 @@ class Report(Message):
     Report abtract class.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: Dict[str, Any] = {}):
         """
         Initialize a report using the given parameters.
         :param datetime timestamp: Timestamp
@@ -64,6 +64,7 @@ class Report(Message):
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
+        self.metadata = metadata
 
         #: id given by the dispatcher actor in order manage report order
         self.dispatcher_report_id = None
@@ -78,7 +79,8 @@ class Report(Message):
         return (isinstance(other, type(self)) and
                 self.timestamp == other.timestamp and
                 self.sensor == other.sensor and
-                self.target == other.target)
+                self.target == other.target and
+                self.metadata == other.metadata)
 
     @staticmethod
     def to_json(report: Report) -> Dict:

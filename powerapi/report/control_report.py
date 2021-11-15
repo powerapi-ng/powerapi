@@ -29,7 +29,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Any
 
 from .report import Report
 
@@ -40,7 +40,7 @@ class ControlReport(Report):
     This is useful to control external tools via a producer/consumer job queue.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: List):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: List, metadata: Dict[str, Any] = {}):
         """
         Initialize a Control Event report using the given parameters.
         :param timestamp: Report timestamp
@@ -54,14 +54,15 @@ class ControlReport(Report):
         self.parameters = parameters
 
     def __repr__(self) -> str:
-        return 'ControlReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters)
+        return 'ControlReport(%s, %s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters, str(self.metadata))
 
     @staticmethod
     def from_json(data: Dict) -> ControlReport:
         """
         :return: a dictionary, that can be converted into json format, from a given ControlReport
         """
-        return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'])
+        metadata = {} if 'metadata' not in data else data['metadata']
+        return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'], metadata)
 
     @staticmethod
     def from_mongodb(data: Dict) -> ControlReport:

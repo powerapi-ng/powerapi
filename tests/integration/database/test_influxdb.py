@@ -179,8 +179,8 @@ def test_write_one_report_in_non_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
+    database.save(POWER_REPORT_0)
     database.save(POWER_REPORT_1)
-
     check_db_reports(influx_database, [POWER_REPORT_0, POWER_REPORT_1])
 
 
@@ -192,6 +192,7 @@ def test_write_many_report_in_non_empty_db(influx_database, database):
     test if the report was writen in the database
     """
     database.connect()
+    database.save(POWER_REPORT_0)
     database.save_many([POWER_REPORT_1, POWER_REPORT_2])
 
     check_db_reports(influx_database, [POWER_REPORT_0, POWER_REPORT_1, POWER_REPORT_2])
