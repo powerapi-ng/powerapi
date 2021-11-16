@@ -88,7 +88,7 @@ def check_db():
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         assert c_output.count_documents(
             {'timestamp': ts, 'sensor': report['sensor'],
-             'target': UUID_1}) == 2
+             'domain_id': UUID_1}) == 2
 
 def filter_rule(msg):
     return True
