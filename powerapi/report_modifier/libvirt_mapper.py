@@ -33,7 +33,7 @@ try:
     from libvirt import openReadOnly, libvirtError
 except ImportError:
     logging.getLogger().info("libvirt-python is not installed.")
-    libvirtError = None
+    libvirtError = Exception
     openReadOnly = None
 
 from powerapi.report_modifier.report_modifier import ReportModifier
@@ -53,7 +53,6 @@ class LibvirtMapper(ReportModifier):
         result = re.match(self.regexp, report.target)
         if result is not None:
             domain_name = result.groups(0)[0]
-            print(domain_name)
             try:
                 domain = self.libvirt.lookupByName(domain_name)
                 report.metadata["domain_id"] = domain.UUIDString()

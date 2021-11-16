@@ -62,7 +62,6 @@ def test_modify_report_that_match_regexp_must_modify_report(libvirt_mapper):
     new_report = libvirt_mapper.modify_report(report)
     assert new_report.metadata["domain_id"] == UUID_1
 
-
 def test_modify_report_that_match_regexp_but_with_wrong_domain_name_musnt_modify_report(libvirt_mapper):
     report = Report(0, 'sensor', LIBVIRT_TARGET_NAME2)
     new_report = libvirt_mapper.modify_report(report)

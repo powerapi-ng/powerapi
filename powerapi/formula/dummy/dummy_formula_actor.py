@@ -70,6 +70,8 @@ class DummyFormulaActor(AbstractCpuDramFormula):
         """
         self.log_debug('received message ' + str(message))
         time.sleep(self.sleeping_time)
-        power_report = PowerReport(message.timestamp, message.sensor, message.target, 42, {'socket': self.socket})
+        metadata = dict(message.metadata)
+        metadata["socket"] = self.socket
+        power_report = PowerReport(message.timestamp, message.sensor, message.target, 42, metadata)
         for _, pusher in self.pushers.items():
             self.send(pusher, power_report)

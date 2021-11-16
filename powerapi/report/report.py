@@ -64,7 +64,7 @@ class Report(Message):
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
-        self.metadata = metadata
+        self.metadata = dict(metadata)
 
         #: id given by the dispatcher actor in order manage report order
         self.dispatcher_report_id = None

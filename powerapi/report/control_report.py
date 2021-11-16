@@ -49,7 +49,7 @@ class ControlReport(Report):
         :param action: Action name
         :param parameters: Parameter values
         """
-        Report.__init__(self, timestamp, sensor, target)
+        Report.__init__(self, timestamp, sensor, target, metadata)
         self.action = action
         self.parameters = parameters
 
