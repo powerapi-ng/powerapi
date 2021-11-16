@@ -33,7 +33,13 @@ try:
     from libvirt import openReadOnly, libvirtError
 except ImportError:
     logging.getLogger().info("libvirt-python is not installed.")
-    libvirtError = Exception
+
+    class LibvirtException(Exception):
+        """"""
+        def __init__(self, _):
+            Exception.__init__(self)
+
+    libvirtError = LibvirtException
     openReadOnly = None
 
 from powerapi.report_modifier.report_modifier import ReportModifier

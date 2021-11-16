@@ -29,7 +29,8 @@
 try:
     from libvirt import libvirtError
 except ImportError:
-    libvirtError = Exception
+    from powerapi.report_modifier.libvirt_mapper import LibvirtException
+    libvirtError = LibvirtException
 
 DOMAIN_NAME_1 = 'instance-00000001'
 DOMAIN_NAME_2 = 'instance-00000999'
