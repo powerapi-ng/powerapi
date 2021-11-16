@@ -53,6 +53,7 @@ class LibvirtMapper(ReportModifier):
         result = re.match(self.regexp, report.target)
         if result is not None:
             domain_name = result.groups(0)[0]
+            print(domain_name)
             try:
                 domain = self.libvirt.lookupByName(domain_name)
                 report.metadata["domain_id"] = domain.UUIDString()

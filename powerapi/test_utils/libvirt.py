@@ -32,7 +32,7 @@ except ImportError:
     libvirtError = Exception
 
 DOMAIN_NAME_1 = 'instance-00000001'
-DOMAIN_NAME_2 = 'instance-00000002'
+DOMAIN_NAME_2 = 'instance-00000099'
 
 LIBVIRT_TARGET_NAME1 = '/machine/qemu-1-' + DOMAIN_NAME_1 + '.libvirt-qemu'
 LIBVIRT_TARGET_NAME2 = '/machine/qemu-2-' + DOMAIN_NAME_2 + '.libvirt-qemu'
