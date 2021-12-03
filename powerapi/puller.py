@@ -45,7 +45,7 @@ class PullerActor(TimedActor):
     A puller Actor is configured to pull data from one type of sources
     """
     def __init__(self):
-        TimedActor.__init__(self, PullerStartMessage, 0.5)
+        TimedActor.__init__(self, PullerStartMessage, 0.05)
 
         self.database = None
         self.report_filter = None
@@ -123,6 +123,7 @@ class PullerActor(TimedActor):
     def _pull_database(self):
         if self.database.asynchrone:
             report = self.loop.run_until_complete(self.database_it.__anext__())
+            print(report)
             if report is not None:
                 return report
             else:

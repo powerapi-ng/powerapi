@@ -230,7 +230,7 @@ class DispatcherActor(Actor):
             return
         self.formula_name_service.remove_formula(formula_name)
         del self.formula_pool[formula_name]
-        if self._exit_mode and self.formula_pool == {}:
+        if self._exit_mode and not self.formula_pool:
             for _, pusher in self.formula_values.pushers.items():
                 self.send(pusher, EndMessage(self.name))
             self.send(self.myAddress, ActorExitRequest())

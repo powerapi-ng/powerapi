@@ -57,6 +57,7 @@ class ClientThread(Thread):
 
 
 def assert_report_equals(hwpc_report, json_report):
+    assert isinstance(hwpc_report,HWPCReport)
     assert hwpc_report.target == json_report['target']
     assert hwpc_report.timestamp == datetime.strptime(json_report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
     assert hwpc_report.sensor == json_report['sensor']
@@ -84,7 +85,6 @@ async def test_read_one_json_object_received_from_the_socket(socket_db, unused_t
 
     report = await iterator.__anext__()
     assert_report_equals(report, json_reports[0])
-
 
 @pytest.mark.asyncio
 async def test_read_two_json_object_received_from_the_socket(socket_db, unused_tcp_port):

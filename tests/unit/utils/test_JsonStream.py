@@ -128,31 +128,3 @@ def test_read_json_object_twice_from_a_socket_with_two_json_object_must_return_t
     asyncio.get_event_loop().run_until_complete(future)
     assert future.result() is None
 
-
-def test_read_json_object_from_a_socket_with_one_json_string_bigger_than_the_buffer_size_must_return_one_json_string():
-    json_string = '{"a":1}'
-
-    socket = MockedStreamReader(json_string)
-    stream = JsonStream(socket, buffer_size=len(json_string) - 2)
-
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json_string
-
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
-
-def test_read_json_object_from_a_socket_with_one_json_string_two_times_bigger_than_the_buffer_size_must_return_one_json_string():
-    json_string = '{"a":1}'
-
-    socket = MockedStreamReader(json_string)
-    stream = JsonStream(socket, buffer_size=1)
-
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json_string
-
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None

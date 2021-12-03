@@ -26,11 +26,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 DEFAULT_BUFFER_SIZE = 4096
 
 
 class JsonStream:
-
     """read data received from a input utf-8 byte stream socket as a json stream
 
     :param stream_reader:
@@ -39,59 +39,63 @@ class JsonStream:
                         (default 4096 bytes)
     """
 
-    def __init__(self, stream_reader, buffer_size=DEFAULT_BUFFER_SIZE):
+    def __init__(self, stream_reader, buffer_size=4096):
         self.stream_reader = stream_reader
         self.json_buffer = b''
         self.buffer_size = buffer_size
-
-    def _extract_json_end_position(self):
-        i = self.json_buffer.find(b'{') + 1
-        open_brackets = 1
-
-        while open_brackets != 0:
-            if i >= len(self.json_buffer):
-                return -1
-
-            if self.json_buffer[i] == b'}'[0]:
-                open_brackets -= 1
-            elif self.json_buffer[i] == b'{'[0]:
-                open_brackets += 1
-            i += 1
-        return i
-
-    def _extract_json(self):
-        i = self._extract_json_end_position()
-        if i > 0:
-            json_str = self.json_buffer[:i]
-            self.json_buffer = self.json_buffer[i:]
-            return json_str.decode('utf-8')
-        else:
-            return None
+        self.open_brackets = 0
 
     async def _get_bytes(self):
         data = await self.stream_reader.read(n=self.buffer_size)
         return b'' if data is None else data
 
-    async def _extract_big_json(self):
-        stream_len = len(self.json_buffer)
-        self.json_buffer += await self._get_bytes()
+    def _extract_json_end_position(self, first_new_byte):
+        """
+        Find the first valable report in the stream
+        """
+        i = first_new_byte
 
-        if len(self.json_buffer) > stream_len:
-            json_str = self._extract_json()
-            if json_str is None:
-                return await self._extract_big_json()
-            else:
-                return json_str
-        else:
-            return None
+        if len(self.json_buffer) == 0:
+            return -1
+        if self.json_buffer[0] != 123:   # ASCII code opening bracket
+            return -1
+
+        while i < len(self.json_buffer):
+            if self.json_buffer[i] == 125:  # ASCII code closing bracket
+                self.open_brackets -= 1
+            elif self.json_buffer[i] == 123:  # ASCII code opening bracket
+                self.open_brackets += 1
+                print(self.open_brackets)
+            if self.open_brackets == 0:
+                return i
+            i += 1
+
+        return -1
 
     async def read_json_object(self):
         """
-        return the first json object received from the connection as a string
+        return all the json object received from the connection as a iteration of string
         """
-        self.json_buffer += await self._get_bytes()
-        json_str = self._extract_json()
-        if json_str is None:
-            return await self._extract_big_json()
+        if len(self.json_buffer) != 0 and self.open_brackets == 0:
+            # Last iteration _extract_json_end_position returned a json_object
+            # and breaked. If the buffer isn't empty wasn't treated, so we have
+            # to treat it
+            first_new_byte = 0
         else:
-            return json_str
+            first_new_byte = len(self.json_buffer)
+            self.json_buffer += await self._get_bytes()
+        i = self._extract_json_end_position(first_new_byte)
+
+        if i == -1:
+            return None
+        if i == len(self.json_buffer) - 1:
+            json_str = self.json_buffer[:]
+            self.json_buffer = b''
+            print("buffer empty")
+            print(self.open_brackets)
+        else:
+            json_str = self.json_buffer[:i + 1]
+            self.json_buffer = self.json_buffer[i + 1:]
+            print("buffer non empty ")
+            print(self.open_brackets)
+        return json_str.decode('utf-8')
