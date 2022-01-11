@@ -123,7 +123,7 @@ class PullerActor(TimedActor):
     def _pull_database(self):
         if self.database.asynchrone:
             report = self.loop.run_until_complete(self.database_it.__anext__())
-            print(report)
+            # print(report)
             if report is not None:
                 return report
             else:

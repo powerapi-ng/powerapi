@@ -54,7 +54,7 @@ class JsonStream:
         Find the first valable report in the stream
         """
         i = first_new_byte
-
+        # print("buffer is ", self.json_buffer[first_new_byte:])
         if len(self.json_buffer) == 0:
             return -1
         if self.json_buffer[0] != 123:   # ASCII code opening bracket
@@ -63,9 +63,10 @@ class JsonStream:
         while i < len(self.json_buffer):
             if self.json_buffer[i] == 125:  # ASCII code closing bracket
                 self.open_brackets -= 1
+                # print("opening : ", self.open_brackets)
             elif self.json_buffer[i] == 123:  # ASCII code opening bracket
                 self.open_brackets += 1
-                print(self.open_brackets)
+                # print("closing :",self.open_brackets)
             if self.open_brackets == 0:
                 return i
             i += 1
@@ -91,11 +92,11 @@ class JsonStream:
         if i == len(self.json_buffer) - 1:
             json_str = self.json_buffer[:]
             self.json_buffer = b''
-            print("buffer empty")
-            print(self.open_brackets)
+            # print("buffer empty")
+            # print(self.open_brackets)
         else:
             json_str = self.json_buffer[:i + 1]
             self.json_buffer = self.json_buffer[i + 1:]
-            print("buffer non empty ")
-            print(self.open_brackets)
+            # print("buffer non empty ")
+            # print(self.open_brackets)
         return json_str.decode('utf-8')

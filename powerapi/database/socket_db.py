@@ -71,7 +71,7 @@ class SocketDB(BaseDB):
             while True:
                 json_str = await stream.read_json_object()
                 if json_str is None:
-                    break
+                    continue
                 await self.queue.put(json_str)
                 # self.queue.put(json_str)
 
