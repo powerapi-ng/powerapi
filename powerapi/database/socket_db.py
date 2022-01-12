@@ -68,16 +68,15 @@ class SocketDB(BaseDB):
     def _gen_server_callback(self):
         async def callback(stream_reader, _):
             stream = JsonStream(stream_reader)
-            count = 0 #If 10 times in a row we don't have a full message we stop
+            count = 0  # If 10 times in a row we don't have a full message we stop
             while True:
                 json_str = await stream.read_json_object()
                 if json_str is None:
                     if count > 10:
                         break
-                    count +=1
+                    count += 1
                     continue
-                else:
-                    count = 0
+                count = 0
                 await self.queue.put(json_str)
                 # self.queue.put(json_str)
 
