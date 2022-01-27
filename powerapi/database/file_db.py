@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from datetime import datetime
 import logging
 from typing import List, Type
 import os
@@ -39,8 +39,9 @@ class FileBadDBError(DBError):
     """
     Error raised when hostname/port fail
     """
+
     def __init__(self, filename):
-        DBError.__init__(self, 'File error : ' + filename + ' not found')
+        DBError.__init__(self, "File error : " + filename + " not found")
 
 
 class FileIterDB(IterDB):
@@ -51,8 +52,7 @@ class FileIterDB(IterDB):
     """
 
     def __init__(self, db, report_type, stream_mode, filename):
-        """
-        """
+        """ """
         IterDB.__init__(self, db, report_type, stream_mode)
         self.previousJson = ""
         self.__iter__()
@@ -124,7 +124,19 @@ class FileDB(BaseDB):
 
         :param report: Report to save
         """
-        raise DBError("FileDB do not support save method")
+        file_object = open(self.filename, "w")
+        line = {
+            "sensor": report.sensor,
+            "target": report.target,
+            "timestamp": int(datetime.timestamp(report.timestamp) * 1000),
+            "power": report.power,
+        }
+
+        final_dict = {"PowerReport": [line]}
+
+        file_object.truncate(0)
+        file_object.write(str(final_dict))
+        file_object.close()
 
     def save_many(self, reports: List[Report]):
         """
