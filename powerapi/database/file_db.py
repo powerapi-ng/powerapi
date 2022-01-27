@@ -144,4 +144,5 @@ class FileDB(BaseDB):
 
         :param reports: Batch of data.
         """
-        raise DBError("FileDB do not support save_many method")
+        for report in reports:
+            self.save(report)
