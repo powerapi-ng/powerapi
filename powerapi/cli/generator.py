@@ -182,7 +182,7 @@ class DBActorGenerator(Generator):
         """
         add a database to generator
         """
-        if db_name in self.model_factory:
+        if db_name in self.db_factory:
             raise DatabaseNameAlreadyUsed(db_name)
         self.db_factory[db_name] = db_factory
 
