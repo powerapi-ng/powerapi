@@ -121,7 +121,7 @@ class Supervisor:
         create an actor from a given class and send it a start message.
         :param actor_cls: class used to create the actor
         :param start_message: message used to initialize the actor
-        :raise InitializationException: if an error occurs during actor initialiszation process
+        :raise InitializationException: if an error occurs during actor initialization process
         """
         name = start_message.name
         address = self.system.createActor(actor_cls)
