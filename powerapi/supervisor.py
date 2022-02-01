@@ -142,8 +142,8 @@ class Supervisor:
             self.pullers[name] = address
         elif issubclass(actor_cls, DispatcherActor):
             self.dispatchers[name] = address
-        else:
-            raise AttributeError('Actor is not a DispatcherActor, PusherActor or PullerActor')
+        elif not issubclass(actor_cls, Actor):
+            raise AttributeError('Actor is not a PowerAPI Actor')
         self.actors[name] = address
 
     def _wait_actors(self):
