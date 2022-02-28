@@ -56,7 +56,7 @@ def _clean_list(id_list):
 
 def _extract_formula_id(report: Report, dispatch_rule: DispatchRule, primary_dispatch_rule: DispatchRule) -> List[Tuple]:
     """
-    Use the dispatcha rule to extract formula_id from the given report.
+    Use the dispatch rule to extract formula_id from the given report.
     Formula id are then mapped to an identifier that match the primary
     report identifier fields
 

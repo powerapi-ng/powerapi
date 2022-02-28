@@ -175,7 +175,7 @@ class TimedActor(Actor):
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
         """
         When receiving a StartMessage, initialize the actor and set it into sleeping phase
-        ask the actor system to wake agter a given time period
+        ask the actor system to wake after a given time period
         """
         Actor.receiveMsg_StartMessage(self, message, sender)
         self.wakeupAfter(self._time_interval)
