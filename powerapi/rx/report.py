@@ -1,0 +1,210 @@
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+##############################
+#
+# Imports
+#
+##############################
+
+from datetime import datetime
+from typing import Dict, Any
+
+from pandas import DataFrame
+from pandas import MultiIndex
+
+##############################
+#
+# Constants
+#
+##############################
+METADATA_PREFIX = "metadata:"
+METADATA_CN = "metadata"
+TIMESTAMP_CN = "timestamp"
+TARGET_CN = "target"
+SENSOR_CN = "sensor"
+NUMBER_OF_BASIC_VALUES = 3
+
+
+##############################
+#
+# Classes
+#
+##############################
+class Report(DataFrame):
+    """ Class that represents a report in PowerAPI """
+
+    def __init__(self, data: Dict, index_names: list, index_values: list):
+        """ Initialize a report using the given parameters
+
+        Args:
+            data: The data related to the report
+            index_names: Columns names used for building the multiindex
+            index_values: List of tuples containing the values used for building the multiindex
+        """
+
+        super().__init__(data=data, index=MultiIndex.from_tuples(
+            tuples=index_values,
+            names=index_names))
+
+    def to_dict(self) -> Dict:
+        """ Transform the report in a dictionary """
+
+        # We get the basic information from the index
+        report_dic = {TIMESTAMP_CN: self.index[0][0], SENSOR_CN: self.index[0][1], TARGET_CN: self.index[0][2]}
+        metadata = {}
+
+        # We get the metadata, we use METADATA_PREFIX to identify the metadata
+        metadata_prefix_len = len(METADATA_PREFIX)
+        if len(self.index.names) > NUMBER_OF_BASIC_VALUES:
+            value_position = NUMBER_OF_BASIC_VALUES
+            for metadata_key in self.index.names[NUMBER_OF_BASIC_VALUES:]:
+
+                prefix_position = metadata_key.find(METADATA_PREFIX)
+
+                if prefix_position != -1:
+                    current_metadata_key = metadata_key[prefix_position + metadata_prefix_len:]
+                    metadata[current_metadata_key] = self.index[0][value_position]
+
+                value_position = value_position + 1
+
+        if len(metadata) > 0:
+            report_dic[METADATA_CN] = metadata
+
+        return report_dic
+
+
+##############################
+#
+# Functions for creating reports
+#
+##############################
+def create_report_from_dict(report_dic: Dict[str, Any]) -> Report:
+    """ Creates a report by using the given information
+
+        Args:
+            report_dic: Dictionary that contains information of the report
+        Return :
+            A new report created using information contained in the dictionary
+    """
+
+    # We get index names and values. The rest of information are considered as data for the dataframe
+
+    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dic)
+
+    # We create the report
+    return Report(data, index_names, index_values)
+
+
+def create_report_from_values(timestamp: datetime, sensor: str, target: str, data: Dict[str, Any] = {},
+                              metadata: Dict[str, Any] = {}) -> Report:
+    """ Creates a report by using the given information
+
+        Args:
+            timestamp: Dictionary that contains information of the report
+            sensor: The name of the sensor
+            target: The name of the target
+            data: The data not used for building the index
+            metadata: Dictionary containing the metadata
+
+        Return:
+            A new report created using provided information. The report only contains information related to index
+    """
+
+    # We get index names and values
+
+    index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor,
+                                                                  target=target, metadata=metadata)
+
+    # We create the report
+    return Report(data, index_names, index_values)
+
+
+def get_index_information_and_data_from_report_dict(report_dict: Dict) -> (list, list, Dict):
+    """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
+
+        The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
+        is considered as data as removed of a copy of report_dict
+
+        Args:
+            report_dict: The dictionary containing the information
+
+        Return:
+            The list of names and values for building a multiindex as well as the report data
+    """
+
+    # We get the index values
+    timestamp = report_dict[TIMESTAMP_CN]
+    sensor = report_dict[SENSOR_CN]
+    target = report_dict[TARGET_CN]
+    metadata = report_dict[METADATA_CN] if METADATA_CN in report_dict.keys() else {}
+
+    # We define common index names and values
+    index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor, target=target,
+                                                                  metadata=metadata)
+
+    # We leave on the dictionary only the data not used for building the index
+    data = report_dict.copy()
+
+    del data[TIMESTAMP_CN]
+    del data[SENSOR_CN]
+    del data[TARGET_CN]
+
+    if METADATA_CN in data.keys():
+        del data[METADATA_CN]
+
+    return index_names, index_values, data
+
+
+def get_index_information_from_values(timestamp: datetime, sensor: str, target: str,
+                                      metadata: Dict[str, Any] = {}) -> (list, list):
+    """ Gets multiindex values and names from given values
+
+        The basic values for building a multiindex are timestamp, sensor, target and metadata.
+
+        Args:
+            timestamp: Dictionary that contains information of the report
+            sensor: The name of the sensor
+            target: The name of the target
+            metadata: Dictionary containing the metadata
+
+        Return:
+            The list of names and values for building a multiindex
+    """
+    # We define common index names and values
+    index_names = [TIMESTAMP_CN, SENSOR_CN, TARGET_CN]
+    index_values = [(timestamp, sensor, target)]
+
+    # Metadata is also part of the index
+    for key, value in metadata.items():
+        index_names.append(METADATA_PREFIX + key)
+        for position, current_index in enumerate(index_values):
+            index_values[position] = current_index + (value,)
+
+    return index_names, index_values
