@@ -27,6 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Author : Daniel  Romero Acero
+# Last modified : 17 march 2022
+
 ##############################
 #
 # Imports
@@ -39,11 +42,15 @@ from typing import Dict, Any
 from pandas import DataFrame
 from pandas import MultiIndex
 
+from powerapi.exception import BadInputDataException
+
 ##############################
 #
 # Constants
 #
 ##############################
+
+
 METADATA_PREFIX = "metadata:"
 METADATA_CN = "metadata"
 TIMESTAMP_CN = "timestamp"
@@ -74,10 +81,18 @@ class Report(DataFrame):
             names=index_names))
 
     def to_dict(self) -> Dict:
-        """ Transform the report in a dictionary """
+        """ Transform the report in a dictionary
+
+        Only index information is used for creating the dictionary.
+
+        """
 
         # We get the basic information from the index
-        report_dic = {TIMESTAMP_CN: self.index[0][0], SENSOR_CN: self.index[0][1], TARGET_CN: self.index[0][2]}
+        timestamp_position = self.index.names.index(TIMESTAMP_CN)
+        sensor_position = self.index.names.index(SENSOR_CN)
+        target_position = self.index.names.index(TARGET_CN)
+        report_dic = {TIMESTAMP_CN: self.index[0][timestamp_position], SENSOR_CN: self.index[0][sensor_position],
+                      TARGET_CN: self.index[0][target_position]}
         metadata = {}
 
         # We get the metadata, we use METADATA_PREFIX to identify the metadata
@@ -105,18 +120,23 @@ class Report(DataFrame):
 # Functions for creating reports
 #
 ##############################
-def create_report_from_dict(report_dic: Dict[str, Any]) -> Report:
+def create_report_from_dict(report_dict: Dict[str, Any]) -> Report:
     """ Creates a report by using the given information
 
         Args:
-            report_dic: Dictionary that contains information of the report
+            report_dict: Dictionary that contains information of the report
         Return :
             A new report created using information contained in the dictionary
     """
+    # We check that all the required information is in the input dictionary
+    if not is_basic_information_in_report_dict(report_dict):
+        raise BadInputDataException(
+            msg=f"One of the following infos is missing in the input dictionary: {TIMESTAMP_CN}, "
+                f"{SENSOR_CN}, "
+                f"{TARGET_CN}. The report can not be created", input_data=report_dict)
 
     # We get index names and values. The rest of information are considered as data for the dataframe
-
-    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dic)
+    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dict)
 
     # We create the report
     return Report(data, index_names, index_values)
@@ -208,3 +228,19 @@ def get_index_information_from_values(timestamp: datetime, sensor: str, target: 
             index_values[position] = current_index + (value,)
 
     return index_names, index_values
+
+
+def is_basic_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
+    """ Check is basic information is presen in the given dictionary
+
+        Basic information are TIMESTAMP, SENSOR and TARGET
+
+        Args:
+            report_dict: Dictionary that contains information of the report
+
+        Return:
+            True if values are present, False otherwise
+    """
+    keys = report_dict.keys()
+
+    return (TIMESTAMP_CN in keys) and (SENSOR_CN in keys) and (TARGET_CN in keys)
