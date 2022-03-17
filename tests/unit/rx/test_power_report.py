@@ -40,6 +40,7 @@ from typing import Dict, Any
 from datetime import datetime
 
 from powerapi.exception import BadInputDataException
+from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport
 from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
     create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
 
@@ -124,67 +125,6 @@ class FakeReport(Report):
 ##############################
 
 
-def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
-    """ Creates a fake report by using the given information
-
-        Args:
-            report_dic: Dictionary that contains information of the report
-    """
-
-    # We get index names and values
-
-    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dic)
-
-    data_by_columns = {}
-
-    # We add the groups and their keys and sub keys as part of the index if it is exist
-    if GROUPS_CN in data.keys():
-        index_names.append(GROUPS_CN)
-        index_names.append(SUB_GROUPS_L1_CN)
-        index_names.append(SUB_GROUPS_L2_CN)
-        groups = data[GROUPS_CN]
-
-        # For each existing index_value, we have to add values related to groups' keys
-
-        number_of_values_added = 0
-        original_index_value = index_values[0]  # There is only one entry
-
-        for key in groups.keys():
-
-            # We add the group level values to the index
-
-            # We add the sub_group_level1 values to the index
-            sub_group_level1 = groups[key]
-
-            for key_level1 in sub_group_level1.keys():
-
-                # We add the sub_group_level2 values to the index
-                sub_group_level2 = sub_group_level1[key_level1]
-
-                # original_index_value_level2 = index_values[number_of_values_added]
-
-                for key_level2 in sub_group_level2.keys():
-                    value_to_add = original_index_value + (key, key_level1, key_level2,)
-                    if number_of_values_added < len(index_values):
-                        index_values[number_of_values_added] = value_to_add
-                    else:
-                        index_values.append(value_to_add)
-
-                    number_of_values_added = number_of_values_added + 1
-
-                    # We extract the data from the level2
-                    data_values = sub_group_level2[key_level2]
-                    for data_key in data_values:
-                        current_value_to_add = data_values[data_key]
-                        if data_key not in data_by_columns.keys():
-                            data_by_columns[data_key] = [current_value_to_add]
-                        else:
-                            data_by_columns[data_key].append(current_value_to_add)
-
-    # We create the report
-    return FakeReport(data_by_columns, index_names, index_values)
-
-
 ##############################
 #
 # Tests
@@ -192,31 +132,33 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 ##############################
 
 
-def test_building_of_simple_report():
+def test_building_of_simple_power_report():
     """Test if a basic report is well-built"""
 
     # Setup
     report_dict = {
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
-        TARGET_CN: "test_target"}
+        TARGET_CN: "test_target",
+        POWER_CN: 5.5}
 
     # Exercise
-    report = create_report_from_dict(report_dict)
+    report = create_power_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
-    assert isinstance(report, Report)  # It is a basic report
+    assert isinstance(report, PowerReport)  # It is a power report
     assert len(report.index) == 1  # Only one index has to exist
-    assert len(report.columns) == 0  # There is not data
-    assert len(report.index.names) == 3  # Only 3 names are used in the index
+    assert len(report.columns) == 0  # There is no data
+    assert len(report.index.names) == 4  # Only 4 names are used in the index
     assert TIMESTAMP_CN in report.index.names
     assert SENSOR_CN in report.index.names
     assert TARGET_CN in report.index.names
+    assert POWER_CN in report.index.names
 
 
-def test_building_of_report_with_metadata():
-    """ Test that a report with metadata is well-built"""
+def test_building_of_power_report_with_metadata():
+    """ Test that a power report with metadata is well-built"""
 
     # Setup
 
@@ -226,22 +168,24 @@ def test_building_of_report_with_metadata():
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
-                      "power_units": "watt"}}
+                      "power_units": "watt"},
+        POWER_CN: 55.5}
     metadata = report_dict[METADATA_CN]
 
     # Exercise
 
-    report = create_report_from_dict(report_dict)
+    report = create_power_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
     assert isinstance(report, Report)  # It is a basic report
     assert len(report.index) == 1  # Only one index has to exist
     assert len(report.columns) == 0  # There is no data
-    assert len(report.index.names) == 9  # 9 names are used in the index
+    assert len(report.index.names) == 10  # 10 names are used in the index
     assert TIMESTAMP_CN in report.index.names
     assert SENSOR_CN in report.index.names
     assert TARGET_CN in report.index.names
+    assert POWER_CN in report.index.names
 
     # All the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
@@ -252,72 +196,28 @@ def test_building_of_report_with_metadata():
         assert value == metadata[key]
 
 
-def test_building_of_report_with_data():
-    """ Test that a report with data is well-built """
-    report_dict = {
-        TIMESTAMP_CN: datetime.now(),
-        SENSOR_CN: "test_sensor",
-        TARGET_CN: "test_target",
-        METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
-                      "predict": 0,
-                      "power_units": "watt"},
-        "groups": {"core":
-            {0:
-                {0:
-                    {
-                        "CPU_CLK_THREAD_UNH": 2849918,
-                        "CPU_CLK_THREAD_UNH_": 49678,
-                        "time_enabled": 4273969,
-                        "time_running": 4273969,
-                        "LLC_MISES": 71307,
-                        "INSTRUCTIONS": 2673428},
-                    1:
-                        {
-                            "CPU_CLK_THREAD_UNH": 2849919,
-                            "CPU_CLK_THREAD_UNH_": 49679,
-                            "time_enabled": 4273970,
-                            "time_running": 4273970,
-                            "LLC_MISES": 71308,
-                            "INSTRUCTIONS": 2673429}}}}}
-
-    # Exercise
-
-    report = create_fake_report_from_dict(report_dict)
-
-    # Check that report is well-built
-
-    assert report is not None
-    assert isinstance(report, Report)  # It is a basic report
-    assert len(report.index) == 2  # Two index have to exist
-    assert len(report.columns) == 6  # There is 6 rows with data
-    assert len(report.index.names) == 12  # 12 columns are used in the index
-
-    data = report.loc[report.index[0]]
-
-    assert data is not None
-    assert len(data.index) == 6
-
-
-def test_creation_of_dic_from_report():
+def test_creation_of_dic_from_power_report():
     """Test if a basic report is transformed correctly into a dict"""
 
     # Setup
     report_dict = {
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
-        TARGET_CN: "test_target"}
+        TARGET_CN: "test_target",
+        POWER_CN: 11}
 
     # Exercise
-    report = create_report_from_dict(report_dict)
+    report = create_power_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
     assert report_dict_to_check == report_dict
 
 
-def test_creation_of_dic_from_report_with_metadata():
-    """Test if a basic report with metadata is transformed correctly into a dict"""
+def test_creation_of_dic_from_power_report_with_metadata():
+    """Test if a power report with metadata is transformed correctly into a dict"""
     report_dict = {
+        POWER_CN: 11,
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
@@ -327,7 +227,7 @@ def test_creation_of_dic_from_report_with_metadata():
 
     # Exercise
     try:
-        report = create_report_from_dict(report_dict)
+        report = create_power_report_from_dict(report_dict)
         report_dict_to_check = report.to_dict()
 
         # Check that report is well-built
@@ -342,6 +242,7 @@ def test_creation_of_dict_from_report_with_data():
     report_dict = {
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
+        POWER_CN: 11,
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
@@ -365,61 +266,51 @@ def test_creation_of_dict_from_report_with_data():
                             "LLC_MISES": 71308,
                             "INSTRUCTIONS": 2673429}}}}}
 
+    report_dict_expected = {
+        TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        SENSOR_CN: "test_sensor",
+        POWER_CN: 11,
+        TARGET_CN: "test_target",
+        METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
+                      "predict": 0,
+                      "power_units": "watt"},
+        }
+
     # Exercise
-    report = create_fake_report_from_dict(report_dict)
+    report = create_power_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
+    assert report_dict_to_check == report_dict_expected
 
-    assert report_dict_to_check == report_dict
 
-
-def test_building_of_simple_report_fails_with_missing_values():
-    """Test if a basic report is well-built"""
+def test_building_of_simple_power_report_fails_with_missing_values():
+    """Test if a power report is not built when values are missing"""
 
     # Setup
     report_dict = {
         TIMESTAMP_CN: datetime.now(),
-        SENSOR_CN: "test_sensor"
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
     }
 
     report_dict_2 = {
         TIMESTAMP_CN: datetime.now(),
-        TARGET_CN: "test_target"
-    }
-
-    report_dict_3 = {
         SENSOR_CN: "test_sensor",
-        TARGET_CN: "test_target"
+        POWER_CN: 11,
     }
-
-    report_dict_4 = {}
 
     # Exercise
     report = None
-    try:
-        report = create_report_from_dict(report_dict)
-        assert False, "create_report_from_dict should not create a report with an incomplete dictionary"
-    except BadInputDataException:
-        pass
-
     report_2 = None
     try:
-        report_2 = create_report_from_dict(report_dict_2)
+        report = create_power_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with an incomplete dictionary"
     except BadInputDataException:
         pass
 
-    report_3 = None
     try:
-        report_3 = create_report_from_dict(report_dict_3)
-        assert False, "create_report_from_dict should not create a report with an incomplete dictionary"
-    except BadInputDataException:
-        pass
-
-    report_4 = None
-    try:
-        report_4 = create_report_from_dict(report_dict_4)
+        report_2 = create_power_report_from_dict(report_dict_2)
         assert False, "create_report_from_dict should not create a report with an incomplete dictionary"
     except BadInputDataException:
         pass
@@ -427,5 +318,3 @@ def test_building_of_simple_report_fails_with_missing_values():
     # Check that report is not built
     assert report is None
     assert report_2 is None
-    assert report_3 is None
-    assert report_4 is None
