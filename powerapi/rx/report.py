@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Author : Daniel  Romero Acero
-# Last modified : 17 march 2022
+# Author : Daniel Romero Acero
+# Last modified : 17 March 2022
 
 ##############################
 #
@@ -67,7 +67,7 @@ NUMBER_OF_BASIC_VALUES = 3
 class Report(DataFrame):
     """ Class that represents a report in PowerAPI """
 
-    def __init__(self, data: Dict, index_names: list, index_values: list):
+    def __init__(self, data: Dict, index_names: list, index_values: list, dtype=None):
         """ Initialize a report using the given parameters
 
         Args:
@@ -78,7 +78,7 @@ class Report(DataFrame):
 
         super().__init__(data=data, index=MultiIndex.from_tuples(
             tuples=index_values,
-            names=index_names))
+            names=index_names), dtype=dtype)
 
     def to_dict(self) -> Dict:
         """ Transform the report in a dictionary

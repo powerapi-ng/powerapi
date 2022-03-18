@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Author : Daniel  Romero Acero
-# Last modified : 17 march 2022
+# Author : Daniel Romero Acero
+# Last modified : 17 March 2022
 
 ##############################
 #
@@ -39,7 +39,9 @@
 from typing import Dict, Any
 from datetime import datetime
 
+from powerapi import quantity
 from powerapi.exception import BadInputDataException
+from powerapi.quantity import MW
 from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport
 from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
     create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
@@ -140,7 +142,7 @@ def test_building_of_simple_power_report():
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
-        POWER_CN: 5.5}
+        POWER_CN: 5.5*quantity.W}
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -149,12 +151,12 @@ def test_building_of_simple_power_report():
     assert report is not None
     assert isinstance(report, PowerReport)  # It is a power report
     assert len(report.index) == 1  # Only one index has to exist
-    assert len(report.columns) == 0  # There is no data
-    assert len(report.index.names) == 4  # Only 4 names are used in the index
+    assert len(report.columns) == 1  # There a column with power data
+    assert POWER_CN in report.columns
+    assert len(report.index.names) == 3  # Only 3 names are used in the index
     assert TIMESTAMP_CN in report.index.names
     assert SENSOR_CN in report.index.names
     assert TARGET_CN in report.index.names
-    assert POWER_CN in report.index.names
 
 
 def test_building_of_power_report_with_metadata():
@@ -169,7 +171,7 @@ def test_building_of_power_report_with_metadata():
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
                       "power_units": "watt"},
-        POWER_CN: 55.5}
+        POWER_CN: 55.5*quantity.W}
     metadata = report_dict[METADATA_CN]
 
     # Exercise
@@ -180,12 +182,12 @@ def test_building_of_power_report_with_metadata():
     assert report is not None
     assert isinstance(report, Report)  # It is a basic report
     assert len(report.index) == 1  # Only one index has to exist
-    assert len(report.columns) == 0  # There is no data
-    assert len(report.index.names) == 10  # 10 names are used in the index
+    assert len(report.columns) == 1  # There is a column with power data
+    assert report.size == 1 # There is a row
+    assert len(report.index.names) == 9  # 9 names are used in the index
     assert TIMESTAMP_CN in report.index.names
     assert SENSOR_CN in report.index.names
     assert TARGET_CN in report.index.names
-    assert POWER_CN in report.index.names
 
     # All the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
@@ -204,7 +206,7 @@ def test_creation_of_dic_from_power_report():
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
-        POWER_CN: 11}
+        POWER_CN: 11*quantity.W}
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -217,7 +219,7 @@ def test_creation_of_dic_from_power_report():
 def test_creation_of_dic_from_power_report_with_metadata():
     """Test if a power report with metadata is transformed correctly into a dict"""
     report_dict = {
-        POWER_CN: 11,
+        POWER_CN: 11*quantity.MW,
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
@@ -242,7 +244,7 @@ def test_creation_of_dict_from_report_with_data():
     report_dict = {
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11,
+        POWER_CN: 11*quantity.W,
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
@@ -269,7 +271,7 @@ def test_creation_of_dict_from_report_with_data():
     report_dict_expected = {
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11,
+        POWER_CN: 11*quantity.W,
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
@@ -297,7 +299,7 @@ def test_building_of_simple_power_report_fails_with_missing_values():
     report_dict_2 = {
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11,
+        POWER_CN: 11*quantity.W,
     }
 
     # Exercise

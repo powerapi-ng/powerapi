@@ -27,18 +27,23 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Author : Daniel  Romero Acero
-# Last modified : 17 march 2022
+# Author: Daniel Romero Acero
+# Last modified: 17 March 2022
 
 ##############################
 #
 # Imports
 #
 ##############################
+import pint  # Event if these modules are not explicitly used, they are required for using pint with pandas
+import pint_pandas
+
+
 from datetime import datetime
 from typing import Dict, Any
 
 from powerapi.exception import BadInputDataException
+from powerapi.quantity import PowerAPIPint_MODULE_NAME
 from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
     Report, is_basic_information_in_report_dict
 
@@ -57,18 +62,17 @@ POWER_CN = "power"
 ##############################
 
 class PowerReport(Report):
-    """Fake Report for testing purposes"""
+    """ Power Report """
 
     def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
         """ Creates a fake formula
 
         Args:
-
         """
-        super().__init__(data=data, index_names=index_names, index_values=index_values)
+        super().__init__(data=data, index_names=index_names, index_values=index_values,
+                         dtype=PowerAPIPint_MODULE_NAME + "[" + data[POWER_CN][0].units.__str__() + "]")
 
     def to_dict(self) -> Dict:
-
         """ Transform a power report in a dictionary
 
         Only index information is used for creating the dictionary.
@@ -78,10 +82,7 @@ class PowerReport(Report):
         report_dict = super().to_dict()
 
         # We have to add the power information
-
-        power_position = self.index.names.index(POWER_CN)
-
-        report_dict[POWER_CN] = self.index[0][power_position]
+        report_dict[POWER_CN] = self.loc[self.index[0]].at[POWER_CN]
 
         return report_dict
 
@@ -110,14 +111,15 @@ def create_power_report_from_dict(report_dict: Dict[str, Any]) -> PowerReport:
 
     index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dict)
 
-    # We include also the power column in the index and remove it from data
-    index_names.append(POWER_CN)
-    index_values[0] = index_values[0] + (data[POWER_CN],)  # A power report only has an index
+    # We include the power column as data in the dataframe
+    power_data = {POWER_CN: [data[POWER_CN]]}
+    # index_names.append(POWER_CN)
+    # index_values[0] = index_values[0] + (data[POWER_CN],)  # A power report only has an index
 
-    del data[POWER_CN]
+    # del data[POWER_CN]
 
     # We create the report
-    return PowerReport(data=data, index_names=index_names, index_values=index_values)
+    return PowerReport(data=power_data, index_names=index_names, index_values=index_values)
 
 
 def create_power_report_from_values(timestamp: datetime, sensor: str, target: str, power: float,
