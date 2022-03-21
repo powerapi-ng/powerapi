@@ -137,7 +137,7 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 
     data_by_columns = {}
 
-    # We add the groups and their keys and sub keys as part of the index if it is exist
+    # We add the groups and their keys and sub keys as part of the index if it exists
     if GROUPS_CN in data.keys():
         index_names.append(GROUPS_CN)
         index_names.append(SUB_GROUPS_L1_CN)

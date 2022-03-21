@@ -38,14 +38,13 @@
 import pint  # Event if these modules are not explicitly used, they are required for using pint with pandas
 import pint_pandas
 
-
 from datetime import datetime
 from typing import Dict, Any
 
 from powerapi.exception import BadInputDataException
-from powerapi.quantity import PowerAPIPint_MODULE_NAME
+from powerapi.quantity import PowerAPIPint_MODULE_NAME, PowerAPIQuantity
 from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
-    Report, is_basic_information_in_report_dict
+    Report, is_basic_information_in_report_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN
 
 ##############################
 #
@@ -65,9 +64,12 @@ class PowerReport(Report):
     """ Power Report """
 
     def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
-        """ Creates a fake formula
+        """ Creates a Power Report
 
         Args:
+            data: It contains power value
+            index_names: Columns names used for building the multiindex
+            index_values: List of tuples containing the values used for building the multiindex
         """
         super().__init__(data=data, index_names=index_names, index_values=index_values,
                          dtype=PowerAPIPint_MODULE_NAME + "[" + data[POWER_CN][0].units.__str__() + "]")
@@ -75,7 +77,7 @@ class PowerReport(Report):
     def to_dict(self) -> Dict:
         """ Transform a power report in a dictionary
 
-        Only index information is used for creating the dictionary.
+        Index information and power value are used for creating the dictionary.
 
         """
         # We get the dictionary with the basic information
@@ -103,57 +105,56 @@ def create_power_report_from_dict(report_dict: Dict[str, Any]) -> PowerReport:
     """
 
     # We check that all the required information is in the input dictionary
-    if not is_basic_information_in_power_report_dict(report_dict):
-        raise BadInputDataException(msg=f"One of the following info is missing in the input dictionary: {POWER_CN}. "
-                                        f"The power report can not be created", input_data=report_dict)
+    if not is_information_in_power_report_dict(report_dict):
+        raise BadInputDataException(msg=f"The {POWER_CN} info is missing in the input dictionary. "
+                                        f"The Power Report can not be created", input_data=report_dict)
 
-    # We get index names and values. The rest of information are considered as data for the dataframe
+    # We check that the power is a quantity
+    if not isinstance(report_dict[POWER_CN], PowerAPIQuantity):
+        raise BadInputDataException(msg=f"The power has to be a PowerAPIQuantity. The Power Report can not be created "
+                                    , input_data=report_dict[POWER_CN])
 
-    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dict)
+    metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
 
-    # We include the power column as data in the dataframe
-    power_data = {POWER_CN: [data[POWER_CN]]}
-    # index_names.append(POWER_CN)
-    # index_values[0] = index_values[0] + (data[POWER_CN],)  # A power report only has an index
-
-    # del data[POWER_CN]
-
-    # We create the report
-    return PowerReport(data=power_data, index_names=index_names, index_values=index_values)
+    # We create the Power Report
+    return create_power_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+                                           target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
+                                           metadata=metadata)
 
 
-def create_power_report_from_values(timestamp: datetime, sensor: str, target: str, power: float,
-                                    data: Dict[str, Any] = {}, metadata: Dict[str, Any] = {}) -> Report:
-    """ Creates a power report by using the given information
+def create_power_report_from_values(timestamp: datetime, sensor: str, target: str, power: PowerAPIQuantity,
+                                    metadata: Dict[str, Any] = {}) -> PowerReport:
+    """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
+
+        The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
+        is considered as data as removed of a copy of report_dict
 
         Args:
             timestamp: Dictionary that contains information of the report
             sensor: The name of the sensor
             target: The name of the target
-            data: The data not used for building the index
+            power: The power used for building the dataframe
             metadata: Dictionary containing the metadata
 
         Return:
-            A new report created using provided information. The report only contains information related to index
+            The list of names and values for building a multiindex as well as the report data
     """
 
     # We get index names and values
-
     index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor,
                                                                   target=target, metadata=metadata)
 
-    # We include also the power column in the index and remove it from data
-    index_names.append(POWER_CN)
-    index_values = index_values + (power,)
+    # We include the power as data in the dataframe
+    power_data = {POWER_CN: [power]}
 
-    # We create the report
-    return Report(data, index_names, index_values)
+    # We create the Power Report
+    return PowerReport(data=power_data, index_names=index_names, index_values=index_values)
 
 
-def is_basic_information_in_power_report_dict(report_dict: Dict[str, Any]) -> bool:
-    """ Check is basic information is presen in the given dictionary
+def is_information_in_power_report_dict(report_dict: Dict[str, Any]) -> bool:
+    """ Check is basic information is present in the given dictionary
 
-        Basic information are {TIMESTAMP_CN}, {SENSOR_CN} and {TARGET_CN}
+        Required information is basic information from report and the  power value
 
         Args:
             report_dict: Dictionary that contains information of the report

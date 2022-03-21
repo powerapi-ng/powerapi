@@ -135,11 +135,10 @@ def create_report_from_dict(report_dict: Dict[str, Any]) -> Report:
                 f"{SENSOR_CN}, "
                 f"{TARGET_CN}. The report can not be created", input_data=report_dict)
 
-    # We get index names and values. The rest of information are considered as data for the dataframe
-    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dict)
-
     # We create the report
-    return Report(data, index_names, index_values)
+    metadata= {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
+    return create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+                                     target=report_dict[TARGET_CN], metadata=metadata)
 
 
 def create_report_from_values(timestamp: datetime, sensor: str, target: str, data: Dict[str, Any] = {},
@@ -233,7 +232,7 @@ def get_index_information_from_values(timestamp: datetime, sensor: str, target: 
 def is_basic_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
     """ Check is basic information is presen in the given dictionary
 
-        Basic information are TIMESTAMP, SENSOR and TARGET
+        Basic information are timestamp, sensor and target
 
         Args:
             report_dict: Dictionary that contains information of the report

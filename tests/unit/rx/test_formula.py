@@ -119,6 +119,8 @@ class FakeFormula(Formula):
 
         new_report = papi_report.create_report_from_dict(report_dict)
 
+        new_report["power"] = [report_dict["power"]]
+
         for observer in self.observers:
             observer.on_next(new_report)
 

@@ -41,91 +41,10 @@ from datetime import datetime
 
 from powerapi import quantity
 from powerapi.exception import BadInputDataException
-from powerapi.quantity import MW
-from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport
-from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
-    create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
 
-##############################
-#
-# Constants
-#
-##############################
-GROUPS_CN = "groups"
-SUB_GROUPS_L1_CN = "sub_group_l1"
-SUB_GROUPS_L2_CN = "sub_group_l2"
-
-
-##############################
-#
-# Classes
-#
-##############################
-
-class FakeReport(Report):
-    """Fake Report for testing purposes"""
-
-    def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
-        """ Creates a fake formula
-
-        Args:
-
-        """
-        super().__init__(data=data, index_names=index_names, index_values=index_values)
-        self.is_test = True
-        self.processed = False
-
-    def to_dict(self) -> Dict:
-        # We get the dictionary with the basic information
-        report_dict = super().to_dict()
-
-        # We have to create a dictionary for each group
-        groups = {}
-        groups_position = self.index.names.index(GROUPS_CN)
-        subgroup_l1_position = self.index.names.index(SUB_GROUPS_L1_CN)
-        subgroup_l2_position = self.index.names.index(SUB_GROUPS_L2_CN)
-
-        for current_index in self.index:
-            group_name = current_index[groups_position]
-            current_group_l1_name = current_index[subgroup_l1_position]
-            current_group_l2_name = current_index[subgroup_l2_position]
-
-            # We create the group if required
-            if group_name not in groups.keys():
-                groups[group_name] = {}
-
-            current_group = groups[group_name]
-
-            # We create the group l1 if required
-            if current_group_l1_name not in current_group.keys():
-                current_group[current_group_l1_name] = {}
-
-            current_group_l1 = current_group[current_group_l1_name]
-
-            # We create the group l2 if required
-
-            if current_group_l2_name not in current_group_l1.keys():
-                current_group_l1[current_group_l2_name] = {}
-
-            current_group_l2 = current_group_l1[current_group_l2_name]
-
-            # We get the data related to the current group l2
-            current_data = self.loc[current_index]
-
-            for current_column in current_data.index:
-                current_group_l2[current_column] = current_data.at[current_column]
-
-        # We add the data, i.e., information that is not in the index
-        report_dict[GROUPS_CN] = groups
-        return report_dict
-
-
-##############################
-#
-# Functions
-#
-##############################
-
+from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport, \
+    create_power_report_from_values
+from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
 
 ##############################
 #
@@ -134,7 +53,7 @@ class FakeReport(Report):
 ##############################
 
 
-def test_building_of_simple_power_report():
+def test_building_of_simple_power_report_from_dict():
     """Test if a basic report is well-built"""
 
     # Setup
@@ -142,7 +61,7 @@ def test_building_of_simple_power_report():
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
-        POWER_CN: 5.5*quantity.W}
+        POWER_CN: 5.5 * quantity.W}
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -159,7 +78,31 @@ def test_building_of_simple_power_report():
     assert TARGET_CN in report.index.names
 
 
-def test_building_of_power_report_with_metadata():
+def test_building_of_simple_power_report_from_values():
+    """Test if a basic report is well-built"""
+
+    # Setup
+    timestamp = datetime.now()
+    sensor = "test_sensor"
+    target = "test_target"
+    power = 5.5 * quantity.mW
+
+    # Exercise
+    report = create_power_report_from_values(timestamp=timestamp, sensor=sensor, target= target, power= power)
+
+    # Check that report is well-built
+    assert report is not None
+    assert isinstance(report, PowerReport)  # It is a power report
+    assert len(report.index) == 1  # Only one index has to exist
+    assert len(report.columns) == 1  # There a column with power data
+    assert POWER_CN in report.columns
+    assert len(report.index.names) == 3  # Only 3 names are used in the index
+    assert TIMESTAMP_CN in report.index.names
+    assert SENSOR_CN in report.index.names
+    assert TARGET_CN in report.index.names
+
+
+def test_building_of_power_report_with_metadata_from_dict():
     """ Test that a power report with metadata is well-built"""
 
     # Setup
@@ -171,7 +114,7 @@ def test_building_of_power_report_with_metadata():
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
                       "power_units": "watt"},
-        POWER_CN: 55.5*quantity.W}
+        POWER_CN: 55.5 * quantity.W}
     metadata = report_dict[METADATA_CN]
 
     # Exercise
@@ -183,7 +126,8 @@ def test_building_of_power_report_with_metadata():
     assert isinstance(report, Report)  # It is a basic report
     assert len(report.index) == 1  # Only one index has to exist
     assert len(report.columns) == 1  # There is a column with power data
-    assert report.size == 1 # There is a row
+    assert POWER_CN in report.columns
+    assert report.size == 1  # There is a row
     assert len(report.index.names) == 9  # 9 names are used in the index
     assert TIMESTAMP_CN in report.index.names
     assert SENSOR_CN in report.index.names
@@ -198,7 +142,45 @@ def test_building_of_power_report_with_metadata():
         assert value == metadata[key]
 
 
-def test_creation_of_dic_from_power_report():
+def test_building_of_power_report_with_metadata_from_values():
+    """ Test that a power report with metadata is well-built"""
+
+    # Setup
+    timestamp = datetime.now()
+    sensor = "test_sensor"
+    target = "test_target"
+    power = 55.5 * quantity.W
+    metadata = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
+                      "predict": 0,
+                      "power_units": "watt"}
+
+    # Exercise
+
+    report = create_power_report_from_values(timestamp=timestamp, sensor=sensor, target=target, power=power,
+                                             metadata=metadata)
+
+    # Check that report is well-built
+    assert report is not None
+    assert isinstance(report, Report)  # It is a basic report
+    assert len(report.index) == 1  # Only one index has to exist
+    assert len(report.columns) == 1  # There is a column with power data
+    assert POWER_CN in report.columns
+    assert report.size == 1  # There is a row
+    assert len(report.index.names) == 9  # 9 names are used in the index
+    assert TIMESTAMP_CN in report.index.names
+    assert SENSOR_CN in report.index.names
+    assert TARGET_CN in report.index.names
+
+    # All the metadata has to be included in the report as well as the values
+    frame = report.index.to_frame(index=False)
+    for key in metadata.keys():
+        composed_key = METADATA_PREFIX + key
+        assert composed_key in report.index.names
+        value = frame.at[0, composed_key]
+        assert value == metadata[key]
+
+
+def test_creation_of_dict_from_power_report():
     """Test if a basic report is transformed correctly into a dict"""
 
     # Setup
@@ -206,7 +188,7 @@ def test_creation_of_dic_from_power_report():
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
-        POWER_CN: 11*quantity.W}
+        POWER_CN: 11 * quantity.W}
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -216,10 +198,10 @@ def test_creation_of_dic_from_power_report():
     assert report_dict_to_check == report_dict
 
 
-def test_creation_of_dic_from_power_report_with_metadata():
+def test_creation_of_dict_from_power_report_with_metadata():
     """Test if a power report with metadata is transformed correctly into a dict"""
     report_dict = {
-        POWER_CN: 11*quantity.MW,
+        POWER_CN: 11 * quantity.MW,
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
@@ -244,7 +226,7 @@ def test_creation_of_dict_from_report_with_data():
     report_dict = {
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11*quantity.W,
+        POWER_CN: 11 * quantity.W,
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
@@ -271,12 +253,12 @@ def test_creation_of_dict_from_report_with_data():
     report_dict_expected = {
         TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11*quantity.W,
+        POWER_CN: 11 * quantity.W,
         TARGET_CN: "test_target",
         METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                       "predict": 0,
                       "power_units": "watt"},
-        }
+    }
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -299,7 +281,7 @@ def test_building_of_simple_power_report_fails_with_missing_values():
     report_dict_2 = {
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
-        POWER_CN: 11*quantity.W,
+        POWER_CN: 11 * quantity.W,
     }
 
     # Exercise
