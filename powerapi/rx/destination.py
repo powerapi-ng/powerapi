@@ -48,13 +48,13 @@ from rx.core.typing import Observer
 
 
 class Destination(Observer):
-    """ Abstract observer Class for storing reports produced by an observable (e.g., a formula)
+    """Abstract observer Class for storing reports produced by an observable (e.g., a formula)
 
-        This class defines the required functions provided by a Destination
+    This class defines the required functions provided by a Destination
     """
 
     def __init__(self) -> None:
-        """ Creates a new destination as an observer
+        """Creates a new destination as an observer
 
         Args:
 
@@ -64,17 +64,25 @@ class Destination(Observer):
 
     @abstractmethod
     def store_report(self, report):
-        """ Required method for storing a report
+        """Required method for storing a report
 
-            Args:
-                report: The report that will be stored
+        Args:
+            report: The report that will be stored
         """
         raise NotImplementedError
 
     def on_next(self, report) -> None:
-        """ This method is called when the observer has to process a report
+        """This method is called when the observer has to process a report
 
-            Args:
-                report: The report that will be processed
+        Args:
+            report: The report that will be processed
         """
         self.store_report(report)
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        raise NotImplementedError
+
+    def on_error(self) -> None:
+        """This method is called when the source has an error"""
+        raise NotImplementedError

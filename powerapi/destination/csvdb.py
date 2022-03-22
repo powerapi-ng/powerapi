@@ -45,10 +45,15 @@ class CsvDestination(Destination):
         Args:
         filename : name of the file
         """
+
+        self.__name__ = "CsvDestination"
         super().__init__()
 
         self.filename = filename
-        self.file = open(filename, "w+")
+        try:
+            self.file = open(filename, "w+")
+        except FileNotFoundError as exn:
+            raise DestinationException(self.__name__, "file not found") from exn
 
     def store_report(self, report):
         """Required method for storing a report
@@ -58,3 +63,11 @@ class CsvDestination(Destination):
         """
 
         self.file.write(report.to_csv())
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.file.close()
+
+    def on_error(self) -> None:
+        """This method is called when the source has an error"""
+        self.file.close()
