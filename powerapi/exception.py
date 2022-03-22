@@ -27,17 +27,26 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+##############################
+#
+# Classes
+#
+##############################
 
 class PowerAPIException(Exception):
-    """
-    PowerAPIException base class
-    """
+    """ PowerAPIException base class"""
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+    """ PowerAPIException base class """
     def __init__(self, msg):
         PowerAPIException.__init__(self)
         self.msg = msg
+
+
+class BadInputDataException(PowerAPIExceptionWithMessage):
+    """ Exception raised when input data can't be converted to a Report """
+
+    def __init__(self, msg, input_data):
+        PowerAPIExceptionWithMessage.__init__(self, msg)
+        self.input_data = input_data
