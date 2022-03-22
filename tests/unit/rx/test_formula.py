@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Author : Daniel  Romero Acero
-# Last modified : 17 march 2022
+# Author : Daniel Romero Acero
+# Last modified : 17 March 2022
 
 ##############################
 #
@@ -118,6 +118,8 @@ class FakeFormula(Formula):
             "power": 164.9913654183235}
 
         new_report = papi_report.create_report_from_dict(report_dict)
+
+        new_report["power"] = [report_dict["power"]]
 
         for observer in self.observers:
             observer.on_next(new_report)
