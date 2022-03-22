@@ -27,14 +27,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# author : Lauric Desauw
+
+# author : Lauric Desauw, Daniel Romero Acero
 # Last modified : 16 Mars 2022
+
+##############################
+#
+# Classes
+#
+##############################
 
 
 class PowerAPIException(Exception):
-    """
-    PowerAPIException base class
-    """
+    """PowerAPIException base class"""
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
@@ -56,3 +61,11 @@ class DestinationException(PowerAPIExceptionWithMessage):
         PowerAPIExceptionWithMessage.__init__(
             self, destination_class + " exception : " + error_message
         )
+
+
+class BadInputDataException(PowerAPIExceptionWithMessage):
+    """Exception raised when input data can't be converted to a Report"""
+
+    def __init__(self, msg, input_data):
+        PowerAPIExceptionWithMessage.__init__(self, msg)
+        self.input_data = input_data
