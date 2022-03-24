@@ -48,11 +48,11 @@ class MongoDestination(Destination):
         collection_name : name of the collection in mongo
         """
         super().__init__()
-
+        self.__name__ = "MongoDestination"
         self.uri = uri
         self.db_name = db_name
         self.collection_name = collection_name
-
+        print(uri, db_name, collection_name)
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
 
         # Check if hostname:port work

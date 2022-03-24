@@ -152,3 +152,6 @@ tags
 
 ### IntelliJ IDEA ###
 .idea/
+
+#Pipenv
+Pipfile
