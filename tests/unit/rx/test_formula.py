@@ -62,8 +62,8 @@ SUB_GROUPS_L2_CN = "sub_group_l2"
 ##############################
 
 
-class SimpleFakeFormula(Formula):
-    """Simple Fake formula for testing the base class"""
+class SimpleFormula(Formula):
+    """Simple formula for testing the usage of the framework"""
 
     def __init__(self) -> None:
         """ Creates a fake formula
@@ -86,8 +86,8 @@ class SimpleFakeFormula(Formula):
             observer.on_next(report)
 
 
-class FakeFormula(Formula):
-    """Fake formula for testing the base class"""
+class ComplexFormula(Formula):
+    """Complex formula for testing the usage of the framework"""
 
     def __init__(self) -> None:
         """ Creates a fake formula
@@ -125,7 +125,7 @@ class FakeFormula(Formula):
             observer.on_next(new_report)
 
 
-class FakeSource(BaseSource):
+class SimpleSource(BaseSource):
     """Fake source for testing purposes"""
 
     def __init__(self, report: Report) -> None:
@@ -152,7 +152,7 @@ class FakeSource(BaseSource):
         pass
 
 
-class FakeDestination(Destination):
+class SimpleDestination(Destination):
     """Fake destination for testing purposes"""
 
     def __init__(self) -> None:
@@ -182,7 +182,7 @@ class FakeDestination(Destination):
     #    self.store_report(report)
 
 
-class FakeReport(Report):
+class SimpleReport(Report):
     """Fake Report for testing purposes"""
 
     def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
@@ -246,7 +246,7 @@ class FakeReport(Report):
 ##############################
 
 
-def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
+def create_simple_report_from_dict(report_dic: Dict[str, Any]) -> SimpleReport:
     """ Creates a fake report by using the given information
 
         Args:
@@ -304,7 +304,7 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
                             data_by_columns[data_key].append(current_value_to_add)
 
     # We create the report
-    return FakeReport(data_by_columns, index_names, index_values)
+    return SimpleReport(data_by_columns, index_names, index_values)
 
 ##############################
 #
@@ -317,15 +317,15 @@ def test_simple_formula():
     """ This test only check if different method on source, destination and formula are called"""
     # Setup
 
-    formula = SimpleFakeFormula()
+    formula = SimpleFormula()
 
     report_dict = {
         papi_report.TIMESTAMP_CN: datetime.now(),
         papi_report.SENSOR_CN: "test_sensor",
         papi_report.TARGET_CN: "test_target"}
 
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = FakeDestination()
+    the_source = SimpleSource(create_simple_report_from_dict(report_dict))
+    destination = SimpleDestination()
 
     # Exercise
     source(the_source).pipe(formula).subscribe(destination)
@@ -335,12 +335,12 @@ def test_simple_formula():
     assert destination.report.processed
 
 
-def test_formula():
-    """ Check that """
+def test_complex_formula():
+    """ Check that on_next method is called on a formula """
     # Setup
 
-    formula = FakeFormula()
-    destination = FakeDestination()
+    formula = ComplexFormula()
+    destination = SimpleDestination()
 
     report_dict = {
         papi_report.TIMESTAMP_CN: datetime.now(),
@@ -360,11 +360,9 @@ def test_formula():
                         "LLC_MISES": 71307,
                         "INSTRUCTIONS": 2673428}}}}}
 
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
+    the_source = SimpleSource(create_simple_report_from_dict(report_dict))
 
     # Exercise
     source(the_source).pipe(formula).subscribe(destination)
     # Check that a new report has been created, i.e., all source, formula and destination have been called
-    assert destination.report is not None  # destination has been called
-    assert destination.report.index.size == 1  # The produced report only has one index
     assert "power" in destination.report.columns  # The produced report has a column power
