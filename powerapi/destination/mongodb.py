@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,47 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-# author : Lauric Desauw, Daniel Romero Acero
-# Last modified : 16 Mars 2022
-
-##############################
-#
-# Classes
-#
-##############################
+# author : Lauric Desauw
+# Last modified : 17 Mars 2022
 
 
-class PowerAPIException(Exception):
-    """PowerAPIException base class"""
+import pymongo
+from powerapi.rx import Destination
+from powerapi.exception import DestinationException
 
 
-class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+class MongoDestination(Destination):
+    """Observer Class for storing reports produced by an observable in a mongo database"""
 
-    def __init__(self, msg):
-        PowerAPIException.__init__(self)
-        self.msg = msg
+    def __init__(self, uri: str, db_name: str, collection_name: str) -> None:
+        """Create a connection to the DB
 
+        Args:
+        uri : URI of the mongo server
+        db_name : name of the database in mongo
+        collection_name : name of the collection in mongo
+        """
+        super().__init__()
+        self.__name__ = "MongoDestination"
+        self.uri = uri
+        self.db_name = db_name
+        self.collection_name = collection_name
+        print(uri, db_name, collection_name)
+        self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
 
-class DestinationException(PowerAPIExceptionWithMessage):
-    """
-    Exception for Destination class
-    """
+        # Check if hostname:port work
+        try:
+            self.mongo_client.admin.command("ismaster")
+        except pymongo.errors.ServerSelectionTimeoutError as exn:
+            raise DestinationException(self.__name__, "can't connect to DB") from exn
 
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
+        self.collection = self.mongo_client[self.db_name][self.collection_name]
 
+    def store_report(self, report):
+        """Required method for storing a report
 
-class BadInputDataException(PowerAPIExceptionWithMessage):
-    """Exception raised when input data can't be converted to a Report"""
+        Args:
+            report: The report that will be stored
+        """
 
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
+        self.collection.insert_one(report.to_dict())

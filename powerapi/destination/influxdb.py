@@ -27,62 +27,53 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Author : Daniel Romero Acero
-# Last modified : 17 March 2022
-
-##############################
-#
-# Imports
-#
-##############################
-from abc import abstractmethod
-
-from rx.core.typing import Observer
+# author : Lauric Desauw
+# Last modified : 17 Mars 2022
+from typing import List
+from influxdb import InfluxDBClient
+from requests.exceptions import ConnectionError as InfluxConnectionError
+from powerapi.rx import Destination
+from powerapi.exception import DestinationException
 
 
-##############################
-#
-# Classes
-#
-##############################
+class InfluxDestination(Destination):
+    """Observer Class for storing reports produced by an observable in a file"""
 
-
-class Destination(Observer):
-    """Abstract observer Class for storing reports produced by an observable (e.g., a formula)
-
-    This class defines the required functions provided by a Destination
-    """
-
-    def __init__(self) -> None:
-        """Creates a new destination as an observer
+    def __init__(self, uri: str, port: int, db_name: str, tags: List[str]) -> None:
+        """Open the file if it exists and create it otherwise
 
         Args:
+            uri : IP address of the server
+            port : network port to communicate with the server
+            db_name : name of the database in the Influx instance
+            tags
 
         """
         super().__init__()
-        # super().on_next = self.store_report
+        self.uri = uri
+        self.port = port
+        self.db_name = db_name
+        self.tags = tags
 
-    @abstractmethod
+        self.client = InfluxDBClient(
+            host=self.uri, port=self.port, database=self.db_name
+        )
+        try:
+            self._ping_client()
+        except InfluxConnectionError as exn:
+            raise DestinationException(self.__name__, "can't connect to DB") from exn
+
+        for db in self.client.get_list_database():
+            if db["name"] == self.db_name:
+                return
+
+        self.client.create_database(self.db_name)
+
     def store_report(self, report):
         """Required method for storing a report
 
         Args:
             report: The report that will be stored
         """
-        raise NotImplementedError
 
-    def on_next(self, report) -> None:
-        """This method is called when the observer has to process a report
-
-        Args:
-            report: The report that will be processed
-        """
-        self.store_report(report)
-
-    def on_completed(self) -> None:
-        """This method is called when the source finished"""
-        raise NotImplementedError
-
-    def on_error(self) -> None:
-        """This method is called when the source has an error"""
-        raise NotImplementedError
+        self.file.write(report.to_dict())

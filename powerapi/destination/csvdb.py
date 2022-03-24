@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,47 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-# author : Lauric Desauw, Daniel Romero Acero
-# Last modified : 16 Mars 2022
-
-##############################
-#
-# Classes
-#
-##############################
+# author : Lauric Desauw
+# Last modified : 17 Mars 2022
 
 
-class PowerAPIException(Exception):
-    """PowerAPIException base class"""
+import pymongo
+from powerapi.rx import Destination
+from powerapi.exception import DestinationException
 
 
-class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+class CsvDestination(Destination):
+    """Observer Class for storing reports produced by an observable in a csv file"""
 
-    def __init__(self, msg):
-        PowerAPIException.__init__(self)
-        self.msg = msg
+    def __init__(self, filename: str) -> None:
+        """Check if the file exist and create it if not
 
+        Args:
+        filename : name of the file
+        """
 
-class DestinationException(PowerAPIExceptionWithMessage):
-    """
-    Exception for Destination class
-    """
+        self.__name__ = "CsvDestination"
+        super().__init__()
 
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
+        self.filename = filename
+        try:
+            self.file = open(filename, "w+")
+        except FileNotFoundError as exn:
+            raise DestinationException(self.__name__, "file not found") from exn
 
+    def store_report(self, report):
+        """Required method for storing a report
 
-class BadInputDataException(PowerAPIExceptionWithMessage):
-    """Exception raised when input data can't be converted to a Report"""
+        Args:
+            report: The report that will be stored
+        """
 
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
+        self.file.write(report.to_csv())
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.file.close()
+
+    def on_error(self) -> None:
+        """This method is called when the source has an error"""
+        self.file.close()

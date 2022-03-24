@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# author : Lauric Desauw
+# Last modified : 17 Mars 2022
 
-# author : Lauric Desauw, Daniel Romero Acero
-# Last modified : 16 Mars 2022
-
-##############################
-#
-# Classes
-#
-##############################
+from typing import List
+from prometheus_client import start_http_server
+from powerapi.rx import Destination
+from powerapi.exception import DestinationException
 
 
-class PowerAPIException(Exception):
-    """PowerAPIException base class"""
+class PrometheusDestination(Destination):
+    """Observer Class for storing reports produced by an observable in a Prometheus DB"""
 
+    def __init__(
+        self,
+        uri: str,
+        port: int,
+        metric_name: str,
+        metric_description: str,
+        tags: List[str],
+    ) -> None:
+        """Connect to the Prometheus instance
 
-class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+        Args:
+            uri : IP address of the server
+            port : port to communicate with the server
+            metric_name : metrics to specify to prometheus
+            metric_description : the description of the metrics
+            tags : tag to add in Prometheus
 
-    def __init__(self, msg):
-        PowerAPIException.__init__(self)
-        self.msg = msg
+        """
+        super().__init__()
+        self.uri = uri
+        self.port = port
+        self.metric_name = metric_name
+        self.metric_description = metric_description
+        self.tags = tags
 
+        # Start the server on  http://addr:port/
+        start_http_server(self.port, addr=self.address)
 
-class DestinationException(PowerAPIExceptionWithMessage):
-    """
-    Exception for Destination class
-    """
+    def store_report(self, report):
+        """Required method for storing a report
 
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
+        Args:
+            report: The report that will be stored
+        """
 
-
-class BadInputDataException(PowerAPIExceptionWithMessage):
-    """Exception raised when input data can't be converted to a Report"""
-
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
+        self.file.write(report.to_prometheus())

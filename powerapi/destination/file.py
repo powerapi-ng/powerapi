@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-# author : Lauric Desauw, Daniel Romero Acero
-# Last modified : 16 Mars 2022
-
-##############################
-#
-# Classes
-#
-##############################
+# author : Lauric Desauw
+# Last modified : 17 Mars 2022
 
 
-class PowerAPIException(Exception):
-    """PowerAPIException base class"""
+from powerapi.rx import Destination
+from powerapi.exception import DestinationException
 
 
-class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+class FileDestination(Destination):
+    """Observer Class for storing reports produced by an observable in a file"""
 
-    def __init__(self, msg):
-        PowerAPIException.__init__(self)
-        self.msg = msg
+    def __init__(
+        self,
+        filename: str,
+    ) -> None:
+        """Open the file if it exists and create it otherwise
 
+        Args:
+            filename : path of the file
 
-class DestinationException(PowerAPIExceptionWithMessage):
-    """
-    Exception for Destination class
-    """
+        """
+        super().__init__()
+        self.filename = filename
+        self.file = open(filename, "w+")
 
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
+    def store_report(self, report):
+        """Required method for storing a report
 
+        Args:
+            report: The report that will be stored
+        """
 
-class BadInputDataException(PowerAPIExceptionWithMessage):
-    """Exception raised when input data can't be converted to a Report"""
-
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
+        self.file.write(report.to_dict())
