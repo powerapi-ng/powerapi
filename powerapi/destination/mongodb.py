@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 17 Mars 2022
+# Last modified : 24 Mars 2022
 
 
 import pymongo
@@ -70,4 +70,5 @@ class MongoDestination(Destination):
             report: The report that will be stored
         """
 
-        self.collection.insert_one(report.to_dict())
+        r = report.to_dict()
+        self.collection.insert_one(r)

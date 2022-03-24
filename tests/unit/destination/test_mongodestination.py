@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 22 march 2022
+# Last modified : 24 march 2022
 
 ##############################
 #
@@ -399,8 +399,8 @@ def test_mongodb_read_basic_db(mongo_database):
         },
         "groups": {
             "core": {
-                0: {
-                    0: {
+                "0": {
+                    "0": {
                         "CPU_CLK_THREAD_UNH": 2849918,
                         "CPU_CLK_THREAD_UNH_": 49678,
                         "time_enabled": 4273969,

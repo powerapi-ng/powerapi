@@ -83,6 +83,7 @@ class Destination(Observer):
         """This method is called when the source finished"""
         raise NotImplementedError
 
-    def on_error(self) -> None:
+    def on_error(self, msg) -> None:
         """This method is called when the source has an error"""
+        print(msg)
         raise NotImplementedError
