@@ -219,7 +219,7 @@ def test_of_to_dict_with_data(create_report_dict_with_data):
 
     report_dict_expected = report_dict.copy()
 
-    del(report_dict_expected["groups"])
+    del (report_dict_expected["groups"])
 
     # Exercise
     report = create_power_report_from_dict(report_dict)
@@ -258,7 +258,7 @@ def test_of_create_power_report_from_dict_fails_with_missing_target(create_repor
     # Setup
     report_dict = create_report_dict
 
-    del(report_dict[TARGET_CN])
+    del (report_dict[TARGET_CN])
 
     report = None
 

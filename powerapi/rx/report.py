@@ -56,7 +56,10 @@ METADATA_CN = "metadata"
 TIMESTAMP_CN = "timestamp"
 TARGET_CN = "target"
 SENSOR_CN = "sensor"
+INDEX_CN = "index"
+INDEX_NAMES_CN = "index_names"
 NUMBER_OF_BASIC_VALUES = 3
+METADATA_PREFIX_LEN = len(METADATA_PREFIX)
 
 
 ##############################
@@ -91,7 +94,7 @@ class Report(DataFrame):
         timestamp_position = self.index.names.index(TIMESTAMP_CN)
         sensor_position = self.index.names.index(SENSOR_CN)
         target_position = self.index.names.index(TARGET_CN)
-        report_dic = {TIMESTAMP_CN: self.index[0][timestamp_position], SENSOR_CN: self.index[0][sensor_position],
+        report_dict = {TIMESTAMP_CN: self.index[0][timestamp_position], SENSOR_CN: self.index[0][sensor_position],
                       TARGET_CN: self.index[0][target_position]}
         metadata = {}
 
@@ -101,18 +104,56 @@ class Report(DataFrame):
             value_position = NUMBER_OF_BASIC_VALUES
             for metadata_key in self.index.names[NUMBER_OF_BASIC_VALUES:]:
 
-                prefix_position = metadata_key.find(METADATA_PREFIX)
+                current_metadata_key = self._get_metadata_key_from_str(metadata_key)
 
-                if prefix_position != -1:
-                    current_metadata_key = metadata_key[prefix_position + metadata_prefix_len:]
+                if current_metadata_key is not None:
                     metadata[current_metadata_key] = self.index[0][value_position]
 
                 value_position = value_position + 1
 
         if len(metadata) > 0:
-            report_dic[METADATA_CN] = metadata
+            report_dict[METADATA_CN] = metadata
 
-        return report_dic
+        return report_dict
+
+    # def to_mongo_db(self):
+    #     """ Transforms the report to a dict.
+    #
+    #         Only multiindex information will be included in the dictionary. If there are columns, specialized class
+    #         has to deal with it
+    #     """
+    #     report_dict_tight = super().to_dict('tight')  # We use the dataframe method to be sure that there is not
+    #     # numpy values
+    #     # tight’ : dict like {‘index’ -> [index], ‘columns’ -> [columns], ‘data’ -> [values],
+    #     # ‘index_names’ -> [index.names], ‘column_names’ -> [column.names]}
+    #     print(report_dict_tight)
+    #     report_dict = {}
+    #     metadata = {}
+    #     current_position = 0
+    #
+    #     for key in report_dict_tight[INDEX_NAMES_CN]:
+    #         current_key = self._get_metadata_key_from_str(key)
+    #
+    #         if current_key is not None:
+    #             metadata[current_key] = report_dict_tight[INDEX_CN][0][current_position]
+    #         else:
+    #             report_dict[key] = report_dict_tight[INDEX_CN][0][current_position]
+    #
+    #         current_position = current_position + 1
+    #
+    #     if len(metadata) > 0:
+    #         report_dict[METADATA_CN] = metadata
+    #
+    #     return report_dict
+
+    def _get_metadata_key_from_str(self, metadata_key: str) -> str:
+        prefix_position = metadata_key.find(METADATA_PREFIX)
+        real_key = None
+
+        if prefix_position != -1:
+            real_key = metadata_key[prefix_position + METADATA_PREFIX_LEN:]
+
+        return real_key
 
 
 ##############################
@@ -136,7 +177,7 @@ def create_report_from_dict(report_dict: Dict[str, Any]) -> Report:
                 f"{TARGET_CN}. The report can not be created", input_data=report_dict)
 
     # We create the report
-    metadata= {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
+    metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
     return create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
                                      target=report_dict[TARGET_CN], metadata=metadata)
 

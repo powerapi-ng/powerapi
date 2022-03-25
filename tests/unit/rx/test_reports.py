@@ -40,6 +40,7 @@ from typing import Dict, Any
 from datetime import datetime
 
 import pytest
+from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
 from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
@@ -313,7 +314,7 @@ def test_of_to_dict(create_report_dict):
 
 def test_of_to_dict_metadata(create_report_dict_with_metadata):
     """Test if a basic report with metadata is transformed correctly into a dict"""
-    report_dict = create_report_dict_with_data
+    report_dict = create_report_dict_with_metadata
 
     # Exercise
     try:
@@ -345,7 +346,7 @@ def test_of_create_report_from_dict_with_missing_target(create_report_dict):
 
     # Setup
     report_dict = create_report_dict
-    del(report_dict[TARGET_CN])
+    del (report_dict[TARGET_CN])
 
     # Exercise
     report = None
@@ -364,7 +365,7 @@ def test_of_create_report_from_dict_with_missing_sensor(create_report_dict):
 
     # Setup
     report_dict = create_report_dict
-    del(report_dict[SENSOR_CN])
+    del (report_dict[SENSOR_CN])
 
     # Exercise
     report = None
@@ -383,7 +384,7 @@ def test_of_create_report_from_dict_with_missing_timestamp(create_report_dict):
 
     # Setup
     report_dict = create_report_dict
-    del(report_dict[TIMESTAMP_CN])
+    del (report_dict[TIMESTAMP_CN])
 
     # Exercise
     report = None
@@ -413,3 +414,25 @@ def test_of_create_report_from_dict_with_empty_dict():
 
     # Check that report is not built
     assert report is None
+
+
+# def test_of_to_mongodb(create_report_dict_with_metadata):
+#     # setup
+#     expected_report_dict = create_report_dict_with_metadata
+#     expected_metadata = expected_report_dict[METADATA_CN]
+#
+#     report = create_report_from_dict(expected_report_dict)
+#
+#     # Execute
+#     report_dict = report.to_mongo_db()
+#
+#     # Check
+#     assert report_dict == expected_report_dict  # The dict are equals
+#
+#     for _, value in report_dict.items():  # There is not numpy number in the dictionary
+#         assert not isinstance(value, int64)
+#         assert not isinstance(value, float64)
+#
+#     for _, value in report_dict[METADATA_CN].items():  # There is not numpy number in the dictionary of metadata
+#         assert not isinstance(value, int64)
+#         assert not isinstance(value, float64)

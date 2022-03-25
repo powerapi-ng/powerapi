@@ -41,6 +41,8 @@ import pint_pandas
 from datetime import datetime
 from typing import Dict, Any
 
+from numpy import int64, float64
+
 from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIPint_MODULE_NAME
 from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
@@ -115,10 +117,16 @@ class HWPCReport(Report):
             current_core_dict = current_socket_dict[current_core_key]
 
             # We get the data related to the current core
-            current_data = self.loc[current_index]
+            current_core_data = self.loc[current_index]
 
-            for current_column in current_data.index:
-                current_core_dict[current_column] = current_data.at[current_column]
+            for current_column in current_core_data.index:
+                current_core_value = current_core_data.at[current_column]
+                if isinstance(current_core_value, int64):
+                    current_core_value = int(current_core_value)
+                elif isinstance(current_core_value, float64):
+                    current_core_value = float(current_core_value)
+
+                current_core_dict[current_column] = current_core_value
 
         # We add the data, i.e., information that is not in the index
         report_dict[GROUPS_CN] = groups

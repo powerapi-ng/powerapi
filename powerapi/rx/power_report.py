@@ -95,6 +95,7 @@ class PowerReport(Report):
 #
 ##############################
 
+
 def create_power_report_from_dict(report_dict: Dict[str, Any]) -> PowerReport:
     """ Creates a power report by using the given information
 

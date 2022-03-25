@@ -40,6 +40,7 @@ from datetime import datetime
 from typing import Dict
 
 import pytest
+from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
 from powerapi.rx.hwpc_report import GROUPS_CN, create_hwpc_report_from_dict, HWPCReport, create_hwpc_report_from_values
@@ -197,19 +198,25 @@ def test_of_to_dict(create_report_dict):
     assert report_dict_to_check == report_dict
 
 
+
 def test_to_dict_with_metadata(create_report_dict_with_metadata):
     """Test if a power report with metadata is transformed correctly into a dict"""
     report_dict = create_report_dict_with_metadata
 
     # Exercise
-    try:
-        report = create_hwpc_report_from_dict(report_dict)
-        report_dict_to_check = report.to_dict()
+    report = create_hwpc_report_from_dict(report_dict)
+    report_dict_to_check = report.to_dict()
 
-        # Check that report is well-built
-        assert report_dict_to_check == report_dict
-    except BadInputDataException:
-        assert False, "The report should be built"
+    # Check that report is well-built
+    assert report_dict_to_check == report_dict
+
+    for _, group_dict in report_dict_to_check[GROUPS_CN].items():
+        for _, socket_dict in group_dict.items():
+            for _, core_dict in  socket_dict.items():
+                for _, core_data in core_dict.items():
+                    assert not isinstance(core_data, int64)
+                    assert not isinstance(core_data, float64)
+
 
 
 def test_of_create_hwpc_report_from_dict_with_missing_groups(create_report_dict):
