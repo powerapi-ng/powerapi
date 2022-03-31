@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 24 march 2022
+# Last modified : 31 march 2022
 
 ##############################
 #
@@ -41,7 +41,8 @@ import pymongo
 from rx.core.typing import Observer, Scheduler
 from typing import Optional, Dict, Any
 from datetime import datetime
-
+from numpy import int64, float64
+from powerapi import quantity
 
 from powerapi.destination import MongoDestination
 from powerapi.rx.formula import Formula
@@ -49,6 +50,18 @@ from powerapi.rx.report import Report
 from powerapi.rx.source import BaseSource, source
 from powerapi.rx.destination import Destination
 from powerapi.exception import DestinationException
+from powerapi.rx.power_report import (
+    POWER_CN,
+    PowerReport,
+)
+from powerapi.rx.report import (
+    Report,
+    TIMESTAMP_CN,
+    SENSOR_CN,
+    TARGET_CN,
+    METADATA_CN,
+    METADATA_PREFIX,
+)
 
 ##############################
 #
@@ -220,7 +233,14 @@ class FakeReport(Report):
             current_data = self.loc[current_index]
 
             for current_column in current_data.index:
-                current_group_l2[current_column] = current_data.at[current_column]
+                current_value = current_data.at[current_column]
+
+                if isinstance(current_value, int64):
+                    current_value = int(current_value)
+                elif isinstance(current_value, float64):
+                    current_value = float(current_value)
+
+                current_group_l2[current_column] = current_value
 
         # We add the data, i.e., information that is not in the index
         report_dict[GROUPS_CN] = groups
@@ -393,10 +413,50 @@ def test_mongodb_read_basic_db(mongo_database):
             "scope": "cpu",
             "socket": "0",
             "formula": "RAPL_ENERGY_PKG",
-            "ratio": 1,
-            "predict": 0,
+            "ratio": "1",
+            "predict": "0",
             "power_units": "watt",
         },
+        "groups": {
+            "core": {
+                "0": {
+                    "0": {
+                        "CPU_CLK_THREAD_UNH": 2849918,
+                        "CPU_CLK_THREAD_UNH_": 49678,
+                        "time_enabled": 4273969,
+                        "time_running": 4273969,
+                        "LLC_MISES": 71307,
+                        "INSTRUCTIONS": 2673428,
+                    }
+                }
+            }
+        },
+    }
+
+    the_source = FakeSource(create_fake_report_from_dict(report_dict))
+
+    # Load DB
+    mongodb = MongoDestination(
+        MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+    )
+
+    source(the_source).subscribe(mongodb)
+
+    # Check if the report is in the DB
+
+    assert mongodb.collection.count_documents({}) == 1
+
+
+def test_mongodb_read_quantity(mongo_database):
+    """This test check that a report is well writen in the mogodb"""
+
+    time = datetime.now()
+
+    report_dict = {
+        TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        POWER_CN: 5.5 * quantity.W,
         "groups": {
             "core": {
                 "0": {
