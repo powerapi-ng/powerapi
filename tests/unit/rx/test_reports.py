@@ -340,6 +340,10 @@ def test_of_to_dict_with_data(create_report_dict_with_data):
 
     assert report_dict_to_check == report_dict
 
+    for _, metadata_val in report_dict_to_check[METADATA_CN].items():  # There is not numpy on the metadata
+        assert not isinstance(metadata_val, int64)
+        assert not isinstance(metadata_val, float64)
+
 
 def test_of_create_report_from_dict_with_missing_target(create_report_dict):
     """Test if a report is not built with missing target value"""
@@ -414,7 +418,6 @@ def test_of_create_report_from_dict_with_empty_dict():
 
     # Check that report is not built
     assert report is None
-
 
 # def test_of_to_mongodb(create_report_dict_with_metadata):
 #     # setup

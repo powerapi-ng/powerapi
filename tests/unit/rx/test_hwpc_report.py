@@ -84,8 +84,8 @@ def create_report_dict() -> Dict:
 @pytest.fixture
 def create_report_dict_with_metadata(create_report_dict) -> Dict:
     create_report_dict[METADATA_CN] = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
-                      "predict": 0,
-                      "power_units": "watt"}
+                                       "predict": 0,
+                                       "power_units": "watt"}
     return create_report_dict
 
 
@@ -198,7 +198,6 @@ def test_of_to_dict(create_report_dict):
     assert report_dict_to_check == report_dict
 
 
-
 def test_to_dict_with_metadata(create_report_dict_with_metadata):
     """Test if a power report with metadata is transformed correctly into a dict"""
     report_dict = create_report_dict_with_metadata
@@ -210,13 +209,12 @@ def test_to_dict_with_metadata(create_report_dict_with_metadata):
     # Check that report is well-built
     assert report_dict_to_check == report_dict
 
-    for _, group_dict in report_dict_to_check[GROUPS_CN].items():
+    for _, group_dict in report_dict_to_check[GROUPS_CN].items(): # There is not numpy on the data
         for _, socket_dict in group_dict.items():
-            for _, core_dict in  socket_dict.items():
+            for _, core_dict in socket_dict.items():
                 for _, core_data in core_dict.items():
                     assert not isinstance(core_data, int64)
                     assert not isinstance(core_data, float64)
-
 
 
 def test_of_create_hwpc_report_from_dict_with_missing_groups(create_report_dict):
@@ -224,7 +222,7 @@ def test_of_create_hwpc_report_from_dict_with_missing_groups(create_report_dict)
 
     # Setup
     report_dict = create_report_dict
-    del(report_dict[GROUPS_CN])
+    del (report_dict[GROUPS_CN])
 
     # Exercise
     report = None
@@ -244,7 +242,7 @@ def test_of_create_hwpc_report_from_dict_with_missing_target(create_report_dict)
 
     # Setup
     report_dict = create_report_dict
-    del(report_dict[TARGET_CN])
+    del (report_dict[TARGET_CN])
 
     # Exercise
     report = None
