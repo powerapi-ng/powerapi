@@ -39,6 +39,7 @@
 from datetime import datetime
 from typing import Dict, Any
 
+from numpy import int64, float64
 from pandas import DataFrame
 from pandas import MultiIndex
 
@@ -107,7 +108,14 @@ class Report(DataFrame):
                 current_metadata_key = self._get_metadata_key_from_str(metadata_key)
 
                 if current_metadata_key is not None:
-                    metadata[current_metadata_key] = self.index[0][value_position]
+                    current_value = self.index[0][value_position]
+
+                    if isinstance(current_value, int64):
+                        current_value = int(current_value)
+                    elif isinstance(current_value, float64):
+                        current_value = float(current_value)
+
+                    metadata[current_metadata_key] = current_value
 
                 value_position = value_position + 1
 
@@ -115,6 +123,38 @@ class Report(DataFrame):
             report_dict[METADATA_CN] = metadata
 
         return report_dict
+
+    def get_timestamp(self):
+        """ Get the timestamp of the report
+
+            Return
+                The timestamp associated with the report
+
+        """
+        timestamp_position = self.index.names.index(TIMESTAMP_CN)
+        return self.index[0][timestamp_position]
+
+    def get_target(self):
+        """ Get the target of the report
+
+            Return
+                The target associated with the report
+
+        """
+        target_position = self.index.names.index(TARGET_CN)
+        return self.index[0][target_position]
+
+    def get_sensor(self):
+        """ Get the sensor of the report
+
+            Return
+                The sensor associated with the report
+
+        """
+        sensor_position = self.index.names.index(SENSOR_CN)
+        return self.index[0][sensor_position]
+
+
 
     # def to_mongo_db(self):
     #     """ Transforms the report to a dict.
