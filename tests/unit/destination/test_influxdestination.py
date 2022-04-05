@@ -75,7 +75,7 @@ SUB_GROUPS_L2_CN = "sub_group_l2"
 
 INFLUX_URI = "localhost"
 INFLUX_PORT = 8086
-INFLUX_DBNAME = "acceptation_test"
+INFLUX_DBNAME = "unit_test"
 
 ##############################
 #
@@ -403,68 +403,71 @@ def test_error_influx_bad_url(influx_database):
         InfluxDestination("lochst", "10", "10")
 
 
-# def test_error_mongo_bad_port(mongo_database):
-#     """This test check that when the port is wring it raise an error"""
+def test_error_influx_bad_port(influx_database):
+    """This test check that when the port is wring it raise an error"""
 
-#     report_dict = {
-#         papi_report.TIMESTAMP_CN: datetime.now(),
-#         papi_report.SENSOR_CN: "test_sensor",
-#         papi_report.TARGET_CN: "test_target",
-#     }
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
 
-#     the_source = FakeSource(create_fake_report_from_dict(report_dict))
-#     with pytest.raises(DestinationException):
-#         MongoDestination("mongodb://localhost:1", "error", "error")
-
-
-# def test_mongodb_read_basic_db(mongo_database):
-#     """This test check that a report is well writen in the mogodb"""
-
-#     time = datetime.now()
-
-#     report_dict = {
-#         papi_report.TIMESTAMP_CN: time,
-#         papi_report.SENSOR_CN: "test_sensor",
-#         papi_report.TARGET_CN: "test_target",
-#         papi_report.METADATA_CN: {
-#             "scope": "cpu",
-#             "socket": "0",
-#             "formula": "RAPL_ENERGY_PKG",
-#             "ratio": "1",
-#             "predict": "0",
-#             "power_units": "watt",
-#         },
-#         "groups": {
-#             "core": {
-#                 "0": {
-#                     "0": {
-#                         "CPU_CLK_THREAD_UNH": 2849918,
-#                         "CPU_CLK_THREAD_UNH_": 49678,
-#                         "time_enabled": 4273969,
-#                         "time_running": 4273969,
-#                         "LLC_MISES": 71307,
-#                         "INSTRUCTIONS": 2673428,
-#                     }
-#                 }
-#             }
-#         },
-#     }
-
-#     the_source = FakeSource(create_fake_report_from_dict(report_dict))
-
-#     # Load DB
-#     mongodb = MongoDestination(
-#         MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
-#     )
-
-#     source(the_source).subscribe(mongodb)
-
-#     # Check if the report is in the DB
-
-#     assert mongodb.collection.count_documents({}) == 1
+    the_source = FakeSource(create_fake_report_from_dict(report_dict))
+    with pytest.raises(DestinationException):
+        InfluxDestination("influxdb://localhost", "error", "error")
 
 
-# def test_mongodb_read_quantity(mongo_database):
+def test_influxdb_read_basic_db(influx_database):
+    """This test check that a report is well writen in the mogodb"""
+
+    time = datetime.now()
+
+    report_dict = {
+        papi_report.TIMESTAMP_CN: time,
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+        papi_report.METADATA_CN: {
+            "scope": "cpu",
+            "socket": "0",
+            "formula": "RAPL_ENERGY_PKG",
+            "ratio": "1",
+            "predict": "0",
+            "power_units": "watt",
+        },
+        "groups": {
+            "core": {
+                "0": {
+                    "0": {
+                        "CPU_CLK_THREAD_UNH": 2849918,
+                        "CPU_CLK_THREAD_UNH_": 49678,
+                        "time_enabled": 4273969,
+                        "time_running": 4273969,
+                        "LLC_MISES": 71307,
+                        "INSTRUCTIONS": 2673428,
+                    }
+                }
+            }
+        },
+    }
+
+    the_source = FakeSource(create_fake_report_from_dict(report_dict))
+
+    # Load DB
+    influxdb = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+
+    source(the_source).subscribe(influxdb)
+
+    # Check if the report is in the DB
+
+    influxdb.client.switch_database(INFLUX_DBNAME)
+    print(influxdb.client.get_list_measurements())
+    result = influxdb.client.query("SELECT * FROM " + INFLUX_DBNAME)
+    output_reports = list(result.get_points())
+
+    assert len(output_reports) == 1
+
+
+# def test_influxdb_read_quantity(influx_database):
 #     """This test check that a report is well writen in the mogodb"""
 
 #     time = datetime.now()
@@ -493,12 +496,12 @@ def test_error_influx_bad_url(influx_database):
 #     the_source = FakeSource(create_fake_report_from_dict(report_dict))
 
 #     # Load DB
-#     mongodb = MongoDestination(
-#         MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+#     influxdb = InfluxDestination(
+#         INFLUX_URI, INFLUX_DATABASE_NAME, INFLUX_INPUT_COLLECTION_NAME
 #     )
 
-#     source(the_source).subscribe(mongodb)
+#     source(the_source).subscribe(influxdb)
 
 #     # Check if the report is in the DB
 
-#     assert mongodb.collection.count_documents({}) == 1
+#     assert influxdb.collection.count_documents({}) == 1

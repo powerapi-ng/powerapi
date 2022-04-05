@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 31 Mars 2022
+# Last modified : 5 April 2022
 
 from typing import List
 from influxdb import InfluxDBClient
@@ -50,6 +50,7 @@ class InfluxDestination(Destination):
 
         """
         super().__init__()
+        self.__name__ = "InfluxDestination"
         self.uri = uri
         self.port = port
         self.db_name = db_name
@@ -58,14 +59,20 @@ class InfluxDestination(Destination):
             self.client = InfluxDBClient(
                 host=self.uri, port=self.port, database=self.db_name
             )
-
-            for db in self.client.get_list_database():
-                if db["name"] == self.db_name:
-                    return
-
         except ValueError as exn:
+            raise DestinationException(
+                self.__name__, "can't connect to the DB : port error"
+            ) from exn
+
+        try:
+            self.client.ping()
+
+        except InfluxConnectionError as exn:
             raise DestinationException(self.__name__, "can't connect to DB") from exn
 
+        for db in self.client.get_list_database():
+            if db["name"] == self.db_name:
+                return
         self.client.create_database(self.db_name)
 
     def store_report(self, report):
@@ -76,3 +83,11 @@ class InfluxDestination(Destination):
         """
         data = report.to_dict()
         self.client.write_points([data])
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.client.close()
+
+    def on_error(self, msg) -> None:
+        """This method is called when the source has an error"""
+        self.client.close()
