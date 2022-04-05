@@ -28,7 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 17 Mars 2022
+# Last modified : 31 Mars 2022
+
 from typing import List
 from influxdb import InfluxDBClient
 from requests.exceptions import ConnectionError as InfluxConnectionError
@@ -39,33 +40,31 @@ from powerapi.exception import DestinationException
 class InfluxDestination(Destination):
     """Observer Class for storing reports produced by an observable in a file"""
 
-    def __init__(self, uri: str, port: int, db_name: str, tags: List[str]) -> None:
+    def __init__(self, uri: str, port: int, db_name: str) -> None:
         """Open the file if it exists and create it otherwise
 
         Args:
             uri : IP address of the server
             port : network port to communicate with the server
             db_name : name of the database in the Influx instance
-            tags
 
         """
         super().__init__()
         self.uri = uri
         self.port = port
         self.db_name = db_name
-        self.tags = tags
 
-        self.client = InfluxDBClient(
-            host=self.uri, port=self.port, database=self.db_name
-        )
         try:
-            self._ping_client()
-        except InfluxConnectionError as exn:
-            raise DestinationException(self.__name__, "can't connect to DB") from exn
+            self.client = InfluxDBClient(
+                host=self.uri, port=self.port, database=self.db_name
+            )
 
-        for db in self.client.get_list_database():
-            if db["name"] == self.db_name:
-                return
+            for db in self.client.get_list_database():
+                if db["name"] == self.db_name:
+                    return
+
+        except ValueError as exn:
+            raise DestinationException(self.__name__, "can't connect to DB") from exn
 
         self.client.create_database(self.db_name)
 
@@ -75,5 +74,5 @@ class InfluxDestination(Destination):
         Args:
             report: The report that will be stored
         """
-
-        self.file.write(report.to_dict())
+        data = report.to_dict()
+        self.client.write_points([data])
