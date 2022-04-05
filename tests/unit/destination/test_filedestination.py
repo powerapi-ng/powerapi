@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 22 march 2022
+# Last modified : 5 april 2022
 
 ##############################
 #
@@ -41,7 +41,7 @@ from rx.core.typing import Observer, Scheduler
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from powerapi.destination import CsvDestination
+from powerapi.destination import FileDestination
 from powerapi.rx.formula import Formula
 from powerapi.rx.report import Report
 from powerapi.rx.source import BaseSource, source
@@ -304,7 +304,7 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 
 
 def test_error_file_not_found():
-    """This test check that when the csv file don't exist an error is raised"""
+    """This test check that when the file don't exist an error is raised"""
 
     report_dict = {
         papi_report.TIMESTAMP_CN: datetime.now(),
@@ -314,7 +314,7 @@ def test_error_file_not_found():
 
     the_source = FakeSource(create_fake_report_from_dict(report_dict))
     with pytest.raises(DestinationException):
-        destination = CsvDestination("/tmp/powerapi/csv_test.csv")
+        destination = FileDestination("/tmp/powerapi/file_test")
 
 
 def test_destination_writing():
@@ -350,65 +350,15 @@ def test_destination_writing():
         },
     }
 
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = CsvDestination("/tmp/csv_test.csv")
+    report = create_fake_report_from_dict(report_dict)
+    the_source = FakeSource(report)
+    destination = FileDestination("/tmp/file_test")
 
     # Exercise
     source(the_source).subscribe(destination)
-    # Check Report has been writen
+
+    #     # Check Report has been writen
     destination.on_error()
-    f = open("/tmp/csv_test.csv", "r")
-    assert f.readline() == "timestamp,sensor,target\n"
-    assert f.readline() == str(time) + ",test_sensor,test_target\n"
+    f = open("/tmp/file_test", "r")
 
-
-def test_destination_full_report():
-    """This test only check if different method on source and destination  are called"""
-    # Setup
-    time = datetime.now()
-
-    report_dict = {
-        papi_report.TIMESTAMP_CN: time,
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {
-            "scope": "cpu",
-            "socket": "0",
-            "formula": "RAPL_ENERGY_PKG",
-            "ratio": 1,
-            "predict": 0,
-            "power_units": "watt",
-        },
-        "groups": {
-            "core": {
-                0: {
-                    0: {
-                        "CPU_CLK_THREAD_UNH": 2849918,
-                        "CPU_CLK_THREAD_UNH_": 49678,
-                        "time_enabled": 4273969,
-                        "time_running": 4273969,
-                        "LLC_MISES": 71307,
-                        "INSTRUCTIONS": 2673428,
-                    }
-                }
-            }
-        },
-    }
-
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = CsvDestination("/tmp/csv_test.csv")
-
-    # Exercise
-    source(the_source).subscribe(destination)
-    # Check Report has been writen
-    destination.on_error()
-    f = open("/tmp/csv_test.csv", "r")
-    assert (
-        f.readline()
-        == "timestamp,sensor,target,metadata:scope,metadata:socket,metadata:formula,metadata:ratio,metadata:predict,metadata:power_units,groups,sub_group_l1,sub_group_l2,CPU_CLK_THREAD_UNH,CPU_CLK_THREAD_UNH_,time_enabled,time_running,LLC_MISES,INSTRUCTIONS\n"
-    )
-    assert (
-        f.readline()
-        == str(time)
-        + ",test_sensor,test_target,cpu,0,RAPL_ENERGY_PKG,1,0,watt,core,0,0,2849918,49678,4273969,4273969,71307,2673428\n"
-    )
+    assert f.readline() == str(report.to_dict())

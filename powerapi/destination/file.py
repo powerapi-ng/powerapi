@@ -48,9 +48,13 @@ class FileDestination(Destination):
             filename : path of the file
 
         """
+        self.__name__ = "FileDestination"
         super().__init__()
         self.filename = filename
-        self.file = open(filename, "w+")
+        try:
+            self.file = open(filename, "w+")
+        except FileNotFoundError as exn:
+            raise DestinationException(self.__name__, "file not found") from exn
 
     def store_report(self, report):
         """Required method for storing a report
@@ -58,5 +62,12 @@ class FileDestination(Destination):
         Args:
             report: The report that will be stored
         """
+        self.file.write(str(report.to_dict()))
 
-        self.file.write(report.to_dict())
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.file.close()
+
+    def on_error(self) -> None:
+        """This method is called when the source has an error"""
+        self.file.close()

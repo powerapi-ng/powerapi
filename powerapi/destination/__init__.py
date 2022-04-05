@@ -33,5 +33,6 @@ Currently, it is based on PyRx library and Panda Dataframe
 
 """
 from powerapi.destination.csvdb import CsvDestination
+from powerapi.destination.file import FileDestination
 from powerapi.destination.mongodb import MongoDestination
 from powerapi.destination.influxdb import InfluxDestination
