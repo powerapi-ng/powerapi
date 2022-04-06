@@ -89,7 +89,7 @@ class InfluxDestination(Destination):
         """This method is called when the source finished"""
         self.client.close()
 
-    def on_error(self, msg) -> None:
+    def on_error(self, err) -> None:
         """This method is called when the source has an error"""
         self.client.close()
-        raise DestinationException(self.__name__ + " : " + msg)
+        raise DestinationException(self.__name__, " : catched exception") from err

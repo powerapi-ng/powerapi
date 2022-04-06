@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 24 Mars 2022
+# Last modified : 6 April 2022
 
 
 import pymongo
@@ -72,3 +72,12 @@ class MongoDestination(Destination):
 
         r = report.to_dict()
         self.collection.insert_one(r)
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.mongo_client.close()
+
+    def on_error(self, err) -> None:
+        """This method is called when the source has an error"""
+        self.mongo_client.close()
+        raise DestinationException(self.__name__, " : catched exception") from err

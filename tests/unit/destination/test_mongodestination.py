@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 31 march 2022
+# Last modified : 6 April 2022
 
 ##############################
 #
@@ -146,6 +146,33 @@ class FakeSource(BaseSource):
 
         """
         operator.on_next(self.report)
+
+    def close(self):
+        """Closes the access to the data source"""
+        pass
+
+
+class FakeBadSource(BaseSource):
+    """Fake source for testing purposes"""
+
+    def __init__(self, report: Report) -> None:
+        """Creates a fake source
+
+        Args:
+
+        """
+        super().__init__()
+        self.report = report
+
+    def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
+        """Required method for retrieving data from a source by a Formula
+
+        Args:
+            operator: The operator (e.g. a formula or log)  that will process the data
+            scheduler: Used for parallelism. Not used for the time being
+
+        """
+        operator.on_error(ValueError)
 
     def close(self):
         """Closes the access to the data source"""
@@ -485,3 +512,21 @@ def test_mongodb_read_quantity(mongo_database):
     # Check if the report is in the DB
 
     assert mongodb.collection.count_documents({}) == 1
+
+
+def test_mongo_on_error(mongo_database):
+
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
+
+    the_source = FakeBadSource(create_fake_report_from_dict(report_dict))
+
+    mongodb = MongoDestination(
+        MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+    )
+
+    with pytest.raises(DestinationException):
+        source(the_source).subscribe(mongodb)

@@ -172,7 +172,7 @@ class FakeBadSource(BaseSource):
             scheduler: Used for parallelism. Not used for the time being
 
         """
-        operator.on_error()
+        operator.on_error(ValueError)
 
     def close(self):
         """Closes the access to the data source"""
@@ -552,8 +552,10 @@ def test_influxdb_on_error(influx_database):
     }
 
     the_source = FakeBadSource(create_fake_report_from_dict(report_dict))
+
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
     with pytest.raises(DestinationException):
-        InfluxDestination("lochst", "10", "10")
+        source(the_source).subscribe(influx)
 
 
 def test_influxdb_read_quantity(influx_database):
