@@ -39,13 +39,11 @@
 
 
 class PowerAPIException(Exception):
-    """PowerAPIException base class"""
+    """ PowerAPIException base class """
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
-    """
-    PowerAPIException base class
-    """
+    """ PowerAPIException base class with message"""
 
     def __init__(self, msg):
         PowerAPIException.__init__(self)
@@ -53,9 +51,7 @@ class PowerAPIExceptionWithMessage(PowerAPIException):
 
 
 class DestinationException(PowerAPIExceptionWithMessage):
-    """
-    Exception for Destination class
-    """
+    """ Exception for Destination class """
 
     def __init__(self, destination_class, error_message):
         PowerAPIExceptionWithMessage.__init__(

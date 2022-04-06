@@ -41,7 +41,8 @@ import pint_pandas
 from datetime import datetime
 from typing import Dict, Any
 
-from numpy import int64, float64
+from numpy import int64, float64, nan
+from pandas import isna
 
 from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIPint_MODULE_NAME
@@ -121,12 +122,14 @@ class HWPCReport(Report):
 
             for current_column in current_core_data.index:
                 current_core_value = current_core_data.at[current_column]
-                if isinstance(current_core_value, int64):
+                if isinstance(current_core_value, int64) and current_core_value is not nan:
                     current_core_value = int(current_core_value)
-                elif isinstance(current_core_value, float64):
+                elif isinstance(current_core_value, float64) and current_core_value is not nan:
                     current_core_value = float(current_core_value)
 
-                current_core_dict[current_column] = current_core_value
+                # We only add the entry if it exists, i.e., it is not nan
+                if not isna(current_core_value):
+                    current_core_dict[current_column] = current_core_value
 
         # We add the data, i.e., information that is not in the index
         report_dict[GROUPS_CN] = groups
@@ -192,6 +195,8 @@ def create_hwpc_report_from_values(timestamp: datetime, sensor: str, target: str
     number_of_values_added = 0
     original_index_value = index_values[0]  # There is only one entry
 
+    row_size = 0
+
     for group_key in groups_dict.keys():
 
         # We add the group level values to the index
@@ -218,9 +223,21 @@ def create_hwpc_report_from_values(timestamp: datetime, sensor: str, target: str
                 for data_key in data_values:
                     current_value_to_add = data_values[data_key]
                     if data_key not in columns_data.keys():
-                        columns_data[data_key] = [current_value_to_add]
-                    else:
-                        columns_data[data_key].append(current_value_to_add)
+                        columns_data[data_key] = []
+                        current_row_size = 0
+
+                        # We have to fill up empty values in the row with None
+                        while current_row_size < row_size:
+                            columns_data[data_key].append(None)
+                            current_row_size += 1
+
+                    columns_data[data_key].append(current_value_to_add)
+                row_size += 1
+
+    # All the columns must have the same size
+    for column_name in columns_data.keys():
+        while len(columns_data[column_name]) < row_size:
+            columns_data[column_name].append(None)
 
     # We create the HWPC Report
     return HWPCReport(columns_data, index_names, index_values)
