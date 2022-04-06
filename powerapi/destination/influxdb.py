@@ -28,7 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 17 Mars 2022
+# Last modified : 6 April 2022
+
 from typing import List
 from influxdb import InfluxDBClient
 from requests.exceptions import ConnectionError as InfluxConnectionError
@@ -39,34 +40,39 @@ from powerapi.exception import DestinationException
 class InfluxDestination(Destination):
     """Observer Class for storing reports produced by an observable in a file"""
 
-    def __init__(self, uri: str, port: int, db_name: str, tags: List[str]) -> None:
+    def __init__(self, uri: str, port: int, db_name: str) -> None:
         """Open the file if it exists and create it otherwise
 
         Args:
             uri : IP address of the server
             port : network port to communicate with the server
             db_name : name of the database in the Influx instance
-            tags
 
         """
         super().__init__()
+        self.__name__ = "InfluxDestination"
         self.uri = uri
         self.port = port
         self.db_name = db_name
-        self.tags = tags
 
-        self.client = InfluxDBClient(
-            host=self.uri, port=self.port, database=self.db_name
-        )
         try:
-            self._ping_client()
+            self.client = InfluxDBClient(
+                host=self.uri, port=self.port, database=self.db_name
+            )
+        except ValueError as exn:
+            raise DestinationException(
+                self.__name__, "can't connect to the DB : port error"
+            ) from exn
+
+        try:
+            self.client.ping()
+
         except InfluxConnectionError as exn:
             raise DestinationException(self.__name__, "can't connect to DB") from exn
 
         for db in self.client.get_list_database():
             if db["name"] == self.db_name:
                 return
-
         self.client.create_database(self.db_name)
 
     def store_report(self, report):
@@ -75,5 +81,15 @@ class InfluxDestination(Destination):
         Args:
             report: The report that will be stored
         """
+        data = report.to_influx()
 
-        self.file.write(report.to_dict())
+        self.client.write_points([data])
+
+    def on_completed(self) -> None:
+        """This method is called when the source finished"""
+        self.client.close()
+
+    def on_error(self, msg) -> None:
+        """This method is called when the source has an error"""
+        self.client.close()
+        raise DestinationException(self.__name__ + " : " + msg)

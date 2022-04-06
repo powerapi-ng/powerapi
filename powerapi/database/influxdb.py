@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 from typing import List, Type
+
 try:
     from influxdb import InfluxDBClient
     from requests.exceptions import ConnectionError as InfluxConnectionError
@@ -51,7 +52,9 @@ class InfluxDB(BaseDB):
     Allow to handle a InfluxDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], uri: str, port, db_name: str, tags: List[str]):
+    def __init__(
+        self, report_type: Type[Report], uri: str, port, db_name: str, tags: List[str]
+    ):
         """
         :param url:             URL of the InfluxDB server
         :param port:            port of the InfluxDB server
@@ -75,10 +78,10 @@ class InfluxDB(BaseDB):
         raise NotImplementedError()
 
     def _ping_client(self):
-        if hasattr(self.client, 'ping'):
+        if hasattr(self.client, "ping"):
             self.client.ping()
         else:
-            self.client.request(url="ping", method='GET', expected_response_code=204)
+            self.client.request(url="ping", method="GET", expected_response_code=204)
 
     def connect(self):
         """
@@ -93,14 +96,16 @@ class InfluxDB(BaseDB):
         if self.client is not None:
             self.client.close()
 
-        self.client = InfluxDBClient(host=self.uri, port=self.port, database=self.db_name)
+        self.client = InfluxDBClient(
+            host=self.uri, port=self.port, database=self.db_name
+        )
         try:
             self._ping_client()
         except InfluxConnectionError as exn:
-            raise CantConnectToInfluxDBException('connexion error') from exn
+            raise CantConnectToInfluxDBException("connexion error") from exn
 
         for db in self.client.get_list_database():
-            if db['name'] == self.db_name:
+            if db["name"] == self.db_name:
                 return
 
         self.client.create_database(self.db_name)
@@ -112,8 +117,8 @@ class InfluxDB(BaseDB):
         :param report: Report to save
         """
         data = self.report_type.to_influxdb(report, self.tags)
-        for tag in data['tags']:
-            data['tags'][tag] = str(data['tags'][tag])
+        for tag in data["tags"]:
+            data["tags"][tag] = str(data["tags"][tag])
         self.client.write_points([data])
 
     def save_many(self, reports: List[Report]):
@@ -123,5 +128,7 @@ class InfluxDB(BaseDB):
         :param reports: Batch of data.
         """
 
-        data_list = list(map(lambda r: self.report_type.to_influxdb(r, self.tags), reports))
+        data_list = list(
+            map(lambda r: self.report_type.to_influxdb(r, self.tags), reports)
+        )
         self.client.write_points(data_list)

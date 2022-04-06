@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 22 march 2022
+# Last modified : 6 April 2022
 
 ##############################
 #
@@ -37,16 +37,31 @@
 ##############################
 import powerapi.rx.report as papi_report
 import pytest
+from influxdb import InfluxDBClient
 from rx.core.typing import Observer, Scheduler
 from typing import Optional, Dict, Any
 from datetime import datetime
+from numpy import int64, float64
+from powerapi import quantity
 
-from powerapi.destination import CsvDestination
+from powerapi.destination import InfluxDestination
 from powerapi.rx.formula import Formula
 from powerapi.rx.report import Report
 from powerapi.rx.source import BaseSource, source
 from powerapi.rx.destination import Destination
 from powerapi.exception import DestinationException
+from powerapi.rx.power_report import (
+    POWER_CN,
+    PowerReport,
+)
+from powerapi.rx.report import (
+    Report,
+    TIMESTAMP_CN,
+    SENSOR_CN,
+    TARGET_CN,
+    METADATA_CN,
+    METADATA_PREFIX,
+)
 
 ##############################
 #
@@ -56,6 +71,11 @@ from powerapi.exception import DestinationException
 GROUPS_CN = "groups"
 SUB_GROUPS_L1_CN = "sub_group_l1"
 SUB_GROUPS_L2_CN = "sub_group_l2"
+
+
+INFLUX_URI = "localhost"
+INFLUX_PORT = 8086
+INFLUX_DBNAME = "unit_test"
 
 ##############################
 #
@@ -132,6 +152,33 @@ class FakeSource(BaseSource):
         pass
 
 
+class FakeBadSource(BaseSource):
+    """Fake source for testing purposes"""
+
+    def __init__(self, report: Report) -> None:
+        """Creates a fake source
+
+        Args:
+
+        """
+        super().__init__()
+        self.report = report
+
+    def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
+        """Required method for retrieving data from a source by a Formula
+
+        Args:
+            operator: The operator (e.g. a formula or log)  that will process the data
+            scheduler: Used for parallelism. Not used for the time being
+
+        """
+        operator.on_error()
+
+    def close(self):
+        """Closes the access to the data source"""
+        pass
+
+
 class FakeDestination(Destination):
     """Fake destination for testing purposes"""
 
@@ -175,49 +222,33 @@ class FakeReport(Report):
         self.is_test = True
         self.processed = False
 
-    def to_dict(self) -> Dict:
-        # We get the dictionary with the basic information
-        report_dict = super().to_dict()
+    def to_influx(self):
+        return {
+            "measurement": "measure_name",
+            "time": 0,
+            "fields": {"test": 0},
+        }
 
-        # We have to create a dictionary for each group
-        groups = {}
-        groups_position = self.index.names.index(GROUPS_CN)
-        subgroup_l1_position = self.index.names.index(SUB_GROUPS_L1_CN)
-        subgroup_l2_position = self.index.names.index(SUB_GROUPS_L2_CN)
 
-        for current_index in self.index:
-            group_name = current_index[groups_position]
-            current_group_l1_name = current_index[subgroup_l1_position]
-            current_group_l2_name = current_index[subgroup_l2_position]
+class FakeQuantityReport(Report):
+    """Fake Report for testing purposes"""
 
-            # We create the group if required
-            if group_name not in groups.keys():
-                groups[group_name] = {}
+    def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
+        """Creates a fake formula
 
-            current_group = groups[group_name]
+        Args:
 
-            # We create the group l1 if required
-            if current_group_l1_name not in current_group.keys():
-                current_group[current_group_l1_name] = {}
+        """
+        super().__init__(data=data, index_names=index_names, index_values=index_values)
+        self.is_test = True
+        self.processed = False
 
-            current_group_l1 = current_group[current_group_l1_name]
-
-            # We create the group l2 if required
-
-            if current_group_l2_name not in current_group_l1.keys():
-                current_group_l1[current_group_l2_name] = {}
-
-            current_group_l2 = current_group_l1[current_group_l2_name]
-
-            # We get the data related to the current group l2
-            current_data = self.loc[current_index]
-
-            for current_column in current_data.index:
-                current_group_l2[current_column] = current_data.at[current_column]
-
-        # We add the data, i.e., information that is not in the index
-        report_dict[GROUPS_CN] = groups
-        return report_dict
+    def to_influx(self):
+        return {
+            "measurement": "measure_name",
+            "time": 0,
+            "fields": {"test": 5.5 * quantity.W},
+        }
 
 
 ##############################
@@ -296,6 +327,136 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
     return FakeReport(data_by_columns, index_names, index_values)
 
 
+def create_fake_quantity_report_from_dict(
+    report_dic: Dict[str, Any]
+) -> FakeQuantityReport:
+    """Creates a fake report by using the given information
+
+    Args:
+        report_dic: Dictionary that contains information of the report
+    """
+
+    # We get index names and values
+
+    (
+        index_names,
+        index_values,
+        data,
+    ) = papi_report.get_index_information_and_data_from_report_dict(report_dic)
+
+    data_by_columns = {}
+
+    # We add the groups and their keys and sub keys as part of the index if it is exist
+    if "groups" in data.keys():
+        index_names.append(GROUPS_CN)
+        index_names.append(SUB_GROUPS_L1_CN)
+        index_names.append(SUB_GROUPS_L2_CN)
+        groups = data[GROUPS_CN]
+
+        # For each existing index_value, we have to add values related to groups' keys
+
+        number_of_values_added = 0
+        original_index_value = index_values[0]  # There is only one entry
+
+        for key in groups.keys():
+
+            # We add the group level values to the index
+
+            # We add the sub_group_level1 values to the index
+            sub_group_level1 = groups[key]
+
+            for key_level1 in sub_group_level1.keys():
+
+                # We add the sub_group_level2 values to the index
+                sub_group_level2 = sub_group_level1[key_level1]
+
+                # original_index_value_level2 = index_values[number_of_values_added]
+
+                for key_level2 in sub_group_level2.keys():
+                    value_to_add = original_index_value + (
+                        key,
+                        key_level1,
+                        key_level2,
+                    )
+                    if number_of_values_added < len(index_values):
+                        index_values[number_of_values_added] = value_to_add
+                    else:
+                        index_values.append(value_to_add)
+
+                    number_of_values_added = number_of_values_added + 1
+
+                    # We extract the data from the level2
+                    data_values = sub_group_level2[key_level2]
+                    for data_key in data_values:
+                        current_value_to_add = data_values[data_key]
+                        if data_key not in data_by_columns.keys():
+                            data_by_columns[data_key] = [current_value_to_add]
+                        else:
+                            data_by_columns[data_key].append(current_value_to_add)
+
+    # We create the report
+    return FakeReport(data_by_columns, index_names, index_values)
+
+
+##############################
+#
+# Tests utils function
+#
+##############################
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Function called by pytest when collecting a test_XXX function
+
+    define the influxdb_content fixtures in test environement with collected the
+    value _influxdb_content if it exist or with an empty list
+
+    :param metafunc: the test context given by pytest
+    """
+    if "influxdb_content" in metafunc.fixturenames:
+        content = getattr(metafunc.function, "_influxdb_content", None)
+        if isinstance(content, list):
+            metafunc.parametrize("influxdb_content", [content])
+        else:
+            metafunc.parametrize("influxdb_content", [[]])
+
+
+@pytest.fixture()
+def influx_database(influxdb_content):
+    """
+    connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
+    after test end, delete the data
+    """
+    client = InfluxDBClient(host=INFLUX_URI, port=INFLUX_PORT)
+    # _delete_db(client, INFLUX_DBNAME)
+    _init_db(client, influxdb_content)
+    yield client
+    # _delete_db(client, INFLUX_DBNAME)
+
+
+def _init_db(client, content):
+
+    if content != []:
+        client.create_database(INFLUX_DBNAME)
+        client.switch_database(INFLUX_DBNAME)
+        client.write_points(content)
+
+
+def _delete_db(client, db_name):
+    client.drop_database(db_name)
+    client.close()
+
+
+def get_all_reports(client, db_name):
+    """
+    get all points stored in the database during test execution
+    """
+    client.switch_database(db_name)
+    result = client.query("SELECT * FROM measure_name")
+    return list(result.get_points())
+
+
 ##############################
 #
 # Tests
@@ -303,8 +464,8 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 ##############################
 
 
-def test_error_file_not_found():
-    """This test check that when the csv file don't exist an error is raised"""
+def test_error_influx_bad_url(influx_database):
+    """This test check that when the url is wring it raise an error"""
 
     report_dict = {
         papi_report.TIMESTAMP_CN: datetime.now(),
@@ -314,12 +475,26 @@ def test_error_file_not_found():
 
     the_source = FakeSource(create_fake_report_from_dict(report_dict))
     with pytest.raises(DestinationException):
-        destination = CsvDestination("/tmp/powerapi/csv_test.csv")
+        InfluxDestination("lochst", "10", "10")
 
 
-def test_destination_writing():
-    """This test only check if different method on source and destination  are called"""
-    # Setup
+def test_error_influx_bad_port(influx_database):
+    """This test check that when the port is wring it raise an error"""
+
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
+
+    the_source = FakeSource(create_fake_report_from_dict(report_dict))
+    with pytest.raises(DestinationException):
+        InfluxDestination("influxdb://localhost", "error", "error")
+
+
+def test_influxdb_read_basic_db(influx_database):
+    """This test check that a report is well writen in the mogodb"""
+
     time = datetime.now()
 
     report_dict = {
@@ -351,38 +526,50 @@ def test_destination_writing():
     }
 
     the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = CsvDestination("/tmp/csv_test.csv")
 
-    # Exercise
-    source(the_source).subscribe(destination)
-    # Check Report has been writen
-    destination.on_error()
-    f = open("/tmp/csv_test.csv", "r")
-    assert f.readline() == "timestamp,sensor,target\n"
-    assert f.readline() == str(time) + ",test_sensor,test_target\n"
+    # Load DB
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+
+    source(the_source).subscribe(influx)
+
+    # Check if the report is in the DB
+
+    print(influx.client.write_points([report_dict]))
+
+    influx.client.switch_database(INFLUX_DBNAME)
+    result = influx.client.query("SELECT * FROM measure_name ")
+    output_reports = list(result.get_points())
+
+    assert len(output_reports) == 1
 
 
-def test_destination_full_report():
-    """This test only check if different method on source and destination  are called"""
-    # Setup
+def test_influxdb_on_error(influx_database):
+
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
+
+    the_source = FakeBadSource(create_fake_report_from_dict(report_dict))
+    with pytest.raises(DestinationException):
+        InfluxDestination("lochst", "10", "10")
+
+
+def test_influxdb_read_quantity(influx_database):
+    """This test check that a report is well writen in the mogodb"""
+
     time = datetime.now()
 
     report_dict = {
-        papi_report.TIMESTAMP_CN: time,
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {
-            "scope": "cpu",
-            "socket": "0",
-            "formula": "RAPL_ENERGY_PKG",
-            "ratio": 1,
-            "predict": 0,
-            "power_units": "watt",
-        },
+        TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        POWER_CN: 5.5 * quantity.W,
         "groups": {
             "core": {
-                0: {
-                    0: {
+                "0": {
+                    "0": {
                         "CPU_CLK_THREAD_UNH": 2849918,
                         "CPU_CLK_THREAD_UNH_": 49678,
                         "time_enabled": 4273969,
@@ -395,20 +582,17 @@ def test_destination_full_report():
         },
     }
 
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = CsvDestination("/tmp/csv_test.csv")
+    the_source = FakeSource(create_fake_quantity_report_from_dict(report_dict))
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
 
-    # Exercise
-    source(the_source).subscribe(destination)
-    # Check Report has been writen
-    destination.on_error()
-    f = open("/tmp/csv_test.csv", "r")
-    assert (
-        f.readline()
-        == "timestamp,sensor,target,metadata:scope,metadata:socket,metadata:formula,metadata:ratio,metadata:predict,metadata:power_units,groups,sub_group_l1,sub_group_l2,CPU_CLK_THREAD_UNH,CPU_CLK_THREAD_UNH_,time_enabled,time_running,LLC_MISES,INSTRUCTIONS\n"
-    )
-    assert (
-        f.readline()
-        == str(time)
-        + ",test_sensor,test_target,cpu,0,RAPL_ENERGY_PKG,1,0,watt,core,0,0,2849918,49678,4273969,4273969,71307,2673428\n"
-    )
+    source(the_source).subscribe(influx)
+
+    # Check if the report is in the DB
+
+    print(influx.client.write_points([report_dict]))
+
+    influx.client.switch_database(INFLUX_DBNAME)
+    result = influx.client.query("SELECT * FROM measure_name ")
+    output_reports = list(result.get_points())
+
+    assert len(output_reports) == 1
