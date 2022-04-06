@@ -59,26 +59,103 @@ def create_report_dict() -> Dict:
         TIMESTAMP_CN: datetime.now(),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
-        GROUPS_CN: {"core":
-            {"socket1":
-                {"core0":
+        GROUPS_CN:
+            {"core":
+                {"socket1":
                     {
-                        "CPU_CLK_THREAD_UNH": 2849918,
-                        "CPU_CLK_THREAD_UNH_XX": 49678,
-                        "time_enabled": 4273969,
-                        "time_running": 4273969,
-                        "LLC_MISES": 71307,
-                        "INSTRUCTIONS": 2673428},
-                    "core1":
-                        {
-                            "CPU_CLK_THREAD_UNH": 2849919,
-                            "CPU_CLK_THREAD_UNH_XX": 49679,
-                            "time_enabled": 4273970,
-                            "time_running": 4273970,
-                            "LLC_MISES": 71308,
-                            "INSTRUCTIONS": 2673429}}}}
+                        "core0":
+                            {
+                                "CPU_CLK_THREAD_UNH": 2849918,
+                                "CPU_CLK_THREAD_UNH_XX": 49678,
+                                "time_enabled": 4273969,
+                                "time_running": 4273969,
+                                "LLC_MISES": 71307,
+                                "INSTRUCTIONS": 2673428},
+                        "core1":
+                            {
+                                "CPU_CLK_THREAD_UNH": 2849919,
+                                "CPU_CLK_THREAD_UNH_XX": 49679,
+                                "time_enabled": 4273970,
+                                "time_running": 4273970,
+                                "LLC_MISES": 71308,
+                                "INSTRUCTIONS": 2673429}}}}}
 
-    }
+
+@pytest.fixture
+def create_report_with_empty_cells_dict() -> Dict:
+    return {TIMESTAMP_CN: "2022-03-31T10:03:13.686Z",
+            SENSOR_CN: "sensor",
+            TARGET_CN: "all",
+            GROUPS_CN: {
+                "rapl":
+                    {
+                        "0":
+                            {
+                                "7":
+                                    {
+                                        "RAPL_ENERGY_PKG": 2151940096,
+                                        "time_enabled": 503709618,
+                                        "time_running": 503709618}}},
+                "msr":
+                    {
+                        "0":
+                            {
+                                "0":
+                                    {
+                                        "mperf": 27131018,
+                                        "aperf": 14511032,
+                                        "TSC": 1062403542,
+                                        "time_enabled": 503596227,
+                                        "time_running": 503596227},
+                                "1":
+                                    {
+                                        "mperf": 10724256,
+                                        "aperf": 6219967,
+                                        "TSC": 1062508538,
+                                        "time_enabled": 503652347,
+                                        "time_running": 503652347},
+                                "2":
+                                    {
+                                        "mperf": 34843946,
+                                        "aperf": 20517490,
+                                        "TSC": 1062516244,
+                                        "time_enabled": 503657311,
+                                        "time_running": 503657311},
+                                "3":
+                                    {
+                                        "mperf": 44880217,
+                                        "aperf": 24521456,
+                                        "TSC": 1061496242,
+                                        "time_enabled": 503178189,
+                                        "time_running": 503178189},
+                                "4":
+                                    {
+                                        "mperf": 33798356,
+                                        "aperf": 15466927,
+                                        "TSC": 1061649272,
+                                        "time_enabled": 503258869,
+                                        "time_running": 503258869},
+                                "5":
+                                    {
+                                        "mperf": 23821766,
+                                        "aperf": 13564798,
+                                        "TSC": 1061829320,
+                                        "time_enabled": 503349457,
+                                        "time_running": 503349457},
+                                "6":
+                                    {
+                                        "mperf": 16511276,
+                                        "aperf": 8192311,
+                                        "TSC": 1061959760,
+                                        "time_enabled": 503411582,
+                                        "time_running": 503411582},
+                                "7":
+                                    {
+                                        "mperf": 37457327,
+                                        "aperf": 17288854,
+                                        "TSC": 1062186326,
+                                        "time_enabled": 503490955,
+                                        "time_running": 503490955}}}}}
 
 
 @pytest.fixture
@@ -106,7 +183,7 @@ def test_of_create_hwpc_report_from_dict(create_report_dict):
     # Check that report is well-built
     assert report is not None
     assert isinstance(report, HWPCReport)  # It is a hwpc report
-    assert len(report.index) == 2  # Only one index has to exist
+    assert len(report.index) == 2  # 2 index have to exist
     assert len(report.columns) == 6  # There are 6 columns with groups data
     assert "CPU_CLK_THREAD_UNH" in report.columns
     assert "CPU_CLK_THREAD_UNH_XX" in report.columns
@@ -117,8 +194,31 @@ def test_of_create_hwpc_report_from_dict(create_report_dict):
     assert len(report.index.names) == 6  # Only 3 names are used in the index
 
 
+def test_of_create_hwpc_report_with_empty_cells_from_dict(create_report_with_empty_cells_dict):
+    """Test if a HWPC report is well-built"""
+
+    # Setup
+    report_dict = create_report_with_empty_cells_dict
+
+    # Exercise
+    report = create_hwpc_report_from_dict(report_dict)
+
+    # Check that report is well-built
+    assert report is not None
+    assert isinstance(report, HWPCReport)  # It is a hwpc report
+    assert len(report.index) == 9  # 9 index have to exist
+    assert len(report.columns) == 6  # There are 6 columns with groups data
+    assert "RAPL_ENERGY_PKG" in report.columns
+    assert "time_enabled" in report.columns
+    assert "time_running" in report.columns
+    assert "mperf" in report.columns
+    assert "aperf" in report.columns
+    assert "TSC" in report.columns
+    assert len(report.index.names) == 6  # Only 3 names are used in the index
+
+
 def test_of_create_hwpc_report_from_dict_from_values(create_report_dict):
-    """Test if a HWPC Report is well-built"""
+    """ Test if a HWPC Report is well-built """
 
     # Setup
     report_dict = create_report_dict
@@ -142,7 +242,7 @@ def test_of_create_hwpc_report_from_dict_from_values(create_report_dict):
 
 
 def test_of_create_hwpc_report_from_dict_with_metadata(create_report_dict_with_metadata):
-    """ Test that a HWPC report with metadata is well-built"""
+    """ Test that a HWPC report with metadata is well-built """
 
     # Setup
 
@@ -163,7 +263,7 @@ def test_of_create_hwpc_report_from_dict_with_metadata(create_report_dict_with_m
 
 
 def test_create_hwpc_report_from_dict_with_metadata_from_values(create_report_dict_with_metadata):
-    """ Test that a power report with metadata is well-built"""
+    """ Test that a power report with metadata is well-built """
 
     # Setup
     report_dict = create_report_dict_with_metadata
@@ -185,10 +285,24 @@ def test_create_hwpc_report_from_dict_with_metadata_from_values(create_report_di
 
 
 def test_of_to_dict(create_report_dict):
-    """Test if a hwpc report is transformed correctly into a dict"""
+    """ Test if a hwpc report is transformed correctly into a dict """
 
     # Setup
     report_dict = create_report_dict
+
+    # Exercise
+    report = create_hwpc_report_from_dict(report_dict)
+    report_dict_to_check = report.to_dict()
+
+    # Check that report is well-built
+    assert report_dict_to_check == report_dict
+
+
+def test_of_to_dict_with_empty_cells_dict(create_report_with_empty_cells_dict):
+    """ Test if a hwpc report is transformed correctly into a dict when there is missing cells """
+
+    # Setup
+    report_dict = create_report_with_empty_cells_dict
 
     # Exercise
     report = create_hwpc_report_from_dict(report_dict)
@@ -209,7 +323,7 @@ def test_to_dict_with_metadata(create_report_dict_with_metadata):
     # Check that report is well-built
     assert report_dict_to_check == report_dict
 
-    for _, group_dict in report_dict_to_check[GROUPS_CN].items(): # There is not numpy on the data
+    for _, group_dict in report_dict_to_check[GROUPS_CN].items():  # There is not numpy on the data
         for _, socket_dict in group_dict.items():
             for _, core_dict in socket_dict.items():
                 for _, core_data in core_dict.items():

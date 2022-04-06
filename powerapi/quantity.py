@@ -67,6 +67,12 @@ J = unit_reg.joule
 MJ = unit_reg.megajoule
 KJ = unit_reg.kilojoule
 mJ = unit_reg.microjoule
+DEFAULT_ENERGY_UNIT = J
+
+# Time
+ms = unit_reg.ms
+DEFAULT_TIME_UNIT = ms
+
 
 
 ##############################

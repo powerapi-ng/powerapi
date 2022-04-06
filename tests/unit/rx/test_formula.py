@@ -126,7 +126,7 @@ class ComplexFormula(Formula):
 
 
 class SimpleSource(BaseSource):
-    """Fake source for testing purposes"""
+    """Simple source for testing purposes"""
 
     def __init__(self, report: Report) -> None:
         """ Creates a fake source
@@ -153,7 +153,7 @@ class SimpleSource(BaseSource):
 
 
 class SimpleDestination(Destination):
-    """Fake destination for testing purposes"""
+    """Simple destination for testing purposes"""
 
     def __init__(self) -> None:
         """ Creates a fake source
