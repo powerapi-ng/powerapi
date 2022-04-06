@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 31 march 2022
+# Last modified : 6 April 2022
 
 ##############################
 #
@@ -152,6 +152,33 @@ class FakeSource(BaseSource):
         pass
 
 
+class FakeBadSource(BaseSource):
+    """Fake source for testing purposes"""
+
+    def __init__(self, report: Report) -> None:
+        """Creates a fake source
+
+        Args:
+
+        """
+        super().__init__()
+        self.report = report
+
+    def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
+        """Required method for retrieving data from a source by a Formula
+
+        Args:
+            operator: The operator (e.g. a formula or log)  that will process the data
+            scheduler: Used for parallelism. Not used for the time being
+
+        """
+        operator.on_error()
+
+    def close(self):
+        """Closes the access to the data source"""
+        pass
+
+
 class FakeDestination(Destination):
     """Fake destination for testing purposes"""
 
@@ -195,56 +222,33 @@ class FakeReport(Report):
         self.is_test = True
         self.processed = False
 
-    def to_dict(self) -> Dict:
-        # We get the dictionary with the basic information
-        report_dict = super().to_dict()
+    def to_influx(self):
+        return {
+            "measurement": "measure_name",
+            "time": 0,
+            "fields": {"test": 0},
+        }
 
-        # We have to create a dictionary for each group
-        groups = {}
-        groups_position = self.index.names.index(GROUPS_CN)
-        subgroup_l1_position = self.index.names.index(SUB_GROUPS_L1_CN)
-        subgroup_l2_position = self.index.names.index(SUB_GROUPS_L2_CN)
 
-        for current_index in self.index:
-            group_name = current_index[groups_position]
-            current_group_l1_name = current_index[subgroup_l1_position]
-            current_group_l2_name = current_index[subgroup_l2_position]
+class FakeQuantityReport(Report):
+    """Fake Report for testing purposes"""
 
-            # We create the group if required
-            if group_name not in groups.keys():
-                groups[group_name] = {}
+    def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
+        """Creates a fake formula
 
-            current_group = groups[group_name]
+        Args:
 
-            # We create the group l1 if required
-            if current_group_l1_name not in current_group.keys():
-                current_group[current_group_l1_name] = {}
+        """
+        super().__init__(data=data, index_names=index_names, index_values=index_values)
+        self.is_test = True
+        self.processed = False
 
-            current_group_l1 = current_group[current_group_l1_name]
-
-            # We create the group l2 if required
-
-            if current_group_l2_name not in current_group_l1.keys():
-                current_group_l1[current_group_l2_name] = {}
-
-            current_group_l2 = current_group_l1[current_group_l2_name]
-
-            # We get the data related to the current group l2
-            current_data = self.loc[current_index]
-
-            for current_column in current_data.index:
-                current_value = current_data.at[current_column]
-
-                if isinstance(current_value, int64):
-                    current_value = int(current_value)
-                elif isinstance(current_value, float64):
-                    current_value = float(current_value)
-
-                current_group_l2[current_column] = current_value
-
-        # We add the data, i.e., information that is not in the index
-        report_dict[GROUPS_CN] = groups
-        return report_dict
+    def to_influx(self):
+        return {
+            "measurement": "measure_name",
+            "time": 0,
+            "fields": {"test": 5.5 * quantity.W},
+        }
 
 
 ##############################
@@ -255,6 +259,77 @@ class FakeReport(Report):
 
 
 def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
+    """Creates a fake report by using the given information
+
+    Args:
+        report_dic: Dictionary that contains information of the report
+    """
+
+    # We get index names and values
+
+    (
+        index_names,
+        index_values,
+        data,
+    ) = papi_report.get_index_information_and_data_from_report_dict(report_dic)
+
+    data_by_columns = {}
+
+    # We add the groups and their keys and sub keys as part of the index if it is exist
+    if "groups" in data.keys():
+        index_names.append(GROUPS_CN)
+        index_names.append(SUB_GROUPS_L1_CN)
+        index_names.append(SUB_GROUPS_L2_CN)
+        groups = data[GROUPS_CN]
+
+        # For each existing index_value, we have to add values related to groups' keys
+
+        number_of_values_added = 0
+        original_index_value = index_values[0]  # There is only one entry
+
+        for key in groups.keys():
+
+            # We add the group level values to the index
+
+            # We add the sub_group_level1 values to the index
+            sub_group_level1 = groups[key]
+
+            for key_level1 in sub_group_level1.keys():
+
+                # We add the sub_group_level2 values to the index
+                sub_group_level2 = sub_group_level1[key_level1]
+
+                # original_index_value_level2 = index_values[number_of_values_added]
+
+                for key_level2 in sub_group_level2.keys():
+                    value_to_add = original_index_value + (
+                        key,
+                        key_level1,
+                        key_level2,
+                    )
+                    if number_of_values_added < len(index_values):
+                        index_values[number_of_values_added] = value_to_add
+                    else:
+                        index_values.append(value_to_add)
+
+                    number_of_values_added = number_of_values_added + 1
+
+                    # We extract the data from the level2
+                    data_values = sub_group_level2[key_level2]
+                    for data_key in data_values:
+                        current_value_to_add = data_values[data_key]
+                        if data_key not in data_by_columns.keys():
+                            data_by_columns[data_key] = [current_value_to_add]
+                        else:
+                            data_by_columns[data_key].append(current_value_to_add)
+
+    # We create the report
+    return FakeReport(data_by_columns, index_names, index_values)
+
+
+def create_fake_quantity_report_from_dict(
+    report_dic: Dict[str, Any]
+) -> FakeQuantityReport:
     """Creates a fake report by using the given information
 
     Args:
@@ -378,7 +453,7 @@ def get_all_reports(client, db_name):
     get all points stored in the database during test execution
     """
     client.switch_database(db_name)
-    result = client.query('SELECT * FROM "power_consumption"')
+    result = client.query("SELECT * FROM measure_name")
     return list(result.get_points())
 
 
@@ -453,55 +528,71 @@ def test_influxdb_read_basic_db(influx_database):
     the_source = FakeSource(create_fake_report_from_dict(report_dict))
 
     # Load DB
-    influxdb = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
 
-    source(the_source).subscribe(influxdb)
+    source(the_source).subscribe(influx)
 
     # Check if the report is in the DB
 
-    influxdb.client.switch_database(INFLUX_DBNAME)
-    print(influxdb.client.get_list_measurements())
-    result = influxdb.client.query("SELECT * FROM " + INFLUX_DBNAME)
+    print(influx.client.write_points([report_dict]))
+
+    influx.client.switch_database(INFLUX_DBNAME)
+    result = influx.client.query("SELECT * FROM measure_name ")
     output_reports = list(result.get_points())
 
     assert len(output_reports) == 1
 
 
-# def test_influxdb_read_quantity(influx_database):
-#     """This test check that a report is well writen in the mogodb"""
+def test_influxdb_on_error(influx_database):
 
-#     time = datetime.now()
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
 
-#     report_dict = {
-#         TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
-#         SENSOR_CN: "test_sensor",
-#         TARGET_CN: "test_target",
-#         POWER_CN: 5.5 * quantity.W,
-#         "groups": {
-#             "core": {
-#                 "0": {
-#                     "0": {
-#                         "CPU_CLK_THREAD_UNH": 2849918,
-#                         "CPU_CLK_THREAD_UNH_": 49678,
-#                         "time_enabled": 4273969,
-#                         "time_running": 4273969,
-#                         "LLC_MISES": 71307,
-#                         "INSTRUCTIONS": 2673428,
-#                     }
-#                 }
-#             }
-#         },
-#     }
+    the_source = FakeBadSource(create_fake_report_from_dict(report_dict))
+    with pytest.raises(DestinationException):
+        InfluxDestination("lochst", "10", "10")
 
-#     the_source = FakeSource(create_fake_report_from_dict(report_dict))
 
-#     # Load DB
-#     influxdb = InfluxDestination(
-#         INFLUX_URI, INFLUX_DATABASE_NAME, INFLUX_INPUT_COLLECTION_NAME
-#     )
+def test_influxdb_read_quantity(influx_database):
+    """This test check that a report is well writen in the mogodb"""
 
-#     source(the_source).subscribe(influxdb)
+    time = datetime.now()
 
-#     # Check if the report is in the DB
+    report_dict = {
+        TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        POWER_CN: 5.5 * quantity.W,
+        "groups": {
+            "core": {
+                "0": {
+                    "0": {
+                        "CPU_CLK_THREAD_UNH": 2849918,
+                        "CPU_CLK_THREAD_UNH_": 49678,
+                        "time_enabled": 4273969,
+                        "time_running": 4273969,
+                        "LLC_MISES": 71307,
+                        "INSTRUCTIONS": 2673428,
+                    }
+                }
+            }
+        },
+    }
 
-#     assert influxdb.collection.count_documents({}) == 1
+    the_source = FakeSource(create_fake_quantity_report_from_dict(report_dict))
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+
+    source(the_source).subscribe(influx)
+
+    # Check if the report is in the DB
+
+    print(influx.client.write_points([report_dict]))
+
+    influx.client.switch_database(INFLUX_DBNAME)
+    result = influx.client.query("SELECT * FROM measure_name ")
+    output_reports = list(result.get_points())
+
+    assert len(output_reports) == 1

@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 5 April 2022
+# Last modified : 6 April 2022
 
 from typing import List
 from influxdb import InfluxDBClient
@@ -81,7 +81,8 @@ class InfluxDestination(Destination):
         Args:
             report: The report that will be stored
         """
-        data = report.to_dict()
+        data = report.to_influx()
+
         self.client.write_points([data])
 
     def on_completed(self) -> None:
@@ -91,3 +92,4 @@ class InfluxDestination(Destination):
     def on_error(self, msg) -> None:
         """This method is called when the source has an error"""
         self.client.close()
+        raise DestinationException(self.__name__ + " : " + msg)
