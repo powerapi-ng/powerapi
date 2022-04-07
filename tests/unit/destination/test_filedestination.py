@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 5 april 2022
+# Last modified : 7 april 2022
 
 ##############################
 #
@@ -358,7 +358,7 @@ def test_destination_writing():
     source(the_source).subscribe(destination)
 
     #     # Check Report has been writen
-    destination.on_error()
+    destination.on_completed()
     f = open("/tmp/file_test", "r")
 
     assert f.readline() == str(report.to_dict())

@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 17 Mars 2022
+# Last modified : 7 April 2022
 
 
 from powerapi.rx import Destination
@@ -68,6 +68,7 @@ class FileDestination(Destination):
         """This method is called when the source finished"""
         self.file.close()
 
-    def on_error(self) -> None:
+    def on_error(self, err) -> None:
         """This method is called when the source has an error"""
         self.file.close()
+        raise DestinationException(self.__name__, " : catched exception") from err

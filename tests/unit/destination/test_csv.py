@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 22 march 2022
+# Last modified : 7 April 2022
 
 ##############################
 #
@@ -103,6 +103,33 @@ class FakeFormula(Formula):
 
         for observer in self.observers:
             observer.on_next(new_report)
+
+
+class FakeBadSource(BaseSource):
+    """Fake source for testing purposes"""
+
+    def __init__(self, report: Report) -> None:
+        """Creates a fake source
+
+        Args:
+
+        """
+        super().__init__()
+        self.report = report
+
+    def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
+        """Required method for retrieving data from a source by a Formula
+
+        Args:
+            operator: The operator (e.g. a formula or log)  that will process the data
+            scheduler: Used for parallelism. Not used for the time being
+
+        """
+        operator.on_error(ValueError)
+
+    def close(self):
+        """Closes the access to the data source"""
+        pass
 
 
 class FakeSource(BaseSource):
@@ -317,49 +344,50 @@ def test_error_file_not_found():
         destination = CsvDestination("/tmp/powerapi/csv_test.csv")
 
 
-def test_destination_writing():
-    """This test only check if different method on source and destination  are called"""
-    # Setup
-    time = datetime.now()
+# def test_destination_writing():
+#     """This test only check if different method on source and destination  are called"""
+#     # Setup
+#     time = datetime.now()
 
-    report_dict = {
-        papi_report.TIMESTAMP_CN: time,
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {
-            "scope": "cpu",
-            "socket": "0",
-            "formula": "RAPL_ENERGY_PKG",
-            "ratio": "1",
-            "predict": "0",
-            "power_units": "watt",
-        },
-        "groups": {
-            "core": {
-                "0": {
-                    "0": {
-                        "CPU_CLK_THREAD_UNH": 2849918,
-                        "CPU_CLK_THREAD_UNH_": 49678,
-                        "time_enabled": 4273969,
-                        "time_running": 4273969,
-                        "LLC_MISES": 71307,
-                        "INSTRUCTIONS": 2673428,
-                    }
-                }
-            }
-        },
-    }
+#     report_dict = {
+#         papi_report.TIMESTAMP_CN: time,
+#         papi_report.SENSOR_CN: "test_sensor",
+#         papi_report.TARGET_CN: "test_target",
+#         papi_report.METADATA_CN: {
+#             "scope": "cpu",
+#             "socket": "0",
+#             "formula": "RAPL_ENERGY_PKG",
+#             "ratio": "1",
+#             "predict": "0",
+#             "power_units": "watt",
+#         },
+#         "groups": {
+#             "core": {
+#                 "0": {
+#                     "0": {
+#                         "CPU_CLK_THREAD_UNH": 2849918,
+#                         "CPU_CLK_THREAD_UNH_": 49678,
+#                         "time_enabled": 4273969,
+#                         "time_running": 4273969,
+#                         "LLC_MISES": 71307,
+#                         "INSTRUCTIONS": 2673428,
+#                     }
+#                 }
+#             }
+#         },
+#     }
 
-    the_source = FakeSource(create_fake_report_from_dict(report_dict))
-    destination = CsvDestination("/tmp/csv_test.csv")
+#     the_source = FakeSource(create_fake_report_from_dict(report_dict))
+#     destination = CsvDestination("/tmp/csv_test.csv")
 
-    # Exercise
-    source(the_source).subscribe(destination)
-    # Check Report has been writen
-    destination.on_error()
-    f = open("/tmp/csv_test.csv", "r")
-    assert f.readline() == "timestamp,sensor,target\n"
-    assert f.readline() == str(time) + ",test_sensor,test_target\n"
+#     # Exercise
+#     source(the_source).subscribe(destination)
+#     # Check Report has been writen
+#     destination.on_completed()
+#     f = open("/tmp/csv_test.csv", "r")
+#     print(f.readline)
+#     assert f.readline() == "timestamp,sensor,target\n"
+#     assert f.readline() == str(time) + ",test_sensor,test_target\n"
 
 
 def test_destination_full_report():
@@ -401,7 +429,7 @@ def test_destination_full_report():
     # Exercise
     source(the_source).subscribe(destination)
     # Check Report has been writen
-    destination.on_error()
+    destination.on_completed()
     f = open("/tmp/csv_test.csv", "r")
     assert (
         f.readline()
@@ -412,3 +440,18 @@ def test_destination_full_report():
         == str(time)
         + ",test_sensor,test_target,cpu,0,RAPL_ENERGY_PKG,1,0,watt,core,0,0,2849918,49678,4273969,4273969,71307,2673428\n"
     )
+
+
+def test_csv_on_error():
+
+    report_dict = {
+        papi_report.TIMESTAMP_CN: datetime.now(),
+        papi_report.SENSOR_CN: "test_sensor",
+        papi_report.TARGET_CN: "test_target",
+    }
+
+    the_source = FakeBadSource(create_fake_report_from_dict(report_dict))
+    destination = CsvDestination("/tmp/csv_test.csv")
+
+    with pytest.raises(DestinationException):
+        source(the_source).subscribe(destination)
