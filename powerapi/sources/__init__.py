@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,50 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" Destination API for PowerAPI.
 
-# author : Lauric Desauw, Daniel Romero Acero
-# Last modified : 16 Mars 2022
+Currently, it is based on PyRx library and Panda Dataframe
 
-##############################
-#
-# Classes
-#
-##############################
-
-
-class PowerAPIException(Exception):
-    """PowerAPIException base class"""
-
-
-class PowerAPIExceptionWithMessage(PowerAPIException):
-    """PowerAPIException base class with message"""
-
-    def __init__(self, msg):
-        PowerAPIException.__init__(self)
-        self.msg = msg
-
-
-class DestinationException(PowerAPIExceptionWithMessage):
-    """Exception for Destination class"""
-
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
-
-
-class SourceException(PowerAPIExceptionWithMessage):
-    """Exception for Destination class"""
-
-    def __init__(self, destination_class, error_message):
-        PowerAPIExceptionWithMessage.__init__(
-            self, destination_class + " exception : " + error_message
-        )
-
-
-class BadInputDataException(PowerAPIExceptionWithMessage):
-    """Exception raised when input data can't be converted to a Report"""
-
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
+"""
+from powerapi.sources.mongosource import MongoSource
