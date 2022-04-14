@@ -35,7 +35,7 @@
 # Imports
 #
 ##############################
-
+import time
 from datetime import datetime
 from typing import Dict, Any
 
@@ -61,6 +61,13 @@ INDEX_CN = "index"
 INDEX_NAMES_CN = "index_names"
 NUMBER_OF_BASIC_VALUES = 3
 METADATA_PREFIX_LEN = len(METADATA_PREFIX)
+
+MEASUREMENT_CN = "measurement"
+TIME_CN = "time"
+FIELDS_CN = "fields"
+TAGS_CN = "tags"
+
+DATE_FORMAT ="%Y-%m-%dT%H:%M:%SZ"
 
 
 ##############################
@@ -96,14 +103,57 @@ class Report(DataFrame):
         sensor_position = self.index.names.index(SENSOR_CN)
         target_position = self.index.names.index(TARGET_CN)
         report_dict = {TIMESTAMP_CN: self.index[0][timestamp_position], SENSOR_CN: self.index[0][sensor_position],
-                      TARGET_CN: self.index[0][target_position]}
-        metadata = {}
+                       TARGET_CN: self.index[0][target_position]}
 
         # We get the metadata, we use METADATA_PREFIX to identify the metadata
-        metadata_prefix_len = len(METADATA_PREFIX)
+        metadata = self.get_metadata()
+
+        if len(metadata) > 0:
+            report_dict[METADATA_CN] = metadata
+
+        return report_dict
+
+    def get_timestamp(self)->str:
+        """ Get the timestamp of the report
+
+            Return
+                The timestamp associated with the report
+
+        """
+        timestamp_position = self.index.names.index(TIMESTAMP_CN)
+        return self.index[0][timestamp_position]
+
+    def get_target(self)->str:
+        """ Get the target of the report
+
+            Return
+                The target associated with the report
+
+        """
+        target_position = self.index.names.index(TARGET_CN)
+        return self.index[0][target_position]
+
+    def get_sensor(self)->str:
+        """ Gets the sensor of the report
+
+            Return
+                The sensor associated with the report
+
+        """
+        sensor_position = self.index.names.index(SENSOR_CN)
+        return self.index[0][sensor_position]
+
+    def get_metadata(self)->Dict:
+        """ Gets a dictionary with report metadata
+
+            Return
+                Metadata dict that can be empty if there is no metadata
+        """
+        metadata = {}
+        # We only look for metadata if it exists
         if len(self.index.names) > NUMBER_OF_BASIC_VALUES:
-            value_position = NUMBER_OF_BASIC_VALUES
-            for metadata_key in self.index.names[NUMBER_OF_BASIC_VALUES:]:
+            value_position = 0
+            for metadata_key in self.index.names:
 
                 current_metadata_key = self._get_metadata_key_from_str(metadata_key)
 
@@ -117,76 +167,20 @@ class Report(DataFrame):
 
                     metadata[current_metadata_key] = current_value
 
-                value_position = value_position + 1
+                value_position += 1
+        return metadata
 
-        if len(metadata) > 0:
-            report_dict[METADATA_CN] = metadata
-
-        return report_dict
-
-    def get_timestamp(self):
-        """ Get the timestamp of the report
-
-            Return
-                The timestamp associated with the report
-
-        """
-        timestamp_position = self.index.names.index(TIMESTAMP_CN)
-        return self.index[0][timestamp_position]
-
-    def get_target(self):
-        """ Get the target of the report
-
-            Return
-                The target associated with the report
-
-        """
-        target_position = self.index.names.index(TARGET_CN)
-        return self.index[0][target_position]
-
-    def get_sensor(self):
-        """ Get the sensor of the report
-
-            Return
-                The sensor associated with the report
-
-        """
-        sensor_position = self.index.names.index(SENSOR_CN)
-        return self.index[0][sensor_position]
-
-
-
-    # def to_mongo_db(self):
-    #     """ Transforms the report to a dict.
-    #
-    #         Only multiindex information will be included in the dictionary. If there are columns, specialized class
-    #         has to deal with it
-    #     """
-    #     report_dict_tight = super().to_dict('tight')  # We use the dataframe method to be sure that there is not
-    #     # numpy values
-    #     # tight’ : dict like {‘index’ -> [index], ‘columns’ -> [columns], ‘data’ -> [values],
-    #     # ‘index_names’ -> [index.names], ‘column_names’ -> [column.names]}
-    #     print(report_dict_tight)
-    #     report_dict = {}
-    #     metadata = {}
-    #     current_position = 0
-    #
-    #     for key in report_dict_tight[INDEX_NAMES_CN]:
-    #         current_key = self._get_metadata_key_from_str(key)
-    #
-    #         if current_key is not None:
-    #             metadata[current_key] = report_dict_tight[INDEX_CN][0][current_position]
-    #         else:
-    #             report_dict[key] = report_dict_tight[INDEX_CN][0][current_position]
-    #
-    #         current_position = current_position + 1
-    #
-    #     if len(metadata) > 0:
-    #         report_dict[METADATA_CN] = metadata
-    #
-    #     return report_dict
 
     def _get_metadata_key_from_str(self, metadata_key: str) -> str:
+
+        """ Gets a metadata key
+
+            Args:
+                metadata_key: The metadata_key
+
+            Return:
+                 The metadata key or None if metadata_key does not contain METADTA_PRFEIX
+        """
         prefix_position = metadata_key.find(METADATA_PREFIX)
         real_key = None
 
@@ -194,6 +188,26 @@ class Report(DataFrame):
             real_key = metadata_key[prefix_position + METADATA_PREFIX_LEN:]
 
         return real_key
+
+    def to_influx(self) -> Dict:
+        """ Transforms the report in a dict for influxdb with basic info
+
+            Basics info are metadata, sensor, target and time. The generated dict cannot not be used
+            directly for storage in influxdb.
+
+        """
+
+        # We add the timestamp as a unix timestamp. The date has the format 2022-03-31T10:03:15.694Z
+        influx_dict = {TIME_CN: time.mktime(datetime.strptime(self.get_timestamp(), DATE_FORMAT).timetuple())}
+
+        # We add the metadata, sensor and target
+        metadata = self.get_metadata()
+        metadata[SENSOR_CN] = self.get_sensor()
+        metadata[TARGET_CN] = self.get_target()
+
+        influx_dict[TAGS_CN] = metadata
+
+        return influx_dict
 
 
 ##############################

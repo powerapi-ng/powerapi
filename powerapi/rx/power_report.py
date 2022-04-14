@@ -41,10 +41,13 @@ import pint_pandas
 from datetime import datetime
 from typing import Dict, Any
 
+from numpy import int64, float64
+
 from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIPint_MODULE_NAME, PowerAPIQuantity
 from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
-    Report, is_basic_information_in_report_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN
+    Report, is_basic_information_in_report_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, FIELDS_CN, \
+    MEASUREMENT_CN
 
 ##############################
 #
@@ -52,6 +55,7 @@ from powerapi.rx.report import get_index_information_and_data_from_report_dict, 
 #
 ##############################
 POWER_CN = "power"
+MEASUREMENT_NAME = "power_consumption"
 
 
 ##############################
@@ -75,7 +79,7 @@ class PowerReport(Report):
                          dtype=PowerAPIPint_MODULE_NAME + "[" + data[POWER_CN][0].units.__str__() + "]")
 
     def to_dict(self) -> Dict:
-        """ Transform a power report in a dictionary
+        """ Transforms a power report in a dictionary
 
         Index information and power value are used for creating the dictionary.
 
@@ -84,9 +88,34 @@ class PowerReport(Report):
         report_dict = super().to_dict()
 
         # We have to add the power information
-        report_dict[POWER_CN] = self.loc[self.index[0]].at[POWER_CN]
+        report_dict[POWER_CN] = self.get_power()
 
         return report_dict
+
+    def get_power(self):
+        power = self.loc[self.index[0]].at[POWER_CN]
+
+        if isinstance(power, int64):
+            power = int(power)
+        elif isinstance(power, float64):
+            power = float(power)
+
+        return power
+
+    def to_influx(self) -> Dict:
+        """ Transforms the report in a dict for influxdb with power consumption """
+
+        # We get the dict with basic info
+        influx_dict = super().to_influx()
+
+        # We add the power
+        fields = {POWER_CN: self.get_power()}
+        influx_dict[FIELDS_CN] = fields
+
+        # We add the measurement name
+        influx_dict[MEASUREMENT_CN] = MEASUREMENT_NAME
+
+        return influx_dict
 
 
 ##############################

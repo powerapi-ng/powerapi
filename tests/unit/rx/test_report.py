@@ -35,7 +35,7 @@
 # Imports
 #
 ##############################
-
+import time
 from typing import Dict, Any
 from datetime import datetime
 
@@ -44,7 +44,17 @@ from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
 from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
-    create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
+    create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, FIELDS_CN, \
+    TAGS_CN, DATE_FORMAT
+
+##############################
+#
+# Constants
+#
+##############################
+GROUPS_CN = "groups"
+SUB_GROUPS_L1_CN = "sub_group_l1"
+SUB_GROUPS_L2_CN = "sub_group_l2"
 
 
 ##############################
@@ -53,17 +63,19 @@ from powerapi.rx.report import Report, get_index_information_and_data_from_repor
 #
 ##############################
 
-
 @pytest.fixture
 def create_report_dict() -> Dict:
+    """ Creates a report with basic info """
     return {
-        TIMESTAMP_CN: datetime.now(),
+        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target"}
 
 
 @pytest.fixture
 def create_report_dict_with_metadata(create_report_dict) -> Dict:
+    """ Creates a report dict with metadata and basic info """
+
     create_report_dict[METADATA_CN] = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                                        "predict": 0,
                                        "power_units": "watt"}
@@ -72,6 +84,8 @@ def create_report_dict_with_metadata(create_report_dict) -> Dict:
 
 @pytest.fixture
 def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
+    """ Creates a report dict with data """
+
     create_report_dict_with_metadata[GROUPS_CN] = {"core":
         {0:
             {0:
@@ -93,15 +107,16 @@ def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
     return create_report_dict_with_metadata
 
 
-##############################
-#
-# Constants
-#
-##############################
-GROUPS_CN = "groups"
-SUB_GROUPS_L1_CN = "sub_group_l1"
-SUB_GROUPS_L2_CN = "sub_group_l2"
+@pytest.fixture
+def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict:
+    """ Creates the expected influx dict for a report """
+    metadata = create_report_dict_with_metadata[METADATA_CN]
+    metadata[SENSOR_CN] = create_report_dict_with_metadata[SENSOR_CN]
+    metadata[TARGET_CN] = create_report_dict_with_metadata[TARGET_CN]
 
+    return {TIME_CN: time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
+                                                   DATE_FORMAT).timetuple()),
+            TAGS_CN: metadata}
 
 ##############################
 #
@@ -313,7 +328,7 @@ def test_of_to_dict(create_report_dict):
 
 
 def test_of_to_dict_metadata(create_report_dict_with_metadata):
-    """Test if a basic report with metadata is transformed correctly into a dict"""
+    """ Test if a basic report with metadata is transformed correctly into a dict """
     report_dict = create_report_dict_with_metadata
 
     # Exercise
@@ -419,23 +434,16 @@ def test_of_create_report_from_dict_with_empty_dict():
     # Check that report is not built
     assert report is None
 
-# def test_of_to_mongodb(create_report_dict_with_metadata):
-#     # setup
-#     expected_report_dict = create_report_dict_with_metadata
-#     expected_metadata = expected_report_dict[METADATA_CN]
-#
-#     report = create_report_from_dict(expected_report_dict)
-#
-#     # Execute
-#     report_dict = report.to_mongo_db()
-#
-#     # Check
-#     assert report_dict == expected_report_dict  # The dict are equals
-#
-#     for _, value in report_dict.items():  # There is not numpy number in the dictionary
-#         assert not isinstance(value, int64)
-#         assert not isinstance(value, float64)
-#
-#     for _, value in report_dict[METADATA_CN].items():  # There is not numpy number in the dictionary of metadata
-#         assert not isinstance(value, int64)
-#         assert not isinstance(value, float64)
+
+def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_influxdb_dict_with_metadata):
+    """ Test that the to_influx works correctly when there is metadata """
+
+    # Setup
+    report = create_report_from_dict(create_report_dict_with_metadata)
+    influx_dict = create_influxdb_dict_with_metadata
+
+    # Exercise
+    influx_dic_to_check = report.to_influx()
+
+    # Check that the influxdb dict is correctly built
+    assert influx_dic_to_check == influx_dict

@@ -35,7 +35,7 @@
 # Imports
 #
 ##############################
-
+import time
 from datetime import datetime
 from typing import Dict
 
@@ -45,8 +45,9 @@ from powerapi import quantity
 from powerapi.exception import BadInputDataException
 
 from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport, \
-    create_power_report_from_values
-from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
+    create_power_report_from_values, MEASUREMENT_NAME
+from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, \
+    TAGS_CN, FIELDS_CN, MEASUREMENT_CN, DATE_FORMAT
 
 
 ##############################
@@ -57,8 +58,10 @@ from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METAD
 
 @pytest.fixture
 def create_report_dict() -> Dict:
+    """ Creates a report with basic info """
+
     return {
-        TIMESTAMP_CN: datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT),
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
         POWER_CN: 5.5 * quantity.W}
@@ -66,6 +69,8 @@ def create_report_dict() -> Dict:
 
 @pytest.fixture
 def create_report_dict_with_metadata(create_report_dict) -> Dict:
+    """ Creates a report with metadata and basic information """
+
     create_report_dict[METADATA_CN] = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                                        "predict": 0,
                                        "power_units": "watt"}
@@ -74,6 +79,8 @@ def create_report_dict_with_metadata(create_report_dict) -> Dict:
 
 @pytest.fixture
 def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
+    """ Creates a report with data """
+
     create_report_dict_with_metadata["groups"] = {"core":
         {0:
             {0:
@@ -93,6 +100,21 @@ def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
                         "LLC_MISES": 71308,
                         "INSTRUCTIONS": 2673429}}}}
     return create_report_dict_with_metadata
+
+
+@pytest.fixture
+def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict:
+    """ Creates the expected influx dict for a report """
+
+    metadata = create_report_dict_with_metadata[METADATA_CN]
+    metadata[SENSOR_CN] = create_report_dict_with_metadata[SENSOR_CN]
+    metadata[TARGET_CN] = create_report_dict_with_metadata[TARGET_CN]
+
+    return {TIME_CN: time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
+                                                   DATE_FORMAT).timetuple()),
+            TAGS_CN: metadata,
+            FIELDS_CN: {POWER_CN: create_report_dict_with_metadata[POWER_CN]},
+            MEASUREMENT_CN:MEASUREMENT_NAME}
 
 
 ##############################
@@ -291,3 +313,17 @@ def test_of_create_power_report_from_dict_fails_with_empty_dict():
 
     # Check that report is not built
     assert report is None
+
+
+def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_influxdb_dict_with_metadata):
+    """ Test that the to_influx works correctly when there is metadata """
+
+    # Setup
+    report = create_power_report_from_dict(create_report_dict_with_metadata)
+    influx_dict = create_influxdb_dict_with_metadata
+
+    # Exercise
+    influx_dic_to_check = report.to_influx()
+
+    # Check that the influxdb dict is correctly built
+    assert influx_dic_to_check == influx_dict

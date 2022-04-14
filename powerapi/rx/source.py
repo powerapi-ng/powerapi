@@ -103,7 +103,7 @@ class Source(Observable):
 
 
 def source(base_source: BaseSource) -> Source:
-    """Returns an observable source
+    """ Returns an observable source
 
     Args:
         base_source: Base source for creating an observer source
