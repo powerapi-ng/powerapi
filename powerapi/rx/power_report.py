@@ -47,7 +47,7 @@ from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIPint_MODULE_NAME, PowerAPIQuantity
 from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
     Report, is_basic_information_in_report_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, FIELDS_CN, \
-    MEASUREMENT_CN
+    MEASUREMENT_CN, TAGS_CN
 
 ##############################
 #
@@ -56,6 +56,7 @@ from powerapi.rx.report import get_index_information_and_data_from_report_dict, 
 ##############################
 POWER_CN = "power"
 MEASUREMENT_NAME = "power_consumption"
+UNIT_CN = "unit"
 
 
 ##############################
@@ -108,9 +109,10 @@ class PowerReport(Report):
         # We get the dict with basic info
         influx_dict = super().to_influx()
 
-        # We add the power
-        fields = {POWER_CN: self.get_power()}
+        # We add the power and the used units as a tag
+        fields = {POWER_CN: self.get_power().magnitude}
         influx_dict[FIELDS_CN] = fields
+        influx_dict[TAGS_CN][UNIT_CN]= str(self.get_power().units)
 
         # We add the measurement name
         influx_dict[MEASUREMENT_CN] = MEASUREMENT_NAME

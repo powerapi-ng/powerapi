@@ -45,6 +45,7 @@ from numpy import int64, float64
 from powerapi import quantity
 
 from powerapi.destination import InfluxDestination
+from powerapi.quantity import W
 from powerapi.rx.formula import Formula
 from powerapi.rx.report import Report
 from powerapi.rx.source import BaseSource, source
@@ -72,10 +73,10 @@ GROUPS_CN = "groups"
 SUB_GROUPS_L1_CN = "sub_group_l1"
 SUB_GROUPS_L2_CN = "sub_group_l2"
 
-
 INFLUX_URI = "localhost"
 INFLUX_PORT = 8086
 INFLUX_DBNAME = "unit_test"
+
 
 ##############################
 #
@@ -226,7 +227,8 @@ class FakeReport(Report):
         return {
             "measurement": "measure_name",
             "time": 0,
-            "fields": {"test": 0},
+            "tags": {"units": W},
+            "fields": {"test": 0.0},
         }
 
 
@@ -245,7 +247,7 @@ class FakeQuantityReport(Report):
 
     def to_influx(self):
         return {
-            "measurement": "measure_name",
+            "measurement": "measure_name_2",
             "time": 0,
             "fields": {"test": 5.5 * quantity.W},
         }
@@ -328,7 +330,7 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 
 
 def create_fake_quantity_report_from_dict(
-    report_dic: Dict[str, Any]
+        report_dic: Dict[str, Any]
 ) -> FakeQuantityReport:
     """Creates a fake report by using the given information
 
@@ -436,7 +438,6 @@ def influx_database(influxdb_content):
 
 
 def _init_db(client, content):
-
     if content != []:
         client.create_database(INFLUX_DBNAME)
         client.switch_database(INFLUX_DBNAME)
@@ -544,7 +545,6 @@ def test_influxdb_read_basic_db(influx_database):
 
 
 def test_influxdb_on_error(influx_database):
-
     report_dict = {
         papi_report.TIMESTAMP_CN: datetime.now(),
         papi_report.SENSOR_CN: "test_sensor",
@@ -594,7 +594,7 @@ def test_influxdb_read_quantity(influx_database):
     print(influx.client.write_points([report_dict]))
 
     influx.client.switch_database(INFLUX_DBNAME)
-    result = influx.client.query("SELECT * FROM measure_name ")
+    result = influx.client.query("SELECT * FROM measure_name_2 ")
     output_reports = list(result.get_points())
 
     assert len(output_reports) == 1
