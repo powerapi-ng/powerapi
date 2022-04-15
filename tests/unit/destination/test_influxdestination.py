@@ -247,9 +247,10 @@ class FakeQuantityReport(Report):
 
     def to_influx(self):
         return {
-            "measurement": "measure_name_2",
+            "measurement": "measure_name_q",
             "time": 0,
-            "fields": {"test": 5.5 * quantity.W},
+            "tags": {"units": W},
+            "fields": {"test": 0.0},
         }
 
 
@@ -330,7 +331,7 @@ def create_fake_report_from_dict(report_dic: Dict[str, Any]) -> FakeReport:
 
 
 def create_fake_quantity_report_from_dict(
-        report_dic: Dict[str, Any]
+    report_dic: Dict[str, Any]
 ) -> FakeQuantityReport:
     """Creates a fake report by using the given information
 
@@ -397,7 +398,7 @@ def create_fake_quantity_report_from_dict(
                             data_by_columns[data_key].append(current_value_to_add)
 
     # We create the report
-    return FakeReport(data_by_columns, index_names, index_values)
+    return FakeQuantityReport(data_by_columns, index_names, index_values)
 
 
 ##############################
@@ -591,10 +592,8 @@ def test_influxdb_read_quantity(influx_database):
 
     # Check if the report is in the DB
 
-    print(influx.client.write_points([report_dict]))
-
     influx.client.switch_database(INFLUX_DBNAME)
-    result = influx.client.query("SELECT * FROM measure_name_2 ")
+    result = influx.client.query("SELECT * FROM measure_name_q ")
     output_reports = list(result.get_points())
 
     assert len(output_reports) == 1
