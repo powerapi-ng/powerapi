@@ -198,7 +198,7 @@ class Report(DataFrame):
         """
 
         # We add the timestamp as a unix timestamp. The date has the format 2022-03-31T10:03:15.694Z
-        influx_dict = {TIME_CN: time.mktime(datetime.strptime(self.get_timestamp(), DATE_FORMAT).timetuple())}
+        influx_dict = {TIME_CN: int(time.mktime(datetime.strptime(self.get_timestamp(), DATE_FORMAT).timetuple()))}
 
         # We add the metadata, sensor and target
         metadata = self.get_metadata()
