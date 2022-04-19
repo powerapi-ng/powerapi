@@ -142,7 +142,7 @@ class HWPCReport(Report):
 #
 ##############################
 
-def create_hwpc_report_from_dict(report_dict: Dict[str, Any]) -> HWPCReport:
+def create_report_from_dict(report_dict: Dict[str, Any]) -> HWPCReport:
     """ Creates a HWPC report by using the given information
 
         Args:

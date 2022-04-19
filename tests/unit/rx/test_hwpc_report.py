@@ -43,7 +43,7 @@ import pytest
 from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
-from powerapi.rx.hwpc_report import GROUPS_CN, create_hwpc_report_from_dict, HWPCReport, create_hwpc_report_from_values
+from powerapi.rx.hwpc_report import GROUPS_CN, create_report_from_dict, HWPCReport, create_hwpc_report_from_values
 from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
 
 
@@ -178,7 +178,7 @@ def test_of_create_hwpc_report_from_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
@@ -201,7 +201,7 @@ def test_of_create_hwpc_report_with_empty_cells_from_dict(create_report_with_emp
     report_dict = create_report_with_empty_cells_dict
 
     # Exercise
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
@@ -251,7 +251,7 @@ def test_of_create_hwpc_report_from_dict_with_metadata(create_report_dict_with_m
 
     # Exercise
 
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
 
     # Check that report is well-built, i.e., all the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
@@ -291,7 +291,7 @@ def test_of_to_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -305,7 +305,7 @@ def test_of_to_dict_with_empty_cells_dict(create_report_with_empty_cells_dict):
     report_dict = create_report_with_empty_cells_dict
 
     # Exercise
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -317,7 +317,7 @@ def test_to_dict_with_metadata(create_report_dict_with_metadata):
     report_dict = create_report_dict_with_metadata
 
     # Exercise
-    report = create_hwpc_report_from_dict(report_dict)
+    report = create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -342,7 +342,7 @@ def test_of_create_hwpc_report_from_dict_with_missing_groups(create_report_dict)
     report = None
 
     try:
-        report = create_hwpc_report_from_dict(report_dict)
+        report = create_report_from_dict(report_dict)
         assert False, "create_hwpc_report_from_dict should not create a report with groups missing"
     except BadInputDataException:
         pass
@@ -361,7 +361,7 @@ def test_of_create_hwpc_report_from_dict_with_missing_target(create_report_dict)
     # Exercise
     report = None
     try:
-        report = create_hwpc_report_from_dict(report_dict)
+        report = create_report_from_dict(report_dict)
         assert False, "create_hwpc_report_from_dict should not create a report with missing target value"
     except BadInputDataException:
         pass
@@ -382,7 +382,7 @@ def test_of_create_hwpc_report_from_dict_with_missing_wrong_groups(create_report
     # Exercise
     report = None
     try:
-        report = create_hwpc_report_from_dict(report_dict)
+        report = create_report_from_dict(report_dict)
         assert False, "create_hwpc_report_from_dict should not create a report with wrong groups type"
     except BadInputDataException:
         pass

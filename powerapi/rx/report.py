@@ -67,7 +67,7 @@ TIME_CN = "time"
 FIELDS_CN = "fields"
 TAGS_CN = "tags"
 
-DATE_FORMAT ="%Y-%m-%dT%H:%M:%SZ"
+DATE_FORMAT ="%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 ##############################

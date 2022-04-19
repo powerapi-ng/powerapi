@@ -45,7 +45,7 @@ from powerapi import quantity
 from powerapi.exception import BadInputDataException
 
 from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport, \
-    create_power_report_from_values, MEASUREMENT_NAME
+    create_power_report_from_values, MEASUREMENT_NAME, UNIT_CN
 from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, \
     TAGS_CN, FIELDS_CN, MEASUREMENT_CN, DATE_FORMAT
 
@@ -72,8 +72,7 @@ def create_report_dict_with_metadata(create_report_dict) -> Dict:
     """ Creates a report with metadata and basic information """
 
     create_report_dict[METADATA_CN] = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
-                                       "predict": 0,
-                                       "power_units": "watt"}
+                                       "predict": 0}
     return create_report_dict
 
 
@@ -109,12 +108,26 @@ def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict
     metadata = create_report_dict_with_metadata[METADATA_CN]
     metadata[SENSOR_CN] = create_report_dict_with_metadata[SENSOR_CN]
     metadata[TARGET_CN] = create_report_dict_with_metadata[TARGET_CN]
+    metadata[UNIT_CN] = str(create_report_dict_with_metadata[POWER_CN].units)
 
     return {TIME_CN: time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
                                                    DATE_FORMAT).timetuple()),
             TAGS_CN: metadata,
-            FIELDS_CN: {POWER_CN: create_report_dict_with_metadata[POWER_CN]},
-            MEASUREMENT_CN:MEASUREMENT_NAME}
+            FIELDS_CN: {POWER_CN: create_report_dict_with_metadata[POWER_CN].magnitude},
+            MEASUREMENT_CN: MEASUREMENT_NAME}
+
+
+@pytest.fixture
+def create_influxdb_dict(create_report_dict) -> Dict:
+    """ Creates the expected influx dict for a report """
+
+    return {TIME_CN: time.mktime(datetime.strptime(create_report_dict[TIMESTAMP_CN],
+                                                   DATE_FORMAT).timetuple()),
+            TAGS_CN: {UNIT_CN: str(create_report_dict[POWER_CN].units),
+                      SENSOR_CN:create_report_dict[SENSOR_CN],
+                      TARGET_CN:create_report_dict[TARGET_CN]},
+            FIELDS_CN: {POWER_CN: create_report_dict[POWER_CN].magnitude},
+            MEASUREMENT_CN: MEASUREMENT_NAME}
 
 
 ##############################
@@ -315,6 +328,21 @@ def test_of_create_power_report_from_dict_fails_with_empty_dict():
     assert report is None
 
 
+def test_of_to_influx(create_report_dict, create_influxdb_dict):
+    """ Test that the to_influx works correctly when there is metadata """
+
+    # Setup
+    report = create_power_report_from_dict(create_report_dict)
+    influx_dict = create_influxdb_dict
+
+    # Exercise
+    influx_dic_to_check = report.to_influx()
+
+    print(influx_dic_to_check)
+    # Check that the influxdb dict is correctly built
+    assert influx_dic_to_check == influx_dict
+
+
 def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_influxdb_dict_with_metadata):
     """ Test that the to_influx works correctly when there is metadata """
 
@@ -325,5 +353,6 @@ def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_inf
     # Exercise
     influx_dic_to_check = report.to_influx()
 
+    print(influx_dic_to_check)
     # Check that the influxdb dict is correctly built
     assert influx_dic_to_check == influx_dict
