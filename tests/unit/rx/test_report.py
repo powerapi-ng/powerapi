@@ -36,15 +36,14 @@
 #
 ##############################
 import time
-from typing import Dict, Any
 from datetime import datetime
+from typing import Dict, Any
 
 import pytest
 from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
-from powerapi.rx.report import Report, get_index_information_and_data_from_report_dict, \
-    create_report_from_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, FIELDS_CN, \
+from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, \
     TAGS_CN, DATE_FORMAT
 
 ##############################
@@ -198,7 +197,7 @@ def create_simple_report_from_dict(report_dic: Dict[str, Any]) -> SimpleReport:
 
     # We get index names and values
 
-    index_names, index_values, data = get_index_information_and_data_from_report_dict(report_dic)
+    index_names, index_values, data = Report.get_index_information_and_data_from_report_dict(report_dic)
 
     data_by_columns = {}
 
@@ -264,7 +263,7 @@ def test_of_create_report_from_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_report_from_dict(report_dict)
+    report = Report.create_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
@@ -286,7 +285,7 @@ def test_of_test_of_create_report_from_dict_with_metadata(create_report_dict_wit
 
     # Exercise
 
-    report = create_report_from_dict(report_dict)
+    report = Report.create_report_from_dict(report_dict)
 
     # All the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
@@ -320,7 +319,7 @@ def test_of_to_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_report_from_dict(report_dict)
+    report = Report.create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -333,7 +332,7 @@ def test_of_to_dict_metadata(create_report_dict_with_metadata):
 
     # Exercise
     try:
-        report = create_report_from_dict(report_dict)
+        report = Report.create_report_from_dict(report_dict)
         report_dict_to_check = report.to_dict()
 
         # Check that report is well-built
@@ -370,7 +369,7 @@ def test_of_create_report_from_dict_with_missing_target(create_report_dict):
     # Exercise
     report = None
     try:
-        report = create_report_from_dict(report_dict)
+        report = Report.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with missing target value"
     except BadInputDataException:
         pass
@@ -389,7 +388,7 @@ def test_of_create_report_from_dict_with_missing_sensor(create_report_dict):
     # Exercise
     report = None
     try:
-        report = create_report_from_dict(report_dict)
+        report = Report.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with missing sensor value"
     except BadInputDataException:
         pass
@@ -408,7 +407,7 @@ def test_of_create_report_from_dict_with_missing_timestamp(create_report_dict):
     # Exercise
     report = None
     try:
-        report = create_report_from_dict(report_dict)
+        report = Report.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with missing timestamp"
     except BadInputDataException:
         pass
@@ -426,7 +425,7 @@ def test_of_create_report_from_dict_with_empty_dict():
     # Exercise
     report = None
     try:
-        report = create_report_from_dict(report_dict)
+        report = Report.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with an empty dictionary"
     except BadInputDataException:
         pass
@@ -439,7 +438,7 @@ def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_inf
     """ Test that the to_influx works correctly when there is metadata """
 
     # Setup
-    report = create_report_from_dict(create_report_dict_with_metadata)
+    report = Report.create_report_from_dict(create_report_dict_with_metadata)
     influx_dict = create_influxdb_dict_with_metadata
 
     # Exercise

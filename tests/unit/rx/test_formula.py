@@ -55,6 +55,7 @@ GROUPS_CN = "groups"
 SUB_GROUPS_L1_CN = "sub_group_l1"
 SUB_GROUPS_L2_CN = "sub_group_l2"
 
+
 ##############################
 #
 # Classes
@@ -117,7 +118,7 @@ class ComplexFormula(Formula):
                 "power_units": "watt"},
             "power": 164.9913654183235}
 
-        new_report = papi_report.create_report_from_dict(report_dict)
+        new_report = Report.create_report_from_dict(report_dict)
 
         new_report["power"] = [report_dict["power"]]
 
@@ -178,17 +179,17 @@ class SimpleDestination(Destination):
     def on_error(self, error: Exception) -> None:
         pass
 
-    # def on_next(self, report):
-    #    self.store_report(report)
-
 
 class SimpleReport(Report):
-    """Fake Report for testing purposes"""
+    """Simple Report for testing purposes"""
 
     def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
         """ Creates a fake formula
 
-        Args:
+            Args:
+                data: Data of the report
+                index_names: The index names
+                index_values: The index values
 
         """
         super().__init__(data=data, index_names=index_names, index_values=index_values)
@@ -239,6 +240,68 @@ class SimpleReport(Report):
         report_dict[GROUPS_CN] = groups
         return report_dict
 
+    @staticmethod
+    def create_report_from_dict(report_dict: Dict[str, Any]):
+        """ Creates a simple report by using the given information
+
+            Args:
+                report_dict: Dictionary that contains information of the report
+        """
+
+        # We get index names and values
+
+        index_names, index_values, data = Report.get_index_information_and_data_from_report_dict(report_dict)
+
+        data_by_columns = {}
+
+        # We add the groups and their keys and sub keys as part of the index if it is exist
+        if "groups" in data.keys():
+            index_names.append(GROUPS_CN)
+            index_names.append(SUB_GROUPS_L1_CN)
+            index_names.append(SUB_GROUPS_L2_CN)
+            groups = data[GROUPS_CN]
+
+            # For each existing index_value, we have to add values related to groups' keys
+
+            number_of_values_added = 0
+            original_index_value = index_values[0]  # There is only one entry
+
+            for key in groups.keys():
+
+                # We add the group level values to the index
+
+                # We add the sub_group_level1 values to the index
+                sub_group_level1 = groups[key]
+
+                for key_level1 in sub_group_level1.keys():
+
+                    # We add the sub_group_level2 values to the index
+                    sub_group_level2 = sub_group_level1[key_level1]
+
+                    # original_index_value_level2 = index_values[number_of_values_added]
+
+                    for key_level2 in sub_group_level2.keys():
+                        value_to_add = original_index_value + (key, key_level1, key_level2,)
+                        if number_of_values_added < len(index_values):
+                            index_values[number_of_values_added] = value_to_add
+                        else:
+                            index_values.append(value_to_add)
+
+                        number_of_values_added = number_of_values_added + 1
+
+                        # We extract the data from the level2
+                        data_values = sub_group_level2[key_level2]
+                        for data_key in data_values:
+                            current_value_to_add = data_values[data_key]
+                            if data_key not in data_by_columns.keys():
+                                data_by_columns[data_key] = [current_value_to_add]
+                            else:
+                                data_by_columns[data_key].append(current_value_to_add)
+
+        # We create the report
+        return SimpleReport(data_by_columns, index_names, index_values)
+
+
 ##############################
 #
 # Functions
@@ -246,65 +309,8 @@ class SimpleReport(Report):
 ##############################
 
 
-def create_simple_report_from_dict(report_dic: Dict[str, Any]) -> SimpleReport:
-    """ Creates a fake report by using the given information
 
-        Args:
-            report_dic: Dictionary that contains information of the report
-    """
 
-    # We get index names and values
-
-    index_names, index_values, data = papi_report.get_index_information_and_data_from_report_dict(report_dic)
-
-    data_by_columns = {}
-
-    # We add the groups and their keys and sub keys as part of the index if it is exist
-    if "groups" in data.keys():
-        index_names.append(GROUPS_CN)
-        index_names.append(SUB_GROUPS_L1_CN)
-        index_names.append(SUB_GROUPS_L2_CN)
-        groups = data[GROUPS_CN]
-
-        # For each existing index_value, we have to add values related to groups' keys
-
-        number_of_values_added = 0
-        original_index_value = index_values[0]  # There is only one entry
-
-        for key in groups.keys():
-
-            # We add the group level values to the index
-
-            # We add the sub_group_level1 values to the index
-            sub_group_level1 = groups[key]
-
-            for key_level1 in sub_group_level1.keys():
-
-                # We add the sub_group_level2 values to the index
-                sub_group_level2 = sub_group_level1[key_level1]
-
-                # original_index_value_level2 = index_values[number_of_values_added]
-
-                for key_level2 in sub_group_level2.keys():
-                    value_to_add = original_index_value + (key, key_level1, key_level2,)
-                    if number_of_values_added < len(index_values):
-                        index_values[number_of_values_added] = value_to_add
-                    else:
-                        index_values.append(value_to_add)
-
-                    number_of_values_added = number_of_values_added + 1
-
-                    # We extract the data from the level2
-                    data_values = sub_group_level2[key_level2]
-                    for data_key in data_values:
-                        current_value_to_add = data_values[data_key]
-                        if data_key not in data_by_columns.keys():
-                            data_by_columns[data_key] = [current_value_to_add]
-                        else:
-                            data_by_columns[data_key].append(current_value_to_add)
-
-    # We create the report
-    return SimpleReport(data_by_columns, index_names, index_values)
 
 ##############################
 #
@@ -324,7 +330,7 @@ def test_simple_formula():
         papi_report.SENSOR_CN: "test_sensor",
         papi_report.TARGET_CN: "test_target"}
 
-    the_source = SimpleSource(create_simple_report_from_dict(report_dict))
+    the_source = SimpleSource(SimpleReport.create_report_from_dict(report_dict))
     destination = SimpleDestination()
 
     # Exercise
@@ -360,7 +366,7 @@ def test_complex_formula():
                         "LLC_MISES": 71307,
                         "INSTRUCTIONS": 2673428}}}}}
 
-    the_source = SimpleSource(create_simple_report_from_dict(report_dict))
+    the_source = SimpleSource(SimpleReport.create_report_from_dict(report_dict))
 
     # Exercise
     source(the_source).pipe(formula).subscribe(destination)

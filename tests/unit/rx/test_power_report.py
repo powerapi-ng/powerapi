@@ -44,9 +44,9 @@ import pytest
 from powerapi import quantity
 from powerapi.exception import BadInputDataException
 
-from powerapi.rx.power_report import create_power_report_from_dict, POWER_CN, PowerReport, \
-    create_power_report_from_values, MEASUREMENT_NAME, UNIT_CN
-from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, \
+from powerapi.rx.power_report import POWER_CN, PowerReport, \
+    MEASUREMENT_NAME, UNIT_CN
+from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, TIME_CN, \
     TAGS_CN, FIELDS_CN, MEASUREMENT_CN, DATE_FORMAT
 
 
@@ -144,7 +144,7 @@ def test_of_create_power_report_from_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_power_report_from_dict(report_dict)
+    report = PowerReport.create_report_from_dict(report_dict)
 
     # Check that report is well-built
     assert report is not None
@@ -162,7 +162,7 @@ def test_of_create_power_report_from_values(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_power_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+    report = PowerReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
                                              target=report_dict[TARGET_CN], power=report_dict[POWER_CN])
 
     # Check that report is well-built
@@ -185,7 +185,7 @@ def test_of_create_power_report_from_dict_with_metadata(create_report_dict_with_
 
     # Exercise
 
-    report = create_power_report_from_dict(report_dict)
+    report = PowerReport.create_report_from_dict(report_dict)
 
     # All the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
@@ -204,7 +204,7 @@ def test_of_create_power_report_from_values_with_metadata(create_report_dict_wit
     metadata = report_dict[METADATA_CN]
     # Exercise
 
-    report = create_power_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+    report = PowerReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
                                              target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
                                              metadata=metadata)
 
@@ -224,7 +224,7 @@ def test_of_to_dict(create_report_dict):
     report_dict = create_report_dict
 
     # Exercise
-    report = create_power_report_from_dict(report_dict)
+    report = PowerReport.create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -237,7 +237,7 @@ def test_of_to_dict_with_metadata(create_report_dict_with_metadata):
 
     # Exercise
     try:
-        report = create_power_report_from_dict(report_dict)
+        report = PowerReport.create_report_from_dict(report_dict)
         report_dict_to_check = report.to_dict()
 
         # Check that report is well-built
@@ -257,7 +257,7 @@ def test_of_to_dict_with_data(create_report_dict_with_data):
     del (report_dict_expected["groups"])
 
     # Exercise
-    report = create_power_report_from_dict(report_dict)
+    report = PowerReport.create_report_from_dict(report_dict)
     report_dict_to_check = report.to_dict()
 
     # Check that report is well-built
@@ -278,7 +278,7 @@ def test_of_create_power_report_from_dict_fails_with_missing_power():
     report = None
 
     try:
-        report = create_power_report_from_dict(report_dict)
+        report = PowerReport.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with missing power value"
     except BadInputDataException:
         pass
@@ -300,7 +300,7 @@ def test_of_create_power_report_from_dict_fails_with_missing_target(create_repor
     # Exercise
 
     try:
-        report = create_power_report_from_dict(report_dict)
+        report = PowerReport.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with missing target value"
     except BadInputDataException:
         pass
@@ -319,7 +319,7 @@ def test_of_create_power_report_from_dict_fails_with_empty_dict():
     report = None
 
     try:
-        report = create_power_report_from_dict(report_dict)
+        report = PowerReport.create_report_from_dict(report_dict)
         assert False, "create_report_from_dict should not create a report with an empty dictionary as input"
     except BadInputDataException:
         pass
@@ -332,7 +332,7 @@ def test_of_to_influx(create_report_dict, create_influxdb_dict):
     """ Test that the to_influx works correctly when there is metadata """
 
     # Setup
-    report = create_power_report_from_dict(create_report_dict)
+    report = PowerReport.create_report_from_dict(create_report_dict)
     influx_dict = create_influxdb_dict
 
     # Exercise
@@ -347,7 +347,7 @@ def test_of_to_influx_with_metadata(create_report_dict_with_metadata, create_inf
     """ Test that the to_influx works correctly when there is metadata """
 
     # Setup
-    report = create_power_report_from_dict(create_report_dict_with_metadata)
+    report = PowerReport.create_report_from_dict(create_report_dict_with_metadata)
     influx_dict = create_influxdb_dict_with_metadata
 
     # Exercise

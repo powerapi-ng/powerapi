@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Daniel Romero Acero
-# Last modified : 17 March 2022
+# Last modified : 19 april 2022
 
 ##############################
 #
@@ -67,7 +67,7 @@ TIME_CN = "time"
 FIELDS_CN = "fields"
 TAGS_CN = "tags"
 
-DATE_FORMAT ="%Y-%m-%dT%H:%M:%S.%fZ"
+DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 ##############################
@@ -113,7 +113,7 @@ class Report(DataFrame):
 
         return report_dict
 
-    def get_timestamp(self)->str:
+    def get_timestamp(self) -> str:
         """ Get the timestamp of the report
 
             Return
@@ -123,7 +123,7 @@ class Report(DataFrame):
         timestamp_position = self.index.names.index(TIMESTAMP_CN)
         return self.index[0][timestamp_position]
 
-    def get_target(self)->str:
+    def get_target(self) -> str:
         """ Get the target of the report
 
             Return
@@ -133,7 +133,7 @@ class Report(DataFrame):
         target_position = self.index.names.index(TARGET_CN)
         return self.index[0][target_position]
 
-    def get_sensor(self)->str:
+    def get_sensor(self) -> str:
         """ Gets the sensor of the report
 
             Return
@@ -143,7 +143,7 @@ class Report(DataFrame):
         sensor_position = self.index.names.index(SENSOR_CN)
         return self.index[0][sensor_position]
 
-    def get_metadata(self)->Dict:
+    def get_metadata(self) -> Dict:
         """ Gets a dictionary with report metadata
 
             Return
@@ -169,7 +169,6 @@ class Report(DataFrame):
 
                 value_position += 1
         return metadata
-
 
     def _get_metadata_key_from_str(self, metadata_key: str) -> str:
 
@@ -209,132 +208,132 @@ class Report(DataFrame):
 
         return influx_dict
 
+    @staticmethod
+    def create_report_from_dict(report_dict: Dict[str, Any]):
+        """ Creates a report by using the given information
 
-##############################
-#
-# Functions for creating reports
-#
-##############################
-def create_report_from_dict(report_dict: Dict[str, Any]) -> Report:
-    """ Creates a report by using the given information
+            Args:
+                report_dict: Dictionary that contains information of the report
+            Return :
+                A new report created using information contained in the dictionary
+        """
+        # We check that all the required information is in the input dictionary
+        if not Report.is_basic_information_in_report_dict(report_dict):
+            raise BadInputDataException(
+                msg=f"One of the following infos is missing in the input dictionary: {TIMESTAMP_CN}, "
+                    f"{SENSOR_CN}, "
+                    f"{TARGET_CN}. The report can not be created", input_data=report_dict)
 
-        Args:
-            report_dict: Dictionary that contains information of the report
-        Return :
-            A new report created using information contained in the dictionary
-    """
-    # We check that all the required information is in the input dictionary
-    if not is_basic_information_in_report_dict(report_dict):
-        raise BadInputDataException(
-            msg=f"One of the following infos is missing in the input dictionary: {TIMESTAMP_CN}, "
-                f"{SENSOR_CN}, "
-                f"{TARGET_CN}. The report can not be created", input_data=report_dict)
+        # We create the report
+        metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
+        return Report.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+                                                target=report_dict[TARGET_CN], metadata=metadata)
 
-    # We create the report
-    metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
-    return create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
-                                     target=report_dict[TARGET_CN], metadata=metadata)
+    @staticmethod
+    def create_report_from_values(timestamp: datetime, sensor: str, target: str, data: Dict[str, Any] = {},
+                                  metadata: Dict[str, Any] = {}):
+        """ Creates a report by using the given information
 
+            Args:
+                timestamp: Dictionary that contains information of the report
+                sensor: The name of the sensor
+                target: The name of the target
+                data: The data not used for building the index
+                metadata: Dictionary containing the metadata
 
-def create_report_from_values(timestamp: datetime, sensor: str, target: str, data: Dict[str, Any] = {},
-                              metadata: Dict[str, Any] = {}) -> Report:
-    """ Creates a report by using the given information
+            Return:
+                A new report created using provided information. The report only contains information related to index
+        """
 
-        Args:
-            timestamp: Dictionary that contains information of the report
-            sensor: The name of the sensor
-            target: The name of the target
-            data: The data not used for building the index
-            metadata: Dictionary containing the metadata
+        # We get index names and values
 
-        Return:
-            A new report created using provided information. The report only contains information related to index
-    """
+        index_names, index_values = Report.get_index_information_from_values(timestamp=timestamp, sensor=sensor,
+                                                                             target=target, metadata=metadata)
 
-    # We get index names and values
+        # We create the report
+        return Report(data, index_names, index_values)
 
-    index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor,
-                                                                  target=target, metadata=metadata)
+    @staticmethod
+    def get_index_information_and_data_from_report_dict(report_dict: Dict) -> (list, list, Dict):
+        """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
 
-    # We create the report
-    return Report(data, index_names, index_values)
+            The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
+            is considered as data as removed of a copy of report_dict
 
+            Args:
+                report_dict: The dictionary containing the information
 
-def get_index_information_and_data_from_report_dict(report_dict: Dict) -> (list, list, Dict):
-    """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
+            Return:
+                The list of names and values for building a multiindex as well as the report data
+        """
 
-        The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
-        is considered as data as removed of a copy of report_dict
+        # We get the index values
+        timestamp = report_dict[TIMESTAMP_CN]
+        sensor = report_dict[SENSOR_CN]
+        target = report_dict[TARGET_CN]
+        metadata = report_dict[METADATA_CN] if METADATA_CN in report_dict.keys() else {}
 
-        Args:
-            report_dict: The dictionary containing the information
+        # We define common index names and values
+        index_names, index_values = Report.get_index_information_from_values(timestamp=timestamp, sensor=sensor,
+                                                                             target=target,
+                                                                             metadata=metadata)
 
-        Return:
-            The list of names and values for building a multiindex as well as the report data
-    """
+        # We leave on the dictionary only the data not used for building the index
+        data = report_dict.copy()
 
-    # We get the index values
-    timestamp = report_dict[TIMESTAMP_CN]
-    sensor = report_dict[SENSOR_CN]
-    target = report_dict[TARGET_CN]
-    metadata = report_dict[METADATA_CN] if METADATA_CN in report_dict.keys() else {}
+        del data[TIMESTAMP_CN]
+        del data[SENSOR_CN]
+        del data[TARGET_CN]
 
-    # We define common index names and values
-    index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor, target=target,
-                                                                  metadata=metadata)
+        if METADATA_CN in data.keys():
+            del data[METADATA_CN]
 
-    # We leave on the dictionary only the data not used for building the index
-    data = report_dict.copy()
+        return index_names, index_values, data
 
-    del data[TIMESTAMP_CN]
-    del data[SENSOR_CN]
-    del data[TARGET_CN]
+    @staticmethod
+    def get_index_information_from_values(timestamp: datetime, sensor: str, target: str,
+                                          metadata: Dict[str, Any] = {}) -> (list, list):
+        """ Gets multiindex values and names from given values
 
-    if METADATA_CN in data.keys():
-        del data[METADATA_CN]
+            The basic values for building a multiindex are timestamp, sensor, target and metadata.
 
-    return index_names, index_values, data
+            Args:
+                timestamp: Dictionary that contains information of the report
+                sensor: The name of the sensor
+                target: The name of the target
+                metadata: Dictionary containing the metadata
 
+            Return:
+                The list of names and values for building a multiindex
+        """
+        # We define common index names and values
+        index_names = [TIMESTAMP_CN, SENSOR_CN, TARGET_CN]
+        index_values = [(timestamp, sensor, target)]
 
-def get_index_information_from_values(timestamp: datetime, sensor: str, target: str,
-                                      metadata: Dict[str, Any] = {}) -> (list, list):
-    """ Gets multiindex values and names from given values
+        # Metadata is also part of the index
+        for key, value in metadata.items():
+            index_names.append(METADATA_PREFIX + key)
+            for position, current_index in enumerate(index_values):
+                index_values[position] = current_index + (value,)
 
-        The basic values for building a multiindex are timestamp, sensor, target and metadata.
+        return index_names, index_values
 
-        Args:
-            timestamp: Dictionary that contains information of the report
-            sensor: The name of the sensor
-            target: The name of the target
-            metadata: Dictionary containing the metadata
+    @staticmethod
+    def is_basic_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
+        """ Check is basic information is presen in the given dictionary
 
-        Return:
-            The list of names and values for building a multiindex
-    """
-    # We define common index names and values
-    index_names = [TIMESTAMP_CN, SENSOR_CN, TARGET_CN]
-    index_values = [(timestamp, sensor, target)]
+            Basic information are timestamp, sensor and target
 
-    # Metadata is also part of the index
-    for key, value in metadata.items():
-        index_names.append(METADATA_PREFIX + key)
-        for position, current_index in enumerate(index_values):
-            index_values[position] = current_index + (value,)
+            Args:
+                report_dict: Dictionary that contains information of the report
 
-    return index_names, index_values
+            Return:
+                True if values are present, False otherwise
+        """
+        keys = report_dict.keys()
 
+        return (TIMESTAMP_CN in keys) and (SENSOR_CN in keys) and (TARGET_CN in keys)
 
-def is_basic_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
-    """ Check is basic information is presen in the given dictionary
-
-        Basic information are timestamp, sensor and target
-
-        Args:
-            report_dict: Dictionary that contains information of the report
-
-        Return:
-            True if values are present, False otherwise
-    """
-    keys = report_dict.keys()
-
-    return (TIMESTAMP_CN in keys) and (SENSOR_CN in keys) and (TARGET_CN in keys)
+    @staticmethod
+    def is_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
+        raise NotImplementedError

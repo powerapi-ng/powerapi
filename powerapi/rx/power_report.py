@@ -45,8 +45,7 @@ from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIPint_MODULE_NAME, PowerAPIQuantity
-from powerapi.rx.report import get_index_information_and_data_from_report_dict, get_index_information_from_values, \
-    Report, is_basic_information_in_report_dict, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, FIELDS_CN, \
+from powerapi.rx.report import Report, TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, FIELDS_CN, \
     MEASUREMENT_CN, TAGS_CN
 
 ##############################
@@ -112,86 +111,80 @@ class PowerReport(Report):
         # We add the power and the used units as a tag
         fields = {POWER_CN: self.get_power().magnitude}
         influx_dict[FIELDS_CN] = fields
-        influx_dict[TAGS_CN][UNIT_CN]= str(self.get_power().units)
+        influx_dict[TAGS_CN][UNIT_CN] = str(self.get_power().units)
 
         # We add the measurement name
         influx_dict[MEASUREMENT_CN] = MEASUREMENT_NAME
 
         return influx_dict
 
+    @staticmethod
+    def create_report_from_dict(report_dict: Dict[str, Any]):
+        """ Creates a power report by using the given information
 
-##############################
-#
-# Functions
-#
-##############################
+            Args:
+                report_dict: Dictionary that contains information of the power report
+            Return :
+                A new power report created using information contained in the dictionary
+        """
 
+        # We check that all the required information is in the input dictionary
+        if not PowerReport.is_information_in_report_dict(report_dict):
+            raise BadInputDataException(msg=f"The {POWER_CN} info is missing in the input dictionary. "
+                                            f"The Power Report can not be created", input_data=report_dict)
 
-def create_power_report_from_dict(report_dict: Dict[str, Any]) -> PowerReport:
-    """ Creates a power report by using the given information
+        # We check that the power is a quantity
+        if not isinstance(report_dict[POWER_CN], PowerAPIQuantity):
+            raise BadInputDataException(
+                msg=f"The power has to be a PowerAPIQuantity. The Power Report can not be created "
+                , input_data=report_dict[POWER_CN])
 
-        Args:
-            report_dict: Dictionary that contains information of the power report
-        Return :
-            A new power report created using information contained in the dictionary
-    """
+        metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
 
-    # We check that all the required information is in the input dictionary
-    if not is_information_in_power_report_dict(report_dict):
-        raise BadInputDataException(msg=f"The {POWER_CN} info is missing in the input dictionary. "
-                                        f"The Power Report can not be created", input_data=report_dict)
+        # We create the Power Report
+        return PowerReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
+                                                     target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
+                                                     metadata=metadata)
 
-    # We check that the power is a quantity
-    if not isinstance(report_dict[POWER_CN], PowerAPIQuantity):
-        raise BadInputDataException(msg=f"The power has to be a PowerAPIQuantity. The Power Report can not be created "
-                                    , input_data=report_dict[POWER_CN])
+    @staticmethod
+    def create_report_from_values(timestamp: datetime, sensor: str, target: str, power: PowerAPIQuantity,
+                                  metadata: Dict[str, Any] = {}):
+        """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
 
-    metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
+            The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
+            is considered as data as removed of a copy of report_dict
 
-    # We create the Power Report
-    return create_power_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
-                                           target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
-                                           metadata=metadata)
+            Args:
+                timestamp: Dictionary that contains information of the report
+                sensor: The name of the sensor
+                target: The name of the target
+                power: The power used for building the dataframe
+                metadata: Dictionary containing the metadata
 
+            Return:
+                The list of names and values for building a multiindex as well as the report data
+        """
 
-def create_power_report_from_values(timestamp: datetime, sensor: str, target: str, power: PowerAPIQuantity,
-                                    metadata: Dict[str, Any] = {}) -> PowerReport:
-    """ Retrieves multiindex values and names and report data from a given dictionary containing the report information
+        # We get index names and values
+        index_names, index_values = Report.get_index_information_from_values(timestamp=timestamp, sensor=sensor,
+                                                                             target=target, metadata=metadata)
 
-        The basic values for building a multiindex are timestamp, sensor, target and metadata. The rest of information
-        is considered as data as removed of a copy of report_dict
+        # We include the power as data in the dataframe
+        power_data = {POWER_CN: [power]}
 
-        Args:
-            timestamp: Dictionary that contains information of the report
-            sensor: The name of the sensor
-            target: The name of the target
-            power: The power used for building the dataframe
-            metadata: Dictionary containing the metadata
+        # We create the Power Report
+        return PowerReport(data=power_data, index_names=index_names, index_values=index_values)
 
-        Return:
-            The list of names and values for building a multiindex as well as the report data
-    """
+    @staticmethod
+    def is_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
+        """ Check is basic information is present in the given dictionary
 
-    # We get index names and values
-    index_names, index_values = get_index_information_from_values(timestamp=timestamp, sensor=sensor,
-                                                                  target=target, metadata=metadata)
+            Required information is basic information from report and the  power value
 
-    # We include the power as data in the dataframe
-    power_data = {POWER_CN: [power]}
+            Args:
+                report_dict: Dictionary that contains information of the report
 
-    # We create the Power Report
-    return PowerReport(data=power_data, index_names=index_names, index_values=index_values)
-
-
-def is_information_in_power_report_dict(report_dict: Dict[str, Any]) -> bool:
-    """ Check is basic information is present in the given dictionary
-
-        Required information is basic information from report and the  power value
-
-        Args:
-            report_dict: Dictionary that contains information of the report
-
-        Return:
-            True if values are present, False otherwise
-    """
-    return (POWER_CN in report_dict.keys()) and is_basic_information_in_report_dict(report_dict)
+            Return:
+                True if values are present, False otherwise
+        """
+        return (POWER_CN in report_dict.keys()) and Report.is_basic_information_in_report_dict(report_dict)
