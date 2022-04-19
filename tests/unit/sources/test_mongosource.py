@@ -45,6 +45,7 @@ import pymongo
 from powerapi.sources import MongoSource
 from powerapi.rx.formula import Formula
 from powerapi.rx.report import Report
+from powerapi.rx.hwpc_report import HWPCReport
 from powerapi.rx.destination import Destination
 from powerapi.exception import SourceException
 from powerapi.rx.source import source
@@ -475,6 +476,23 @@ def test_mongodb_read_basic_db(mongo_database_content):
     mongodb.close()
     # Check if the report is in the DB
     assert the_destination.report is not None
+
+
+def test_mongodb_test_report_type(mongo_database_content):
+    """This test check that a report is well received"""
+
+    # Load DB
+    mongodb = MongoSource(
+        HWPCReport, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+    )
+    the_destination = FakeDestination()
+
+    # insert  report in db
+
+    source(mongodb).subscribe(the_destination)
+    mongodb.close()
+    # Check if the report is in the DB
+    assert type(the_destination.report) is HWPCReport
 
 
 # def test_mongodb_read_basic_db_with_quantity(mongo_database_quantity_content):

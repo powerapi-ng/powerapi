@@ -41,7 +41,7 @@ from rx import Observable
 from rx.core.typing import Scheduler, Observer
 from powerapi.rx.source import BaseSource, Source
 from powerapi.exception import SourceException
-from powerapi.rx.report import *
+from powerapi.rx.hwpc_report import HWPCReport
 
 
 class MongoSource(BaseSource):
@@ -86,8 +86,19 @@ class MongoSource(BaseSource):
             raise SourceException(self.__name__, "can't subscribe") from exn
 
         while True:
-            report_dic = self.cursor.next()
+            try:
+                report_dic = self.cursor.next()
+            except StopIteration as exn:
+                pipeline = [{"$match": {"operationType": "insert"}}]
+                with collection.watch(
+                    pipeline
+                ) as stream:  # Switch to stream mode as the database is empty
+                    report = self.report_type.create_report_from_dict(report_dic)
+
+                    operator.on_next(report)
+
             report = self.report_type.create_report_from_dict(report_dic)
+
             operator.on_next(report)
 
     def close(self):
