@@ -70,7 +70,7 @@ class MongoSource(BaseSource):
         self.cursor = None
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
         self.report_type = report_type
-        self.steam_mode = stream_mode
+        self.stream_mode = stream_mode
         try:
             self.mongo_client.admin.command("ismaster")
         except pymongo.errors.ServerSelectionTimeoutError as exn:
