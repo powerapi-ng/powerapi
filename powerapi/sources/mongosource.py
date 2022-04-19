@@ -90,7 +90,7 @@ class MongoSource(BaseSource):
                 report_dic = self.cursor.next()
             except StopIteration as exn:
                 pipeline = [{"$match": {"operationType": "insert"}}]
-                with collection.watch(
+                with self.collection.watch(
                     pipeline
                 ) as stream:  # Switch to stream mode as the database is empty
                     report = self.report_type.create_report_from_dict(report_dic)
