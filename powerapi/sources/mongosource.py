@@ -41,14 +41,17 @@ from rx import Observable
 from rx.core.typing import Scheduler, Observer
 from powerapi.rx.source import BaseSource, Source
 from powerapi.exception import SourceException
-import powerapi.rx.report as papi_report
+from powerapi.rx.report import *
 
 
 class MongoSource(BaseSource):
-    def __init__(self, uri: str, db_name: str, collection_name: str) -> None:
+    def __init__(
+        self, report_type, uri: str, db_name: str, collection_name: str
+    ) -> None:
         """Creates a source for Mongodb
 
         Args:
+        :param report_type: type of the report that should be returned
         :param uri: URL of the database
         :param db_name: Name of the database
         :param collection_name: Collection name in the database
@@ -61,6 +64,7 @@ class MongoSource(BaseSource):
         self.collection_name = collection_name
         self.cursor = None
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
+        self.report_type = report_type
         try:
             self.mongo_client.admin.command("ismaster")
         except pymongo.errors.ServerSelectionTimeoutError as exn:
@@ -83,8 +87,7 @@ class MongoSource(BaseSource):
 
         while True:
             report_dic = self.cursor.next()
-            report = papi_report.create_report_from_dict(report_dic)
-
+            report = self.report_type.create_report_from_dict(report_dic)
             operator.on_next(report)
 
     def close(self):

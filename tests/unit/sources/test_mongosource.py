@@ -399,7 +399,7 @@ def test_error_mongo_bad_url(mongo_database):
         papi_report.TARGET_CN: "test_target",
     }
     with pytest.raises(SourceException):
-        the_source = MongoSource("mongodb://lel:27017/", "error", "error")
+        the_source = MongoSource(papi_report, "mongodb://lel:27017/", "error", "error")
 
 
 def test_error_mongo_bad_port(mongo_database):
@@ -412,7 +412,7 @@ def test_error_mongo_bad_port(mongo_database):
     }
 
     with pytest.raises(SourceException):
-        MongoSource("mongodb://localhost:1", "error", "error")
+        MongoSource(papi_report, "mongodb://localhost:1", "error", "error")
 
 
 def test_mongodb_empty_db(mongo_database):
@@ -449,7 +449,9 @@ def test_mongodb_empty_db(mongo_database):
     }
 
     # Load DB
-    mongodb = MongoSource(MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME)
+    mongodb = MongoSource(
+        papi_report, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+    )
     the_destination = FakeDestination()
 
     source(mongodb).subscribe(the_destination)
@@ -462,7 +464,9 @@ def test_mongodb_read_basic_db(mongo_database_content):
     """This test check that a report is well received"""
 
     # Load DB
-    mongodb = MongoSource(MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME)
+    mongodb = MongoSource(
+        papi_report, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+    )
     the_destination = FakeDestination()
 
     # insert  report in db
