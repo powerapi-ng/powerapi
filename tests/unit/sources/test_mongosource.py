@@ -144,7 +144,6 @@ class FakeDestination(Destination):
             report: The report that will be stored
         """
         self.report = report
-        print(report)
 
     def on_completed(self) -> None:
         pass

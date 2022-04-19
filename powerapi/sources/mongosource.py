@@ -46,7 +46,12 @@ from powerapi.rx.hwpc_report import HWPCReport
 
 class MongoSource(BaseSource):
     def __init__(
-        self, report_type, uri: str, db_name: str, collection_name: str
+        self,
+        report_type,
+        uri: str,
+        db_name: str,
+        collection_name: str,
+        stream_mode=False,
     ) -> None:
         """Creates a source for Mongodb
 
@@ -55,7 +60,7 @@ class MongoSource(BaseSource):
         :param uri: URL of the database
         :param db_name: Name of the database
         :param collection_name: Collection name in the database
-
+        :param stream_mode: If when listen to new entry when we finish the database or not
         """
         super().__init__()
         self.__name__ = "MongoSource"
@@ -65,6 +70,7 @@ class MongoSource(BaseSource):
         self.cursor = None
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
         self.report_type = report_type
+        self.steam_mode = stream_mode
         try:
             self.mongo_client.admin.command("ismaster")
         except pymongo.errors.ServerSelectionTimeoutError as exn:
@@ -89,6 +95,8 @@ class MongoSource(BaseSource):
             try:
                 report_dic = self.cursor.next()
             except StopIteration as exn:
+                if not self.stream_mode:
+                    return
                 pipeline = [{"$match": {"operationType": "insert"}}]
                 with self.collection.watch(
                     pipeline
