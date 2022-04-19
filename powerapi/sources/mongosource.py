@@ -45,8 +45,6 @@ import powerapi.rx.report as papi_report
 
 
 class MongoSource(BaseSource):
-    """Fake source for testing purposes"""
-
     def __init__(self, uri: str, db_name: str, collection_name: str) -> None:
         """Creates a source for Mongodb
 
@@ -85,13 +83,7 @@ class MongoSource(BaseSource):
 
         while True:
             report_dic = self.cursor.next()
-            (
-                report_index,
-                report_values,
-                report_data,
-            ) = papi_report.get_index_information_and_data_from_report_dict(report_dic)
-
-            report = papi_report.Report(report_data, report_index, report_values)
+            report = papi_report.create_report_from_dict(report_dic)
 
             operator.on_next(report)
 

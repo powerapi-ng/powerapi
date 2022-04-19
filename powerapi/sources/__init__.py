@@ -33,3 +33,4 @@ Currently, it is based on PyRx library and Panda Dataframe
 
 """
 from powerapi.sources.mongosource import MongoSource
+from powerapi.sources.socketsource import SocketSource, socket_source

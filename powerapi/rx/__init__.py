@@ -36,3 +36,4 @@ from powerapi.rx.report import Report
 from powerapi.rx.destination import Destination
 from powerapi.rx.formula import Formula
 from powerapi.rx.source import BaseSource, Source
+from powerapi.rx.json_stream import JsonStream
