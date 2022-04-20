@@ -59,9 +59,8 @@ from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, 
 @pytest.fixture
 def create_report_dict() -> Dict:
     """ Creates a report with basic info """
-
     return {
-        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT),
+        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT) + '+00:00',  # We are 00 hours and 00 minutes ahead of UTC
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
         POWER_CN: 5.5 * quantity.W}
@@ -124,8 +123,8 @@ def create_influxdb_dict(create_report_dict) -> Dict:
     return {TIME_CN: time.mktime(datetime.strptime(create_report_dict[TIMESTAMP_CN],
                                                    DATE_FORMAT).timetuple()),
             TAGS_CN: {UNIT_CN: str(create_report_dict[POWER_CN].units),
-                      SENSOR_CN:create_report_dict[SENSOR_CN],
-                      TARGET_CN:create_report_dict[TARGET_CN]},
+                      SENSOR_CN: create_report_dict[SENSOR_CN],
+                      TARGET_CN: create_report_dict[TARGET_CN]},
             FIELDS_CN: {POWER_CN: create_report_dict[POWER_CN].magnitude},
             MEASUREMENT_CN: MEASUREMENT_NAME}
 
@@ -163,7 +162,7 @@ def test_of_create_power_report_from_values(create_report_dict):
 
     # Exercise
     report = PowerReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
-                                             target=report_dict[TARGET_CN], power=report_dict[POWER_CN])
+                                                   target=report_dict[TARGET_CN], power=report_dict[POWER_CN])
 
     # Check that report is well-built
     assert report is not None
@@ -205,8 +204,8 @@ def test_of_create_power_report_from_values_with_metadata(create_report_dict_wit
     # Exercise
 
     report = PowerReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
-                                             target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
-                                             metadata=metadata)
+                                                   target=report_dict[TARGET_CN], power=report_dict[POWER_CN],
+                                                   metadata=metadata)
 
     # All the metadata has to be included in the report as well as the values
     frame = report.index.to_frame(index=False)
