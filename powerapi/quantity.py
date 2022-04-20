@@ -60,6 +60,7 @@ DEFAULT_POWER_UNIT = W
 # Frequency
 Hz = unit_reg.hertz
 MHz = unit_reg.megahertz
+GHz = unit_reg.gigahertz
 DEFAULT_FREQUENCY_UNIT = Hz
 
 # Energy
