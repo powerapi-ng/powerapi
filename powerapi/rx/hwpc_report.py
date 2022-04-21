@@ -231,8 +231,11 @@ class HWPCReport(Report):
             while len(columns_data[column_name]) < row_size:
                 columns_data[column_name].append(None)
 
-        # We create the HWPC Report
-        return HWPCReport(columns_data, index_names, index_values)
+        # We create the HWPC Report - It has to be ordered for performances issues, otherwise a warning is present
+        # TODO CHECK IF IT IS POSSIBLE TO PROVIDE A VIEW WITH LOC AND NOT A COPY
+        report = HWPCReport(columns_data, index_names, index_values)
+        report.sort_index(inplace=True)
+        return report
 
     @staticmethod
     def is_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:

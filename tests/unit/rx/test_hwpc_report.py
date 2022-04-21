@@ -44,7 +44,7 @@ from numpy import int64, float64
 
 from powerapi.exception import BadInputDataException
 from powerapi.rx.hwpc_report import GROUPS_CN, HWPCReport
-from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX
+from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, METADATA_PREFIX, DATE_FORMAT
 
 
 ##############################
@@ -56,7 +56,7 @@ from powerapi.rx.report import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN, 
 @pytest.fixture
 def create_report_dict() -> Dict:
     return {
-        TIMESTAMP_CN: datetime.now(),
+        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT) ,
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target",
         GROUPS_CN:

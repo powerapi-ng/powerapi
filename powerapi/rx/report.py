@@ -68,6 +68,7 @@ FIELDS_CN = "fields"
 TAGS_CN = "tags"
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
+DATE_FORMAT_WITHOUT_UTC_ADD = "%Y-%m-%dT%H:%M:%S.%f"
 
 
 ##############################
@@ -196,8 +197,15 @@ class Report(DataFrame):
 
         """
 
-        # We add the timestamp as a unix timestamp. The date has the format 2022-03-31T10:03:15.694Z
-        influx_dict = {TIME_CN: int(time.mktime(datetime.strptime(self.get_timestamp(), DATE_FORMAT).timetuple()))}
+        # We add the timestamp as a unix timestamp. The date has the format "%Y-%m-%dT%H:%M:%S.%f%z" e.g.
+        # 2022-03-31T10:03:15.694+00:00 or the format  "%Y-%m-%dT%H:%M:%S.%f" e.g. 2022-03-31T10:03:15.694
+
+        try:
+            timestamp = datetime.strptime(self.get_timestamp(), DATE_FORMAT_WITHOUT_UTC_ADD)
+        except ValueError:
+            timestamp = datetime.strptime(self.get_timestamp(), DATE_FORMAT)
+
+        influx_dict = {TIME_CN: int(time.mktime(timestamp.timetuple()))}
 
         # We add the metadata, sensor and target
         metadata = self.get_metadata()
@@ -306,9 +314,15 @@ class Report(DataFrame):
             Return:
                 The list of names and values for building a multiindex
         """
+
+        timestamp_str = timestamp
+
+        if isinstance(timestamp, datetime):  # We transform the date in a string
+            timestamp_str = timestamp.strftime(DATE_FORMAT)
+
         # We define common index names and values
         index_names = [TIMESTAMP_CN, SENSOR_CN, TARGET_CN]
-        index_values = [(timestamp, sensor, target)]
+        index_values = [(timestamp_str, sensor, target)]
 
         # Metadata is also part of the index
         for key, value in metadata.items():

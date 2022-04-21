@@ -66,7 +66,7 @@ SUB_GROUPS_L2_CN = "sub_group_l2"
 def create_report_dict() -> Dict:
     """ Creates a report with basic info """
     return {
-        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT)+ '+00:00',  # We are 00 hours and 00 minutes ahead of UTC
+        TIMESTAMP_CN: datetime.now().strftime(DATE_FORMAT) + '+00:00',  # We are 00 hours and 00 minutes ahead of UTC
         SENSOR_CN: "test_sensor",
         TARGET_CN: "test_target"}
 
@@ -116,6 +116,7 @@ def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict
     return {TIME_CN: time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
                                                    DATE_FORMAT).timetuple()),
             TAGS_CN: metadata}
+
 
 ##############################
 #
