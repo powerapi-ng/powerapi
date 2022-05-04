@@ -98,7 +98,7 @@ class MongoSource(BaseSource):
                 if not self.stream_mode:
                     return
                 pipeline = [{"$match": {"operationType": "insert"}}]
-                with collection.watch(pipeline) as stream:
+                with self.collection.watch(pipeline) as stream:
                     for (
                         insert_change
                     ) in stream:  # Switch to stream mode as the database is empty
