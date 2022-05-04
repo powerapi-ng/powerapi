@@ -98,12 +98,22 @@ class MongoSource(BaseSource):
                 if not self.stream_mode:
                     return
                 pipeline = [{"$match": {"operationType": "insert"}}]
-                with self.collection.watch(
-                    pipeline
-                ) as stream:  # Switch to stream mode as the database is empty
-                    report = self.report_type.create_report_from_dict(report_dic)
+                with collection.watch(pipeline) as stream:
+                    for (
+                        insert_change
+                    ) in stream:  # Switch to stream mode as the database is empty
 
-                    operator.on_next(report)
+                        report_db = insert_change["fullDocument"]
+
+                        observer.on_next(report.HWPCReport.from_mongodb(report_db))
+
+                # with self.collection.watch(
+                #     pipeline
+                # ) as stream:
+
+                #     report = self.report_type.create_report_from_dict(report_dic)
+
+                #     operator.on_next(report)
 
             report = self.report_type.create_report_from_dict(report_dic)
 
