@@ -91,33 +91,26 @@ class MongoSource(BaseSource):
         except Exception as exn:
             raise SourceException(self.__name__, "can't subscribe") from exn
 
-        while True:
-            try:
-                report_dic = self.cursor.next()
-            except StopIteration as exn:
-                if not self.stream_mode:
+        if self.stream_mode:
+
+            pipeline = [{"$match": {"operationType": "insert"}}]
+            with self.collection.watch(pipeline) as stream:
+                for (
+                    insert_change
+                ) in stream:  # Switch to stream mode as the database is empty
+
+                    report_db = insert_change["fullDocument"]
+
+                    observer.on_next(report.HWPCReport.from_mongodb(report_db))
+        else:
+            while True:
+                try:
+                    report_dic = self.cursor.next()
+                except StopIteration as exn:
                     return
-                pipeline = [{"$match": {"operationType": "insert"}}]
-                with self.collection.watch(pipeline) as stream:
-                    for (
-                        insert_change
-                    ) in stream:  # Switch to stream mode as the database is empty
+                report = self.report_type.create_report_from_dict(report_dic)
 
-                        report_db = insert_change["fullDocument"]
-
-                        observer.on_next(report.HWPCReport.from_mongodb(report_db))
-
-                # with self.collection.watch(
-                #     pipeline
-                # ) as stream:
-
-                #     report = self.report_type.create_report_from_dict(report_dic)
-
-                #     operator.on_next(report)
-
-            report = self.report_type.create_report_from_dict(report_dic)
-
-            operator.on_next(report)
+                operator.on_next(report)
 
     def close(self):
         """Closes the access to the Mongodb"""
