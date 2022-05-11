@@ -86,6 +86,59 @@ class HWPCReport(Report):
         report_dict = super().to_dict()
 
         # We have to create a dictionary for each group
+        groups = self.get_groups()
+        # groups_position = self.index.names.index(GROUPS_CN)
+        # socket_position = self.index.names.index(SOCKET_CN)
+        # core_position = self.index.names.index(CORE_CN)
+        #
+        # for current_index in self.index:
+        #     current_group_key = current_index[groups_position]
+        #     current_socket_key = current_index[socket_position]
+        #     current_core_key = current_index[core_position]
+        #
+        #     # We create the group if required
+        #     if current_group_key not in groups.keys():
+        #         groups[current_group_key] = {}
+        #
+        #     current_group_dict = groups[current_group_key]
+        #
+        #     # We create the group l1 if required
+        #     if current_socket_key not in current_group_dict.keys():
+        #         current_group_dict[current_socket_key] = {}
+        #
+        #     current_socket_dict = current_group_dict[current_socket_key]
+        #
+        #     # We create the group l2 if required
+        #
+        #     if current_core_key not in current_socket_dict.keys():
+        #         current_socket_dict[current_core_key] = {}
+        #
+        #     current_core_dict = current_socket_dict[current_core_key]
+        #
+        #     # We get the data related to the current core
+        #     current_core_data = self.loc[current_index]
+        #
+        #     for current_column in current_core_data.index:
+        #         current_core_value = current_core_data.at[current_column]
+        #         if isinstance(current_core_value, int64) and current_core_value is not nan:
+        #             current_core_value = int(current_core_value)
+        #         elif isinstance(current_core_value, float64) and current_core_value is not nan:
+        #             current_core_value = float(current_core_value)
+        #
+        #         # We only add the entry if it exists, i.e., it is not nan
+        #         if not isna(current_core_value):
+        #             current_core_dict[current_column] = current_core_value
+
+        # We add the data, i.e., information that is not in the index
+        report_dict[GROUPS_CN] = groups
+        return report_dict
+
+    def get_groups(self) -> Dict:
+        """ Creates a dict containing the report's groups
+            Return:
+                A dictionary with the groups of the report
+        """
+        # We have to create a dictionary for each group
         groups = {}
         groups_position = self.index.names.index(GROUPS_CN)
         socket_position = self.index.names.index(SOCKET_CN)
@@ -129,9 +182,7 @@ class HWPCReport(Report):
                 if not isna(current_core_value):
                     current_core_dict[current_column] = current_core_value
 
-        # We add the data, i.e., information that is not in the index
-        report_dict[GROUPS_CN] = groups
-        return report_dict
+        return groups
 
     @staticmethod
     def create_report_from_dict(report_dict: Dict[str, Any]):
@@ -154,12 +205,12 @@ class HWPCReport(Report):
         metadata = {} if METADATA_CN not in report_dict.keys() else report_dict[METADATA_CN]
 
         return HWPCReport.create_report_from_values(timestamp=report_dict[TIMESTAMP_CN], sensor=report_dict[SENSOR_CN],
-                                              target=report_dict[TARGET_CN], groups_dict=report_dict[GROUPS_CN],
-                                              metadata=metadata)
+                                                    target=report_dict[TARGET_CN], groups_dict=report_dict[GROUPS_CN],
+                                                    metadata=metadata)
 
     @staticmethod
     def create_report_from_values(timestamp: datetime, sensor: str, target: str, groups_dict: Dict,
-                                       metadata: Dict[str, Any] = {}):
+                                  metadata: Dict[str, Any] = {}):
         """ Creates a hwpc report by using the given information
 
             Args:
@@ -174,8 +225,9 @@ class HWPCReport(Report):
         """
 
         # We get index names and values
-        index_names, index_values = Report.get_index_information_from_values(timestamp=timestamp, sensor=sensor, target=target,
-                                                                      metadata=metadata)
+        index_names, index_values = Report.get_index_information_from_values(timestamp=timestamp, sensor=sensor,
+                                                                             target=target,
+                                                                             metadata=metadata)
 
         # We add the groups and socket keys and core keys as part of the index
         index_names.append(GROUPS_CN)
@@ -251,5 +303,8 @@ class HWPCReport(Report):
         """
         return (GROUPS_CN in report_dict.keys()) and Report.is_basic_information_in_report_dict(report_dict)
 
-
-
+    def __repr__(self) -> str:
+        return 'HWCPReport(timestamp: {timestamp}, sensor: {sensor}, target: {target}, groups: {groups}, ' \
+               'metadata: {metadata})'.format(timestamp=self.get_timestamp(), sensor=self.get_sensor(),
+                                              target=self.get_target(), groups=sorted(self.get_groups.keys()),
+                                              metadata=str(self.get_metadata()))

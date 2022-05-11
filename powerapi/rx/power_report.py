@@ -118,6 +118,12 @@ class PowerReport(Report):
 
         return influx_dict
 
+    def __repr__(self) -> str:
+        return 'PowerReport(timestamp: {timestamp}, sensor: {sensor}, target: {target}, power: {power}, ' \
+               'metadata: {metadata})'.format(timestamp=self.get_timestamp(), sensor=self.get_sensor(),
+                                              target=self.get_target(), power=self.get_power(),
+                                              metadata=str(self.get_metadata()))
+
     @staticmethod
     def create_report_from_dict(report_dict: Dict[str, Any]):
         """ Creates a power report by using the given information

@@ -205,7 +205,8 @@ class Report(DataFrame):
         except ValueError:
             timestamp = datetime.strptime(self.get_timestamp(), DATE_FORMAT)
 
-        influx_dict = {TIME_CN: int(time.mktime(timestamp.timetuple()))}
+        # influx_dict = {TIME_CN: int(round(time.mktime(timestamp.timetuple()))*1000)} # Time in ms
+        influx_dict = {TIME_CN: self.get_timestamp()}  # Time in ms
 
         # We add the metadata, sensor and target
         metadata = self.get_metadata()
@@ -351,3 +352,9 @@ class Report(DataFrame):
     @staticmethod
     def is_information_in_report_dict(report_dict: Dict[str, Any]) -> bool:
         raise NotImplementedError
+
+    def __repr__(self) -> str:
+        return 'Report(timestamp: {timestamp}, sensor: {sensor}, target: {target}, metadata: {metadata})'. \
+            format(timestamp=self.get_timestamp(), sensor=self.get_sensor(),
+                   target=self.get_target(),
+                   metadata=str(self.get_metadata()))

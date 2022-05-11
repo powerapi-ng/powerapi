@@ -79,6 +79,7 @@ class Formula(Observable):
                     scheduler: Used for parallelism. Not used for the time being
             """
             nonlocal process_report
+            nonlocal self
             self.observers.append(operator)
             return source.subscribe(
                     process_report,
