@@ -37,4 +37,4 @@ from powerapi.rx.destination import Destination
 from powerapi.rx.formula import Formula
 from powerapi.rx.source import BaseSource, Source
 from powerapi.rx.json_stream import JsonStream
-from powerapi.rx.hwpc_report import HWPCReport
+from powerapi.rx.hwpc_reports_group import HWPCReportsGroup

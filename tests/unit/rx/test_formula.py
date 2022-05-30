@@ -35,14 +35,14 @@
 # Imports
 #
 ##############################
-import powerapi.rx.report as papi_report
 
 from rx.core.typing import Observer, Scheduler
 from typing import Optional, Dict, Any
 from datetime import datetime
 
 from powerapi.rx.formula import Formula
-from powerapi.rx.report import Report
+from powerapi.rx.report import Report, TARGET_CN
+from powerapi.rx.reports_group import ReportsGroup, TIMESTAMP_CN, SENSOR_CN, METADATA_CN
 from powerapi.rx.source import BaseSource, source
 from powerapi.rx.destination import Destination
 
@@ -74,17 +74,17 @@ class SimpleFormula(Formula):
         """
         super().__init__()
 
-    def process_report(self, report: Report):
+    def process_report(self, reports: ReportsGroup):
         """ Required method for processing data as an observer of a source
 
                     Args:
                         report: The operator (e.g. a destination) that will process the output of the formula
                 """
 
-        report.processed = True
+        reports.processed = True
 
         for observer in self.observers:
-            observer.on_next(report)
+            observer.on_next(reports)
 
 
 class ComplexFormula(Formula):
@@ -98,7 +98,7 @@ class ComplexFormula(Formula):
         """
         super().__init__()
 
-    def process_report(self, report: Report):
+    def process_report(self, reports: ReportsGroup):
         """ Required method for processing data as an observer of a source
 
             Args:
@@ -118,25 +118,23 @@ class ComplexFormula(Formula):
                 "power_units": "watt"},
             "power": 164.9913654183235}
 
-        new_report = Report.create_report_from_dict(report_dict)
-
-        new_report["power"] = [report_dict["power"]]
+        new_reports = ReportsGroup.create_reports_group_from_dicts([report_dict])
 
         for observer in self.observers:
-            observer.on_next(new_report)
+            observer.on_next(new_reports)
 
 
 class SimpleSource(BaseSource):
     """Simple source for testing purposes"""
 
-    def __init__(self, report: Report) -> None:
+    def __init__(self, reports: ReportsGroup) -> None:
         """ Creates a fake source
 
         Args:
 
         """
         super().__init__()
-        self.report = report
+        self.reports = reports
 
     def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
         """ Required method for retrieving data from a source by a Formula
@@ -146,7 +144,7 @@ class SimpleSource(BaseSource):
                 scheduler: Used for parallelism. Not used for the time being
 
         """
-        operator.on_next(self.report)
+        operator.on_next(self.reports)
 
     def close(self):
         """ Closes the access to the data source"""
@@ -163,154 +161,21 @@ class SimpleDestination(Destination):
 
         """
         super().__init__()
-        self.report = None
+        self.reports = None
 
-    def store_report(self, report):
+    def store_report(self, reports):
         """ Required method for storing a report
 
             Args:
-                report: The report that will be stored
+                reports: The report group that will be stored
         """
-        self.report = report
+        self.reports = reports
 
     def on_completed(self) -> None:
         pass
 
     def on_error(self, error: Exception) -> None:
         pass
-
-
-class SimpleReport(Report):
-    """Simple Report for testing purposes"""
-
-    def __init__(self, data: Dict, index_names: list, index_values: list) -> None:
-        """ Creates a fake formula
-
-            Args:
-                data: Data of the report
-                index_names: The index names
-                index_values: The index values
-
-        """
-        super().__init__(data=data, index_names=index_names, index_values=index_values)
-        self.is_test = True
-        self.processed = False
-
-    def to_dict(self) -> Dict:
-        # We get the dictionary with the basic information
-        report_dict = super().to_dict()
-
-        # We have to create a dictionary for each group
-        groups = {}
-        groups_position = self.index.names.index(GROUPS_CN)
-        subgroup_l1_position = self.index.names.index(SUB_GROUPS_L1_CN)
-        subgroup_l2_position = self.index.names.index(SUB_GROUPS_L2_CN)
-
-        for current_index in self.index:
-            group_name = current_index[groups_position]
-            current_group_l1_name = current_index[subgroup_l1_position]
-            current_group_l2_name = current_index[subgroup_l2_position]
-
-            # We create the group if required
-            if group_name not in groups.keys():
-                groups[group_name] = {}
-
-            current_group = groups[group_name]
-
-            # We create the group l1 if required
-            if current_group_l1_name not in current_group.keys():
-                current_group[current_group_l1_name] = {}
-
-            current_group_l1 = current_group[current_group_l1_name]
-
-            # We create the group l2 if required
-
-            if current_group_l2_name not in current_group_l1.keys():
-                current_group_l1[current_group_l2_name] = {}
-
-            current_group_l2 = current_group_l1[current_group_l2_name]
-
-            # We get the data related to the current group l2
-            current_data = self.loc[current_index]
-
-            for current_column in current_data.index:
-                current_group_l2[current_column] = current_data.at[current_column]
-
-        # We add the data, i.e., information that is not in the index
-        report_dict[GROUPS_CN] = groups
-        return report_dict
-
-    @staticmethod
-    def create_report_from_dict(report_dict: Dict[str, Any]):
-        """ Creates a simple report by using the given information
-
-            Args:
-                report_dict: Dictionary that contains information of the report
-        """
-
-        # We get index names and values
-
-        index_names, index_values, data = Report.get_index_information_and_data_from_report_dict(report_dict)
-
-        data_by_columns = {}
-
-        # We add the groups and their keys and sub keys as part of the index if it is exist
-        if "groups" in data.keys():
-            index_names.append(GROUPS_CN)
-            index_names.append(SUB_GROUPS_L1_CN)
-            index_names.append(SUB_GROUPS_L2_CN)
-            groups = data[GROUPS_CN]
-
-            # For each existing index_value, we have to add values related to groups' keys
-
-            number_of_values_added = 0
-            original_index_value = index_values[0]  # There is only one entry
-
-            for key in groups.keys():
-
-                # We add the group level values to the index
-
-                # We add the sub_group_level1 values to the index
-                sub_group_level1 = groups[key]
-
-                for key_level1 in sub_group_level1.keys():
-
-                    # We add the sub_group_level2 values to the index
-                    sub_group_level2 = sub_group_level1[key_level1]
-
-                    # original_index_value_level2 = index_values[number_of_values_added]
-
-                    for key_level2 in sub_group_level2.keys():
-                        value_to_add = original_index_value + (key, key_level1, key_level2,)
-                        if number_of_values_added < len(index_values):
-                            index_values[number_of_values_added] = value_to_add
-                        else:
-                            index_values.append(value_to_add)
-
-                        number_of_values_added = number_of_values_added + 1
-
-                        # We extract the data from the level2
-                        data_values = sub_group_level2[key_level2]
-                        for data_key in data_values:
-                            current_value_to_add = data_values[data_key]
-                            if data_key not in data_by_columns.keys():
-                                data_by_columns[data_key] = [current_value_to_add]
-                            else:
-                                data_by_columns[data_key].append(current_value_to_add)
-
-        # We create the report
-        return SimpleReport(data_by_columns, index_names, index_values)
-
-
-##############################
-#
-# Functions
-#
-##############################
-
-
-
-
 
 ##############################
 #
@@ -326,19 +191,23 @@ def test_simple_formula():
     formula = SimpleFormula()
 
     report_dict = {
-        papi_report.TIMESTAMP_CN: datetime.now(),
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target"}
+        TIMESTAMP_CN: datetime.now(),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target"}
 
-    the_source = SimpleSource(SimpleReport.create_report_from_dict(report_dict))
+    reports = ReportsGroup.create_reports_group_from_dicts([report_dict])
+    reports.is_test = True
+    reports.processed = False
+
+    the_source = SimpleSource(reports)
     destination = SimpleDestination()
 
     # Exercise
     source(the_source).pipe(formula).subscribe(destination)
     # Check Report has been modified
-    assert destination.report is not None
-    assert destination.report.is_test
-    assert destination.report.processed
+    assert destination.reports is not None
+    assert destination.reports.is_test
+    assert destination.reports.processed
 
 
 def test_complex_formula():
@@ -349,12 +218,12 @@ def test_complex_formula():
     destination = SimpleDestination()
 
     report_dict = {
-        papi_report.TIMESTAMP_CN: datetime.now(),
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
-                                  "predict": 0,
-                                  "power_units": "watt"},
+        TIMESTAMP_CN: datetime.now(),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        METADATA_CN: {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
+                      "predict": 0,
+                      "power_units": "watt"},
         "groups": {"core":
             {0:
                 {0:
@@ -366,9 +235,9 @@ def test_complex_formula():
                         "LLC_MISES": 71307,
                         "INSTRUCTIONS": 2673428}}}}}
 
-    the_source = SimpleSource(SimpleReport.create_report_from_dict(report_dict))
+    the_source = SimpleSource(ReportsGroup.create_reports_group_from_dicts([report_dict]))
 
     # Exercise
     source(the_source).pipe(formula).subscribe(destination)
     # Check that a new report has been created, i.e., all source, formula and destination have been called
-    assert "power" in destination.report.columns  # The produced report has a column power
+    assert "power" in destination.reports.report.columns  # The produced report has a column power

@@ -45,7 +45,6 @@ import pymongo
 from powerapi.sources import MongoSource
 from powerapi.rx.formula import Formula
 from powerapi.rx.report import Report
-from powerapi.rx.hwpc_report import HWPCReport
 from powerapi.rx.destination import Destination
 from powerapi.exception import SourceException
 from powerapi.rx.source import source

@@ -54,6 +54,7 @@ class InfluxDestination(Destination):
         self.uri = uri
         self.port = port
         self.db_name = db_name
+        self.buffer = []
 
         try:
             self.client = InfluxDBClient(
@@ -75,18 +76,25 @@ class InfluxDestination(Destination):
                 return
         self.client.create_database(self.db_name)
 
-    def store_report(self, report):
+    def store_report(self, reports):
         """Required method for storing a report
 
         Args:
             report: The report that will be stored
         """
-        data = report.to_influx()
+        data_dict = reports.to_influx_dict()
 
-        self.client.write_points([data])
+        self.buffer.chain(data_dict)
+        if len(self.buffer) >= 10000:
+            self.client.write_points(points=self.buffer, protocol='json')
+            self.buffer = []
+
+        # self.client.write_points([data])
 
     def on_completed(self) -> None:
         """This method is called when the source finished"""
+        if len(self.buffer) > 0:
+            self.client.write_points(points=self.buffer, protocol='json')
         self.client.close()
 
     def on_error(self, err) -> None:

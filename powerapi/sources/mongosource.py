@@ -36,22 +36,26 @@
 #
 ##############################
 import pymongo
-from typing import Optional
+from typing import Optional, Any, Dict
 from rx import Observable
 from rx.core.typing import Scheduler, Observer
+
+from powerapi.rx import Report
+from powerapi.rx.reports_group import TIMESTAMP_CN
 from powerapi.rx.source import BaseSource, Source
 from powerapi.exception import SourceException
-from powerapi.rx.hwpc_report import HWPCReport
+
+DICTS_CN = "dicts"
 
 
 class MongoSource(BaseSource):
     def __init__(
-        self,
-        report_type,
-        uri: str,
-        db_name: str,
-        collection_name: str,
-        stream_mode=False,
+            self,
+            uri: str,
+            db_name: str,
+            collection_name: str,
+            stream_mode: bool = False,
+            report_type: Any = Report
     ) -> None:
         """Creates a source for Mongodb
 
@@ -71,12 +75,15 @@ class MongoSource(BaseSource):
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
         self.report_type = report_type
         self.stream_mode = stream_mode
+        self.reports_group = None
         try:
             self.mongo_client.admin.command("ismaster")
         except pymongo.errors.ServerSelectionTimeoutError as exn:
             raise SourceException(self.__name__, "can't connect to source") from exn
 
         self.collection = self.mongo_client[self.db_name][self.collection_name]
+
+        self.current_group_dicts = None
 
     def subscribe(self, operator: Observer, scheduler: Optional[Scheduler] = None):
         """Required method for retrieving data from a source by a Formula
@@ -96,21 +103,37 @@ class MongoSource(BaseSource):
             pipeline = [{"$match": {"operationType": "insert"}}]
             with self.collection.watch(pipeline) as stream:
                 for (
-                    insert_change
+                        insert_change
                 ) in stream:  # Switch to stream mode as the database is empty
 
                     report_db = insert_change["fullDocument"]
 
-                    observer.on_next(report.HWPCReport.from_mongodb(report_db))
+                    operator.on_next(self.report_type.from_mongodb(report_db))
         else:
             while True:
                 try:
                     report_dic = self.cursor.next()
                 except StopIteration as exn:
                     return
-                report = self.report_type.create_report_from_dict(report_dic)
 
-                operator.on_next(report)
+                if self.current_group_dicts is not None and self.current_group_dicts[TIMESTAMP_CN] == report_dic[
+                    TIMESTAMP_CN]:
+                    self.current_group_dicts[DICTS_CN].append(report_dic)
+                elif self.current_group_dicts is None:
+                    self.initialize_current_group_dicts(report_dic)
+                else:
+                    reports_group = self.report_type.create_report_from_dict(self.current_group_dicts[DICTS_CN])
+                    self.initialize_current_group_dicts(report_dic)
+                    operator.on_next(reports_group)
+
+    def initialize_current_group_dicts(self, report_dict: Dict):
+        """ Initialize current_group_dicts by using the given dict
+
+            Args:
+                report_dict: The dictionary for initialization
+        """
+        self.current_group_dicts = {TIMESTAMP_CN: report_dict[TIMESTAMP_CN],
+                                    DICTS_CN: [report_dict]}
 
     def close(self):
         """Closes the access to the Mongodb"""

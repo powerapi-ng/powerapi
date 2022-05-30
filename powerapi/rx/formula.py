@@ -42,6 +42,7 @@ from rx import Observable
 from rx.core.typing import Scheduler, Observer, Subject
 
 from powerapi.rx.report import Report
+from powerapi.rx.reports_group import ReportsGroup
 from powerapi.rx.source import Source
 
 ##############################
@@ -91,7 +92,7 @@ class Formula(Observable):
         return self
 
     @abstractmethod
-    def process_report(self, report:Report):
+    def process_report(self, report:ReportsGroup):
         """ Required method for processing data as an observer of a source (= on_next method)
 
                     Args:
