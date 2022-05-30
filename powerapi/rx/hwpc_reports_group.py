@@ -101,19 +101,23 @@ class HWPCReportsGroup(ReportsGroup):
             current_report_dict[GROUPS_CN] = {}
             for current_row_index in group_by_target_dict[current_target]:
                 current_row = self.report.iloc[current_row_index]
+                group_id = current_row[GROUPS_CN]
                 socket_id = current_row[SOCKET_CN]
                 core_id = current_row[CORE_CN]
                 event_id = current_row[EVENT_CN]
                 event_value = current_row[EVENT_VALUE_CN]
 
-                if socket_id not in current_report_dict[GROUPS_CN]:  # We create the group
-                    current_report_dict[GROUPS_CN][socket_id] = {}
+                if group_id not in current_report_dict[GROUPS_CN]:  # We create the group
+                    current_report_dict[GROUPS_CN][group_id] = {}
 
-                if core_id not in current_report_dict[GROUPS_CN][socket_id]:  # We create the subgroup
-                    current_report_dict[GROUPS_CN][socket_id][core_id] = {}
+                if socket_id not in current_report_dict[GROUPS_CN][group_id]:  # We create the subgroup
+                    current_report_dict[GROUPS_CN][group_id][socket_id] = {}
+
+                if core_id not in current_report_dict[GROUPS_CN][group_id][socket_id]:  # We create the subgroup
+                    current_report_dict[GROUPS_CN][group_id][socket_id][core_id] = {}
 
                 # We add the event value
-                current_report_dict[GROUPS_CN][socket_id][core_id][event_id] = event_value
+                current_report_dict[GROUPS_CN][group_id][socket_id][core_id][event_id] = event_value
 
             reports_dict.append(current_report_dict)
 
@@ -142,20 +146,22 @@ class HWPCReportsGroup(ReportsGroup):
                     f"{GROUPS_CN}. The HWPCReportsGroup cannot be created", input_data=reports_dict)
 
         # We create the report
-        report_data_dict = {TARGET_CN: [], SOCKET_CN: [], CORE_CN: [], EVENT_CN: [], EVENT_VALUE_CN: []}
+        report_data_dict = {TARGET_CN: [], GROUPS_CN:[], SOCKET_CN: [], CORE_CN: [], EVENT_CN: [], EVENT_VALUE_CN: []}
 
         for current_report_dict in reports_dict:
-            current_sockets_dict = current_report_dict[GROUPS_CN]
+            current_groups_dict = current_report_dict[GROUPS_CN]
             current_target = current_report_dict[TARGET_CN]
-            for current_socket_id, current_socket_dict in current_sockets_dict.items():
-                for current_core_id, current_core_dict in current_socket_dict.items():
-                    for current_event_id, current_event_value in current_core_dict.items():
-                        # We add a line for each event value
-                        report_data_dict[TARGET_CN].append(current_target)
-                        report_data_dict[SOCKET_CN].append(current_socket_id)
-                        report_data_dict[CORE_CN].append(current_core_id)
-                        report_data_dict[EVENT_CN].append(current_event_id)
-                        report_data_dict[EVENT_VALUE_CN].append(current_event_value)
+            for current_group_id, current_sockets_dict in current_groups_dict.items():
+                for current_socket_id, current_cores_dict in current_sockets_dict.items():
+                    for current_core_id, current_events_dict in current_cores_dict.items():
+                        for current_event_id, current_event_value in current_events_dict.items():
+                            # We add a line for each event value
+                            report_data_dict[TARGET_CN].append(current_target)
+                            report_data_dict[GROUPS_CN].append(current_group_id)
+                            report_data_dict[SOCKET_CN].append(current_socket_id)
+                            report_data_dict[CORE_CN].append(current_core_id)
+                            report_data_dict[EVENT_CN].append(current_event_id)
+                            report_data_dict[EVENT_VALUE_CN].append(current_event_value)
 
         report = Report(data=report_data_dict)
 
@@ -190,13 +196,13 @@ class HWPCReportsGroup(ReportsGroup):
 
     # TODO Write a method for getting a event value by group, core and event name and target
 
-    def get_event_value(self, target: str, group: str, core: str, event_name: str):
+    def get_event_value(self, target: str, group: str, socket: str, event_name: str):
         """ Search for a event value by using the given parameters
 
             Args:
                 target: The target related to the event
-                group: The group (socket) associated to the event
-                core: The core associated to the event
+                group: The group associated to the event
+                socket: The core associated to the event
                 event_name: Name of the event
             Return:
                 The value of the event or None if it does not exist
@@ -208,7 +214,7 @@ class HWPCReportsGroup(ReportsGroup):
         group_by_all_dict = self.report.groupby([TARGET_CN, GROUPS_CN, CORE_CN, EVENT_CN], sort=False).indices
 
         try:
-            indices = group_by_all_dict[target, group, core, event_name]
+            indices = group_by_all_dict[target, group, socket, event_name] # This is an array
         except KeyError:
             pass
 

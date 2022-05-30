@@ -36,7 +36,7 @@
 #
 ##############################
 from powerapi.exception import BadInputDataException
-from powerapi.rx.hwpc_reports_group import HWPCReportsGroup, SOCKET_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN
+from powerapi.rx.hwpc_reports_group import HWPCReportsGroup, SOCKET_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN, GROUPS_CN
 from powerapi.rx.reports_group import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN
 from tests.unit.rx.util import create_hwpc_report_dict, create_hwpc_report_with_empty_cells_dict, \
     create_hwpc_report_dict_with_metadata, create_wrong_hwpc_report_dict
@@ -63,12 +63,13 @@ def test_of_create_hwpc_reports_group_from_one_dict(create_hwpc_report_dict):
     assert reports_group_to_check.timestamp == create_hwpc_report_dict[TIMESTAMP_CN]
     assert len(reports_group_to_check.report.get_targets()) == 1
     assert create_hwpc_report_dict[TARGET_CN] in reports_group_to_check.report.get_targets()
-    assert len(reports_group_to_check.report.columns) == 5
+    assert len(reports_group_to_check.report.columns) == 6
     assert TARGET_CN in reports_group_to_check.report.columns
     assert SOCKET_CN in reports_group_to_check.report.columns
     assert CORE_CN in reports_group_to_check.report.columns
     assert EVENT_CN in reports_group_to_check.report.columns
     assert EVENT_VALUE_CN in reports_group_to_check.report.columns
+    assert GROUPS_CN in reports_group_to_check.report.columns
 
 
 def test_of_create_hwpc_reports_group_from_two_dicts(create_hwpc_report_dict, create_hwpc_report_with_empty_cells_dict):
@@ -87,12 +88,13 @@ def test_of_create_hwpc_reports_group_from_two_dicts(create_hwpc_report_dict, cr
     assert len(reports_group_to_check.report.get_targets()) == 2
     assert create_hwpc_report_dict[TARGET_CN] in reports_group_to_check.report.get_targets()
     assert create_hwpc_report_with_empty_cells_dict[TARGET_CN] in reports_group_to_check.report.get_targets()
-    assert len(reports_group_to_check.report.columns) == 5
+    assert len(reports_group_to_check.report.columns) == 6
     assert TARGET_CN in reports_group_to_check.report.columns
     assert SOCKET_CN in reports_group_to_check.report.columns
     assert CORE_CN in reports_group_to_check.report.columns
     assert EVENT_CN in reports_group_to_check.report.columns
     assert EVENT_VALUE_CN in reports_group_to_check.report.columns
+    assert GROUPS_CN in reports_group_to_check.report.columns
 
 
 def test_of_create_hwpc_reports_group_from_one_dict_with_metadata(create_hwpc_report_dict_with_metadata):
@@ -110,12 +112,13 @@ def test_of_create_hwpc_reports_group_from_one_dict_with_metadata(create_hwpc_re
     assert reports_group_to_check.timestamp == create_hwpc_report_dict_with_metadata[TIMESTAMP_CN]
     assert len(reports_group_to_check.report.get_targets()) == 1
     assert create_hwpc_report_dict_with_metadata[TARGET_CN] in reports_group_to_check.report.get_targets()
-    assert len(reports_group_to_check.report.columns) == 5
+    assert len(reports_group_to_check.report.columns) == 6
     assert TARGET_CN in reports_group_to_check.report.columns
     assert SOCKET_CN in reports_group_to_check.report.columns
     assert CORE_CN in reports_group_to_check.report.columns
     assert EVENT_CN in reports_group_to_check.report.columns
     assert EVENT_VALUE_CN in reports_group_to_check.report.columns
+    assert GROUPS_CN in reports_group_to_check.report.columns
 
 
 def test_of_create_hwpc_reports_group_from_wrong_dict_fails(create_wrong_hwpc_report_dict):
