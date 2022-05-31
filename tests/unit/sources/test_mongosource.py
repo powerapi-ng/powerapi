@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 11 April 2022
+# Last modified : 31 May 2022
 
 ##############################
 #
@@ -40,7 +40,7 @@ import powerapi.rx.report as papi_report
 import pytest
 from rx.core.typing import Observer, Scheduler
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import pymongo
 from powerapi.sources import MongoSource
 from powerapi.rx.formula import Formula
@@ -48,18 +48,15 @@ from powerapi.rx.report import Report
 from powerapi.rx.destination import Destination
 from powerapi.exception import SourceException
 from powerapi.rx.source import source
+from powerapi.rx.reports_group import ReportsGroup
+from powerapi.rx.hwpc_reports_group import HWPCReportsGroup
 
-from powerapi.rx.power_report import (
-    POWER_CN,
-    PowerReport,
-)
-from powerapi.rx.report import (
-    Report,
+
+from powerapi.rx.reports_group import (
     TIMESTAMP_CN,
     SENSOR_CN,
     TARGET_CN,
     METADATA_CN,
-    METADATA_PREFIX,
 )
 
 ##############################
@@ -322,11 +319,11 @@ def mongo_database_content():
 
     time = datetime.now()
 
-    report_dict = {
-        papi_report.TIMESTAMP_CN: time,
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {
+    r1 = {
+        TIMESTAMP_CN: time,
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        METADATA_CN: {
             "scope": "cpu",
             "socket": "0",
             "formula": "RAPL_ENERGY_PKG",
@@ -350,7 +347,37 @@ def mongo_database_content():
         },
     }
 
-    _gen_base_db_test(MONGO_URI, report_dict)
+    time += timedelta(0, 3)
+
+    r2 = {
+        TIMESTAMP_CN: time,
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        METADATA_CN: {
+            "scope": "cpu",
+            "socket": "0",
+            "formula": "RAPL_ENERGY_PKG",
+            "ratio": "1",
+            "predict": "0",
+            "power_units": "watt",
+        },
+        "groups": {
+            "core": {
+                "0": {
+                    "0": {
+                        "CPU_CLK_THREAD_UNH": 2849918,
+                        "CPU_CLK_THREAD_UNH_": 49678,
+                        "time_enabled": 4273969,
+                        "time_running": 4273969,
+                        "LLC_MISES": 71307,
+                        "INSTRUCTIONS": 2673428,
+                    }
+                }
+            }
+        },
+    }
+
+    _gen_base_db_test(MONGO_URI, [r1, r2])
     yield None
     _clean_base_db_test(MONGO_URI)
 
@@ -364,7 +391,8 @@ def _gen_base_db_test(uri, content=None):
     db.create_collection(MONGO_INPUT_COLLECTION_NAME)
 
     if content is not None:
-        db[MONGO_INPUT_COLLECTION_NAME].insert_one(content)
+        for item in content:
+            db[MONGO_INPUT_COLLECTION_NAME].insert_one(item)
 
     # delete output collection
     db[MONGO_OUTPUT_COLLECTION_NAME].drop()
@@ -393,63 +421,35 @@ def test_error_mongo_bad_url(mongo_database):
     """This test check that when the url is wring it raise an error"""
 
     report_dict = {
-        papi_report.TIMESTAMP_CN: datetime.now(),
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
+        TIMESTAMP_CN: datetime.now(),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
     }
     with pytest.raises(SourceException):
-        the_source = MongoSource(Report, "mongodb://lel:27017/", "error", "error")
+        the_source = MongoSource(
+            "mongodb://lel:27017/", "error", "error", False, ReportsGroup
+        )
 
 
 def test_error_mongo_bad_port(mongo_database):
     """This test check that when the port is wring it raise an error"""
 
     report_dict = {
-        papi_report.TIMESTAMP_CN: datetime.now(),
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
+        TIMESTAMP_CN: datetime.now(),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
     }
 
     with pytest.raises(SourceException):
-        MongoSource(Report, "mongodb://localhost:1", "error", "error")
+        MongoSource("mongodb://localhost:1", "error", "error", False, ReportsGroup)
 
 
 def test_mongodb_empty_db(mongo_database):
     """This test check that a report is well received"""
 
-    time = datetime.now()
-
-    report_dict = {
-        papi_report.TIMESTAMP_CN: time,
-        papi_report.SENSOR_CN: "test_sensor",
-        papi_report.TARGET_CN: "test_target",
-        papi_report.METADATA_CN: {
-            "scope": "cpu",
-            "socket": "0",
-            "formula": "RAPL_ENERGY_PKG",
-            "ratio": "1",
-            "predict": "0",
-            "power_units": "watt",
-        },
-        "groups": {
-            "core": {
-                "0": {
-                    "0": {
-                        "CPU_CLK_THREAD_UNH": 2849918,
-                        "CPU_CLK_THREAD_UNH_": 49678,
-                        "time_enabled": 4273969,
-                        "time_running": 4273969,
-                        "LLC_MISES": 71307,
-                        "INSTRUCTIONS": 2673428,
-                    }
-                }
-            }
-        },
-    }
-
     # Load DB
     mongodb = MongoSource(
-        Report, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+        MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME, False, ReportsGroup
     )
     the_destination = FakeDestination()
 
@@ -464,7 +464,7 @@ def test_mongodb_read_basic_db(mongo_database_content):
 
     # Load DB
     mongodb = MongoSource(
-        Report, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+        MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME, False, ReportsGroup
     )
     the_destination = FakeDestination()
 
@@ -476,12 +476,16 @@ def test_mongodb_read_basic_db(mongo_database_content):
     assert the_destination.report is not None
 
 
-def test_mongodb_test_report_type(mongo_database_content):
+def test_mongodb_test_group_type(mongo_database_content):
     """This test check that a report is well received"""
 
     # Load DB
     mongodb = MongoSource(
-        HWPCReport, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
+        MONGO_URI,
+        MONGO_DATABASE_NAME,
+        MONGO_INPUT_COLLECTION_NAME,
+        False,
+        HWPCReportsGroup,
     )
     the_destination = FakeDestination()
 
@@ -490,7 +494,7 @@ def test_mongodb_test_report_type(mongo_database_content):
     source(mongodb).subscribe(the_destination)
     mongodb.close()
     # Check if the report is in the DB
-    assert type(the_destination.report) is HWPCReport
+    assert type(the_destination.report) is HWPCReportsGroup
 
 
 # def test_mongodb_read_basic_db_with_quantity(mongo_database_quantity_content):
