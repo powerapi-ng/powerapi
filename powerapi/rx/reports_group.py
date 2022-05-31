@@ -86,7 +86,7 @@ class ReportsGroup:
         self.timestamp = timestamp
         self.sensor = sensor
         self.metadata = metadata
-        self.report = report  # A Dictionary of dictionaries. The key are
+        self.report = report  # A Dictionary of dictionaries. Keys are rows' indexes
 
     def add_report(self, report: Report):
         """ Concat a report to the report's group
