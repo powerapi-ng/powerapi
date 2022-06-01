@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Author : Lauric Desauw
-# Last modified : 11 April 2022
+# Last modified : 31 May 2022
 
 ##############################
 #
@@ -44,18 +44,19 @@ from powerapi.rx import Report
 from powerapi.rx.reports_group import TIMESTAMP_CN
 from powerapi.rx.source import BaseSource, Source
 from powerapi.exception import SourceException
+from powerapi.rx.reports_group import ReportsGroup
 
 DICTS_CN = "dicts"
 
 
 class MongoSource(BaseSource):
     def __init__(
-            self,
-            uri: str,
-            db_name: str,
-            collection_name: str,
-            stream_mode: bool = False,
-            report_type: Any = Report
+        self,
+        uri: str,
+        db_name: str,
+        collection_name: str,
+        stream_mode: bool = False,
+        group_type: ReportsGroup = ReportsGroup,
     ) -> None:
         """Creates a source for Mongodb
 
@@ -73,8 +74,9 @@ class MongoSource(BaseSource):
         self.collection_name = collection_name
         self.cursor = None
         self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
-        self.report_type = report_type
+
         self.stream_mode = stream_mode
+        self.group_type = group_type
         self.reports_group = None
         try:
             self.mongo_client.admin.command("ismaster")
@@ -103,37 +105,49 @@ class MongoSource(BaseSource):
             pipeline = [{"$match": {"operationType": "insert"}}]
             with self.collection.watch(pipeline) as stream:
                 for (
-                        insert_change
+                    insert_change
                 ) in stream:  # Switch to stream mode as the database is empty
 
                     report_db = insert_change["fullDocument"]
 
-                    operator.on_next(self.report_type.from_mongodb(report_db))
+                    operator.on_next(
+                        self.group_type.create_reports_group_from_dicts(report_db)
+                    )
         else:
             while True:
                 try:
                     report_dic = self.cursor.next()
                 except StopIteration as exn:
                     return
-
-                if self.current_group_dicts is not None and self.current_group_dicts[TIMESTAMP_CN] == report_dic[
-                    TIMESTAMP_CN]:
+                print(self.current_group_dicts)
+                print(report_dic[TIMESTAMP_CN])
+                if (
+                    self.current_group_dicts is not None
+                    and self.current_group_dicts[TIMESTAMP_CN]
+                    == report_dic[TIMESTAMP_CN]
+                ):
                     self.current_group_dicts[DICTS_CN].append(report_dic)
                 elif self.current_group_dicts is None:
                     self.initialize_current_group_dicts(report_dic)
+                    print("init")
                 else:
-                    reports_group = self.report_type.create_report_from_dict(self.current_group_dicts[DICTS_CN])
+                    print("on next")
+                    reports_group = self.group_type.create_reports_group_from_dicts(
+                        self.current_group_dicts[DICTS_CN]
+                    )
                     self.initialize_current_group_dicts(report_dic)
                     operator.on_next(reports_group)
 
     def initialize_current_group_dicts(self, report_dict: Dict):
-        """ Initialize current_group_dicts by using the given dict
+        """Initialize current_group_dicts by using the given dict
 
-            Args:
-                report_dict: The dictionary for initialization
+        Args:
+            report_dict: The dictionary for initialization
         """
-        self.current_group_dicts = {TIMESTAMP_CN: report_dict[TIMESTAMP_CN],
-                                    DICTS_CN: [report_dict]}
+        self.current_group_dicts = {
+            TIMESTAMP_CN: report_dict[TIMESTAMP_CN],
+            DICTS_CN: [report_dict],
+        }
 
     def close(self):
         """Closes the access to the Mongodb"""
