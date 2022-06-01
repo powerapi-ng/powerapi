@@ -36,10 +36,12 @@
 #
 ##############################
 from powerapi.exception import BadInputDataException
-from powerapi.rx.hwpc_reports_group import HWPCReportsGroup, SOCKET_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN, GROUPS_CN
+from powerapi.rx.hwpc_reports_group import HWPCReportsGroup, SOCKET_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN, GROUPS_CN, \
+    MSR_GROUP, CORE_GROUP
 from powerapi.rx.reports_group import TIMESTAMP_CN, SENSOR_CN, TARGET_CN, METADATA_CN
 from tests.unit.rx.util import create_hwpc_report_dict, create_hwpc_report_with_empty_cells_dict, \
-    create_hwpc_report_dict_with_metadata, create_wrong_hwpc_report_dict
+    create_hwpc_report_dict_with_metadata, create_wrong_hwpc_report_dict, compute_hwpc_msr_events_average, \
+    get_hwpc_msr_events_from_dict, compute_hwpc_msr_events_sum, compute_hwpc_core_events_sum
 
 
 ##############################
@@ -169,3 +171,153 @@ def test_of_to_mongodb_hwpc_with_two_reports(create_hwpc_report_dict, create_hwp
             assert current_report_dict == create_hwpc_report_with_empty_cells_dict
         else:
             assert current_report_dict == create_hwpc_report_dict
+
+
+def test_of_compute_event_average(create_hwpc_report_with_empty_cells_dict, compute_hwpc_msr_events_average):
+    """ Test if an event average is computed correctly """
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    mperf_average_to_check = reports_group.compute_event_average(event_name="mperf", group="msr", target="all",
+                                                                 socket="0")
+    aperf_average_to_check = reports_group.compute_event_average(event_name="aperf", group="msr", target="all",
+                                                                 socket="0")
+    tsc_average_to_check = reports_group.compute_event_average(event_name="TSC", group="msr", target="all",
+                                                               socket="0")
+
+    time_enabled_average_to_check = reports_group.compute_event_average(event_name="time_enabled", group="msr",
+                                                                        target="all",
+                                                                        socket="0")
+
+    time_running_average_to_check = reports_group.compute_event_average(event_name="time_running", group="msr",
+                                                                        target="all",
+                                                                        socket="0")
+
+    invalid_event_average_to_check = reports_group.compute_event_average(event_name="no_event", group="msr",
+                                                                         target="all",
+                                                                         socket="0")
+
+    # Check
+    assert mperf_average_to_check == compute_hwpc_msr_events_average["mperf"]
+    assert aperf_average_to_check == compute_hwpc_msr_events_average["aperf"]
+    assert tsc_average_to_check == compute_hwpc_msr_events_average["TSC"]
+    assert time_enabled_average_to_check == compute_hwpc_msr_events_average["time_enabled"]
+    assert time_running_average_to_check == compute_hwpc_msr_events_average["time_running"]
+    assert invalid_event_average_to_check is None
+
+
+def test_of_get_group_events(create_hwpc_report_with_empty_cells_dict, get_hwpc_msr_events_from_dict):
+    """ Check of all msr events are returned """
+    """ Test if an event average is computed correctly """
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    msr_events_to_check = reports_group.get_group_events(MSR_GROUP)
+    empty_events_to_check = reports_group.get_group_events("xx")
+
+    # Check
+    assert len(msr_events_to_check) == len(get_hwpc_msr_events_from_dict)
+    assert len(empty_events_to_check) == 0
+
+    for event in msr_events_to_check:
+        assert event in get_hwpc_msr_events_from_dict
+
+
+def test_of_compute_group_event_averages(create_hwpc_report_with_empty_cells_dict, compute_hwpc_msr_events_average):
+    """ Check that all msr event averages are well computed """
+
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    averages_to_check = reports_group.compute_group_event_averages(group=MSR_GROUP, target="all", socket="0")
+    invalid_averages_to_check = reports_group.compute_group_event_averages(group=MSR_GROUP, target="al1l", socket="0")
+    invalid_averages_to_check_2 = reports_group.compute_group_event_averages(group="XX", target="all", socket="0")
+
+    # Check
+    assert averages_to_check == compute_hwpc_msr_events_average
+    assert invalid_averages_to_check is None
+    assert invalid_averages_to_check_2 is None
+
+
+def test_of_compute_group_event_sum(create_hwpc_report_with_empty_cells_dict, compute_hwpc_msr_events_sum):
+    """ Check that all msr event sum are well computed """
+
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    sum_to_check = reports_group.compute_group_event_sum(group=MSR_GROUP, target="all", socket="0")
+    invalid_sum_to_check = reports_group.compute_group_event_sum(group=MSR_GROUP, target="al1l", socket="0")
+    invalid_sum_to_check_2 = reports_group.compute_group_event_sum(group="XX", target="all", socket="0")
+
+    # Check
+    assert sum_to_check == compute_hwpc_msr_events_sum
+    assert invalid_sum_to_check is None
+    assert invalid_sum_to_check_2 is None
+
+
+def test_of_compute_group_event_sum_excluding_target(create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict,
+                                                     compute_hwpc_core_events_sum):
+    """ Check that all core event sum are well computed """
+
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    sum_to_check = reports_group.compute_group_event_sum_excluding_target(group=CORE_GROUP, target="all",
+                                                                          socket="socket1")
+    invalid_sum_to_check = reports_group.compute_group_event_sum_excluding_target(group=CORE_GROUP, target="al1l",
+                                                                                  socket="0")
+    invalid_sum_to_check_2 = reports_group.compute_group_event_sum_excluding_target(group="XX", target="all",
+                                                                                    socket="0")
+
+    # Check
+    assert sum_to_check == compute_hwpc_core_events_sum
+    assert invalid_sum_to_check is None
+    assert invalid_sum_to_check_2 is None
+
+
+def test_of_get_event_value(create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict):
+    """ Check that an event value is retriebed """
+
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    event_val_to_check = reports_group.get_event_value(target="all", group="msr", socket="0", core="3",
+                                                       event_name="aperf")
+
+    wrong_event_val_to_check = reports_group.get_event_value(target="all", group="msr", socket="0", core="3",
+                                                             event_name="aperf99")
+
+    # Check
+    assert event_val_to_check == 24521456
+    assert wrong_event_val_to_check is None
+
+
+def test_of_get_event_value_first_found_core(create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict):
+    """ Check that an event value is retrieved """
+
+    # Setup
+    reports_dict = [create_hwpc_report_with_empty_cells_dict, create_hwpc_report_dict]
+    reports_group = HWPCReportsGroup.create_reports_group_from_dicts(reports_dict)
+
+    # Exercise
+    event_val_to_check = reports_group.get_event_value_first_found_core(target="all", group="msr", socket="0",
+                                                       event_name="aperf")
+
+    wrong_event_val_to_check = reports_group.get_event_value_first_found_core(target="all", group="msr", socket="0",
+                                                             event_name="aperf99")
+
+    # Check
+    assert event_val_to_check == 14511032
+    assert wrong_event_val_to_check is None

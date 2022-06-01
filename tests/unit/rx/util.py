@@ -42,7 +42,8 @@ import pytest
 from typing import Dict, Any
 
 from powerapi import quantity
-from powerapi.rx.hwpc_reports_group import SOCKET_CN, GROUPS_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN
+from powerapi.rx.hwpc_reports_group import SOCKET_CN, GROUPS_CN, CORE_CN, EVENT_CN, EVENT_VALUE_CN, MSR_GROUP, \
+    CORE_GROUP
 from powerapi.rx.power_reports_group import POWER_CN, UNIT_CN, MEASUREMENT_NAME
 from powerapi.rx.report import TARGET_CN
 from powerapi.rx.reports_group import TIMESTAMP_CN, SENSOR_CN, METADATA_CN, DATE_FORMAT, TIME_CN, TAGS_CN, \
@@ -106,14 +107,16 @@ def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
                         "INSTRUCTIONS": 2673429}}}}
     return create_report_dict_with_metadata
 
+
 @pytest.fixture
 def create_influxdb_dict(create_report_dict) -> Dict:
     """ Creates the expected influx dict for a report """
 
     return {TIME_CN: create_report_dict[TIMESTAMP_CN],
-            TAGS_CN: {SENSOR_CN:create_report_dict[SENSOR_CN],
+            TAGS_CN: {SENSOR_CN: create_report_dict[SENSOR_CN],
                       TARGET_CN: create_report_dict[TARGET_CN]},
             MEASUREMENT_CN: GENERIC_MEASUREMENT_NAME}
+
 
 @pytest.fixture
 def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict:
@@ -308,6 +311,83 @@ def create_hwpc_report_with_empty_cells_dict() -> Dict:
                                         "time_enabled": 503490955,
                                         "time_running": 503490955}}}}}
 
+
+@pytest.fixture
+def compute_hwpc_msr_events_average(create_hwpc_report_with_empty_cells_dict):
+    """ Compute the average of different msr events.
+
+        Return:
+            A dictionary with the averages
+    """
+    msr_group_dict = create_hwpc_report_with_empty_cells_dict[GROUPS_CN][MSR_GROUP]
+    msr_event_average_dict = {}
+    msr_event_number_dict = {}
+
+    for _, socket_dict in msr_group_dict.items():
+        for _, core_dict in socket_dict.items():
+            for event_id, event_value in core_dict.items():
+                if event_id not in msr_event_average_dict.keys():
+                    msr_event_average_dict[event_id] = 0
+                    msr_event_number_dict[event_id] = 0
+                msr_event_average_dict[event_id] += event_value
+                msr_event_number_dict[event_id] += 1
+
+    for event_id in msr_event_average_dict.keys():
+        msr_event_average_dict[event_id] /= msr_event_number_dict[event_id]
+
+    return msr_event_average_dict
+
+@pytest.fixture
+def compute_hwpc_msr_events_sum(create_hwpc_report_with_empty_cells_dict):
+    """ Compute the sum of different msr events.
+
+        Return:
+            A dictionary with the sum
+    """
+    msr_group_dict = create_hwpc_report_with_empty_cells_dict[GROUPS_CN][MSR_GROUP]
+    msr_event_sum_dict = {}
+
+    for _, socket_dict in msr_group_dict.items():
+        for _, core_dict in socket_dict.items():
+            for event_id, event_value in core_dict.items():
+                if event_id not in msr_event_sum_dict.keys():
+                    msr_event_sum_dict[event_id] = 0
+                msr_event_sum_dict[event_id] += event_value
+
+    return msr_event_sum_dict
+
+@pytest.fixture
+def compute_hwpc_core_events_sum(create_hwpc_report_dict):
+    """ Compute the sum of different core events.
+
+        Return:
+            A dictionary with the sum
+    """
+    core_group_dict = create_hwpc_report_dict[GROUPS_CN][CORE_GROUP]
+    core_event_sum_dict = {}
+
+    for _, socket_dict in core_group_dict.items():
+        for _, core_dict in socket_dict.items():
+            for event_id, event_value in core_dict.items():
+                if event_id not in core_event_sum_dict.keys():
+                    core_event_sum_dict[event_id] = 0
+                core_event_sum_dict[event_id] += event_value
+
+    return core_event_sum_dict
+
+
+@pytest.fixture
+def get_hwpc_msr_events_from_dict(create_hwpc_report_with_empty_cells_dict):
+    msr_events = []
+    msr_group_dict = create_hwpc_report_with_empty_cells_dict[GROUPS_CN][MSR_GROUP]
+
+    for _, socket_dict in msr_group_dict.items():
+        for _, core_dict in socket_dict.items():
+            for event_id in core_dict.keys():
+                if event_id not  in msr_events:
+                    msr_events.append(event_id)
+
+    return msr_events
 
 @pytest.fixture
 def create_hwpc_report_dict_with_metadata(create_hwpc_report_dict) -> Dict:
