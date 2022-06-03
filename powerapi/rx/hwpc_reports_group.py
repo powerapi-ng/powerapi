@@ -35,6 +35,7 @@
 # Imports
 #
 ##############################
+from collections import defaultdict
 from datetime import datetime
 from typing import Dict, Any
 
@@ -54,6 +55,9 @@ SOCKET_CN = "socket_id"
 CORE_CN = "core_id"
 EVENT_CN = "event_id"
 EVENT_VALUE_CN = "event_value"
+
+MSR_GROUP = "msr"
+CORE_GROUP = "core"
 
 
 ##############################
@@ -146,7 +150,7 @@ class HWPCReportsGroup(ReportsGroup):
                     f"{GROUPS_CN}. The HWPCReportsGroup cannot be created", input_data=reports_dict)
 
         # We create the report
-        report_data_dict = {TARGET_CN: [], GROUPS_CN:[], SOCKET_CN: [], CORE_CN: [], EVENT_CN: [], EVENT_VALUE_CN: []}
+        report_data_dict = {TARGET_CN: [], GROUPS_CN: [], SOCKET_CN: [], CORE_CN: [], EVENT_CN: [], EVENT_VALUE_CN: []}
 
         for current_report_dict in reports_dict:
             current_groups_dict = current_report_dict[GROUPS_CN]
@@ -196,13 +200,14 @@ class HWPCReportsGroup(ReportsGroup):
 
     # TODO Write a method for getting a event value by group, core and event name and target
 
-    def get_event_value(self, target: str, group: str, socket: str, event_name: str):
+    def get_event_value(self, target: str, group: str, socket: str, core: str, event_name: str):
         """ Search for a event value by using the given parameters
 
             Args:
                 target: The target related to the event
                 group: The group associated to the event
-                socket: The core associated to the event
+                socket: The socket associated to the event
+                core: The core associated to the event
                 event_name: Name of the event
             Return:
                 The value of the event or None if it does not exist
@@ -210,16 +215,176 @@ class HWPCReportsGroup(ReportsGroup):
         """
         event_value = None
 
-        # We get the dictionary with (target,group,core,event_name) as key. Values are arrays with the indexes
-        group_by_all_dict = self.report.groupby([TARGET_CN, GROUPS_CN, CORE_CN, EVENT_CN], sort=False).indices
 
+        # We get the dictionary with (target,group,core,event_name) as key. Values are arrays with the indexes
         try:
-            indices = group_by_all_dict[target, group, socket, event_name] # This is an array
+            group_by_all_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, CORE_CN, EVENT_CN],
+                                                    sort=False).indices
+
+            indices = group_by_all_dict[target, group, socket, core, event_name]  # This is an array
         except KeyError:
-            pass
+            indices = None
 
         if indices is not None:
             # There is only one index
             event_value = self.report.iloc[indices[0]][EVENT_VALUE_CN]
 
         return event_value
+
+    def get_event_value_first_found_core(self, target: str, group: str, socket: str, event_name: str):
+        """ Get the value for the event of the first found core in the report
+
+            Args:
+                target: The target related to the event
+                group: The group related to the event
+                socket: The socket related to the event
+                event_name: The event name for retrieving the value
+            Return:
+                The value of the event or None if it does not exist
+        """
+        try:
+            socket_index = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN], sort=False).groups[target,group,socket][0]
+            core = self.report.iloc[socket_index][CORE_CN]
+        except KeyError:
+            return None
+
+        return self.get_event_value(target=target, group=group, socket=socket, event_name=event_name, core=core)
+
+
+
+    def compute_event_average(self, target: str, group: str, socket: str, event_name: str):
+        """ Compute the average for the given event
+
+            Args:
+                target: The target related to the event
+                group: The group related to the event
+                socket: The socket related to the event
+                event_name: The event name
+            Return:
+                The average for the given event or None if it does not exist
+        """
+        event_average = None
+        try:
+            averages_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, EVENT_CN], sort=False)[
+                EVENT_VALUE_CN].mean()
+
+            event_average = averages_dict[(target, group, socket, event_name)]
+        except KeyError:
+            pass
+
+        return event_average
+
+    def get_group_events(self, group: str):
+        """ Returns a list with group events
+
+            Return:
+                list of group events. If the group does not exist, the list is empty
+        """
+        group_events = []
+        group_events_keys = self.report.groupby([GROUPS_CN, EVENT_CN], sort=False).indices.keys()
+
+        for group_events_key in group_events_keys:
+            if group in group_events_key:
+                group_events.append(group_events_key[1])  # group_event_key is a tuple (group_name,event_name)
+
+        return group_events
+
+    def compute_group_event_averages(self, group: str, target: str, socket: str):
+        """ Compute the average of a group events
+
+            Args:
+                group: The group related to events
+                target: The target related to events
+                socket: The socket related to events
+            Returns:
+                The average of group events in a dictionary. If there is a problem with group, target and/or socket, None
+                is returned
+
+        """
+        group_event_averages = None
+        group_events = self.get_group_events(group)
+
+        if len(group_events) > 0:
+            group_event_averages = defaultdict(int)
+
+            # We compute the average for all the events
+            averages_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, EVENT_CN], sort=False)[
+                EVENT_VALUE_CN].mean()
+
+            # We filter the group events average
+            try:
+                for event in group_events:
+                    group_event_averages[event] = averages_dict[(target, group, socket, event)]
+            except KeyError:
+                group_event_averages = None
+
+        return group_event_averages
+
+    def compute_group_event_sum(self, group: str, target: str, socket: str):
+        """ Compute the sum of a group events
+
+            Args:
+                group: The group related to events
+                target: The target related to events
+                socket: The socket related to events
+            Returns:
+                The sum of group events in a dictionary. If there is a problem with group, target and/or socket, None
+                is returned
+
+        """
+        group_event_sum = None
+        group_events = self.get_group_events(group)
+
+        if len(group_events) > 0:
+            group_event_sum = defaultdict(int)
+
+            # We compute the sum for all the events
+            sums_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, EVENT_CN], sort=False)[
+                EVENT_VALUE_CN].sum()
+
+            # We filter the group events sum
+            try:
+                for event in group_events:
+                    group_event_sum[event] = sums_dict[(target, group, socket, event)]
+            except KeyError:
+                group_event_sum = None
+
+        return group_event_sum
+
+    def compute_group_event_sum_excluding_target(self, group: str, target: str, socket: str):
+        """ Compute the sum of a group events excluding the given target
+
+            Args:
+                group: The group related to events
+                target: The target to be ignored in the sum
+                socket: The socket related to events
+            Returns:
+                The sum of group events in a dictionary. If there is a problem with group and/or socket, None
+                is returned
+
+        """
+        group_event_sum = None
+        group_events = self.get_group_events(group)
+
+        if len(group_events) > 0:
+            group_event_sum = defaultdict(int)
+
+            # We compute the sum for all the events
+            sums_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, EVENT_CN], sort=False)[
+                EVENT_VALUE_CN].sum()
+
+            # We filter the group events sum, and we exclude the given target
+            try:
+                for current_target in self.report.get_targets():
+                    if current_target != target:
+                        for event in group_events:
+
+                                if event is not group_event_sum:
+                                    group_event_sum[event] = 0
+                                group_event_sum[event] += sums_dict[(current_target, group, socket, event)]
+            except KeyError:
+                group_event_sum = None
+
+        return group_event_sum
+
+
