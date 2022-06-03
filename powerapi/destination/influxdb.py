@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # author : Lauric Desauw
-# Last modified : 6 April 2022
+# Last modified : 1 June 2022
 
 from typing import List
 from influxdb import InfluxDBClient
@@ -84,9 +84,9 @@ class InfluxDestination(Destination):
         """
         data_dict = reports.to_influx_dict()
 
-        self.buffer.chain(data_dict)
+        self.buffer.extend(data_dict)
         if len(self.buffer) >= 10000:
-            self.client.write_points(points=self.buffer, protocol='json')
+            self.client.write_points(points=self.buffer, protocol="json")
             self.buffer = []
 
         # self.client.write_points([data])
@@ -94,7 +94,7 @@ class InfluxDestination(Destination):
     def on_completed(self) -> None:
         """This method is called when the source finished"""
         if len(self.buffer) > 0:
-            self.client.write_points(points=self.buffer, protocol='json')
+            self.client.write_points(points=self.buffer, protocol="json")
         self.client.close()
 
     def on_error(self, err) -> None:
