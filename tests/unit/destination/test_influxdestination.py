@@ -80,7 +80,7 @@ SOCKET_CN = "socket_id"
 CORE_CN = "core_id"
 EVENT_CN = "event_id"
 EVENT_VALUE_CN = "event_value"
-
+POWER_CN = "power"
 ##############################
 #
 # Classes
@@ -547,41 +547,41 @@ def test_influxdb_on_error(influx_database):
         source(the_source).subscribe(influx)
 
 
-# def test_influxdb_read_quantity(influx_database):
-#     """This test check that a report is well writen in the mogodb"""
+def test_influxdb_read_quantity(influx_database):
+    """This test check that a report is well writen in the mogodb"""
 
-#     time = datetime.now()
+    time = datetime.now()
 
-#     report_dict = {
-#         TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
-#         SENSOR_CN: "test_sensor",
-#         TARGET_CN: "test_target",
-#         POWER_CN: 5.5 * quantity.W,
-#         "groups": {
-#             "core": {
-#                 "0": {
-#                     "0": {
-#                         "CPU_CLK_THREAD_UNH": 2849918,
-#                         "CPU_CLK_THREAD_UNH_": 49678,
-#                         "time_enabled": 4273969,
-#                         "time_running": 4273969,
-#                         "LLC_MISES": 71307,
-#                         "INSTRUCTIONS": 2673428,
-#                     }
-#                 }
-#             }
-#         },
-#     }
+    report_dict = {
+        TIMESTAMP_CN: time.strftime("%m/%d/%Y, %H:%M:%S"),
+        SENSOR_CN: "test_sensor",
+        TARGET_CN: "test_target",
+        POWER_CN: 5.5 * quantity.W,
+        "groups": {
+            "core": {
+                "0": {
+                    "0": {
+                        "CPU_CLK_THREAD_UNH": 2849918,
+                        "CPU_CLK_THREAD_UNH_": 49678,
+                        "time_enabled": 4273969,
+                        "time_running": 4273969,
+                        "LLC_MISES": 71307,
+                        "INSTRUCTIONS": 2673428,
+                    }
+                }
+            }
+        },
+    }
 
-#     the_source = FakeSource(create_quantity_reports_group_from_dicts([report_dict]))
-#     influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
+    the_source = FakeSource(create_reports_group_from_dicts([report_dict]))
+    influx = InfluxDestination(INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME)
 
-#     source(the_source).subscribe(influx)
+    source(the_source).subscribe(influx)
 
-#     # Check if the report is in the DB
+    # Check if the report is in the DB
 
-#     influx.client.switch_database(INFLUX_DBNAME)
-#     result = influx.client.query("SELECT * FROM measure_name_q ")
-#     output_reports = list(result.get_points())
+    influx.client.switch_database(INFLUX_DBNAME)
+    result = influx.client.query("SELECT * FROM measure_name_q ")
+    output_reports = list(result.get_points())
 
-#     assert len(output_reports) == 1
+    assert len(output_reports) == 1
