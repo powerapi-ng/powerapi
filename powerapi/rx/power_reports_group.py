@@ -38,6 +38,8 @@
 from datetime import datetime
 from typing import Dict, Any
 
+from pint_pandas import PintArray
+
 from powerapi.exception import BadInputDataException
 from powerapi.quantity import PowerAPIQuantity
 from powerapi.rx import Report
@@ -145,7 +147,7 @@ class PowerReportsGroup(ReportsGroup):
         """
 
         # We create the report
-        report_data_dict = {TARGET_CN: [target], POWER_CN: [power]}
+        report_data_dict = {TARGET_CN: [target], POWER_CN: PintArray([power.magnitude], dtype=str(power.units))}
         report = Report(data=report_data_dict)
 
         # We create the Power Report

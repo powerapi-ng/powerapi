@@ -368,14 +368,13 @@ class HWPCReportsGroup(ReportsGroup):
             # We compute the sum for all the events
             sums_dict = self.report.groupby([TARGET_CN, GROUPS_CN, SOCKET_CN, EVENT_CN], sort=False)[
                 EVENT_VALUE_CN].sum()
-
             # We filter the group events sum, and we exclude the given target
             try:
                 for current_target in self.report.get_targets():
                     if current_target != target:
                         for event in group_events:
 
-                                if event is not group_event_sum:
+                                if event not in group_event_sum.keys():
                                     group_event_sum[event] = 0
                                 group_event_sum[event] += sums_dict[(current_target, group, socket, event)]
             except KeyError:
