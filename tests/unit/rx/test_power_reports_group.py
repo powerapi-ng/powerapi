@@ -45,7 +45,8 @@ from powerapi.rx.report import TARGET_CN
 from powerapi.rx.reports_group import SENSOR_CN, TIMESTAMP_CN, METADATA_CN, TAGS_CN, TIME_CN
 
 from tests.unit.rx.util import create_power_report_dict, create_power_report_dict_with_metadata, \
-    create_wrong_power_report_dict, create_influxdb_power_dict, create_influxdb_power_dict_with_metadata
+    create_wrong_power_report_dict, create_influxdb_power_dict, create_influxdb_power_dict_with_metadata, \
+    create_influxdb_dict_with_metadata,create_report_dict_with_metadata,create_report_dict
 
 ##############################
 #

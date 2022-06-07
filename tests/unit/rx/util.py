@@ -35,6 +35,7 @@
 # Imports
 #
 ##############################
+import time
 from datetime import datetime
 
 import pytest
@@ -79,7 +80,7 @@ def create_report_dict_with_metadata(create_report_dict) -> Dict:
 
     create_report_dict[METADATA_CN] = {"scope": "cpu", "socket": "0", "formula": "RAPL_ENERGY_PKG", "ratio": 1,
                                        "predict": 0,
-                                       "power_units": "watt"}
+                                       "unit": "watt"}
     return create_report_dict
 
 
@@ -112,7 +113,8 @@ def create_report_dict_with_data(create_report_dict_with_metadata) -> Dict:
 def create_influxdb_dict(create_report_dict) -> Dict:
     """ Creates the expected influx dict for a report """
 
-    return {TIME_CN: create_report_dict[TIMESTAMP_CN],
+    return {TIME_CN: int(time.mktime(datetime.strptime(create_report_dict[TIMESTAMP_CN],
+                                                       DATE_FORMAT).timetuple())),
             TAGS_CN: {SENSOR_CN: create_report_dict[SENSOR_CN],
                       TARGET_CN: create_report_dict[TARGET_CN]},
             MEASUREMENT_CN: GENERIC_MEASUREMENT_NAME}
@@ -125,7 +127,8 @@ def create_influxdb_dict_with_metadata(create_report_dict_with_metadata) -> Dict
     metadata[SENSOR_CN] = create_report_dict_with_metadata[SENSOR_CN]
     metadata[TARGET_CN] = create_report_dict_with_metadata[TARGET_CN]
 
-    return {TIME_CN: create_report_dict_with_metadata[TIMESTAMP_CN],
+    return {TIME_CN: int(time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
+                                                       DATE_FORMAT).timetuple())),
             TAGS_CN: metadata}
 
 
@@ -337,6 +340,7 @@ def compute_hwpc_msr_events_average(create_hwpc_report_with_empty_cells_dict):
 
     return msr_event_average_dict
 
+
 @pytest.fixture
 def compute_hwpc_msr_events_sum(create_hwpc_report_with_empty_cells_dict):
     """ Compute the sum of different msr events.
@@ -355,6 +359,7 @@ def compute_hwpc_msr_events_sum(create_hwpc_report_with_empty_cells_dict):
                 msr_event_sum_dict[event_id] += event_value
 
     return msr_event_sum_dict
+
 
 @pytest.fixture
 def compute_hwpc_core_events_sum(create_hwpc_report_dict):
@@ -384,10 +389,11 @@ def get_hwpc_msr_events_from_dict(create_hwpc_report_with_empty_cells_dict):
     for _, socket_dict in msr_group_dict.items():
         for _, core_dict in socket_dict.items():
             for event_id in core_dict.keys():
-                if event_id not  in msr_events:
+                if event_id not in msr_events:
                     msr_events.append(event_id)
 
     return msr_events
+
 
 @pytest.fixture
 def create_hwpc_report_dict_with_metadata(create_hwpc_report_dict) -> Dict:
@@ -457,7 +463,8 @@ def create_power_report_influxdb_dict_with_metadata(create_report_dict_with_meta
     metadata[TARGET_CN] = create_report_dict_with_metadata[TARGET_CN]
     metadata[UNIT_CN] = str(create_report_dict_with_metadata[POWER_CN].units)
 
-    return {TIME_CN: create_report_dict_with_metadata[TIMESTAMP_CN],
+    return {TIME_CN: int(time.mktime(datetime.strptime(create_report_dict_with_metadata[TIMESTAMP_CN],
+                                                       DATE_FORMAT).timetuple())),
             TAGS_CN: metadata,
             FIELDS_CN: {POWER_CN: create_report_dict_with_metadata[POWER_CN].magnitude},
             MEASUREMENT_CN: MEASUREMENT_NAME}
@@ -468,7 +475,8 @@ def create_influxdb_power_dict(create_power_report_dict) -> Dict:
     """ Creates the expected influx dict for a power report without metadata """
     # TIME_CN: time.mktime(datetime.strptime(create_report_dict[TIMESTAMP_CN],
     #                                                    DATE_FORMAT).timetuple())
-    return {TIME_CN: create_power_report_dict[TIMESTAMP_CN],
+    return {TIME_CN: int(time.mktime(datetime.strptime(create_power_report_dict[TIMESTAMP_CN],
+                                                       DATE_FORMAT).timetuple())),
             TAGS_CN: {UNIT_CN: str(create_power_report_dict[POWER_CN].units),
                       SENSOR_CN: create_power_report_dict[SENSOR_CN],
                       TARGET_CN: create_power_report_dict[TARGET_CN]},
@@ -482,7 +490,8 @@ def create_influxdb_power_dict_with_metadata(create_power_report_dict_with_metad
     tags = create_power_report_dict_with_metadata[METADATA_CN]
     tags[UNIT_CN] = str(create_power_report_dict_with_metadata[POWER_CN].units)
     tags[SENSOR_CN] = create_power_report_dict_with_metadata[TARGET_CN]
-    return {TIME_CN: create_power_report_dict_with_metadata[TIMESTAMP_CN],
+    return {TIME_CN: int(time.mktime(datetime.strptime(create_power_report_dict_with_metadata[TIMESTAMP_CN],
+                                                       DATE_FORMAT).timetuple())),
             TAGS_CN: tags,
             FIELDS_CN: {POWER_CN: create_power_report_dict_with_metadata[POWER_CN].magnitude},
             MEASUREMENT_CN: MEASUREMENT_NAME}
