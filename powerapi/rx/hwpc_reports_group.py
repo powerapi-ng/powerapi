@@ -127,10 +127,6 @@ class HWPCReportsGroup(ReportsGroup):
 
         return reports_dict
 
-    def to_influx_dict(self) -> [Dict]:
-        """ Transforms the group report in a dict for influxdb """
-        raise NotImplementedError
-
     @staticmethod
     def create_reports_group_from_dicts(reports_dict: [Dict[str, Any]]):
         """ Creates a group report by using the given information

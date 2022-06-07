@@ -35,6 +35,7 @@
 # Imports
 #
 ##############################
+import time
 from datetime import datetime
 from typing import Dict, Any
 
@@ -123,8 +124,10 @@ class ReportsGroup:
         """
 
         # We add basic infos
-        influx_dict = {TIME_CN: self.timestamp, TAGS_CN: self.metadata}  # Time in ms
 
+        #influx_dict = {TIME_CN: int(time.mktime(datetime.strptime(self.timestamp, DATE_FORMAT).timetuple())), TAGS_CN:self.metadata}  # Time in ms
+        influx_dict = {TIME_CN: int(time.mktime(self.timestamp.timetuple())),
+                       TAGS_CN: self.metadata}  # Time in ms
         # We add sensor as a tag
         influx_dict[TAGS_CN][SENSOR_CN] = self.sensor
 
