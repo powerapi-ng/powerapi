@@ -34,7 +34,7 @@ from typing import Dict, Tuple, Type
 from powerapi.actor import Actor
 from powerapi.exception import PowerAPIException
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, InfluxDB2, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
@@ -151,7 +151,8 @@ class DBActorGenerator(Generator):
                                                                 db_config['metric_description'], gen_tag_list(db_config)),
             'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'],
                                                      db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
-            'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename'])
+            'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename']),
+            'influxdb2': lambda db_config: InfluxDB2( db_config['model'], db_config['uri'], db_config["port"] , db_config["token"], db_config["org"] ,db_config["bucket"], gen_tag_list(db_config) ),
         }
 
     def remove_model_factory(self, model_name):

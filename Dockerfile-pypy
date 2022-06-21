@@ -10,7 +10,7 @@ RUN cd /tmp/powerapi &&\
 	wget https://raw.githubusercontent.com/powerapi-ng/powerapi-ci-env/main/to_36.sh && \
 	/bin/bash to_36.sh powerapi
 
-RUN pypy3 -m pip install --user --no-cache-dir "/tmp/powerapi[mongodb, influxdb, opentsdb, prometheus]" && \
+RUN pypy3 -m pip install --user --no-cache-dir "/tmp/powerapi[mongodb, influxdb, influxdb2, opentsdb, prometheus]" && \
 	rm -r /tmp/powerapi
 
 ENTRYPOINT ["/bin/echo", "This Docker image should be used as a base for another image and should not be executed directly."]

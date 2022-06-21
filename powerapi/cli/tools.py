@@ -166,6 +166,17 @@ class CommonCLIParser(MainConfigParser):
         subparser_influx_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb')
         self.add_subparser('output', subparser_influx_output,
                            help='specify a database output : --db_output database_name ARG1 ARG2 ... ')
+        
+        subparser_influx2_output = SubConfigParser('influxdb2')
+        subparser_influx2_output.add_argument('u', 'uri', help='specify InfluxDB2 uri. Examples: \'localhost\'')
+        subparser_influx2_output.add_argument('b', 'bucket', help='specify InfluxDB2 bucket name')
+        subparser_influx2_output.add_argument('p', 'port', help='specify InfluxDB2 connection port', type=int)
+        subparser_influx2_output.add_argument('t', 'token', help='specify the auth token to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('o', 'org', help='specify the name of the organization used to connect to InfluxDB2')
+        subparser_influx2_output.add_argument('m', 'model', help='specify data type that will be stored in the database', default='PowerReport')
+        subparser_influx2_output.add_argument('n', 'name', help='specify pusher name', default='pusher_influxdb2')
+        self.add_subparser('output', subparser_influx2_output,
+                                     help='specify a database input : --db_output database_name ARG1 ARG2 ... ')
 
         subparser_opentsdb_output = SubConfigParser('opentsdb')
         subparser_opentsdb_output.add_argument('u', 'uri', help='specify openTSDB host')

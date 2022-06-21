@@ -33,6 +33,14 @@ from typing import Dict, Any, List, Tuple
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData, CsvLines
 
+import logging
+
+try:
+    from influxdb_client import Point
+    from influxdb_client.client.write_api import SYNCHRONOUS
+    from requests.exceptions import ConnectionError
+except ImportError:
+    logging.getLogger().info("influx_client is not installed.")
 
 CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
 
@@ -170,6 +178,16 @@ class PowerReport(Report):
                 'power': report.power
             }
         }
+    
+    @staticmethod
+    def to_influxdb2(report: PowerReport, tags: List[str]) -> Point:
+        """
+        :return: a Point, that can be stored into an influxdb2, from a given PowerReport
+        """
+        p = Point('power_consumption').field("power", report.power).time(f"{report.timestamp.isoformat()}Z")
+        for key, value in report._gen_tag(tags).items():
+            p.tag(key, value)
+        return p
 
     @staticmethod
     def to_prometheus(report: PowerReport, tags: List[str]) -> Dict:
