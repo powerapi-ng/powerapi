@@ -32,7 +32,8 @@ import pytest
 from influxdb_client import InfluxDBClient
 
 INFLUX2_ORG = 'org_test'
-INFLUX2_TOKEN = 'TO_BE_DEFINED'
+INFLUX2_TOKEN = 'pTq179YXoLsAlpTDgF4PbaE8TmDx2ez8GVFgup5-4F7fc0EjfZs-eI6ZYWl66CJRxy5lwR0AE_VDeBDYIA9ATw==' # This token
+# has to be updated according to the local version
 INFLUX2_URL = 'http://localhost:8086'
 INFLUX2_URL_WITHOUT_PORT = 'http://localhost'
 INFLUX2_PORT = 8086
