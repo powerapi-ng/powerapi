@@ -29,9 +29,11 @@
 import logging
 from typing import List, Type
 from urllib.parse import urlparse
-
-from influxdb_client import InfluxDBClient, WriteOptions, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS
+try:
+    from influxdb_client import InfluxDBClient, WriteOptions, WritePrecision
+    from influxdb_client.client.write_api import SYNCHRONOUS
+except ImportError:
+    logging.getLogger().info("influx-client2 is not installed.")
 
 from powerapi.report import Report
 from .base_db import BaseDB, DBError
