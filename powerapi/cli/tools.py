@@ -373,7 +373,7 @@ class CommonCLIParser(MainConfigParser):
         subparser_opentsdb_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
+            help="specify data type that will be stored in the database",
             default="PowerReport",
         )
         subparser_opentsdb_output.add_argument(
@@ -382,6 +382,34 @@ class CommonCLIParser(MainConfigParser):
         self.add_subparser(
             "output",
             subparser_opentsdb_output,
+            help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+        )
+
+        subparser_influx2_output = SubConfigParser("influxdb2")
+        subparser_influx2_output.add_argument("u", "uri", help="specify InfluxDB uri")
+        subparser_influx2_output.add_argument("t", "tags", help="specify report tags")
+        subparser_influx2_output.add_argument("k", "token", help="specify token for accessing the database")
+        subparser_influx2_output.add_argument("g", "org", help="specify organisation for accessing the database")
+
+        subparser_influx2_output.add_argument(
+            "d", "db", help="specify InfluxDB database name"
+        )
+        subparser_influx2_output.add_argument(
+            "p", "port", help="specify InfluxDB connection port", type=int
+        )
+        subparser_influx2_output.add_argument(
+            "m",
+            "model",
+            help="specify data type that will be store in the database",
+            default="PowerReport",
+        )
+        subparser_influx2_output.add_argument(
+            "n", "name", help="specify pusher name", default="pusher_influxdb2"
+        )
+
+        self.add_subparser(
+            "output",
+            subparser_influx2_output,
             help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 

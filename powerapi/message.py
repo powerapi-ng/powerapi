@@ -42,6 +42,7 @@ class Message:
     """
     Abstract Message class
     """
+
     def __init__(self, sender_name: str):
         self.sender_name = sender_name
 
@@ -53,6 +54,7 @@ class PingMessage(Message):
     """
     Message used to test if an actor is alive
     """
+
     def __init__(self, sender_name: str):
         Message.__init__(self, sender_name)
 
@@ -64,6 +66,7 @@ class OKMessage(Message):
     """
     Message send to acknowledge last received message
     """
+
     def __init__(self, sender_name: str):
         Message.__init__(self, sender_name)
 
@@ -91,6 +94,7 @@ class StartMessage(Message):
     """
     Message that ask the actor to launch its initialisation process
     """
+
     def __init__(self, sender_name: str, name: str):
         Message.__init__(self, sender_name)
         self.name = name
@@ -103,6 +107,7 @@ class EndMessage(Message):
     """
     Message sent by actor to its parent when it terminate itself
     """
+
     def __init__(self, sender_name: str):
         Message.__init__(self, sender_name)
 
@@ -114,7 +119,9 @@ class PullerStartMessage(StartMessage):
     """
     Message used to start a Puller actor
     """
-    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, stream_mode: bool, report_modifiers: List[ReportModifier] = []):
+
+    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, stream_mode: bool,
+                 report_modifiers: List[ReportModifier] = []):
         """
         :param sender_name: name of the actor that send the message
         :param name: puller actor name
@@ -130,11 +137,33 @@ class PullerStartMessage(StartMessage):
         self.report_modifier_list = report_modifiers
 
 
+class SimplePullerStartMessage(StartMessage):
+    """
+    Message used to start a Puller actor
+    """
+
+    def __init__(self, sender_name: str, name: str, number_of_reports_to_send: int, report_filter: Filter,
+                 report_type_to_send):
+        """
+            :param sender_name: name of the actor that send the message
+            :param name: puller actor name
+            :param number_of_reports_to_send: Number of messages to be sent by the actor
+            :param report_type_to_send: Type of message to be sent
+            :param report_filter:
+        """
+        StartMessage.__init__(self, sender_name, name)
+        self.number_of_reports_to_send = number_of_reports_to_send
+        self.report_type_to_send = report_type_to_send
+        self.report_filter = report_filter
+
+
 class DispatcherStartMessage(StartMessage):
     """
     Message used to start Dispatcher actor
     """
-    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaValues, route_table: RouteTable, device_id: str):
+
+    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaValues,
+                 route_table: RouteTable, device_id: str):
         """
         :param sender_name: name of the actor that send the message
         :param name: puller actor name
@@ -154,6 +183,7 @@ class FormulaStartMessage(StartMessage):
     """
     Message used to start formula actor
     """
+
     def __init__(self, sender_name: str, name: str, formula_values: FormulaValues, domain_values: DomainValues):
         """
         :param sender_name: name of the actor that send the message
@@ -170,6 +200,7 @@ class PusherStartMessage(StartMessage):
     """
     Message used to start a Pusher actor
     """
+
     def __init__(self, sender_name: str, name: str, database: BaseDB):
         """
         :param sender_name: name of the actor that send the message
@@ -178,3 +209,64 @@ class PusherStartMessage(StartMessage):
         """
         StartMessage.__init__(self, sender_name, name)
         self.database = database
+
+
+class SimplePusherStartMessage(StartMessage):
+    """
+    Message used to start a Simple Pusher actor
+    """
+
+    def __init__(self, sender_name: str, name: str):
+        """
+        :param sender_name: name of the actor that send the message
+        :param name: simple puller actor name
+        """
+        StartMessage.__init__(self, sender_name, name)
+
+
+class SimplePullerSendReportsMessage(Message):
+    """
+    Message used to trigger sending of message by a Simple Puller actor
+    """
+
+    def __init__(self, sender_name: str, name: str):
+        """
+            :param sender_name: name of the actor that send the message
+            :param name: puller actor name
+        """
+        Message.__init__(self, sender_name)
+        self.name = name
+
+    def __str__(self):
+        return "SimplePullerSendReportsMessage"
+
+
+class GetReceivedReportsSimplePusherMessage(Message):
+    """
+    Message used to get the received reports of a simple pusher
+    """
+
+    def __init__(self, sender_name: str):
+        """
+        :param str error_code: message associated to the error
+        """
+        Message.__init__(self, sender_name)
+
+    def __str__(self):
+        return "GetReceivedReportsSimplePusherMessage : " + self.sender_name
+
+
+class ReceivedReportsSimplePusherMessage(Message):
+    """
+    Message used to send reports of a simple pusher
+    """
+
+    def __init__(self, sender_name: str, reports:[]):
+        """
+        :param str error_code: message associated to the error
+        """
+        Message.__init__(self, sender_name)
+        self.reports = reports
+
+    def __str__(self):
+        return "ReceivedReportsSimplePusherMessage : " + self.reports

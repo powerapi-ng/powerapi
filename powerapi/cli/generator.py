@@ -32,13 +32,18 @@ import sys
 from typing import Dict, Tuple, Type
 
 from powerapi.actor import Actor
+from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, VirtioFSDB, FileDB
+from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
+    VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage
+from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage, SimplePusherStartMessage, \
+    SimplePullerStartMessage
 from powerapi.report_modifier.libvirt_mapper import LibvirtMapper
+from powerapi.simple_puller import SimplePullerActor
+from powerapi.simple_pusher import SimplePusherActor
 
 
 class Generator:
@@ -71,7 +76,8 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> Tuple[Type[Actor], StartMessage]:
+    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> Tuple[
+        Type[Actor], StartMessage]:
         raise NotImplementedError()
 
 
@@ -80,6 +86,7 @@ class ModelNameAlreadyUsed(PowerAPIException):
     Exception raised when attempting to add to a DBActorGenerator a model factory with a name already bound to another
     model factory in the DBActorGenerator
     """
+
     def __init__(self, model_name):
         PowerAPIException.__init__(self)
         self.model_name = model_name
@@ -90,6 +97,7 @@ class DatabaseNameAlreadyUsed(PowerAPIException):
     Exception raised when attempting to add to a DBActorGenerator a database factory with a name already bound to another
     database factory in the DBActorGenerator
     """
+
     def __init__(self, database_name):
         PowerAPIException.__init__(self)
         self.database_name = database_name
@@ -100,6 +108,7 @@ class ModelNameDoesNotExist(PowerAPIException):
     Exception raised when attempting to remove to a DBActorGenerator a model factory with a name that is not bound to another
     model factory in the DBActorGenerator
     """
+
     def __init__(self, model_name):
         PowerAPIException.__init__(self)
         self.model_name = model_name
@@ -110,6 +119,7 @@ class DatabaseNameDoesNotExist(PowerAPIException):
     Exception raised when attempting to remove to a DBActorGenerator a database factory with a name that is not bound to another
     database factory in the DBActorGenerator
     """
+
     def __init__(self, database_name):
         PowerAPIException.__init__(self)
         self.database_name = database_name
@@ -128,29 +138,43 @@ class DBActorGenerator(Generator):
     """
     ActorGenerator that initialise the start message with a database from config
     """
+
     def __init__(self, component_group_name):
         Generator.__init__(self, component_group_name)
         self.model_factory = {
             'HWPCReport': HWPCReport,
             'PowerReport': PowerReport,
             'ControlReport': ControlReport,
-            'ProcfsReport': ProcfsReport
+            'ProcfsReport': ProcfsReport,
         }
 
         self.db_factory = {
-            'mongodb': lambda db_config: MongoDB(db_config['model'], db_config['uri'], db_config['db'], db_config['collection']),
+            'mongodb': lambda db_config: MongoDB(db_config['model'], db_config['uri'], db_config['db'],
+                                                 db_config['collection']),
             'socket': lambda db_config: SocketDB(db_config['model'], db_config['port']),
             'csv': lambda db_config: CsvDB(db_config['model'], gen_tag_list(db_config),
-                                           current_path=os.getcwd() if 'directory' not in db_config else db_config['directory'],
+                                           current_path=os.getcwd() if 'directory' not in db_config else db_config[
+                                               'directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'], db_config['db'], gen_tag_list(db_config)),
-            'opentsdb': lambda db_config: OpenTSDB(db_config['model'], db_config['uri'], db_config['port'], db_config['metric_name']),
-            'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['uri'], db_config['metric_name'],
-                                                   db_config['metric_description'], db_config['aggregation_period'], gen_tag_list(db_config)),
-            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['uri'], db_config['metric_name'],
-                                                                db_config['metric_description'], gen_tag_list(db_config)),
-            'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'], db_config['root_directory_name'],
-                                                     db_config['vm_directory_name_prefix'], db_config['vm_directory_name_suffix']),
+            'influxdb': lambda db_config: InfluxDB(db_config['model'], db_config['uri'], db_config['port'],
+                                                   db_config['db'], gen_tag_list(db_config)),
+            'influxdb2': lambda db_config: InfluxDB2(db_config['model'], db_config['uri'], db_config['org'],
+                                                     db_config['db'], db_config['token'], gen_tag_list(db_config),
+                                                     port=None if 'port' not in db_config else db_config['port']),
+            'opentsdb': lambda db_config: OpenTSDB(db_config['model'], db_config['uri'], db_config['port'],
+                                                   db_config['metric_name']),
+            'prom': lambda db_config: PrometheusDB(db_config['model'], db_config['port'], db_config['uri'],
+                                                   db_config['metric_name'],
+                                                   db_config['metric_description'], db_config['aggregation_period'],
+                                                   gen_tag_list(db_config)),
+            'direct_prom': lambda db_config: DirectPrometheusDB(db_config['model'], db_config['port'], db_config['uri'],
+                                                                db_config['metric_name'],
+                                                                db_config['metric_description'],
+                                                                gen_tag_list(db_config)),
+            'virtiofs': lambda db_config: VirtioFSDB(db_config['model'], db_config['vm_name_regexp'],
+                                                     db_config['root_directory_name'],
+                                                     db_config['vm_directory_name_prefix'],
+                                                     db_config['vm_directory_name_suffix']),
             'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename'])
         }
 
@@ -206,7 +230,8 @@ class DBActorGenerator(Generator):
         model = self._generate_model(db_config['model'], db_config)
         db_config['model'] = model
         db = self._generate_db(db_name, db_config, main_config)
-        start_message = self._start_message_factory(actor_name, db, model, main_config['stream'], main_config['verbose'])
+        start_message = self._start_message_factory(actor_name, db, model, main_config['stream'],
+                                                    main_config['verbose'])
         actor = self._actor_factory(db_config)
         return (actor, start_message)
 
@@ -221,6 +246,7 @@ class PullerGenerator(DBActorGenerator):
     """
     Generate Puller Actor class and Puller start message from config
     """
+
     def __init__(self, report_filter, report_modifier_list=[]):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
@@ -230,7 +256,43 @@ class PullerGenerator(DBActorGenerator):
         return PullerActor
 
     def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-        return PullerStartMessage('system', name, db, self.report_filter, stream_mode, report_modifiers=self.report_modifier_list)
+        return PullerStartMessage('system', name, db, self.report_filter, stream_mode,
+                                  report_modifiers=self.report_modifier_list)
+
+
+class PullerGenerator(DBActorGenerator):
+    """
+    Generate Puller Actor class and Puller start message from config
+    """
+
+    def __init__(self, report_filter, report_modifier_list=[]):
+        DBActorGenerator.__init__(self, 'input')
+        self.report_filter = report_filter
+        self.report_modifier_list = report_modifier_list
+
+    def _actor_factory(self, db_config):
+        return PullerActor
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        return PullerStartMessage('system', name, db, self.report_filter, stream_mode,
+                                  report_modifiers=self.report_modifier_list)
+
+
+class SimplePullerGenerator(Generator):
+    """
+    Generate Simple Puller Actor class and Simple Puller start message from config
+    """
+
+    def __init__(self, report_filter, report_modifier_list=[]):
+        Generator.__init__(self, 'input')
+        self.report_filter = report_filter
+        self.report_modifier_list = report_modifier_list
+
+    def _actor_factory(self, db_config):
+        return SimplePullerActor
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        return SimplePullerStartMessage('system', name, db['number_of_reports_to_send'], self.report_filter, model)
 
 
 class PusherGenerator(DBActorGenerator):
@@ -248,10 +310,45 @@ class PusherGenerator(DBActorGenerator):
         return PusherStartMessage('system', name, db)
 
 
+class SimplePusherGenerator(Generator):
+    """
+    Generate Simple Pusher actor and Simple Pusher start message from config
+    """
+
+    def __init__(self):
+        Generator.__init__(self, 'output')
+        self.model_factory = {
+            'HWPCReport': HWPCReport,
+            'PowerReport': PowerReport
+        }
+
+    def _actor_factory(self, db_config):
+        return SimplePusherActor
+
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        return SimplePusherStartMessage('system', name)
+
+    def _gen_actor(self, db_name, db_config, main_config, actor_name):
+        model = self._generate_model(db_config['model'], db_config)
+        db_config['model'] = model
+        start_message = self._start_message_factory(actor_name, None, None, None, None)
+        actor = self._actor_factory(None)
+        return (actor, start_message)
+
+    def _generate_model(self, model_name, db_config):
+        if model_name not in self.model_factory:
+            msg = 'Configuration error : model type ' + model_name + ' unknow'
+            print(msg, file=sys.stderr)
+            raise PowerAPIException(msg)
+        else:
+            return self.model_factory[db_config['model']]
+
+
 class ReportModifierGenerator:
     """
     Generate Report modifier list from config
     """
+
     def __init__(self):
         self.factory = {'libvirt_mapper': lambda config: LibvirtMapper(config['uri'], config['domain_regexp'])}
 

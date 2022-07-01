@@ -168,3 +168,7 @@ class HWPCReport(Report):
 
         if row['cpu'] not in groups[group_name][row['socket']]:
             groups[group_name][row['socket']][row['cpu']] = {}
+
+    @staticmethod
+    def create_empty_report():
+        return HWPCReport(None, None, None, None)
