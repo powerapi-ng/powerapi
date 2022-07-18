@@ -6,6 +6,13 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 env:
   repository: https://github.com/powerapi-ng/powerapi
+  INFLUX2_ORG: org_powerapi_influxdb2
+  INFLUX2_URL: http://localhost:8087
+  INFLUX2_PORT: 8087
+  INFLUX2_BUCKET_NAME: acceptation_test_gh
+  INFLUX2_DOCKER_CONTAINER_NAME: influxdb-action-gh2
+  INFLUX2_USER_NAME: powerapi
+  INFLUX2_PASSWORD: powerapi...12352
 jobs:
   lint_and_test:
     name: Lint and test
@@ -22,6 +29,15 @@ jobs:
         image: influxdb:1.8
         ports:
           - 8086:8086
+      influx2:
+        image: influxdb:latest
+        ports:
+          - 8087:8086
+        options: --name $INFLUX2_DOCKER_CONTAINER_NAME
+                  --e DOCKER_INFLUXDB_INIT_USERNAME $INFLUX2_USER_NAME
+                  --e DOCKER_INFLUXDB_INIT_PASSWORD $INFLUX2_PASSWORD
+                  --e DOCKER_INFLUXDB_INIT_ORG $INFLUX2_ORG
+                  --e DOCKER_INFLUXDB_INIT_BUCKET INFLUX2_BUCKET_NAME
     steps:
       - name: Install tools
         run: |
@@ -52,6 +68,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pylint
           pip install -e ".[mongodb, influxdb, prometheus, libvirt, influxdb-client]"
+      - name: Configure influxdb 2
+        run: |
+          export INFLUX2_TOKEN=`sudo docker exec $INFLUX2_DOCKER_CONTAINER_NAME influx auth list | awk -v username=$INFLUX2_USER_NAME '$5 ~ username {print $4 " "}'`
+          echo 'The token is...'
+          echo $INFLUX2_TOKEN
+          echo "INFLUX2_TOKEN=${INFLUX2_TOKEN}" >> $GITHUB_ENV
       - name: Test with pytest
         run: |
           . venv/bin/activate
