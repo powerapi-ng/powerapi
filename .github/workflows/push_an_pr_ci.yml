@@ -9,7 +9,7 @@ env:
   INFLUX2_URL: http://localhost:8087
   INFLUX2_PORT: 8087
   INFLUX2_BUCKET_NAME: acceptation_test_gh
-  INFLUX2_DOCKER_CONTAINER_NAME: influxdb-action-gh2
+  INFLUX2_DOCKER_CONTAINER_NAME: influxdb_action_gh
   INFLUX2_USER_NAME: powerapi
   INFLUX2_PASSWORD: powerapi...12352
 jobs:
@@ -32,10 +32,10 @@ jobs:
         ports:
           - 8087:8086
         options: --name $INFLUX2_DOCKER_CONTAINER_NAME 
-                  -e DOCKER_INFLUXDB_INIT_USERNAME $INFLUX2_USER_NAME
-                  -e DOCKER_INFLUXDB_INIT_PASSWORD $INFLUX2_PASSWORD
-                  -e DOCKER_INFLUXDB_INIT_ORG $INFLUX2_ORG
-                  -e DOCKER_INFLUXDB_INIT_BUCKET INFLUX2_BUCKET_NAME
+                  -e DOCKER_INFLUXDB_INIT_USERNAME=$INFLUX2_USER_NAME
+                  -e DOCKER_INFLUXDB_INIT_PASSWORD=$INFLUX2_PASSWORD
+                  -e DOCKER_INFLUXDB_INIT_ORG=$INFLUX2_ORG
+                  -e DOCKER_INFLUXDB_INIT_BUCKET=$INFLUX2_BUCKET_NAME
     steps:
       - name: Install tools
         run: |
