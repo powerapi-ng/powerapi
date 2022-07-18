@@ -15,8 +15,6 @@ env:
 jobs:
   lint_and_test:
     runs-on: ubuntu-latest
-    env:
-
     strategy:
       matrix:
         python-version: [3.7]
