@@ -76,8 +76,8 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> Tuple[
-                    Type[Actor], StartMessage]:
+    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> \
+            Tuple[Type[Actor], StartMessage]:
         raise NotImplementedError()
 
 

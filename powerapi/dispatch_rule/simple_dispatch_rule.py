@@ -46,10 +46,10 @@ class SimpleDispatchRule(DispatchRule):
         self.fields = self._set_field()
 
     def _set_field(self):
-        return ["target","sensor"]
+        return ["target", "sensor"]
 
     def get_formula_id(self, report):
         """
-            :param Report to send
+            :param report: Report to send
         """
         return [(self.formula_name, report.__class__.__name__)]

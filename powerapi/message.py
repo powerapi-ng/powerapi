@@ -261,7 +261,7 @@ class ReceivedReportsSimplePusherMessage(Message):
     Message used to send reports of a simple pusher
     """
 
-    def __init__(self, sender_name: str, reports:[]):
+    def __init__(self, sender_name: str, reports: []):
         """
         :param str error_code: message associated to the error
         """
