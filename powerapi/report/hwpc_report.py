@@ -171,4 +171,7 @@ class HWPCReport(Report):
 
     @staticmethod
     def create_empty_report():
-        return HWPCReport(None, None, None, None)
+        """
+        Creates an empty report
+        """
+        return HWPCReport(None, None, None, {})

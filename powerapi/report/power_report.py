@@ -33,7 +33,6 @@ from typing import Dict, Any, List, Tuple
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData, CsvLines
 
-
 CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
 
 
@@ -56,7 +55,8 @@ class PowerReport(Report):
         self.power = power
 
     def __repr__(self) -> str:
-        return 'PowerReport(%s, %s, %s, %f, %s)' % (self.timestamp, self.sensor, self.target, self.power, str(self.metadata))
+        return 'PowerReport(%s, %s, %s, %f, %s)' % (
+        self.timestamp, self.sensor, self.target, self.power, str(self.metadata))
 
     @staticmethod
     def from_json(data: Dict) -> Report:
@@ -195,3 +195,10 @@ class PowerReport(Report):
         :return: a PowerReport from a dictionary pulled from mongodb
         """
         return PowerReport.from_json(data)
+
+    @staticmethod
+    def create_empty_report():
+        """
+        Creates an empty report
+        """
+        return PowerReport(None, None, None, 0)

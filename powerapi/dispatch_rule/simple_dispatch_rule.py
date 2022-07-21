@@ -1,5 +1,5 @@
-# Copyright (c) 2022, INRIA
-# Copyright (c) 2022, University of Lille
+# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,32 +27,29 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from thespian.actors import ActorAddress
-
-from powerapi.formula import FormulaActor
-from powerapi.message import FormulaStartMessage
-from powerapi.report import Report
+from .dispatch_rule import DispatchRule
 
 
-class SimpleFormulaActor(FormulaActor):
+class SimpleDispatchRule(DispatchRule):
     """
-    A fake Formula that sends the received rapport without processing it
+    Group by rule for simple pushers
     """
 
-    def __init__(self):
+    def __init__(self, formula_name: str):
         """
-            Initialize a new Simple Formula actor.
-        """
-        FormulaActor.__init__(self, FormulaStartMessage)
+        :param formula_name: The name given to the formula
 
-    def _initialization(self, message: FormulaStartMessage):
-        FormulaActor._initialization(self, message)
-
-    def receiveMsg_Report(self, message: Report, _: ActorAddress):
         """
-            When receiving a report send it to the destinations
-        """
-        self.log_debug('received message ' + str(message))
+        DispatchRule.__init__(self, True)
+        self.formula_name = formula_name
 
-        for _, pusher in self.pushers.items():
-            self.send(pusher, message)
+        self.fields = self._set_field()
+
+    def _set_field(self):
+        return ["target","sensor"]
+
+    def get_formula_id(self, report):
+        """
+            :param Report to send
+        """
+        return [(self.formula_name, report.__class__.__name__)]

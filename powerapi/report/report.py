@@ -34,7 +34,6 @@ from typing import Dict, NewType, Tuple, List, Any
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
-
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
 CsvLines = NewType('CsvLines', Tuple[List[str], Dict[str, str]])
 
@@ -43,6 +42,7 @@ class BadInputData(PowerAPIExceptionWithMessage):
     """
     Exception raised when input data can't be converted to a Report
     """
+
     def __init__(self, msg, input_data):
         PowerAPIExceptionWithMessage.__init__(self, msg)
         self.input_data = input_data
@@ -104,3 +104,10 @@ class Report(Message):
             return ts
 
         raise ValueError('timestamp must be a datetime.datetime or a string')
+
+    @staticmethod
+    def create_empty_report():
+        """
+        Creates an empty report
+        """
+        return Report(None, None, None)

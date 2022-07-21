@@ -31,11 +31,11 @@ jobs:
         image: influxdb:latest
         ports:
           - 8087:8086
-        options: --name $INFLUX2_DOCKER_CONTAINER_NAME 
-                  -e DOCKER_INFLUXDB_INIT_USERNAME=$INFLUX2_USER_NAME
-                  -e DOCKER_INFLUXDB_INIT_PASSWORD=$INFLUX2_PASSWORD
-                  -e DOCKER_INFLUXDB_INIT_ORG=$INFLUX2_ORG
-                  -e DOCKER_INFLUXDB_INIT_BUCKET=$INFLUX2_BUCKET_NAME
+        options: --name influxdb_action_gh
+                  -e DOCKER_INFLUXDB_INIT_USERNAME=powerapi
+                  -e DOCKER_INFLUXDB_INIT_PASSWORD=powerapi...12352
+                  -e DOCKER_INFLUXDB_INIT_ORG=org_powerapi_influxdb2
+                  -e DOCKER_INFLUXDB_INIT_BUCKET=acceptation_test_gh
     steps:
       - name: Install tools
         run: |
@@ -63,9 +63,8 @@ jobs:
           pip install -e ".[mongodb, influxdb, prometheus, libvirt, influxdb-client]"
       - name: Configure influxdb 2
         run: |
+          docker exec $INFLUX2_DOCKER_CONTAINER_NAME influx setup --bucket INFLUX2_BUCKET_NAME --org $INFLUX2_ORG --password $INFLUX2_PASSWORD --username $INFLUX2_USER_NAME --force
           export INFLUX2_TOKEN=`sudo docker exec $INFLUX2_DOCKER_CONTAINER_NAME influx auth list | awk -v username=$INFLUX2_USER_NAME '$5 ~ username {print $4 " "}'`
-          echo 'The token is...'
-          echo $INFLUX2_TOKEN
           echo "INFLUX2_TOKEN=${INFLUX2_TOKEN}" >> $GITHUB_ENV
       - name: Test with pytest
         run: |

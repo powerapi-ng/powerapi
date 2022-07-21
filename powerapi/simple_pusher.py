@@ -28,12 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from thespian.actors import ActorAddress, ActorExitRequest
 
-from powerapi.actor import Actor, InitializationException
-from powerapi.message import PusherStartMessage, EndMessage, SimplePusherStartMessage, StartMessage, \
+from powerapi.actor import Actor
+from powerapi.message import EndMessage, SimplePusherStartMessage, StartMessage, \
     GetReceivedReportsSimplePusherMessage, ReceivedReportsSimplePusherMessage
-from powerapi.database import DBError
-from powerapi.report import PowerReport, BadInputData, Report, HWPCReport
-from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
+from powerapi.report import PowerReport, Report, HWPCReport
 
 
 class SimplePusherActor(Actor):
@@ -70,6 +68,12 @@ class SimplePusherActor(Actor):
         self.reports.append(report)
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
+        """
+        Initialize the actor by using the received start message
+        :param message: The start message
+        :param sender: Address of the sender of the message
+        """
+        self.log_debug('received message ' + str(message))
         Actor.receiveMsg_StartMessage(self, message=message, sender=sender)
 
     def receiveMsg_EndMessage(self, message: EndMessage, _: ActorAddress):

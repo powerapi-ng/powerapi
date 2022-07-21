@@ -30,7 +30,7 @@ import logging
 from typing import List, Type
 from urllib.parse import urlparse
 try:
-    from influxdb_client import InfluxDBClient, WriteOptions, WritePrecision
+    from influxdb_client import InfluxDBClient, WriteOptions
     from influxdb_client.client.write_api import SYNCHRONOUS
 except ImportError:
     logging.getLogger().info("influx-client2 is not installed.")
@@ -123,6 +123,12 @@ class InfluxDB2(BaseDB):
         self.buckets_api.create_bucket(bucket_name=self.bucket_name)
 
     def get_db_by_name(self, db_name: str):
+        """
+            Get the database (bucket) with the given name
+
+            :param db_name: database name
+            :return: The database (bucket) with the given name
+        """
         return self.buckets_api.find_bucket_by_name(db_name)
 
     def save(self, report: Report):

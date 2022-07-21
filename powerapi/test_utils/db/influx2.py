@@ -28,18 +28,42 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import datetime
 
+import os
+
 import pytest
 from influxdb_client import InfluxDBClient
 
 INFLUX2_ORG = 'org_test'
-INFLUX2_TOKEN = 'pTq179YXoLsAlpTDgF4PbaE8TmDx2ez8GVFgup5-4F7fc0EjfZs-eI6ZYWl66CJRxy5lwR0AE_VDeBDYIA9ATw==' # This token
+if os.environ.get('INFLUX2_ORG') is not None:
+    INFLUX2_ORG = os.environ.get('INFLUX2_ORG')
+
+INFLUX2_TOKEN = '1sdazvR2x9UE8eaLoVHhhcjGMu3Eje3_IkAp1zgIvFGQtSkcki--_BCePoicy3d35m1XNyrDXc15tRL-GCfkkA=='  # This token
+if os.environ.get('INFLUX2_TOKEN') is not None:
+    INFLUX2_TOKEN = os.environ.get('INFLUX2_TOKEN')
+
 # has to be updated according to the local version
 INFLUX2_URL = 'http://localhost:8086'
+if os.environ.get('INFLUX2_URL') is not None:
+    INFLUX2_URL = os.environ.get('INFLUX2_URL')
+
+
 INFLUX2_URL_WITHOUT_PORT = 'http://localhost'
+if os.environ.get('INFLUX2_URL_WITHOUT_PORT') is not None:
+    INFLUX2_URL_WITHOUT_PORT = os.environ.get('INFLUX2_URL_WITHOUT_PORT')
+
 INFLUX2_PORT = 8086
+if os.environ.get('INFLUX2_PORT') is not None:
+    INFLUX2_PORT = os.environ.get('INFLUX2_PORT')
+
 INFLUX2_BUCKET_NAME = 'acceptation_test'
+if os.environ.get('INFLUX2_BUCKET_NAME') is not None:
+    INFLUX2_BUCKET_NAME = os.environ.get('INFLUX2_BUCKET_NAME')
+
 INFLUX2_DEFAULT_START_DATE = '1970-01-01T00:00:00Z'
+
 INFLUX2_MEASUREMENT_NAME = 'power_consumption'
+
+
 
 
 @pytest.fixture()
@@ -48,6 +72,18 @@ def influx_database():
         connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
         after test end, delete the data
     """
+    print("Environment variables")
+
+    print(os.environ)
+
+    #if os.environ.get('INFLUX2_URL') is not None:
+    #    INFLUX2_URL = os.environ.get('INFLUX2_URL')
+    print('INFLUX2_URL zns..........;;')
+    print(INFLUX2_URL)
+
+    print('Token zns..........;;')
+    print(INFLUX2_TOKEN)
+
     client = InfluxDBClient(url=INFLUX2_URL, token=INFLUX2_TOKEN, org=INFLUX2_ORG)
 
     _delete_bucket_content(client, INFLUX2_BUCKET_NAME)

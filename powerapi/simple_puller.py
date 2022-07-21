@@ -29,7 +29,7 @@
 from thespian.actors import ActorAddress, ActorExitRequest
 
 from powerapi.actor import Actor, InitializationException
-from powerapi.message import SimplePullerStartMessage, StartMessage, EndMessage, ErrorMessage, \
+from powerapi.message import SimplePullerStartMessage, StartMessage, EndMessage,\
     SimplePullerSendReportsMessage
 
 
@@ -57,10 +57,17 @@ class SimplePullerActor(Actor):
             raise InitializationException('The report type to be sent has to be defined')
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):
+        """
+        Initialize the actor by using the received start message
+        :param message: The start message
+        :param sender: Address of the sender of the message
+        """
         Actor.receiveMsg_StartMessage(self, message=message, sender=sender)
 
     def receiveMsg_SimplePullerSendReportsMessage(self, _: SimplePullerSendReportsMessage, __: ActorAddress):
-
+        """
+        The reception of a SimplePullerSendReportsMessage makes actor to send x messages to the dispatcher
+        """
         sent = 0
         while sent < self.number_of_reports_to_send:
             report = self.report_type_to_send.create_empty_report()
