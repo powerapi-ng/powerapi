@@ -65,6 +65,10 @@ class SimplePusherActor(Actor):
         self.log_debug(str(message) + 'saved to list')
 
     def save_report(self, report: Report):
+        """
+        Saves the received report in a list
+        :param report: Report to be saved
+        """
         self.reports.append(report)
 
     def receiveMsg_StartMessage(self, message: StartMessage, sender: ActorAddress):

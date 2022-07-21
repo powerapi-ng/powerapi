@@ -30,6 +30,10 @@
 from .dispatch_rule import DispatchRule
 
 
+def _set_field():
+    return ["target", "sensor"]
+
+
 class SimpleDispatchRule(DispatchRule):
     """
     Group by rule for simple pushers
@@ -43,10 +47,7 @@ class SimpleDispatchRule(DispatchRule):
         DispatchRule.__init__(self, True)
         self.formula_name = formula_name
 
-        self.fields = self._set_field()
-
-    def _set_field(self):
-        return ["target", "sensor"]
+        self.fields = _set_field()
 
     def get_formula_id(self, report):
         """

@@ -272,7 +272,7 @@ class SimpleGenerator(Generator):
             'PowerReport': PowerReport
         }
 
-    def _gen_actor(self, db_name, db_config, main_config, actor_name):
+    def _gen_actor(self, _, db_config, main_config, actor_name):
         model = self._generate_model(db_config['model'], db_config)
         db_config['model'] = model
         start_message = self._start_message_factory(actor_name, db_config, model, None, model)
@@ -287,6 +287,12 @@ class SimpleGenerator(Generator):
         else:
             return self.model_factory[db_config['model']]
 
+    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+        raise NotImplementedError
+
+    def _actor_factory(self, _db_config):
+        return NotImplementedError
+
 
 class SimplePullerGenerator(SimpleGenerator):
     """
@@ -298,10 +304,10 @@ class SimplePullerGenerator(SimpleGenerator):
         self.report_filter = report_filter
         self.report_modifier_list = report_modifier_list
 
-    def _actor_factory(self, db_config):
+    def _actor_factory(self, _):
         return SimplePullerActor
 
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    def _start_message_factory(self, name, db, model, _stream_mode, _level_logger):
         return SimplePullerStartMessage('system', name, db['number_of_reports_to_send'], self.report_filter, model)
 
 
@@ -313,10 +319,10 @@ class PusherGenerator(DBActorGenerator):
     def __init__(self):
         DBActorGenerator.__init__(self, 'output')
 
-    def _actor_factory(self, db_config):
+    def _actor_factory(self, _):
         return PusherActor
 
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
         return PusherStartMessage('system', name, db)
 
 
@@ -328,10 +334,10 @@ class SimplePusherGenerator(SimpleGenerator):
     def __init__(self):
         SimpleGenerator.__init__(self, 'output')
 
-    def _actor_factory(self, db_config):
+    def _actor_factory(self, _):
         return SimplePusherActor
 
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    def _start_message_factory(self, name, _db, _model, _stream_mode, _level_logger):
         return SimplePusherStartMessage('system', name)
 
 
