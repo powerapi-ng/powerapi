@@ -16,6 +16,7 @@
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
 
+import json
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,12 +28,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
-from threading import Thread
 from socket import socket
-import json
-import time
+from threading import Thread
 
 import pytest
+import pytest_asyncio
 
 from powerapi.database import SocketDB
 from powerapi.report import HWPCReport
@@ -49,7 +49,6 @@ class ClientThread(Thread):
         self.port = port
 
     def run(self):
-
         self.socket.connect(('localhost', self.port))
         for msg in self.msg_list:
             self.socket.send(bytes(json.dumps(msg), 'utf-8'))
@@ -57,7 +56,7 @@ class ClientThread(Thread):
 
 
 def assert_report_equals(hwpc_report, json_report):
-    assert isinstance(hwpc_report,HWPCReport)
+    assert isinstance(hwpc_report, HWPCReport)
     assert hwpc_report.target == json_report['target']
     assert hwpc_report.timestamp == datetime.strptime(json_report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
     assert hwpc_report.sensor == json_report['sensor']
@@ -66,7 +65,7 @@ def assert_report_equals(hwpc_report, json_report):
         assert hwpc_report.groups[group] == json_report['groups'][group]
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def socket_db(unused_tcp_port):
     socket_db = SocketDB(HWPCReport, unused_tcp_port)
     await socket_db.connect()
@@ -76,7 +75,6 @@ async def socket_db(unused_tcp_port):
 
 @pytest.mark.asyncio
 async def test_read_one_json_object_received_from_the_socket(socket_db, unused_tcp_port):
-
     json_reports = extract_rapl_reports_with_2_sockets(1)
     client = ClientThread(json_reports, unused_tcp_port)
     client.start()
@@ -85,6 +83,7 @@ async def test_read_one_json_object_received_from_the_socket(socket_db, unused_t
 
     report = await iterator.__anext__()
     assert_report_equals(report, json_reports[0])
+
 
 @pytest.mark.asyncio
 async def test_read_two_json_object_received_from_the_socket(socket_db, unused_tcp_port):
