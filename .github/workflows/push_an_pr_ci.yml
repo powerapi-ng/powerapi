@@ -60,7 +60,7 @@ jobs:
           . venv/bin/activate
           python -m pip install --upgrade pip
           pip install flake8 pylint
-          pip install -e ".[mongodb, influxdb, prometheus, libvirt, influxdb-client]"
+          pip install -e ".[mongodb, influxdb, prometheus, libvirt, influxdb_client]"
       - name: Configure influxdb 2
         run: |
           docker exec $INFLUX2_DOCKER_CONTAINER_NAME influx setup --bucket INFLUX2_BUCKET_NAME --org $INFLUX2_ORG --password $INFLUX2_PASSWORD --username $INFLUX2_USER_NAME --force
