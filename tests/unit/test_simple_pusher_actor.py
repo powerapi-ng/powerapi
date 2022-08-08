@@ -53,12 +53,13 @@ class TestSimplePusher(AbstractTestActor):
 
     @pytest.fixture
     def actor_start_message(self, system, actor):
-        return SimplePusherStartMessage('system', 'pusher_test', 1)
+        return SimplePusherStartMessage('system', 'pusher_test', 2)
 
     def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, system, started_actor):
         report = HWPCReport.create_empty_report()
         system.tell(started_actor, report)
         reports_message = system.ask(started_actor, GetReceivedReportsSimplePusherMessage('system'))
+        system.tell(started_actor, EndMessage('system'))
         assert len(reports_message.reports) == 1
         assert reports_message.reports[0] == report
 
@@ -66,6 +67,7 @@ class TestSimplePusher(AbstractTestActor):
         report = PowerReport.create_empty_report()
         system.tell(started_actor, report)
         reports_message = system.ask(started_actor, GetReceivedReportsSimplePusherMessage('system'))
+        system.tell(started_actor, EndMessage('system'))
         assert len(reports_message.reports) == 1
         assert reports_message.reports[0] == report
 
