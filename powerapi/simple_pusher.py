@@ -59,7 +59,7 @@ class SimplePusherActor(Actor):
 
         self.stop_actors_if_required()
 
-    def receiveMsg_HWPCReport(self, message: HWPCReport, sender: ActorAddress):
+    def receiveMsg_HWPCReport(self, message: HWPCReport, _: ActorAddress):
         """
         When receiving a PowerReport save it to the list of reports
         """
@@ -102,7 +102,9 @@ class SimplePusherActor(Actor):
         self.send(sender, ReceivedReportsSimplePusherMessage(self.name, self.reports))
 
     def stop_actors_if_required(self):
-
+        """
+        Stops the actor system if number_of_reports_to_store is reached
+        """
         if len(self.reports) >= self.number_of_reports_to_store:
             self.log_debug("reports saved :" + str(len(self.reports)))
             self.send(self.parent, EndMessage(self.name))
