@@ -59,7 +59,7 @@ import pymongo
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
-from powerapi.supervisor import Supervisor
+from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -124,6 +124,7 @@ def launch_simple_architecture(config, supervisor):
 def test_run(mocked_libvirt, mongo_database, shutdown_system):
     config = {'verbose': True,
               'stream': False,
+              'actor_system': SIMPLE_SYSTEM_IMP,
               'input': {'test_puller': {'type': 'mongodb',
                                    'uri': MONGO_URI,
                                    'db': MONGO_DATABASE_NAME,
@@ -139,7 +140,7 @@ def test_run(mocked_libvirt, mongo_database, shutdown_system):
                                                      'domain_regexp': REGEXP}}
               }
 
-    supervisor = Supervisor(config['verbose'])
+    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 

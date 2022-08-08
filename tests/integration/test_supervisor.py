@@ -30,7 +30,7 @@ import pytest
 
 from thespian.actors import ActorAddress
 
-from powerapi.supervisor import Supervisor
+from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
 from powerapi.message import PullerStartMessage, PusherStartMessage, DispatcherStartMessage, StartMessage, PingMessage, OKMessage
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -48,7 +48,7 @@ VERBOSE_MODE=True
 
 @pytest.fixture
 def supervisor(system):
-    return Supervisor(VERBOSE_MODE)
+    return Supervisor(verbose_mode=VERBOSE_MODE, system_imp=SIMPLE_SYSTEM_IMP)
 
 
 def rule(r):

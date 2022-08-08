@@ -60,7 +60,7 @@ from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.message import DispatcherStartMessage
 from powerapi.filter import Filter
-from powerapi.supervisor import Supervisor
+from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
 
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
@@ -146,6 +146,7 @@ def mongodb_content():
 def test_run_mongo(mongo_database, shutdown_system):
     config = {'verbose': True,
               'stream': False,
+              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'mongodb',
                                          'model': 'PowerReport',
                                          'uri': MONGO_URI,
@@ -158,7 +159,7 @@ def test_run_mongo(mongo_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor(config['verbose'])
+    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
     launch_simple_architecture(config, supervisor)
     supervisor.monitor()
 

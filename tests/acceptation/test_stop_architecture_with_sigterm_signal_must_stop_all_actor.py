@@ -60,7 +60,7 @@ import pymongo
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
 from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
-from powerapi.supervisor import Supervisor
+from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -81,6 +81,7 @@ class MainProcess(Process):
     def run(self):
         config = {'verbose': True,
                   'stream': True,
+                  'actor_system': SIMPLE_SYSTEM_IMP,
                   'output': {'test_pusher': {'type': 'mongodb',
                                              'model': 'PowerReport',
                                              'uri': MONGO_URI,
@@ -92,7 +93,7 @@ class MainProcess(Process):
                                              'db': MONGO_DATABASE_NAME,
                                              'collection': MONGO_INPUT_COLLECTION_NAME}}
                   }
-        supervisor = Supervisor(config['verbose'])
+        supervisor = Supervisor(verbose_mode=config['verbose'],system_imp=config['actor_system'])
 
         def term_handler(_, __):
             supervisor.shutdown()
