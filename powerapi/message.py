@@ -216,12 +216,14 @@ class SimplePusherStartMessage(StartMessage):
     Message used to start a Simple Pusher actor
     """
 
-    def __init__(self, sender_name: str, name: str):
+    def __init__(self, sender_name: str, name: str, number_of_reports_to_store: int):
         """
         :param sender_name: name of the actor that send the message
         :param name: simple puller actor name
+        :param number_of_reports_to_store : Number of reports to store
         """
         StartMessage.__init__(self, sender_name, name)
+        self.number_of_reports_to_store = number_of_reports_to_store
 
 
 class SimplePullerSendReportsMessage(Message):

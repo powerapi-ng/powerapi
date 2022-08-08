@@ -44,9 +44,10 @@ class SimplePusherActor(Actor):
     def __init__(self):
         Actor.__init__(self, SimplePusherStartMessage)
         self.reports = []
+        self.number_of_reports_to_store = 0
 
     def _initialization(self, start_message: SimplePusherStartMessage):
-        pass
+        self.number_of_reports_to_store = start_message.number_of_reports_to_store
 
     def receiveMsg_PowerReport(self, message: PowerReport, _: ActorAddress):
         """
@@ -56,13 +57,17 @@ class SimplePusherActor(Actor):
         self.save_report(message)
         self.log_debug(str(message) + 'saved to list')
 
-    def receiveMsg_HWPCReport(self, message: HWPCReport, _: ActorAddress):
+        self.stop_actors_if_required()
+
+    def receiveMsg_HWPCReport(self, message: HWPCReport, sender: ActorAddress):
         """
         When receiving a PowerReport save it to the list of reports
         """
         self.log_debug('received message ' + str(message))
         self.save_report(message)
         self.log_debug(str(message) + 'saved to list')
+
+        self.stop_actors_if_required()
 
     def save_report(self, report: Report):
         """
@@ -95,3 +100,10 @@ class SimplePusherActor(Actor):
         """
         self.log_debug('received message ' + str(message))
         self.send(sender, ReceivedReportsSimplePusherMessage(self.name, self.reports))
+
+    def stop_actors_if_required(self):
+
+        if len(self.reports) >= self.number_of_reports_to_store:
+            self.log_debug("reports saved :" + str(len(self.reports)))
+            self.send(self.parent, EndMessage(self.name))
+            self.log_debug("exit request sent")
