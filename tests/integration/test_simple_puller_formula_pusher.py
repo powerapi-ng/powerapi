@@ -68,7 +68,8 @@ class TestSimplePullerFormulaPusher():
             "output": {
                 "pusher": {
                     "type": "SimplePusher",
-                    "model": "HWPCReport"
+                    "model": "HWPCReport",
+                    "number_of_reports_to_store": REPORTS_TO_SEND+1
                 }
             }
         }

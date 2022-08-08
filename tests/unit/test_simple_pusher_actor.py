@@ -51,10 +51,9 @@ class TestSimplePusher(AbstractTestActor):
         yield pusher
         system.tell(pusher, ActorExitRequest())
 
-
     @pytest.fixture
     def actor_start_message(self, system, actor):
-        return SimplePusherStartMessage('system', 'pusher_test')
+        return SimplePusherStartMessage('system', 'pusher_test', 1)
 
     def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, system, started_actor):
         report = HWPCReport.create_empty_report()
