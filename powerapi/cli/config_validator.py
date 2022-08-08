@@ -45,6 +45,8 @@ class ConfigValidator:
             config['verbose'] = logging.NOTSET
         if 'stream' not in config:
             config['stream'] = False
+        if 'actor_system' not in config:
+            config['actor_system'] = 'simpleSystemBase'
         if 'output' not in config:
             logging.error("no output configuration found")
             return False

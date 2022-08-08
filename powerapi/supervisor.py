@@ -51,6 +51,7 @@ class ActorLogFilter(logging.Filter):
     """
     Log filter
     """
+
     def filter(self, record):
         """
         filter logs that was produced by actor
@@ -62,6 +63,7 @@ class NotActorLogFilter(logging.Filter):
     """
     Log filter
     """
+
     def filter(self, record):
         """
         filter logs that was not produced by actor
@@ -93,15 +95,22 @@ LOG_DEF = {
     'loggers': {'': {'handlers': ['h1', 'h2'], 'level': logging.DEBUG}}
 }
 
+MULTI_PROC_QUEUE_IMP = 'multiprocQueueBase'
+MULTI_PROC_TCP_IMP = 'multiprocTCPBase'
+SIMPLE_SYSTEM_IMP = 'simpleSystemBase'
+THESPIAN_IMPS = [MULTI_PROC_QUEUE_IMP, MULTI_PROC_TCP_IMP, SIMPLE_SYSTEM_IMP]
+
 
 class Supervisor:
     """
     Interface with Actor system
     Used to launch, stop and monitor actors
     """
-    def __init__(self, verbose_mode: bool):
+
+    def __init__(self, verbose_mode: bool, system_imp: str):
         """
         :param verbose_mode: Specify the log level : True -> DEBUG False -> INFO
+        :param system_imp: The actor system implementation to be used
         """
         if verbose_mode:
             LOG_DEF['handlers']['h1']['level'] = logging.DEBUG
@@ -110,7 +119,17 @@ class Supervisor:
             LOG_DEF['handlers']['h1']['level'] = logging.INFO
             LOG_DEF['handlers']['h2']['level'] = logging.INFO
 
-        self.system = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
+        caps = None
+        selected_system_imp = system_imp
+
+        if selected_system_imp not in THESPIAN_IMPS:
+            selected_system_imp = SIMPLE_SYSTEM_IMP
+            logging.warning("The ActorSystem " + selected_system_imp + " implementation does not exit. "
+                                                                       "Default implementation selected")
+        if selected_system_imp == MULTI_PROC_TCP_IMP:
+            caps = {'Convention Address.IPv4': '127.0.0.1:1900'}
+
+        self.system = ActorSystem(systemBase=selected_system_imp, logDefs=LOG_DEF, capabilities=caps)
         self.pushers = {}
         self.pullers = {}
         self.dispatchers = {}

@@ -337,8 +337,8 @@ class SimplePusherGenerator(SimpleGenerator):
     def _actor_factory(self, _):
         return SimplePusherActor
 
-    def _start_message_factory(self, name, _db, _model, _stream_mode, _level_logger):
-        return SimplePusherStartMessage('system', name)
+    def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
+        return SimplePusherStartMessage('system', name, db['number_of_reports_to_store'])
 
 
 class ReportModifierGenerator:
