@@ -37,7 +37,7 @@ INFLUX2_ORG = 'org_test'
 if os.environ.get('INFLUX2_ORG') is not None:
     INFLUX2_ORG = os.environ.get('INFLUX2_ORG')
 
-INFLUX2_TOKEN = '1sdazvR2x9UE8eaLoVHhhcjGMu3Eje3_IkAp1zgIvFGQtSkcki--_BCePoicy3d35m1XNyrDXc15tRL-GCfkkA=='  # This token
+INFLUX2_TOKEN = 'tV7bkN6Ylrfm7B91xHMto1XP8JLu2jhvv4wFjty8IOL3p0Em8Srp7_UjV3q2RS-nzlJwaQ7NO22SYbPzrRSDvg=='  # This token
 if os.environ.get('INFLUX2_TOKEN') is not None:
     INFLUX2_TOKEN = os.environ.get('INFLUX2_TOKEN')
 
@@ -55,7 +55,7 @@ INFLUX2_PORT = 8086
 if os.environ.get('INFLUX2_PORT') is not None:
     INFLUX2_PORT = os.environ.get('INFLUX2_PORT')
 
-INFLUX2_BUCKET_NAME = 'acceptation_test'
+INFLUX2_BUCKET_NAME = 'db_test'
 if os.environ.get('INFLUX2_BUCKET_NAME') is not None:
     INFLUX2_BUCKET_NAME = os.environ.get('INFLUX2_BUCKET_NAME')
 
@@ -72,17 +72,6 @@ def influx_database():
         connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
         after test end, delete the data
     """
-    print("Environment variables")
-
-    print(os.environ)
-
-    #if os.environ.get('INFLUX2_URL') is not None:
-    #    INFLUX2_URL = os.environ.get('INFLUX2_URL')
-    print('INFLUX2_URL zns..........;;')
-    print(INFLUX2_URL)
-
-    print('Token zns..........;;')
-    print(INFLUX2_TOKEN)
 
     client = InfluxDBClient(url=INFLUX2_URL, token=INFLUX2_TOKEN, org=INFLUX2_ORG)
 
