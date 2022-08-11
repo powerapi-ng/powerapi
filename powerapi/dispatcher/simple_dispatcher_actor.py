@@ -51,12 +51,7 @@ class SimpleDispatcherActor(Actor):
 
     def __init__(self):
         Actor.__init__(self, DispatcherStartMessage)
-
-        self.formula_class: Type[FormulaActor] = None
-        self.formula_values: FormulaValues = None
-        self.route_table: RouteTable = None
-        self.device_id = None
-
+        
         self.formula_pool = {}
         self.formula_number_id = 0
         self.formula = None
