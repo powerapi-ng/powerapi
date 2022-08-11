@@ -29,7 +29,7 @@
 from thespian.actors import ActorAddress, ActorExitRequest
 
 from powerapi.actor import Actor, InitializationException
-from powerapi.message import SimplePullerStartMessage, StartMessage, EndMessage,\
+from powerapi.message import SimplePullerStartMessage, StartMessage, EndMessage, \
     SimplePullerSendReportsMessage
 
 
@@ -73,9 +73,11 @@ class SimplePullerActor(Actor):
             report = self.report_type_to_send.create_empty_report()
             dispatchers = self.report_filter.route(report)
             for dispatcher in dispatchers:
-                self.log_debug('send report ' + str(report) + 'to ' + str(dispatcher))
+                self.log_debug('send report ' + str(report) + ' to ' + str(dispatcher))
                 self.send(dispatcher, report)
             sent += 1
+
+        self.log_debug('sent reports: ' + str(sent))
 
     def receiveMsg_ActorExitRequest(self, message: ActorExitRequest, _: ActorAddress):
         """
