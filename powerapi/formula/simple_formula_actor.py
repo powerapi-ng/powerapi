@@ -56,4 +56,4 @@ class SimpleFormulaActor(FormulaActor):
 
         for _, pusher in self.pushers.items():
             self.send(pusher, message)
-            self.log_debug('sent message ' + str(message)+' to '+str(pusher))
+            self.log_debug('sent message ' + str(message) + ' to ' + str(pusher))
