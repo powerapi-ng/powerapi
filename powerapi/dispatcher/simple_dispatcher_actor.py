@@ -26,19 +26,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Type, Tuple, List
+from typing import Tuple
 
-from thespian.actors import ActorAddress, ActorExitRequest, ChildActorExited, PoisonMessage
+from thespian.actors import ActorAddress
 
-from powerapi.actor import Actor, InitializationException
-from powerapi.formula import FormulaActor, FormulaValues
-from powerapi.dispatch_rule import DispatchRule
-from powerapi.utils import Tree
+from powerapi.actor import Actor
+from powerapi.message import StartMessage, DispatcherStartMessage, FormulaStartMessage, OKMessage
 from powerapi.report import Report
-from powerapi.message import StartMessage, DispatcherStartMessage, FormulaStartMessage, EndMessage, ErrorMessage, \
-    OKMessage
-from powerapi.dispatcher.blocking_detector import BlockingDetector
-from powerapi.dispatcher.route_table import RouteTable
 
 
 class SimpleDispatcherActor(Actor):
@@ -51,20 +45,24 @@ class SimpleDispatcherActor(Actor):
 
     def __init__(self):
         Actor.__init__(self, DispatcherStartMessage)
-        
+        self.formula_class = None
+        self.formula_values = None
+        self.route_table = None
+        self.device_id = None
         self.formula_pool = {}
         self.formula_number_id = 0
+        self.formula_name = None
         self.formula = None
 
     def _initialization(self, message: StartMessage):
         Actor._initialization(self, message)
+        self.formula_name = "simple-formula"
         self.formula_class = message.formula_class
         self.formula_values = message.formula_values
         self.route_table = message.route_table
         self.device_id = message.device_id
-        self.formula_name = "simple-formula"
 
-        self._create_formula(("simple-formula", self.formula_class), self.formula_name)
+        self._create_formula((self.formula_name, self.formula_class), self.formula_name)
 
     def _send_message(self, formula, message):
         self.log_debug('send ' + str(message) + ' to ' + self.formula_name)
@@ -78,7 +76,7 @@ class SimpleDispatcherActor(Actor):
         self.log_debug('received ' + str(message))
         self._send_message(self.formula, message)
 
-    def receiveMsg_OKMessage(self, message: OKMessage, sender: ActorAddress):
+    def receiveMsg_OKMessage(self, message: OKMessage, _: ActorAddress):
         """
         When receiving OKMessage after trying to start a formula, move formula from the waiting service to the formula pool
         """
