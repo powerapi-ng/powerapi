@@ -31,7 +31,6 @@ import logging
 from typing import Any, Type
 from datetime import timedelta
 
-from thespian.actors import ActorTypeDispatcher, ActorAddress, ActorExitRequest, WakeupMessage
 
 from powerapi.message import PingMessage, OKMessage, ErrorMessage, StartMessage
 from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException

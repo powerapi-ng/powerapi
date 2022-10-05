@@ -26,17 +26,17 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
 from multiprocessing import Pipe
 
 import pytest
 
-from thespian.actors import ActorSystem
-
-from powerapi.message import OKMessage, ErrorMessage, PingMessage, EndMessage
+from powerapi.message import OKMessage, ErrorMessage, PingMessage, EndMessage, PoisonPillMessage, StartMessage
+from tests.unit.actor.abstract_test_actor import CrashMessage
 
 from .db import FakeDB, CrashDB
-from .dummy_actor import DummyActor, DummyStartMessage, logger
-from .actor import system, is_actor_alive
+from .dummy_actor import DummyActor
+from ..actor import NotConnectedException
 
 LOGGER_NAME = 'thespian_test_logger'
 
@@ -57,6 +57,7 @@ class UnknowMessage:
     """
 
 
+# TODO HAS TO DISSAPEAR
 class AbstractTestActor:
     """
     Basic test that an actor should pass
@@ -64,14 +65,6 @@ class AbstractTestActor:
     To use it with an actor that you create you must implement the method actor and actor_start_message
     test function added to this class must take in parameter the two fixtures system and (actor of started_actor)
     """
-    @classmethod
-    def teardown_class(cls):
-        """
-        After all test was executed, shutdown the actor system
-        """
-        while ActorSystem().listen(0.1) is not None:
-            continue
-        ActorSystem().shutdown()
 
     @pytest.fixture
     def dummy_pipe(self):
@@ -94,52 +87,6 @@ class AbstractTestActor:
         """
         return dummy_pipe[1]
 
-    @pytest.fixture
-    def actor(self):
-        """
-        This fixture must return the actor class of the tested actor
-        """
-        raise NotImplementedError()
-
-    @pytest.fixture
-    def actor_start_message(self):
-        """
-        This fixture must return an instance of start message used to start the tested actor
-        """
-        raise NotImplementedError()
-
-    @pytest.fixture
-    def started_actor(self, system, actor, actor_start_message):
-        """
-        fixture that return and actor that was started with a StartMessage
-        """
-        system.ask(actor, actor_start_message)
-        return actor
-
-    def test_create_an_actor_and_send_it_PingMessage_must_make_it_answer_OKMessage(self, system, actor):
-        msg = system.ask(actor, PingMessage('system'), 0.3)
-        print(msg)
-        assert isinstance(msg, OKMessage)
-
-    def test_create_an_actor_and_send_it_UnknowMessage_must_make_it_answer_ErrorMessage(self, system, actor):
-        msg = system.ask(actor, UnknowMessage(), 0.3)
-        print(msg)
-        assert isinstance(msg, ErrorMessage)
-
-    def test_send_StartMessage_answer_OkMessage(self, system, actor, actor_start_message):
-        msg = system.ask(actor, actor_start_message)
-        print(msg)
-        assert isinstance(msg, OKMessage)
-
-    def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, system, started_actor, actor_start_message):
-        msg = system.ask(started_actor, actor_start_message)
-        assert isinstance(msg, ErrorMessage)
-        assert msg.error_message == 'Actor already initialized'
-
-    def test_send_EndMessage_to_started_actor_make_it_terminate(self, system, started_actor):
-        system.tell(started_actor, EndMessage)
-        assert not is_actor_alive(system, started_actor)
-
 
 def define_database_content(content):
     """
@@ -148,9 +95,11 @@ def define_database_content(content):
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
     ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
     """
+
     def wrap(func):
         setattr(func, '_content', content)
         return func
+
     return wrap
 
 
@@ -198,10 +147,10 @@ class AbstractTestActorWithDB(AbstractTestActor):
 
     @pytest.fixture
     def started_actor(self, actor, pipe_out, fake_db, actor_start_message):
-        ActorSystem().ask(actor, actor_start_message)
+        # ActorSystem().ask(actor, actor_start_message)
         print(pipe_out.recv())  # remove 'connected' string from Queue
         return actor
 
     def test_starting_actor_make_it_connect_to_database(self, system, actor, actor_start_message, pipe_out):
-        ActorSystem().ask(actor, actor_start_message)
+        # ActorSystem().ask(actor, actor_start_message)
         assert pipe_out.recv() == 'connected'

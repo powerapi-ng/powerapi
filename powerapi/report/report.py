@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, NewType, Tuple, List, Any
-from powerapi.exception import PowerAPIExceptionWithMessage
+from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
 from powerapi.message import Message
 
 CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
@@ -46,6 +46,13 @@ class BadInputData(PowerAPIExceptionWithMessage):
     def __init__(self, msg, input_data):
         PowerAPIExceptionWithMessage.__init__(self, msg)
         self.input_data = input_data
+
+
+class DeserializationFail(PowerAPIException):
+    """
+    Exception raised when the
+    in the good format
+    """
 
 
 class Report(Message):

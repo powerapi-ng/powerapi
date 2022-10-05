@@ -32,3 +32,4 @@ from powerapi.report.power_report import PowerReport
 from powerapi.report.hwpc_report import HWPCReport
 from powerapi.report.control_report import ControlReport
 from powerapi.report.procfs_report import ProcfsReport
+from powerapi.report.formula_report import FormulaReport

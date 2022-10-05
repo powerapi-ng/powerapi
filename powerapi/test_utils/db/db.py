@@ -26,8 +26,22 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from multiprocessing import Queue
+
 from powerapi.database import BaseDB, DBError
 from powerapi.report import Report
+
+
+def define_database_content(content):
+    def wrap(func):
+        setattr(func, '_content', content)
+        return func
+
+    return wrap
+
+
+REPORT1 = Report(1, 2, 3)
+REPORT2 = Report(3, 4, 5)
 
 
 class FakeDBError(Exception):
@@ -37,44 +51,31 @@ class FakeDBError(Exception):
 
 
 class FakeDB(BaseDB):
-    """
-    A fake database that send information throug a pipe when its api is used
-    """
 
-    def __init__(self, content=[], pipe=None, *args, **kwargs):
+    def __init__(self, content=[], *args, **kwargs):
         BaseDB.__init__(self, Report)
         self._content = content
-        self.pipe = pipe
+        self.q = Queue()
+        self.exceptions = [FakeDBError]
 
     def connect(self):
-        """
-        send the string connected through the pipe
-        """
-        if self.pipe is not None:
-            self.pipe.send('connected')
+        self.q.put('connected', block=False)
 
     def iter(self, stream_mode):
         return self._content.__iter__()
 
-    def save(self, report):
-        """
-        send the saved report through the pipe
-        """
-        if self.pipe is not None:
-            self.pipe.send(report)
+    def save(self, report, report_model):
+        self.q.put(report, block=False)
 
-    def save_many(self, reports):
-        """
-        send the saved reports through the pipe
-        """
-        if self.pipe is not None:
-            self.pipe.send(reports)
+    def save_many(self, reports, report_model):
+        self.q.put(reports, block=False)
 
 
 class SilentFakeDB(BaseDB):
     """
     An empty Database that don't send information through the pipe
     """
+
     def __init__(self, content=[], pipe=None, *args, **kwargs):
         BaseDB.__init__(self, Report)
         self._content = content
@@ -96,6 +97,7 @@ class CrashDB(BaseDB):
     """
     FakeDB that crash when using its connect method
     """
+
     def __init__(self, *args, **kwargs):
         BaseDB.__init__(self, Report)
 
@@ -111,9 +113,11 @@ def define_database(database):
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
     ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
     """
+
     def wrap(func):
         setattr(func, '_database', database)
         return func
+
     return wrap
 
 
@@ -125,7 +129,9 @@ def define_report_type(report_type):
     ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
     ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
     """
+
     def wrap(func):
         setattr(func, '_report_type', report_type)
         return func
+
     return wrap

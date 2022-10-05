@@ -53,7 +53,7 @@ import pymongo
 
 from thespian.actors import ActorAddress
 
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
+from powerapi.formula.dummy import DummyFormulaActor, DummyFormulasState
 from powerapi.report import Report, PowerReport, HWPCReport
 from powerapi.cli.generator import PusherGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
@@ -100,7 +100,7 @@ def launch_simple_architecture(config, supervisor):
     # Dispatcher
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
-    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', CrashDummyFormulaActor, DummyFormulaValues({'test_pusher': pusher}, 0), route_table, 'cpu')
+    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', CrashDummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
 
     dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
 

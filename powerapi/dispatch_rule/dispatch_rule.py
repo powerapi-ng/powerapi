@@ -38,7 +38,7 @@ class DispatchRule:
 
     def get_formula_id(self, report):
         """
-        return id of the formulas that the receive report must be send
+        return id of the formula that the received report must be sent
 
         :param report:
         :type report: powerapi.report.report.Report

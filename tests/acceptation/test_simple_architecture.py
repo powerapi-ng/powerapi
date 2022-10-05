@@ -56,7 +56,7 @@ import pymongo
 
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
+from powerapi.formula.dummy import DummyFormulaActor, DummyFormulasState
 from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
@@ -88,7 +88,7 @@ def launch_simple_architecture(config, supervisor):
     # Dispatcher
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulaValues({'test_pusher': pusher}, 0), route_table, 'cpu')
+    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
 
     dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
 

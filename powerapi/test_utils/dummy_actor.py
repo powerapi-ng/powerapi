@@ -30,37 +30,40 @@ import logging
 
 import pytest
 
-from thespian.actors import Actor, ActorExitRequest
-
-from powerapi.message import StartMessage, OKMessage, ErrorMessage
-from powerapi.actor import Actor as PowerapiActor, InitializationException
+from powerapi.actor.actor import InitializationException
+from powerapi.handler import PoisonPillMessageHandler, StartHandler
+from powerapi.message import StartMessage, OKMessage, ErrorMessage, Message, PoisonPillMessage
+from powerapi.actor import Actor as PowerapiActor, Actor, State
 from powerapi.formula import DomainValues
+from powerapi.test_utils.dummy_handlers import DummyHandler, DummyFormulaHandler, CrashFormulaHandler, \
+    CrashInitFormulaHandler
 
-LOGGER_NAME = 'thespian_test_logger'
-
-
-@pytest.fixture
-def logger(system, dummy_pipe_in):
-    """
-    fixture that return a DummyActor
-
-    A DummyActor is an actor that send every received message to the pytest process through a pipe
-    This type of actor is usefull to unit test actor that interact with other actors.
-    It may tests if the tested actor send the correct message to the actor it must interact with
-    """
-    logger_actor = system.createActor(DummyActor, globalName=LOGGER_NAME)
-    system.tell(logger_actor, DummyStartMessage('system', 'logger', dummy_pipe_in))
-    yield logger_actor
-    system.tell(logger_actor, ActorExitRequest())
+LOGGER_NAME = 'multiprocess_test_logger'
 
 
-class DummyStartMessage(StartMessage):
+# @pytest.fixture
+# def logger(dummy_pipe_in):
+#     """
+#     fixture that return a DummyActor
+#
+#     A DummyActor is an actor that send every received message to the pytest process through a pipe
+#     This type of actor is usefull to unit test actor that interact with other actors.
+#     It may tests if the tested actor send the correct message to the actor it must interact with
+#     """
+#     logger_actor = DummyActor(), globalName=LOGGER_NAME)
+#     system.tell(logger_actor, DummyStartMessage('system', 'logger', dummy_pipe_in))
+#     yield logger_actor
+#     system.tell(logger_actor, ActorExitRequest())
+
+
+class DummyActorState(State):
     """
     Message used to start a DummyActor
     :param pipe: pipe used to send message to pytest process
     """
-    def __init__(self, sender_name, name, pipe):
-        StartMessage.__init__(self, sender_name, name)
+
+    def __init__(self, actor: Actor, pipe):
+        State.__init__(self, actor)
         self.pipe = pipe
 
 
@@ -68,84 +71,67 @@ class DummyActor(Actor):
     """
     Actor that forward all start message (except StartMessage) into a pipe to the test process
     """
-    def __init__(self):
-        Actor.__init__(self)
-        self.pipe = None
-        self.name = None
 
-    def receiveMessage(self, message, sender):
+    def __init__(self, name: str, pipe, message_type):
+        Actor.__init__(self, name)
+        self.state = DummyActorState(self, pipe)
+        self.message_type = message_type
+
+    def setup(self):
         """
-        when receive a message, send it to the pytest process through a pipe
+        Define message handler
         """
-        if isinstance(message, DummyStartMessage):
-            self.pipe = message.pipe
-            self.name = message.name
-        else:
-            self.pipe.send((self.name, message))
-            logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
+        self.add_handler(self.message_type, DummyHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartHandler(self.state))
+        print('setup: Called in '+str(self))
+
+
+class DummyFormulaActorState(State):
+    """
+    Message used to start a DummyActor
+    :param pipe: pipe used to send message to pytest process
+    """
+
+    def __init__(self, actor: Actor, fake_pusher: Actor):
+        State.__init__(self, actor)
+        self.fake_pusher = fake_pusher
 
 
 class DummyFormulaActor(Actor):
     """
     A fake FormulaActor that is connected to a DummyActor (a fake pusher)
     """
-    def __init__(self):
-        Actor.__init__(self)
-        self.name = None
-        self.fake_puller = None
 
-    def receiveMessage(self, message, sender):
+    def __init__(self, name: str, fake_pusher: Actor):
+        Actor.__init__(self, name)
+        self.state = DummyFormulaActorState(self, fake_pusher)
+
+    def setup(self):
         """
-        When receiving a message :
-        if its a Start message containing initialization values : initailize the DummyFormula
-        if its an ActorExitRequest : notify the pusher that the Dummyformula die
-        if its an other type of message : forward it to the fake pusher
+        Define message handler
         """
-        logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
-        if isinstance(message, StartMessage):
-            self.name = message.name
-            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
-            self.send(self.fake_puller, message)
-            self.send(sender, OKMessage(self.name))
-        elif isinstance(message, ActorExitRequest):
-            self.send(self.fake_puller, 'dead')
-        else:
-            self.send(self.fake_puller, message)
+        self.add_handler(Message, DummyFormulaHandler(self.state))
 
     @staticmethod
     def gen_domain_values(device_id, formula_id):
         return DomainValues(device_id, formula_id)
 
 
-class CrashException(Exception):
-    """
-    Exception raised by formla to make it crash
-    """
-
-
 class CrashFormulaActor(DummyFormulaActor):
     """
     Formula that crash after receiving 3 messages
     """
-    def __init__(self):
-        DummyFormulaActor.__init__(self)
+
+    def __init__(self, name: str, fake_pusher: Actor):
+        DummyFormulaActor.__init__(self, name, fake_pusher)
         self.report_received = 0
 
-    def receiveMessage(self, message, sender):
-        logging.debug('receive : ' + str(message), extra={'actor_name': self.name})
-        if isinstance(message, StartMessage):
-            self.name = message.name
-            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
-            self.send(self.fake_puller, message)
-            self.send(sender, OKMessage(self.name))
-        elif isinstance(message, ActorExitRequest):
-            self.send(self.fake_puller, 'dead')
-        else:
-            self.report_received += 1
-            if self.report_received >= 3:
-                self.send(self.fake_puller, 'crash')
-                raise CrashException
-            self.send(self.fake_puller, message)
+    def setup(self):
+        """
+        Define message handler
+        """
+        self.add_handler(Message, CrashFormulaHandler(self.state))
 
 
 class CrashInitFormulaActor(DummyFormulaActor):
@@ -153,19 +139,15 @@ class CrashInitFormulaActor(DummyFormulaActor):
     Formula answer ErrorMessage to StartMessage
     Like DummyFormulaActor, it will forward received Message to fake pusher
     """
-    def __init__(self):
-        DummyFormulaActor.__init__(self)
-        self.report_received = 0
 
-    def receiveMessage(self, message, sender):
-        if isinstance(message, StartMessage):
-            self.name = message.name
-            self.fake_puller = self.createActor(DummyActor, globalName=message.values.pushers['fake_pusher'])
-            self.send(sender, ErrorMessage(self.name, 'formula crashed'))
-        elif isinstance(message, ActorExitRequest):
-            self.send(self.fake_puller, 'dead')
-        else:
-            self.send(self.fake_puller, message)
+    def __init__(self, name: str, fake_pusher: Actor):
+        DummyFormulaActor.__init__(self, name, fake_pusher)
+
+    def setup(self):
+        """
+        Define message handler
+        """
+        self.add_handler(Message, CrashInitFormulaHandler(self.state))
 
 
 class DummyPowerapiActor(PowerapiActor):
@@ -173,27 +155,29 @@ class DummyPowerapiActor(PowerapiActor):
     Actor that have the same API than a basic powerapi actor
     """
 
-    def __init__(self):
-        PowerapiActor.__init__(self, StartMessage)
+    def __init__(self, name: str):
+        PowerapiActor.__init__(self, name)
 
 
 class CrashInitActor(DummyPowerapiActor):
     """
-    Basic powerapi actor that crash at initialisation
+    Basic powerapi actor that crash at setup
     """
-    def _initialization(self, msg):
+
+    def setup(self, msg):
         raise InitializationException('error')
 
-
-class CrashActor(DummyPowerapiActor):
-    """
-    Basic powerapi actor that crash 2s after initialization
-    """
-    def _initialization(self, _):
-        self.wakeupAfter(2)
-
-    def receiveMsg_WakeupMessage(self, message, sender):
-        """
-        crash after being waked up by system, 2s after initialization
-        """
-        raise CrashException()
+# TODO IS IT REQUIRED ?
+# class CrashActor(DummyPowerapiActor):
+#     """
+#     Basic powerapi actor that crash 2s after initialization
+#     """
+#
+#     def _initialization(self, _):
+#         self.wakeupAfter(2)
+#
+#     def receiveMsg_WakeupMessage(self, message, sender):
+#         """
+#         crash after being waked up by system, 2s after initialization
+#         """
+#         raise CrashException()

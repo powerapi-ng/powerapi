@@ -74,8 +74,8 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
 
 
     generator = PusherGenerator()
-    generator.remove_model_factory('PowerReport')
-    generator.add_model_factory('PowerReport', PowerReport)
+    generator.remove_report_class('PowerReport')
+    generator.add_report_class('PowerReport', PowerReport)
 
     actors = generator.generate(config)
     pusher_cls, pusher_start_message = actors['test_pusher']

@@ -148,28 +148,28 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
     generator = DBActorGenerator('input')
 
     with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_model_factory('model')
+        generator.remove_report_class('model')
 
 
 def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
     generator = DBActorGenerator('input')
 
     with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_model_factory('model')
+        generator.remove_report_class('model')
 
 
 def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
     generator = DBActorGenerator('input')
 
     with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_model_factory('model')
+        generator.remove_report_class('model')
 
 @patch('sys.exit', side_effect=SysExitException())
 def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(mocked_sys_exit):
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
                                                                    'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
-    generator.remove_model_factory('HWPCReport')
+    generator.remove_report_class('HWPCReport')
     with pytest.raises(PowerAPIException):
         result = generator.generate(args)
 

@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,23 +26,29 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
 import time
-from typing import Dict
+from typing import Dict, Any
 
-from thespian.actors import ActorAddress
-
-from powerapi.formula import AbstractCpuDramFormula, FormulaValues
+from powerapi.actor import Actor
+from powerapi.formula import AbstractCpuDramFormula, FormulaState, FormulaPoisonPillMessageHandler
+from powerapi.formula.dummy.dummy_handlers import ReportHandler
+from powerapi.pusher import PusherActor
 from powerapi.report import Report, PowerReport
-from powerapi.message import FormulaStartMessage
+from powerapi.message import FormulaStartMessage, PoisonPillMessage
 
 
-class DummyFormulaValues(FormulaValues):
+class DummyFormulaState(FormulaState):
     """
     Formula values with configurable sleeping time for dummy formula
     """
-    def __init__(self, pushers: Dict[str, ActorAddress], sleeping_time: int):
-        FormulaValues.__init__(self, pushers)
-        self.sleeping_time = sleeping_time
+
+    def __init__(self, actor: Actor, pushers: Dict[str, Actor], metadata: Dict[str, Any], socket: str, core: str,
+                 sleep_time: int):
+        FormulaState.__init__(self, actor, pushers, metadata)
+        self.sleep_time = sleep_time
+        self.socket = socket
+        self.core = core
 
 
 class DummyFormulaActor(AbstractCpuDramFormula):
@@ -50,28 +56,26 @@ class DummyFormulaActor(AbstractCpuDramFormula):
     A fake Formula that simulate data processing by waiting 1s and send a
     power report containing 42
     """
-    def __init__(self):
+
+    def __init__(self, name, pushers, socket, core, level_logger=logging.WARNING, sleep_time=0, timeout=None):
         """
         Initialize a new Dummy Formula actor.
         :param name: Actor name
-        :param pusher_actors: Pusher actors
+        :param pushers: Pusher actors
+        :param socket:
+        :param core:
+        :param level_logger: Level of the logger
+        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
         """
-        AbstractCpuDramFormula.__init__(self, FormulaStartMessage)
+        AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger, timeout)
 
-        self.sleeping_time = None
+        #: (powerapi.State): Basic state of the Formula.
+        self.state = DummyFormulaState(self, pushers, self.formula_metadata, socket, core, sleep_time)
 
-    def _initialization(self, message: FormulaStartMessage):
-        AbstractCpuDramFormula._initialization(self, message)
-        self.sleeping_time = message.values.sleeping_time
-
-    def receiveMsg_Report(self, message: Report, _: ActorAddress):
+    def setup(self):
         """
-        When receiving a report sleep for a given time and produce a power report with a power consumption of 42W
+        Initialize Handler
         """
-        self.log_debug('received message ' + str(message))
-        time.sleep(self.sleeping_time)
-        metadata = dict(message.metadata)
-        metadata["socket"] = self.socket
-        power_report = PowerReport(message.timestamp, message.sensor, message.target, 42, metadata)
-        for _, pusher in self.pushers.items():
-            self.send(pusher, power_report)
+        AbstractCpuDramFormula.setup(self)
+        self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
+        self.add_handler(Report, ReportHandler(self.state))

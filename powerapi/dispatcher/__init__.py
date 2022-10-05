@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,5 +26,5 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.dispatcher.route_table import RouteTable
-from powerapi.dispatcher.dispatcher_actor import DispatcherActor
+from powerapi.dispatcher.dispatcher_actor import DispatcherActor, RouteTable
+from powerapi.dispatcher.handlers import extract_formula_id

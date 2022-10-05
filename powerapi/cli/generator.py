@@ -34,40 +34,65 @@ from typing import Dict, Tuple, Type
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException
-from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport
+from powerapi.filter import Filter
+from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
-    VirtioFSDB, FileDB
+    VirtioFSDB, FileDB, BaseDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage, SimplePusherStartMessage, \
     SimplePullerStartMessage
 from powerapi.report_modifier.libvirt_mapper import LibvirtMapper
-from powerapi.simple_puller import SimplePullerActor
-from powerapi.simple_pusher import SimplePusherActor
+from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
+from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
+
+COMPONENT_TYPE_KEY = 'type'
+COMPONENT_MODEL_KEY = 'model'
+COMPONENT_DB_NAME_KEY = 'db'
+COMPONENT_DB_COLLECTION_KEY = 'collection'
+COMPONENT_DB_MANAGER_KEY = 'db_manager'
+
+COMPONENT_STREAM_MODE_KEY = 'stream'
 
 
 class Generator:
     """
-    Generate an actor class and actor start message from config dict
+    Generate an actor class and actor start message from config dict.
+    The config dict has the following structure:
+    {
+        "arg1_key": value,
+        "arg2_key": value
+        ...
+        "component_group_name1":{
+            "arg1_cpn1_key": value,
+            "arg2_cpn1_key": value,
+            ...
+
+        }
+        component_group_name2:{
+            ...
+        }
+        ...
+    }
     """
 
     def __init__(self, component_group_name):
         self.component_group_name = component_group_name
 
-    def generate(self, config: Dict) -> Dict[str, Tuple[Type[Actor], StartMessage]]:
+    def generate(self, main_config: Dict) -> Dict[str, Type[Actor]]:
         """
         Generate an actor class and actor start message from config dict
         """
-        if self.component_group_name not in config:
+        if self.component_group_name not in main_config:
             print('Configuration error : no ' + self.component_group_name + ' specified', file=sys.stderr)
             raise PowerAPIException('Configuration error : no ' + self.component_group_name + ' specified')
 
         actors = {}
 
-        for component_name, component_config in config[self.component_group_name].items():
+        for component_name, component_config in main_config[self.component_group_name].items():
             try:
                 component_type = component_config['type']
-                actors[component_name] = self._gen_actor(component_type, component_config, config, component_name)
+                actors[component_name] = self._gen_actor(component_config, main_config, component_name)
             except KeyError as exn:
                 msg = 'Configuration error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
@@ -76,8 +101,7 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_type: str, component_config: Dict, main_config: Dict, component_name: str) -> \
-            Tuple[Type[Actor], StartMessage]:
+    def _gen_actor(self, component_config: Dict, main_config: Dict, component_name: str) -> Type[Actor]:
         raise NotImplementedError()
 
 
@@ -134,19 +158,49 @@ def gen_tag_list(db_config: Dict):
     return db_config['tags'].split(',')
 
 
-class DBActorGenerator(Generator):
+class SimpleGenerator(Generator):
+    """
+    Generate Simple Actor class and Simple Start message from config
+    """
+
+    def __init__(self, component_group_name: str):
+        Generator.__init__(self, component_group_name)
+        self.report_classes = {
+            'HWPCReport': HWPCReport,
+            'PowerReport': PowerReport
+        }
+
+    def _gen_actor(self, component_config: Dict, main_config: Dict, component_name: str):
+        model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
+        component_config[COMPONENT_MODEL_KEY] = model
+        # start_message = self._start_message_factory(actor_name, db_config, model, None, model)
+        actor = self._actor_factory(component_name, main_config, component_config)
+        return actor
+
+    def _get_report_class(self, model_name, component_config):
+        if model_name not in self.report_classes:
+            msg = 'Configuration error : model type ' + model_name + ' unknown'
+            print(msg, file=sys.stderr)
+            raise PowerAPIException(msg)
+        else:
+            return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
+
+    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    #    raise NotImplementedError
+
+    def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        return NotImplementedError
+
+
+class DBActorGenerator(SimpleGenerator):
     """
     ActorGenerator that initialise the start message with a database from config
     """
 
-    def __init__(self, component_group_name):
+    def __init__(self, component_group_name: str):
         Generator.__init__(self, component_group_name)
-        self.model_factory = {
-            'HWPCReport': HWPCReport,
-            'PowerReport': PowerReport,
-            'ControlReport': ControlReport,
-            'ProcfsReport': ProcfsReport,
-        }
+        self.report_classes['ControlReport'] = ControlReport
+        self.report_classes['ProcfsReport'] = ProcfsReport
 
         self.db_factory = {
             'mongodb': lambda db_config: MongoDB(db_config['model'], db_config['uri'], db_config['db'],
@@ -178,15 +232,15 @@ class DBActorGenerator(Generator):
             'filedb': lambda db_config: FileDB(db_config['model'], db_config['filename'])
         }
 
-    def remove_model_factory(self, model_name):
+    def remove_report_class(self, model_name: str):
         """
         remove a Model from generator
         """
-        if model_name not in self.model_factory:
+        if model_name not in self.report_classes:
             raise ModelNameDoesNotExist(model_name)
-        del self.model_factory[model_name]
+        del self.report_classes[model_name]
 
-    def remove_db_factory(self, database_name):
+    def remove_db_factory(self, database_name: str):
         """
         remove a database from generator
         """
@@ -194,52 +248,45 @@ class DBActorGenerator(Generator):
             raise DatabaseNameDoesNotExist(database_name)
         del self.db_factory[database_name]
 
-    def add_model_factory(self, model_name, model_factory):
+    def add_report_class(self, model_name: str, report_class: Type[Report]):
         """
-        add a model to generator
+        add a report class to generator
         """
-        if model_name in self.model_factory:
+        if model_name in self.report_classes:
             raise ModelNameAlreadyUsed(model_name)
-        self.model_factory[model_name] = model_factory
+        self.report_classes[model_name] = report_class
 
-    def add_db_factory(self, db_name, db_factory):
+    def add_db_factory(self, db_name: str, db_factory_function):
         """
         add a database to generator
         """
         if db_name in self.db_factory:
             raise DatabaseNameAlreadyUsed(db_name)
-        self.db_factory[db_name] = db_factory
+        self.db_factory[db_name] = db_factory_function
 
-    def _generate_db(self, db_name, db_config, _):
+    def _generate_db(self, db_name: str, component_config: Dict):
         if db_name not in self.db_factory:
-            msg = 'Configuration error : database type ' + db_name + ' unknow'
+            msg = 'Configuration error : database type ' + db_name + ' unknown'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
         else:
-            return self.db_factory[db_name](db_config)
+            return self.db_factory[db_name](component_config)
 
-    def _generate_model(self, model_name, db_config):
-        if model_name not in self.model_factory:
-            msg = 'Configuration error : model type ' + model_name + ' unknow'
-            print(msg, file=sys.stderr)
-            raise PowerAPIException(msg)
-        else:
-            return self.model_factory[db_config['model']]
+    def _gen_actor(self, component_config: Dict, main_config: Dict, actor_name: str):
+        model = self._get_report_class(component_config)
+        component_config[COMPONENT_MODEL_KEY] = model
+        database_manager = self._generate_db(component_config[COMPONENT_DB_NAME_KEY], component_config)
+        component_config[COMPONENT_DB_MANAGER_KEY] = database_manager
 
-    def _gen_actor(self, db_name, db_config, main_config, actor_name):
-        model = self._generate_model(db_config['model'], db_config)
-        db_config['model'] = model
-        db = self._generate_db(db_name, db_config, main_config)
-        start_message = self._start_message_factory(actor_name, db, model, main_config['stream'],
-                                                    main_config['verbose'])
-        actor = self._actor_factory(db_config)
-        return actor, start_message
+        # TODO TO REMOVE
+        # start_message = self._start_message_factory(actor_name, db, model, main_config['stream'],
+        #                                            main_config['verbose'])
+        actor = self._actor_factory(actor_name, main_config, component_config)
+        return actor  # , start_message
 
-    def _actor_factory(self, db_config):
-        raise NotImplementedError()
-
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-        raise NotImplementedError()
+    # TODO TO REMOVE
+    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    #    raise NotImplementedError()
 
 
 class PullerGenerator(DBActorGenerator):
@@ -247,51 +294,24 @@ class PullerGenerator(DBActorGenerator):
     Generate Puller Actor class and Puller start message from config
     """
 
-    def __init__(self, report_filter, report_modifier_list=[]):
+    def __init__(self, report_filter: Filter, report_modifier_list=[]):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
         self.report_modifier_list = report_modifier_list
 
-    def _actor_factory(self, db_config):
-        return PullerActor
+    def _actor_factory(self, actor_name: str, main_config, component_config: Dict):
+        return PullerActor(name=actor_name, database=component_config[COMPONENT_DB_MANAGER_KEY],
+                           report_filter=self.report_filter, stream_mode=main_config[COMPONENT_STREAM_MODE_KEY],
+                           report_modifier_list=self.report_modifier_list,
+                           report_model=component_config[COMPONENT_MODEL_KEY])
 
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-        return PullerStartMessage('system', name, db, self.report_filter, stream_mode,
-                                  report_modifiers=self.report_modifier_list)
+    # TODO Remove
+    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
+    #    return PullerStartMessage('system', name, db, self.report_filter, stream_mode,
+    #                              report_modifiers=self.report_modifier_list)
 
 
-class SimpleGenerator(Generator):
-    """
-    Generate Puller Actor class and Puller start message from config
-    """
-
-    def __init__(self, component_group_name: str):
-        Generator.__init__(self, component_group_name)
-        self.model_factory = {
-            'HWPCReport': HWPCReport,
-            'PowerReport': PowerReport
-        }
-
-    def _gen_actor(self, _, db_config, main_config, actor_name):
-        model = self._generate_model(db_config['model'], db_config)
-        db_config['model'] = model
-        start_message = self._start_message_factory(actor_name, db_config, model, None, model)
-        actor = self._actor_factory(None)
-        return actor, start_message
-
-    def _generate_model(self, model_name, db_config):
-        if model_name not in self.model_factory:
-            msg = 'Configuration error : model type ' + model_name + ' unknow'
-            print(msg, file=sys.stderr)
-            raise PowerAPIException(msg)
-        else:
-            return self.model_factory[db_config['model']]
-
-    def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-        raise NotImplementedError
-
-    def _actor_factory(self, _db_config):
-        return NotImplementedError
+COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY = 'number_of_reports_to_send'
 
 
 class SimplePullerGenerator(SimpleGenerator):
@@ -304,11 +324,16 @@ class SimplePullerGenerator(SimpleGenerator):
         self.report_filter = report_filter
         self.report_modifier_list = report_modifier_list
 
-    def _actor_factory(self, _):
-        return SimplePullerActor
+    def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        return SimplePullerActor(name=actor_name, report_filter=self.report_filter,
+                                 number_of_reports_to_send=component_config[COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY],
+                                 report_type_to_send=component_config[COMPONENT_MODEL_KEY])
 
-    def _start_message_factory(self, name, db, model, _stream_mode, _level_logger):
-        return SimplePullerStartMessage('system', name, db['number_of_reports_to_send'], self.report_filter, model)
+    # def _start_message_factory(self, name, db, model, _stream_mode, _level_logger):
+    #    return SimplePullerStartMessage('system', name, db['number_of_reports_to_send'], self.report_filter, model)
+
+
+COMPONENT_NUMBER_OF_REPORTS_TO_STORE_KEY = 'number_of_reports_to_store'
 
 
 class PusherGenerator(DBActorGenerator):
@@ -319,11 +344,13 @@ class PusherGenerator(DBActorGenerator):
     def __init__(self):
         DBActorGenerator.__init__(self, 'output')
 
-    def _actor_factory(self, _):
-        return PusherActor
+    def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
+                           database=component_config[COMPONENT_DB_MANAGER_KEY])
 
-    def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
-        return PusherStartMessage('system', name, db)
+    # TODO TO REMOVE
+    # def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
+    #    return PusherStartMessage('system', name, db)
 
 
 class SimplePusherGenerator(SimpleGenerator):
@@ -334,11 +361,12 @@ class SimplePusherGenerator(SimpleGenerator):
     def __init__(self):
         SimpleGenerator.__init__(self, 'output')
 
-    def _actor_factory(self, _):
-        return SimplePusherActor
+    def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        return SimplePusherActor(name=actor_name,
+                                 number_of_reports_to_store=component_config['number_of_reports_to_store'])
 
-    def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
-        return SimplePusherStartMessage('system', name, db['number_of_reports_to_store'])
+    # def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
+    #    return SimplePusherStartMessage('system', name, db['number_of_reports_to_store'])
 
 
 class ReportModifierGenerator:

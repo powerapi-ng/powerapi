@@ -30,21 +30,23 @@ import time
 from typing import Dict
 
 import pytest
-from thespian.actors import ActorExitRequest
 
+from powerapi.actor import Actor
 from powerapi.cli.generator import SimplePusherGenerator, SimplePullerGenerator
 from powerapi.dispatch_rule.simple_dispatch_rule import SimpleDispatchRule
 from powerapi.dispatcher import DispatcherActor, RouteTable
+from powerapi.dispatcher.simple.simple_dispatcher_actor import SimpleDispatcherActor
 from powerapi.filter import Filter
-from powerapi.formula import FormulaValues
-from powerapi.formula.simple_formula_actor import SimpleFormulaActor
+from powerapi.formula import FormulaState
+from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
 from powerapi.message import DispatcherStartMessage, SimplePullerSendReportsMessage, \
-    GetReceivedReportsSimplePusherMessage
+    GetReceivedReportsSimplePusherMessage, StartMessage, PoisonPillMessage
 from powerapi.report import HWPCReport
-from powerapi.test_utils.actor import system
+from tests.unit.actor.abstract_test_actor import start_actor, stop_actor
 
 FORMULA_NAME = "simple-formula-test"
 REPORTS_TO_SEND = 10
+
 
 def filter_rule(_):
     """
@@ -52,8 +54,7 @@ def filter_rule(_):
     """
     return True
 
-
-class TestSimplePullerFormulaPusher():
+class TestSimplePullerFormulaPusher:
 
     @pytest.fixture
     def config(self) -> Dict:
@@ -69,25 +70,25 @@ class TestSimplePullerFormulaPusher():
                 "pusher": {
                     "type": "SimplePusher",
                     "model": "HWPCReport",
-                    "number_of_reports_to_store": REPORTS_TO_SEND+1
+                    "number_of_reports_to_store": REPORTS_TO_SEND + 1
                 }
             }
         }
 
     @pytest.fixture
-    def formula_pushers(self, system, config):
+    def formula_pushers(self, config):
 
         pusher_generator = SimplePusherGenerator()
-        pushers_info = pusher_generator.generate(config)
+        pushers = pusher_generator.generate(config)
 
-        pushers = {}
+        for pusher_name in pushers:
+            pusher = pushers[pusher_name]
+            start_actor(pusher)
 
-        for pusher_name in pushers_info:
-            pusher_cls, pusher_start_message = pushers_info[pusher_name]
-            pushers[pusher_name] = system.createActor(pusher_cls)
-            system.ask(pushers[pusher_name], pusher_start_message)
+        yield pushers
 
-        return pushers
+        for _, pusher in pushers.items():
+            stop_actor(pusher)
 
     @pytest.fixture
     def report_filter(self):
@@ -100,42 +101,41 @@ class TestSimplePullerFormulaPusher():
         return route_table
 
     @pytest.fixture
-    def setup_simple_pullers_formula_actors(self, system, route_table, report_filter, formula_pushers, config):
+    def setup_simple_pullers_formula_actors(self, route_table, report_filter, formula_pushers, config):
         """
         Setup CPU formula actor.
-        :param system: Actor supervisor
         :param route_table: Reports routing table
         :param report_filter: Reports filter
         :param formula_pushers: Reports pushers
         :param config: Config
         """
-        dispatcher_start_message = DispatcherStartMessage('system', 'simple-dispatcher-test', SimpleFormulaActor,
-                                                          FormulaValues(formula_pushers), route_table, 'simple-test')
-        dispatcher = system.createActor(DispatcherActor)
-        system.ask(dispatcher, dispatcher_start_message)
+        dispatcher = SimpleDispatcherActor(name='test-simple-dispatcher-test', formula_init_function=SimpleFormulaActor,
+                                           route_table=route_table, pushers=formula_pushers)
+        start_actor(dispatcher)
+
         report_filter.filter(filter_rule, dispatcher)
 
-        pullers_info = SimplePullerGenerator(report_filter).generate(config)
-        pullers = {}
-        for puller_name in pullers_info:
-            puller_cls, puller_start_message = pullers_info[puller_name]
-            pullers[puller_name] = system.createActor(puller_cls)
-            system.ask(pullers[puller_name], puller_start_message)
+        pullers = SimplePullerGenerator(report_filter).generate(config)
+        for puller_name in pullers:
+            puller = pullers[puller_name]
+            start_actor(puller)
 
         yield pullers
 
         for _, puller in pullers.items():
-            system.tell(puller, ActorExitRequest())
+            stop_actor(puller)
 
-    def test_sending_x_messages(self, system, setup_simple_pullers_formula_actors, formula_pushers, config):
+        stop_actor(dispatcher)
+
+    def test_sending_x_messages(self, setup_simple_pullers_formula_actors, formula_pushers, config):
 
         # Exercise
-        system.tell(setup_simple_pullers_formula_actors[list(config['input'].keys())[0]],
-                    SimplePullerSendReportsMessage('system', 'test-integration'))
+        setup_simple_pullers_formula_actors[list(config['input'].keys())[0]]. \
+            send_data(SimplePullerSendReportsMessage('system', 'test-integration'))
 
         time.sleep(REPORTS_TO_SEND)
 
-        reports_message = system.ask(formula_pushers[list(config['output'].keys())[0]],
-                                     GetReceivedReportsSimplePusherMessage('system'))
-
+        formula_pushers[list(config['output'].keys())[0]]. \
+            send_control(GetReceivedReportsSimplePusherMessage('system'))
+        reports_message = formula_pushers[list(config['output'].keys())[0]].receive_control(2000)
         assert len(reports_message.reports) == config['input']['puller']['number_of_reports_to_send']

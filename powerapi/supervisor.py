@@ -31,10 +31,9 @@ import sys
 
 from typing import Type
 
-from thespian.actors import ActorSystem
 
 from powerapi.message import OKMessage, ErrorMessage, StartMessage, EndMessage
-from powerapi.actor import InitializationException, Actor
+from powerapi.actor import Actor
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.pusher import PusherActor
 from powerapi.puller import PullerActor

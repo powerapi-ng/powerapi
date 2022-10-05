@@ -30,11 +30,13 @@ from __future__ import annotations
 from typing import Type, List
 from typing import TYPE_CHECKING
 
+from powerapi.exception import PowerAPIException
+
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
     from powerapi.dispatcher import RouteTable
-    from powerapi.formula import FormulaActor, FormulaValues, DomainValues
+    from powerapi.formula import FormulaActor, FormulaState, DomainValues
     from powerapi.report_modifier import ReportModifier
 
 
@@ -64,7 +66,7 @@ class PingMessage(Message):
 
 class OKMessage(Message):
     """
-    Message send to acknowledge last received message
+    Message sends to acknowledge last received message
     """
 
     def __init__(self, sender_name: str):
@@ -92,12 +94,11 @@ class ErrorMessage(Message):
 
 class StartMessage(Message):
     """
-    Message that ask the actor to launch its initialisation process
+    Message that asks the actor to launch its initialisation process
     """
 
-    def __init__(self, sender_name: str, name: str):
+    def __init__(self, sender_name: str):
         Message.__init__(self, sender_name)
-        self.name = name
 
     def __str__(self):
         return "StartMessage"
@@ -105,7 +106,7 @@ class StartMessage(Message):
 
 class EndMessage(Message):
     """
-    Message sent by actor to its parent when it terminate itself
+    Message sent by actor to its parent when it terminates itself
     """
 
     def __init__(self, sender_name: str):
@@ -162,7 +163,7 @@ class DispatcherStartMessage(StartMessage):
     Message used to start Dispatcher actor
     """
 
-    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaValues,
+    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaState,
                  route_table: RouteTable, device_id: str):
         """
         :param sender_name: name of the actor that send the message
@@ -184,7 +185,7 @@ class FormulaStartMessage(StartMessage):
     Message used to start formula actor
     """
 
-    def __init__(self, sender_name: str, name: str, formula_values: FormulaValues, domain_values: DomainValues):
+    def __init__(self, sender_name: str, name: str, formula_values: FormulaState, domain_values: DomainValues):
         """
         :param sender_name: name of the actor that send the message
         :param name: puller actor name
@@ -265,10 +266,35 @@ class ReceivedReportsSimplePusherMessage(Message):
 
     def __init__(self, sender_name: str, reports: []):
         """
-        :param str error_code: message associated to the error
+        :param str sender_name: name of the message sender
+        :param list reports: list of stored reports
         """
         Message.__init__(self, sender_name)
         self.reports = reports
 
     def __str__(self):
-        return "ReceivedReportsSimplePusherMessage : " + self.reports
+        return "ReceivedReportsSimplePusherMessage : " + str(self.reports)
+
+
+class PoisonPillMessage(Message):
+    """
+    Message which allow to kill an actor
+    """
+
+    def __init__(self, soft=True):
+        self.is_soft = soft
+        self.is_hard = not soft
+
+    def __str__(self):
+        return "PoisonPillMessage"
+
+    def __eq__(self, other):
+        if isinstance(other, PoisonPillMessage):
+            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
+        return False
+
+
+class UnknowMessageTypeException(PowerAPIException):
+    """
+    Exception happen when we don't know the message type
+    """

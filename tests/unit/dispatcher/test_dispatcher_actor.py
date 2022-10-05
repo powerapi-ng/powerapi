@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -26,27 +26,26 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from time import sleep
+
 import pytest
 
-from thespian.actors import ActorExitRequest
-
-from powerapi.test_utils.actor import is_actor_alive, system
-from powerapi.test_utils.dummy_actor import DummyActor, DummyFormulaActor, CrashInitFormulaActor, CrashFormulaActor, DummyStartMessage, logger, LOGGER_NAME
-from powerapi.test_utils.abstract_test import AbstractTestActor, recv_from_pipe
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.dispatcher.dispatcher_actor import _extract_formula_id
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel, DispatchRule
-from powerapi.dispatch_rule import PowerDispatchRule, PowerDepthLevel
-from powerapi.message import OKMessage, ErrorMessage, DispatcherStartMessage, StartMessage, FormulaStartMessage, EndMessage
-from powerapi.formula import FormulaValues
 from powerapi.dispatch_rule import DispatchRule
+from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
+from powerapi.formula import FormulaState
+from powerapi.message import DispatcherStartMessage, StartMessage, EndMessage, PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
-from powerapi.database import MongoDB
+from powerapi.test_utils.dummy_actor import DummyActor, DummyFormulaActor, CrashInitFormulaActor, CrashFormulaActor, \
+    LOGGER_NAME
+from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, start_actor, \
+    stop_actor
+
 
 def define_dispatch_rules(rules):
     def wrap(func):
         setattr(func, '_dispatch_rules', rules)
         return func
+
     return wrap
 
 
@@ -55,9 +54,11 @@ def define_formula_class(formula_class):
     A decorator to set the _formula_class
     attribute for individual tests.
     """
+
     def wrap(func):
         setattr(func, '_formula_class', formula_class)
         return func
+
     return wrap
 
 
@@ -83,6 +84,7 @@ def pytest_generate_tests(metafunc):
 
 class Report1(Report):
     """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
+
     def __init__(self, a, b, b2=None):
         self.a = a
         self.b = b
@@ -96,7 +98,7 @@ class Report1(Report):
     def __str__(self):
         return '(' + str(self.a) + ',' + (str(self.b)
                                           if self.b2 is None
-                                          else ('(' + self.b + ',' + self.b2 +
+                                          else ('(' + str(self.b) + ',' + str(self.b2) +
                                                 ')')) + ')'
 
     def __repr__(self):
@@ -109,6 +111,7 @@ class DispatchRule1A(DispatchRule):
     its id is the report *a* value
 
     """
+
     def __init__(self, primary=False):
         DispatchRule.__init__(self, primary)
         self.fields = ['A']
@@ -120,7 +123,7 @@ class DispatchRule1A(DispatchRule):
 class DispatchRule1AB(DispatchRule):
     """Group by rule that split the report if it contains a *b2* value
 
-    if the report contain a *b2* value, it is spliten in two report the first
+    if the report contain a *b2* value, it is split in two report the first
     one containing the *b* value and the second one containing the *b2* value
 
     sub-report identifier is a tuple of two values, the first one is the *a*
@@ -128,17 +131,19 @@ class DispatchRule1AB(DispatchRule):
     report
 
     """
+
     def __init__(self, primary=False):
         DispatchRule.__init__(self, primary)
         self.fields = ['A', 'B']
 
     def get_formula_id(self, report):
-        b2_id = [] if report.b2 is None else [(report.a, report.b2)]
-        return [(report.a, report.b)] + b2_id
+        # b2_id = [] if report.b2 is None else [(report.a, report.b2)]
+        return [(report.a, report.b)] # + b2_id
 
 
 class Report2(Report):
     """ Fake report that can contains two or three values : *a*, *c*, *c2* """
+
     def __init__(self, a, c, c2=None):
         self.a = a
         self.c = c
@@ -165,6 +170,7 @@ class DispatchRule2A(DispatchRule):
     its id is the report *a* value
 
     """
+
     def __init__(self, primary=False):
         DispatchRule.__init__(self, primary)
         self.fields = ['A']
@@ -184,6 +190,7 @@ class DispatchRule2AC(DispatchRule):
     report
 
     """
+
     def __init__(self, primary=False):
         DispatchRule.__init__(self, primary)
         self.fields = ['A', 'C']
@@ -195,11 +202,11 @@ class DispatchRule2AC(DispatchRule):
 
 class Report3(Report):
     """ Fake report that contains same values as Report 1 and an other value"""
+
     def __init__(self, a, b, d):
         self.a = a
         self.b = b
         self.d = d
-        
 
     def __eq__(self, other):
         if not isinstance(other, Report3):
@@ -224,6 +231,7 @@ class DispatchRule3(DispatchRule):
     report
 
     """
+
     def __init__(self, primary=False):
         DispatchRule.__init__(self, primary)
         self.fields = ['A', 'B']
@@ -232,94 +240,134 @@ class DispatchRule3(DispatchRule):
         return [(report.a, report.b)]
 
 
-# Inputs reports
+# Input reports
 REPORT_1 = Report1('a', 'b')
 REPORT_1_B2 = Report1('a', 'b', 'b2')
 REPORT_2 = Report2('a', 'c')
 REPORT_2_C2 = Report2('a', 'c', 'c2')
 REPORT_3 = Report3('a', 'b', 'd')
-                                                               
 
 # Report that could be return by the handle function
 SPLITED_REPORT_1_B2 = Report1('a', 'b2')
 SPLITED_REPORT_2_C2 = Report2('a', 'c2')
 
+PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
+PUSHER_NAME_HWPC_REPORT = 'fake_pusher_hwpc'
+
+REPORT_TYPE_TO_BE_SENT = Report1
+REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
+
 
 class TestDispatcher(AbstractTestActor):
 
     @pytest.fixture
-    def actor(self, system):
-        actor = system.createActor(DispatcherActor)
-        yield actor
-        system.tell(actor, ActorExitRequest())
+    def started_fake_pusher_power_report(self, dummy_pipe_in, dummy_pipe_out):
+        pusher = DummyActor(PUSHER_NAME_POWER_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
+        # start_actor(pusher)
+        return pusher
+        # stop_actor(pusher)
+
+        # pusher.socket_interface.close()
 
     @pytest.fixture
-    def actor_start_message(self, dispatch_rules, logger, formula_class):
+    def started_fake_pusher_hwpc_report(self, dummy_pipe_in):
+        pusher = DummyActor(PUSHER_NAME_HWPC_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT_2)
+        start_actor(pusher)
+        yield pusher
+        stop_actor(pusher)
+        # pusher.socket_interface.close()
+
+    @pytest.fixture
+    def fake_pushers(self, started_fake_pusher_power_report, started_fake_pusher_hwpc_report):
+        return {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report,
+                PUSHER_NAME_HWPC_REPORT: started_fake_pusher_hwpc_report}
+
+    @pytest.fixture
+    def actor(self, dispatch_rules, formula_class, started_fake_pusher_power_report):
+        print("\n")
+        print("Formula class: " + str(formula_class))
+        print("Dispatch rules: " + str(dispatch_rules))
+        start_actor(started_fake_pusher_power_report)
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
             route_table.dispatch_rule(report_type, gbr)
-        values = FormulaValues({'fake_pusher': LOGGER_NAME})
-        return DispatcherStartMessage('system', 'dispatcher', formula_class, values, route_table, 'test_device')
+        actor = DispatcherActor(name='test-dispatcher', formula_init_function=formula_class, route_table=route_table,
+                                pushers=started_fake_pusher_power_report)
+
+        print("Actor: " + str(actor))
+        return actor
+
+    # TODO REMOVE @pytest.fixture
+    # def actor_start_message(self, dispatch_rules, logger, formula_class):
+    #     route_table = RouteTable()
+    #     for report_type, gbr in dispatch_rules:
+    #         route_table.dispatch_rule(report_type, gbr)
+    #     values = FormulaState({'fake_pusher': LOGGER_NAME})
+    #     return DispatcherStartMessage('system', 'dispatcher', formula_class, values, route_table, 'test_device')
 
     @pytest.fixture
-    def dispatcher_with_formula(self, system, started_actor, logger, dispatch_rules, dummy_pipe_out):
-        system.tell(started_actor, REPORT_1)
+    def dispatcher_with_formula(self, started_actor, dummy_pipe_out):
+        started_actor.send_data(REPORT_1)
         recv_from_pipe(dummy_pipe_out, 0.5)
         recv_from_pipe(dummy_pipe_out, 0.5)
         return started_actor
 
     @pytest.fixture
-    def dispatcher_with_two_formula(self, system, dispatcher_with_formula, logger, dispatch_rules, dummy_pipe_out):
-        system.tell(dispatcher_with_formula, Report1('a', 'c'))
+    def dispatcher_with_two_formula(self, dispatcher_with_formula, dummy_pipe_out):
+        dispatcher_with_formula.send_data(Report1('a', 'c'))
         recv_from_pipe(dummy_pipe_out, 0.5)
         recv_from_pipe(dummy_pipe_out, 0.5)
         return dispatcher_with_formula
 
-    @define_dispatch_rules([(Report1, DispatchRule1A(primary=True))])
-    def test_starting_actor_without_DispatcherStartMessage_must_answer_error_message(self, system, actor, logger):
-        answer = system.ask(actor, StartMessage('system', 'test'))
-        assert isinstance(answer, ErrorMessage)
-        assert answer.error_message == 'use DispatcherStartMessage instead of StartMessage'
+    @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
+    def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, started_actor):
+        started_actor.send_data(REPORT_1)
+        assert is_actor_alive(started_actor)
 
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
-    def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, system, started_actor, logger):
-        system.tell(started_actor, REPORT_1)
-        assert is_actor_alive(system, started_actor)
-
-    @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
-    def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, system, started_actor, logger, dummy_pipe_out):
-        system.tell(started_actor, REPORT_1)
-        assert recv_from_pipe(dummy_pipe_out, 0.5) ==  (None,None)
+    def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, started_actor,
+                                                                                dummy_pipe_out):
+        started_actor.send_data(REPORT_1)
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(self, system, started_actor, dummy_pipe_out):
-        system.tell(started_actor, REPORT_1)
-        _, start_msg =  recv_from_pipe(dummy_pipe_out, 0.5)
+    def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(self,
+                                                                                                          started_actor,
+                                                                                                          dummy_pipe_out):
+        started_actor.send_data(REPORT_1)
+        sleep(10)
+        _, start_msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert isinstance(start_msg, StartMessage)
         assert start_msg.name == 'formula0__a__b'
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self, system, dispatcher_with_formula, logger, dummy_pipe_out):
-        system.tell(dispatcher_with_formula, REPORT_1)
+    def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self,
+                                                                                                   dispatcher_with_formula,
+                                                                                                   logger,
+                                                                                                   dummy_pipe_out):
+        dispatcher_with_formula.send_data(REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == REPORT_1
-        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report2, DispatchRule2A())])
-    def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_forward_report_to_all_formula(self, system, dispatcher_with_two_formula, dummy_pipe_out):
-        system.tell(dispatcher_with_two_formula, REPORT_2)
+    def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_forward_report_to_all_formula(self,
+                                                                                                               dispatcher_with_two_formula,
+                                                                                                               dummy_pipe_out):
+        dispatcher_with_two_formula.send_data(REPORT_2)
         _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
         _, msg2 = recv_from_pipe(dummy_pipe_out, 0.5)
 
         assert msg1 == REPORT_2
         assert msg2 == REPORT_2
 
-        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, system, started_actor, dummy_pipe_out):
-        system.tell(started_actor, REPORT_1_B2)
+    def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, started_actor,
+                                                                            dummy_pipe_out):
+        started_actor.send_data(REPORT_1_B2)
         start_message = []
         reports = []
 
@@ -338,22 +386,25 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report3, DispatchRule3())])
-    def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(self, system, started_actor, dummy_pipe_out):
-        system.tell(started_actor, REPORT_1_B2)
+    def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(self,
+                                                                                                          started_actor,
+                                                                                                          dummy_pipe_out):
+        started_actor.send_data(REPORT_1_B2)
         start_message = []
         reports = []
 
         for _ in range(4):
             _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
 
-        system.tell(started_actor, REPORT_3)
+        started_actor.send_data(REPORT_3)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == REPORT_3
-        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None,None)
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_ActorExitRequest_make_dispatcher_forward_it_to_formula(self, system, dispatcher_with_two_formula, logger, dummy_pipe_out):
-        system.tell(dispatcher_with_two_formula, ActorExitRequest())
+    def test_send_ActorExitRequest_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula,
+                                                                         logger, dummy_pipe_out):
+        dispatcher_with_two_formula.send_control(PoisonPillMessage())
 
         _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
         _, msg2 = recv_from_pipe(dummy_pipe_out, 0.5)
@@ -363,59 +414,69 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     @define_formula_class(CrashFormulaActor)
-    def test_send_two_report_to_a_dispatcher_with_crashed_formula_must_restart_formula(self, system, dispatcher_with_formula, dummy_pipe_out):
+    def test_send_two_report_to_a_dispatcher_with_crashed_formula_must_restart_formula(self,
+                                                                                       dispatcher_with_formula,
+                                                                                       dummy_pipe_out):
         # make formula crash
-        system.tell(dispatcher_with_formula, REPORT_1)
+        dispatcher_with_formula.send_data(REPORT_1)
         b, a = recv_from_pipe(dummy_pipe_out, 0.5)
-        system.tell(dispatcher_with_formula, REPORT_1)
+        dispatcher_with_formula.send_data(REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == 'crash'
 
         # send two report
-        system.tell(dispatcher_with_formula, REPORT_1)
+        dispatcher_with_formula.send_data(REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == 'crash'
 
-        system.tell(dispatcher_with_formula, REPORT_1)
+        dispatcher_with_formula.send_data(REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
         assert msg == 'crash'
 
         # test if formula restart
         def check_if_restart():
             for i in range(100):
-                system.tell(dispatcher_with_formula, REPORT_1)
-                _, start_msg =  recv_from_pipe(dummy_pipe_out, 0.5)
+                dispatcher_with_formula.send_data(REPORT_1)
+                _, start_msg = recv_from_pipe(dummy_pipe_out, 0.5)
                 if isinstance(start_msg, StartMessage):
                     return True
             return False
+
         assert check_if_restart()
 
         # test if next message is forwarded
-        system.tell(dispatcher_with_formula, REPORT_1)
+        dispatcher_with_formula.send_data(REPORT_1)
         _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
 
         assert msg1 == REPORT_1
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report2, DispatchRule2A())])
-    def test_send_EndMessage_to_dispatcher_with_two_formula_must_forward_it_to_all_formula(self, system, dispatcher_with_two_formula, dummy_pipe_out):
-        system.tell(dispatcher_with_two_formula, EndMessage('system'))
+    def test_send_EndMessage_to_dispatcher_with_two_formula_must_forward_it_to_all_formula(self,
+                                                                                           dispatcher_with_two_formula,
+                                                                                           dummy_pipe_out):
+        dispatcher_with_two_formula.send_control(PoisonPillMessage())
         end_messages = 0
         for _ in range(2):
             _, msg = recv_from_pipe(dummy_pipe_out, 2)
             assert isinstance(msg, EndMessage)
 
     @define_dispatch_rules([(Report1, DispatchRule1A(primary=True))])
-    def test_dispatcher_that_start_formula_crashing_at_initialization_musnt_forward_report_to_this_formula(self, system, dispatch_rules, actor, logger, dummy_pipe_out):
+    def test_dispatcher_that_start_formula_crashing_at_initialization_must_not_forward_report_to_this_formula(self,
+                                                                                                              dispatch_rules,
+                                                                                                              actor,
+                                                                                                              logger,
+                                                                                                              dummy_pipe_out):
 
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
             route_table.dispatch_rule(report_type, gbr)
-        values = FormulaValues({'fake_pusher': LOGGER_NAME})
-        start_message =  DispatcherStartMessage('system', 'dispatcher', CrashInitFormulaActor, values, route_table, 'test_device')
-        system.ask(actor, start_message)
-        system.tell(actor, REPORT_1)
-        assert recv_from_pipe(dummy_pipe_out, 0.5)  == (None,None)
+        values = FormulaState({'fake_pusher': LOGGER_NAME})
+        start_message = DispatcherStartMessage('system', 'dispatcher', CrashInitFormulaActor, values, route_table,
+                                               'test_device')
+        actor.send_control(start_message)
+        actor.send_data(REPORT_1)
+        assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
 
 #############################################
@@ -431,7 +492,7 @@ def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_repo
     generate a test with that extract a formula id from an input report with a given dispatch rule and a primary dispatch rules
     test if the extracted formula_ids are the same that given validation report ids
     """
-    formula_ids = _extract_formula_id(input_report, dispatch_rule, primary_dispatch_rule)
+    formula_ids = extract_formula_id(input_report, dispatch_rule, primary_dispatch_rule)
     formula_ids.sort()
     validation_id.sort()
     assert formula_ids == validation_id
@@ -459,6 +520,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1AB_on_REPORT_1_must_return_goo
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a', 'b')])
     gen_test_extract_formula_id(pgb, pgb, REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
+
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
     pgb = DispatchRule1AB(primary=True)

@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,26 +26,35 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+import re
+
 from typing import Dict, Type, Tuple
 
-from thespian.actors import ActorAddress, ActorExitRequest
-
-from powerapi.actor import Actor
+from powerapi.actor import Actor, State
 from powerapi.message import FormulaStartMessage, EndMessage
+from powerapi.pusher import PusherActor
 
 
-class FormulaValues:
+class FormulaState(State):
     """
-    values used to initialize formula actor
+    Initialize a new Formula actor state.
+    :param actor: Actor linked to the state
+    :param pushers: Pushers available for the actor
+    :param metadata: Metadata related to the state
     """
-    def __init__(self, pushers: Dict[str, ActorAddress]):
+
+    def __init__(self, actor, pushers, metadata):
+        super().__init__(actor)
         self.pushers = pushers
+        self.metadata = metadata
 
 
 class DomainValues:
     """
     values that describe the device that the formula compute the power consumption for
     """
+
     def __init__(self, device_id: str, formula_id: Tuple):
         self.device_id = device_id
         self.sensor = formula_id[0]
@@ -55,28 +64,47 @@ class FormulaActor(Actor):
     """
     Abstract actor class used to implement formula actor that compute power consumption of a device from Reports
     """
-    def __init__(self, start_message_cls: Type[FormulaStartMessage]):
-        Actor.__init__(self, start_message_cls)
-        self.pushers: Dict[str, ActorAddress] = None
-        self.device_id = None
-        self.sensor = None
 
-    def _initialization(self, start_message: FormulaStartMessage):
-        Actor._initialization(self, start_message)
-        self.pushers = start_message.values.pushers
-        self.device_id = start_message.domain_values.device_id
-        self.sensor = start_message.domain_values.sensor
+    def __init__(self, name, pushers: Dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
+        """
+        Initialize a new Formula actor.
+        :param name: Actor name
+        :param pushers: Pusher actors
+        :param level_logger: Level of the logger
+        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
+        """
+        Actor.__init__(self, name, level_logger, timeout)
 
-    def receiveMsg_EndMessage(self, message: EndMessage, _: ActorAddress):
+        self.formula_metadata = self._extract_formula_metadata(name)
+        self.state = FormulaState(self, pushers, self.formula_metadata)
+
+    @staticmethod
+    def _extract_formula_metadata(formula_name):
+        metadata_str = re.findall(r'\'([\w_]*)\'', formula_name)
+
+        metadata = {}
+
+        if len(metadata_str) >= 2:
+            metadata['sensor'] = metadata_str[1]
+
+        if len(metadata_str) >= 3:
+            metadata['socket'] = int(metadata_str[2])
+
+        if len(metadata_str) >= 4:
+            metadata['core'] = int(metadata_str[3])
+        return metadata
+
+    def setup(self):
         """
-        when receiving a EndMessage kill itself
+        Setup the Formula actor.
         """
-        self.log_debug('received message ' + str(message))
-        self.send(self.myAddress, ActorExitRequest())
+        for _, pusher in self.state.pushers.items():
+            pusher.connect_data()
 
     @staticmethod
     def gen_domain_values(device_id: str, formula_id: Tuple) -> DomainValues:
         """
         generate domain values of the formula from device and formula id
+        TODO IS IT REQUIRED?
         """
         return DomainValues(device_id, formula_id)

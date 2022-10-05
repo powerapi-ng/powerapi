@@ -30,12 +30,11 @@ from multiprocessing import Pipe
 
 import pytest
 
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaValues
 from powerapi.dispatcher import RouteTable
 from powerapi.report import HWPCReport, PowerReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.test_utils.actor import system, dispatcher, dispatcher_start_message, started_dispatcher
-from powerapi.test_utils.dummy_actor import logger
+from powerapi.test_utils.actor import dispatcher, dispatcher_start_message, started_dispatcher
+from powerapi.test_utils.dummy_actor import DummyFormulaActor
 from powerapi.test_utils.report.hwpc import gen_HWPCReports
 from powerapi.test_utils.abstract_test import recv_from_pipe
 
@@ -44,21 +43,25 @@ from powerapi.test_utils.abstract_test import recv_from_pipe
 def pipe():
     return Pipe()
 
+
 @pytest.fixture
 def dummy_pipe_in(pipe):
     return pipe[0]
+
 
 @pytest.fixture
 def dummy_pipe_out(pipe):
     return pipe[1]
 
+
 @pytest.fixture
 def formula_class():
     return DummyFormulaActor
 
-@pytest.fixture
-def formula_values(logger):
-    return DummyFormulaValues({'logger': logger}, 0.1)
+
+# TODO REMOVE @pytest.fixture
+# def formula_values(logger):
+#    return DummyFormulasState({'logger': logger}, 0.1)
 
 @pytest.fixture
 def route_table(logger):
@@ -67,7 +70,9 @@ def route_table(logger):
     return route_table
 
 
-def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_FakePusher(system, started_dispatcher, dummy_pipe_out):
+def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_FakePusher(system,
+                                                                                                started_dispatcher,
+                                                                                                dummy_pipe_out):
     for report in gen_HWPCReports(5):
         system.tell(started_dispatcher, report)
 

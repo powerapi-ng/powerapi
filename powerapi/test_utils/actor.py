@@ -26,19 +26,22 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+import sys
+from typing import Dict
+
 import pytest
 
-from thespian.actors import ActorSystem, ActorExitRequest, ActorAddress
-
+from powerapi.handler import PoisonPillMessageHandler
 from powerapi.report import Report
 from powerapi.pusher import PusherActor
 from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
 from powerapi.formula import FormulaActor
-from powerapi.message import PusherStartMessage, PullerStartMessage, DispatcherStartMessage, FormulaStartMessage
+from powerapi.message import PusherStartMessage, PullerStartMessage, DispatcherStartMessage, FormulaStartMessage, \
+    StartMessage, PoisonPillMessage
 from powerapi.message import PingMessage, OKMessage
-from powerapi.supervisor import LOG_DEF
-
+from powerapi.report_model import HWPCModel, PowerModel
 
 PUSHER_NAME = 'test_pusher'
 PULLER_NAME = 'test_puller'
@@ -46,42 +49,70 @@ DISPATCHER_NAME = 'test_dispatcher'
 DISPATCHER_DEVICE_ID = 'test_device'
 
 
-@pytest.fixture
-def system():
+class ActorLogFilter(logging.Filter):
     """
-    fixture that start an Actor system with log enabled before launching the test and shutdown it after the test end
+    Log filter
     """
-    syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
-    yield syst
-    syst.shutdown()
+
+    def filter(self, record):
+        """
+        filter logs that was produced by actor
+        """
+        return 'actor_name' in record.__dict__
 
 
-@pytest.fixture
-def shutdown_system():
+class NotActorLogFilter(logging.Filter):
     """
-    fixture that shutdown all multiproQeueuBase actor system after the test end
+    Log filter
     """
-    yield None
-    syst = ActorSystem(systemBase='multiprocQueueBase', logDefs=LOG_DEF)
-    syst.shutdown()
+
+    def filter(self, record):
+        """
+        filter logs that was not produced by actor
+        """
+        return 'actorAddress' not in record.__dict__
+
+
+LOG_DEF = {
+    'version': 1,
+    'formatters': {
+        'normal': {'format': '%(levelname)s::%(created)s::ROOT::%(message)s'},
+        'actor': {'format': '%(levelname)s::%(created)s::%(actor_name)s::%(message)s'}},
+    'filters': {
+        'isActorLog': {'()': ActorLogFilter},
+        'notActorLog': {'()': NotActorLogFilter}},
+    'handlers': {
+        'h1': {'class': 'logging.StreamHandler',
+               'stream': sys.stdout,
+               'formatter': 'normal',
+               'filters': ['notActorLog'],
+               'level': logging.DEBUG},
+        'h2': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'actor',
+            'filters': ['isActorLog'],
+            'level': logging.DEBUG}
+    },
+    'loggers': {'': {'handlers': ['h1', 'h2'], 'level': logging.DEBUG}}
+}
 
 
 @pytest.fixture()
-def puller(system):
+def puller(database, report_filter, stream_mode):
     """
     fixture that create a PullerActor before launching the test and stop it after the test end
     """
-    actor = system.createActor(PullerActor)
+    actor = PullerActor(name=PULLER_NAME, database=database, report_filter=report_filter, stream_mode=stream_mode,
+                        report_model=HWPCModel)
+
     yield actor
-    system.tell(actor, ActorExitRequest())
+    actor.send_control(PoisonPillMessage())
 
 
 @pytest.fixture()
 def puller_start_message(database, report_filter, stream_mode):
-    """
-    return a puller start message
-    """
-    return PullerStartMessage('system', PULLER_NAME, database, report_filter, stream_mode)
+    return StartMessage("test case")
 
 
 @pytest.fixture()
@@ -89,26 +120,26 @@ def started_puller(system, puller, puller_start_message):
     """
     fixture that create and start a PullerActor and actor before launching the test and stop it after the test end
     """
-    system.ask(puller, puller_start_message)
+    puller.send_control(puller_start_message)
     return puller
 
 
 @pytest.fixture()
-def pusher(system):
+def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end
     """
-    actor = system.createActor(PusherActor)
+    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerModel)
     yield actor
-    system.tell(actor, ActorExitRequest())
+    actor.send_control(PoisonPillMessage())
 
 
 @pytest.fixture()
-def pusher_start_message(database):
+def pusher_start_message():
     """
     return a pusher start message
     """
-    return PusherStartMessage('system', PUSHER_NAME, database)
+    return StartMessage("test case")
 
 
 @pytest.fixture()
@@ -116,26 +147,27 @@ def started_pusher(system, pusher, pusher_start_message):
     """
     fixture that create and start a PusherActor and actor before launching the test and stop it after the test end
     """
-    system.ask(pusher, pusher_start_message)
+    pusher.send_control(pusher_start_message)
     return pusher
 
 
 @pytest.fixture()
-def dispatcher(system):
+def dispatcher(formula_class, route_table):
     """
     fixture that create a DispatcherActor before launching the test and stop it after the test end
     """
-    actor = system.createActor(DispatcherActor)
+    actor = DispatcherActor(name= DISPATCHER_NAME, formula_init_function=formula_class.__init__, route_table=route_table)
+
     yield actor
-    system.tell(actor, ActorExitRequest())
+    actor.send_control(PoisonPillMessage())
 
 
 @pytest.fixture()
-def dispatcher_start_message(formula_class, formula_values, route_table):
+def dispatcher_start_message(formula_class, route_table):
     """
     return a dispatcher start message
     """
-    return DispatcherStartMessage('system', DISPATCHER_NAME, formula_class, formula_values, route_table, DISPATCHER_DEVICE_ID)
+    return StartMessage('test case')
 
 
 @pytest.fixture()
@@ -143,28 +175,29 @@ def started_dispatcher(system, dispatcher, dispatcher_start_message):
     """
     fixture that create and start a DispatcherActor and actor before launching the test and stop it after the test end
     """
-    system.ask(dispatcher, dispatcher_start_message)
+    dispatcher.send_control(dispatcher_start_message)
     return dispatcher
 
+# TODO IS IT REQUIRED ?
+# class CrashFormula(FormulaActor):
+#     """
+#     Formula that crash when receiving a report
+#     """
+#
+#     def __init__(self, name: str, pushers: Dict):
+#         FormulaActor.__init__(self, name, pushers)
+#
+#     @staticmethod
+#     def receiveMsg_Report(message: Report, sender: ActorAddress):
+#         """
+#         crash when receiving a report
+#         """
+#         raise Exception()
 
-class CrashFormula(FormulaActor):
-    """
-    Formula that crash when receiving a report
-    """
-    def __init__(self):
-        FormulaActor.__init__(self, FormulaStartMessage)
 
-    @staticmethod
-    def receiveMsg_Report(message: Report, sender: ActorAddress):
-        """
-        crash when receiving a report
-        """
-        raise Exception()
-
-
-def is_actor_alive(system, actor_address, time=1):
-    """
-    wait the actor to terminate or 0.5 secondes and return its is_alive value
-    """
-    msg = system.ask(actor_address, PingMessage('system'), time)
-    return isinstance(msg, OKMessage)
+# def is_actor_alive(system, actor_address, time=1):
+#     """
+#     wait the actor to terminate or 0.5 secondes and return its is_alive value
+#     """
+#     msg = system.ask(actor_address, PingMessage('system'), time)
+#     return isinstance(msg, OKMessage)
