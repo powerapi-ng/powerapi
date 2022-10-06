@@ -33,9 +33,10 @@ from typing import Dict, Any
 from powerapi.actor import Actor
 from powerapi.formula import AbstractCpuDramFormula, FormulaState, FormulaPoisonPillMessageHandler
 from powerapi.formula.dummy.dummy_handlers import ReportHandler
+from powerapi.handler import StartHandler
 from powerapi.pusher import PusherActor
 from powerapi.report import Report, PowerReport
-from powerapi.message import FormulaStartMessage, PoisonPillMessage
+from powerapi.message import FormulaStartMessage, PoisonPillMessage, StartMessage
 
 
 class DummyFormulaState(FormulaState):
@@ -79,3 +80,4 @@ class DummyFormulaActor(AbstractCpuDramFormula):
         AbstractCpuDramFormula.setup(self)
         self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
         self.add_handler(Report, ReportHandler(self.state))
+        self.add_handler(StartMessage, StartHandler(self.state))

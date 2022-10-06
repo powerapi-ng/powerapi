@@ -36,7 +36,9 @@ import pytest
 from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
 from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
+from powerapi.report import PowerReport, HWPCReport
 from powerapi.test_utils.db import FakeDB
+from powerapi.test_utils.dummy_actor import DummyActor
 
 SENDER_NAME = 'test case'
 
@@ -103,6 +105,7 @@ def recv_from_pipe(pipe, timeout):
     else:
         return None, None
 
+
 def start_actor(actor: Actor):
     """
     Starts a given actor as a new process and initialises the related socket
@@ -124,6 +127,7 @@ def stop_actor(actor: Actor):
         actor.terminate()
     actor.socket_interface.close()
 
+
 class CrashMessage:
     def __init__(self, exception_type):
         self.exception_type = exception_type
@@ -142,6 +146,12 @@ class CrashHandler(Handler):
 
     def handle_message(self, msg: CrashMessage):
         raise msg.exception_type
+
+
+PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
+
+REPORT_TYPE_TO_BE_SENT = PowerReport
+REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
 class AbstractTestActor:
@@ -180,6 +190,14 @@ class AbstractTestActor:
         init_actor.send_control(StartMessage('test_case'))
         _ = init_actor.receive_control(2000)
         return init_actor
+
+    @pytest.fixture
+    def started_fake_pusher_power_report(self, dummy_pipe_in):
+        pusher = DummyActor(PUSHER_NAME_POWER_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
+        start_actor(pusher)
+        yield pusher
+        if pusher.is_alive():
+            pusher.terminate()
 
     @pytest.fixture
     def actor_with_crash_handler(self, actor):

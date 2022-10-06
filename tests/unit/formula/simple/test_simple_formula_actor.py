@@ -29,30 +29,16 @@
 import pytest
 
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
-from powerapi.report import PowerReport, HWPCReport
-from powerapi.test_utils.dummy_actor import DummyActor
-from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, start_actor, stop_actor
-
-PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
-PUSHER_NAME_HWPC_REPORT = 'fake_pusher_hwpc'
-
-REPORT_TYPE_TO_BE_SENT = PowerReport
-REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
+from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, REPORT_TYPE_TO_BE_SENT, \
+    REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT
 
 
 class TestSimpleFormula(AbstractTestActor):
 
     @pytest.fixture
-    def started_fake_pusher_power_report(self, dummy_pipe_in):
-        pusher = DummyActor(PUSHER_NAME_POWER_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
-        start_actor(pusher)
-        yield pusher
-        if pusher.is_alive():
-            pusher.terminate()
-
-    @pytest.fixture
     def actor(self, started_fake_pusher_power_report):
-        actor = SimpleFormulaActor('test_simple_formula', {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
+        actor = SimpleFormulaActor(name='test_simple_formula',
+                                   pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
 
         return actor
 

@@ -32,30 +32,24 @@ from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaState
 from powerapi.formula import CpuDramDomainValues
 from powerapi.message import StartMessage, FormulaStartMessage, ErrorMessage, EndMessage, OKMessage
 from powerapi.report import Report, PowerReport
-from powerapi.test_utils.abstract_test import AbstractTestActor, recv_from_pipe
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
+    REPORT_TYPE_TO_BE_SENT
 
 
 class TestDummyFormula(AbstractTestActor):
     @pytest.fixture
-    def actor(self, system):
-        actor = system.createActor(DummyFormulaActor)
-        yield actor
-        system.tell(actor, ActorExitRequest())
+    def actor(self, started_fake_pusher_power_report):
+        actor = DummyFormulaActor(name='test_dummy_formula',
+                                  pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
+                                  socket=0,
+                                  core=0)
 
-    @pytest.fixture
-    def actor_start_message(self, logger):
-        values = DummyFormulasState({'logger': logger}, 1)
-        return FormulaStartMessage('system', 'test_dummy_formula', values, CpuDramDomainValues('test_device', ('test_sensor', 0, 0)))
+        return actor
 
-    def test_starting_dummy_formula_without_DummyFormulaStartMessage_answer_ErrorMessage(self, system, actor):
-        answer = system.ask(actor, StartMessage('system', 'test'))
-        assert isinstance(answer, ErrorMessage)
-        assert answer.error_message == 'use FormulaStartMessage instead of StartMessage'
-
-    def test_send_Report_to_dummy_formula_make_formula_send_power_report_to_logger_with_42_as_power_value_after_1_second(self, system, started_actor, dummy_pipe_out):
+    def test_send_Report_to_dummy_formula_make_formula_send_power_report_with_42_as_power_value_after_1_second(
+            self, started_actor, dummy_pipe_out):
         report1 = Report(1, 2, 3)
-        system.tell(started_actor, report1)
+        started_actor.send_data(report1)
 
         _, msg = recv_from_pipe(dummy_pipe_out, 2)
-        assert isinstance(msg, PowerReport)
         assert msg.power == 42

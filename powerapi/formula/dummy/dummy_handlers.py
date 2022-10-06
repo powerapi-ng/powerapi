@@ -47,7 +47,8 @@ class ReportHandler(Handler):
 
         socket_id = self.state.metadata['socket'] if 'socket' in self.state.metadata else -1
 
-        result_msg = PowerReport(report.timestamp, report.sensor, report.target, socket_id, 42, metadata)
+        result_msg = PowerReport(timestamp=report.timestamp, sensor=report.sensor, target=report.target, power=42,
+                                 metadata=metadata)
         return [result_msg]
 
     def handle(self, msg):
