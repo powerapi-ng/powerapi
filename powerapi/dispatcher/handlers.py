@@ -133,6 +133,7 @@ class FormulaDispatcherReportHandler(InitHandler):
         print('FormulaDispatcherReportHandler: dispath_rule '+str(dispatch_rule))
         print('FormulaDispatcherReportHandler: primary dispath_rule ' + str(primary_dispatch_rule))
         for formula_id in extract_formula_id(msg, dispatch_rule, primary_dispatch_rule):
+            print('FormulaDispatcherReportHandler: extracted id ' + str(formula_id))
             primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = self.state.get_direct_formula(formula_id)

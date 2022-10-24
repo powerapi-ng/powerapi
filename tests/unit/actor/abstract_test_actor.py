@@ -149,6 +149,7 @@ class CrashHandler(Handler):
 
 
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
+PUSHER_NAME_HWPC_REPORT = 'fake_pusher_hwpc'
 
 REPORT_TYPE_TO_BE_SENT = PowerReport
 REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
@@ -198,6 +199,19 @@ class AbstractTestActor:
         yield pusher
         if pusher.is_alive():
             pusher.terminate()
+
+    @pytest.fixture
+    def started_fake_pusher_hwpc_report(self, dummy_pipe_in):
+        pusher = DummyActor(PUSHER_NAME_HWPC_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT_2)
+        start_actor(pusher)
+        yield pusher
+        if pusher.is_alive():
+            pusher.terminate()
+
+    @pytest.fixture
+    def fake_pushers(self, started_fake_pusher_power_report, started_fake_pusher_hwpc_report):
+        return {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report,
+                PUSHER_NAME_HWPC_REPORT: started_fake_pusher_hwpc_report}
 
     @pytest.fixture
     def actor_with_crash_handler(self, actor):

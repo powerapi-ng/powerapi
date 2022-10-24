@@ -27,37 +27,59 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import time
+from math import ldexp
 
 from powerapi.handler import Handler
 from powerapi.report import PowerReport
 
+RAPL_KEY = 'rapl'
+RAPL_PREFIX = 'RAPL_'
+
 
 class ReportHandler(Handler):
     """
-    Basic handler behaviour for a kind of Report
+    Handler behaviour for HWPC Reports
     """
 
-    def _estimate(self, report):
+    def _estimate(self, timestamp, target, counter):
         """
-        Method that estimate the power consumption from an input report
-        :param report: Input Report
-        :return: List of PowerReport
+        Generate a power report using the given parameters.
+        :param timestamp: Timestamp of the measurements
+        :param target: Target name
+        :param counter: Event counter
+        :return: Power report filled with the given parameters
         """
-        metadata = {'formula_name': self.state.actor.name}
 
-        socket_id = self.state.metadata['socket'] if 'socket' in self.state.metadata else -1
+        metadata = {
+            'scope': self.state.config.scope.value,
+            'socket': self.state.socket,
+        }
 
-        result_msg = PowerReport(timestamp=report.timestamp, sensor=report.sensor, target=report.target, power=42,
-                                 metadata=metadata)
-        return [result_msg]
+        power = ldexp(counter, -32)
+
+        report = PowerReport(timestamp, self.state.sensor, target, power, metadata)
+
+        return report
 
     def handle(self, msg):
         """
-        Process a report and send the result to the pusher actor
-        :param powerapi.Report msg:  Received message
-        """
-        time.sleep(self.state.sleep_time)
-        results = self._estimate(msg)
+         Process a HWPC report and send the result(s) to a pusher actor.
+         :param msg: Received message
+         """
+        self.state.actor.logger.debug('received message ' + str(msg))
+        if RAPL_KEY not in msg.groups:
+            return
+
+        reports = []
+        for socket, socket_report in msg.groups[RAPL_KEY].items():
+            for events_counter in socket_report.values():
+                for event, counter in events_counter.items():
+                    if event.startswith(RAPL_PREFIX):
+                        reports.append(self._estimate(msg.timestamp, socket,
+                                                      counter))
+
         for _, actor_pusher in self.state.pushers.items():
-            for result in results:
+            for result in reports:
                 actor_pusher.send_data(result)
+
+

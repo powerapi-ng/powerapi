@@ -32,6 +32,7 @@ from typing import Dict, Any
 
 from powerapi.actor import Actor
 from powerapi.formula import AbstractCpuDramFormula, FormulaState, FormulaPoisonPillMessageHandler
+from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormulaState
 from powerapi.formula.dummy.dummy_handlers import ReportHandler
 from powerapi.handler import StartHandler
 from powerapi.pusher import PusherActor
@@ -39,17 +40,15 @@ from powerapi.report import Report, PowerReport
 from powerapi.message import FormulaStartMessage, PoisonPillMessage, StartMessage
 
 
-class DummyFormulaState(FormulaState):
+class DummyFormulaState(AbstractCpuDramFormulaState):
     """
     Formula values with configurable sleeping time for dummy formula
     """
 
     def __init__(self, actor: Actor, pushers: Dict[str, Actor], metadata: Dict[str, Any], socket: str, core: str,
                  sleep_time: int):
-        FormulaState.__init__(self, actor, pushers, metadata)
+        AbstractCpuDramFormulaState.__init__(self, actor, pushers, metadata, socket, core)
         self.sleep_time = sleep_time
-        self.socket = socket
-        self.core = core
 
 
 class DummyFormulaActor(AbstractCpuDramFormula):

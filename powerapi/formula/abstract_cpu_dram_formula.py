@@ -27,13 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Type, Tuple, Dict
+from typing import Type, Tuple, Dict, Any
 
-from powerapi.formula.formula_actor import FormulaActor, DomainValues
+from powerapi.actor import Actor
+from powerapi.formula.formula_actor import FormulaActor, DomainValues, FormulaState
 from powerapi.message import FormulaStartMessage
 from powerapi.pusher import PusherActor
 
 
+# TODO TO BE DELETED
 class CpuDramDomainValues(DomainValues):
     """
     Socket values for device with socket and core domains
@@ -46,6 +48,17 @@ class CpuDramDomainValues(DomainValues):
         self.core = None if len(formula_id) <= 2 else int(formula_id[2])
 
 
+class AbstractCpuDramFormulaState(FormulaState):
+    """
+    Formula values with configurable sleeping time for dummy formula
+    """
+
+    def __init__(self, actor: Actor, pushers: Dict[str, Actor], metadata: Dict[str, Any], socket: str, core: str):
+        FormulaState.__init__(self, actor, pushers, metadata)
+        self.socket = socket
+        self.core = core
+
+
 class AbstractCpuDramFormula(FormulaActor):
     """
     Formula that handle CPU or DRAM related data
@@ -56,8 +69,7 @@ class AbstractCpuDramFormula(FormulaActor):
                  timeout=None):
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
         # TODO IS IT REQUIRED?
-        self.socket = socket
-        self.core = core
+        self.state = AbstractCpuDramFormulaState(self, pushers, self.formula_metadata, socket, core)
 
     @staticmethod
     def gen_domain_values(device_id: str, formula_id: Tuple) -> CpuDramDomainValues:
