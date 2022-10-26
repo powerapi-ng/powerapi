@@ -37,6 +37,8 @@ from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
 from powerapi.message import PullerStartMessage, PusherStartMessage
 from powerapi.exception import PowerAPIException
+
+
 ####################
 # PULLER GENERATOR #
 ####################
@@ -71,18 +73,16 @@ def test_generate_puller_from_simple_config():
 
     """
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}
+                                                                'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     result = generator.generate(args)
 
     assert len(result) == 1
     assert 'toto' in result
-    puller_cls, start_message = result['toto']
-    assert puller_cls == PullerActor
-    assert isinstance(start_message, PullerStartMessage)
-    assert start_message.name == 'toto'
+    puller = result['toto']
+    assert isinstance(puller, PullerActor)
 
-    db = start_message.database
+    db = puller.state.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'
@@ -117,11 +117,10 @@ def test_generate_two_pusher():
 
     assert len(result) == 2
     assert 'toto' in result
-    puller1_cls, start_message1 = result['toto']
-    assert puller1_cls == PullerActor
-    assert start_message1.name == 'toto'
+    puller1 = result['toto']
+    assert isinstance(puller1, PullerActor)
 
-    db = start_message1.database
+    db = puller1.state.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'
@@ -129,11 +128,10 @@ def test_generate_two_pusher():
     assert db.collection_name == 'tutu'
 
     assert 'titi' in result
-    puller2_cls, start_message2 = result['titi']
-    assert puller2_cls == PullerActor
-    assert start_message2.name == 'titi'
+    puller2 = result['titi']
+    assert isinstance(puller2, PullerActor)
 
-    db = start_message2.database
+    db = puller2.state.database
 
     assert isinstance(db, MongoDB)
     assert db.uri == 'titi'
@@ -164,10 +162,12 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
     with pytest.raises(ModelNameDoesNotExist):
         generator.remove_report_class('model')
 
+
 @patch('sys.exit', side_effect=SysExitException())
-def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(mocked_sys_exit):
+def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(
+        mocked_sys_exit):
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
-                                                                   'db': 'tata', 'collection': 'tutu'}}}
+                                                                'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
     generator.remove_report_class('HWPCReport')
     with pytest.raises(PowerAPIException):
@@ -175,7 +175,8 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
 
 
 @patch('sys.exit', side_effect=SysExitException())
-def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(mocked_sys_exit):
+def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(
+        mocked_sys_exit):
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
                                                                 'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])

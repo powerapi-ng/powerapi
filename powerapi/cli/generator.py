@@ -91,8 +91,9 @@ class Generator:
 
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
-                component_type = component_config['type']
-                actors[component_name] = self._gen_actor(component_config, main_config, component_name)
+                component_type = component_config[COMPONENT_TYPE_KEY]
+                component_model = component_config[COMPONENT_MODEL_KEY]
+                actors[component_name] = self._gen_actor(component_config, main_config, component_model)
             except KeyError as exn:
                 msg = 'Configuration error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
@@ -185,9 +186,6 @@ class SimpleGenerator(Generator):
         else:
             return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
 
-    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-    #    raise NotImplementedError
-
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
         return NotImplementedError
 
@@ -198,7 +196,7 @@ class DBActorGenerator(SimpleGenerator):
     """
 
     def __init__(self, component_group_name: str):
-        Generator.__init__(self, component_group_name)
+        SimpleGenerator.__init__(self, component_group_name)
         self.report_classes['ControlReport'] = ControlReport
         self.report_classes['ProcfsReport'] = ProcfsReport
 
@@ -273,20 +271,13 @@ class DBActorGenerator(SimpleGenerator):
             return self.db_factory[db_name](component_config)
 
     def _gen_actor(self, component_config: Dict, main_config: Dict, actor_name: str):
-        model = self._get_report_class(component_config)
+        model = self._get_report_class(actor_name, component_config)
         component_config[COMPONENT_MODEL_KEY] = model
-        database_manager = self._generate_db(component_config[COMPONENT_DB_NAME_KEY], component_config)
+        database_manager = self._generate_db(component_config[COMPONENT_TYPE_KEY], component_config)
         component_config[COMPONENT_DB_MANAGER_KEY] = database_manager
 
-        # TODO TO REMOVE
-        # start_message = self._start_message_factory(actor_name, db, model, main_config['stream'],
-        #                                            main_config['verbose'])
         actor = self._actor_factory(actor_name, main_config, component_config)
-        return actor  # , start_message
-
-    # TODO TO REMOVE
-    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-    #    raise NotImplementedError()
+        return actor
 
 
 class PullerGenerator(DBActorGenerator):
@@ -304,11 +295,6 @@ class PullerGenerator(DBActorGenerator):
                            report_filter=self.report_filter, stream_mode=main_config[COMPONENT_STREAM_MODE_KEY],
                            report_modifier_list=self.report_modifier_list,
                            report_model=component_config[COMPONENT_MODEL_KEY])
-
-    # TODO Remove
-    # def _start_message_factory(self, name, db, model, stream_mode, level_logger):
-    #    return PullerStartMessage('system', name, db, self.report_filter, stream_mode,
-    #                              report_modifiers=self.report_modifier_list)
 
 
 COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY = 'number_of_reports_to_send'
@@ -329,9 +315,6 @@ class SimplePullerGenerator(SimpleGenerator):
                                  number_of_reports_to_send=component_config[COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY],
                                  report_type_to_send=component_config[COMPONENT_MODEL_KEY])
 
-    # def _start_message_factory(self, name, db, model, _stream_mode, _level_logger):
-    #    return SimplePullerStartMessage('system', name, db['number_of_reports_to_send'], self.report_filter, model)
-
 
 COMPONENT_NUMBER_OF_REPORTS_TO_STORE_KEY = 'number_of_reports_to_store'
 
@@ -348,10 +331,6 @@ class PusherGenerator(DBActorGenerator):
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                            database=component_config[COMPONENT_DB_MANAGER_KEY])
 
-    # TODO TO REMOVE
-    # def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
-    #    return PusherStartMessage('system', name, db)
-
 
 class SimplePusherGenerator(SimpleGenerator):
     """
@@ -364,9 +343,6 @@ class SimplePusherGenerator(SimpleGenerator):
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
         return SimplePusherActor(name=actor_name,
                                  number_of_reports_to_store=component_config['number_of_reports_to_store'])
-
-    # def _start_message_factory(self, name, db, _model, _stream_mode, _level_logger):
-    #    return SimplePusherStartMessage('system', name, db['number_of_reports_to_store'])
 
 
 class ReportModifierGenerator:
