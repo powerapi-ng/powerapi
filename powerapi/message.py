@@ -173,7 +173,7 @@ class DispatcherStartMessage(StartMessage):
         :param route_table: Dispatcher's Route table
         :param device_id: name of the device the dispatcher handle
         """
-        StartMessage.__init__(self, sender_name, name)
+        StartMessage.__init__(self, sender_name)
         self.formula_class = formula_class
         self.formula_values = formula_values
         self.route_table = route_table

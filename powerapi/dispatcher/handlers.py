@@ -127,21 +127,16 @@ class FormulaDispatcherReportHandler(InitHandler):
                  that identitfy the formula_actor
         :rtype:  list(tuple(formula_id, report))
         """
-        print('FormulaDispatcherReportHandler: Searching rules... ')
         dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
         primary_dispatch_rule = self.state.route_table.primary_dispatch_rule
-        print('FormulaDispatcherReportHandler: dispath_rule '+str(dispatch_rule))
-        print('FormulaDispatcherReportHandler: primary dispath_rule ' + str(primary_dispatch_rule))
+
         for formula_id in extract_formula_id(msg, dispatch_rule, primary_dispatch_rule):
-            print('FormulaDispatcherReportHandler: extracted id ' + str(formula_id))
             primary_rule_fields = primary_dispatch_rule.fields
             if len(formula_id) == len(primary_rule_fields):
                 formula = self.state.get_direct_formula(formula_id)
                 if formula.is_alive():
-                    print('FormulaDispatcherReportHandler: sending data to ' + str(formula))
                     formula.send_data(msg)
                 else:
-                    print('FormulaDispatcherReportHandler: Error DispatcherSendMessageToDeadFormulaError')
                     raise DispatcherSendMessageToDeadFormulaError()
             else:
                 for formula in self.state.get_corresponding_formula(list(formula_id)):

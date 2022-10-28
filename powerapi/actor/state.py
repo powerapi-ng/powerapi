@@ -74,7 +74,6 @@ class State:
         for (msg_type, handler) in self.handlers:
             if isinstance(msg, msg_type):
                 return handler
-        print('state: message type: '+str(msg))
         raise UnknowMessageTypeException()
 
     def add_handler(self, message_type, handler):
