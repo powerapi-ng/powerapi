@@ -32,6 +32,7 @@ import pytest
 from powerapi.report import Report, BadInputData
 from datetime import datetime
 
+
 ############
 # METADATA #
 ############
@@ -47,7 +48,7 @@ def test_create_two_report_without_metadata_metadata_are_different():
     So if not used carefully, all object have the same value as attribute
     """
 
-    a = Report(0,'toto', 'all')
+    a = Report(0, 'toto', 'all')
     a.metadata["test"] = "value"
-    b = Report(0,'toto', 'all')
+    b = Report(0, 'toto', 'all')
     assert a.metadata != b.metadata
