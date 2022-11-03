@@ -30,14 +30,18 @@ from multiprocessing import Pipe
 
 import pytest
 
-from powerapi.dispatcher import RouteTable
+from powerapi.dispatcher import RouteTable, DispatcherActor
+from powerapi.formula import DummyFormulaActor
+from powerapi.message import StartMessage
 from powerapi.report import HWPCReport, PowerReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.test_utils.actor import dispatcher, dispatcher_start_message, started_dispatcher
-from powerapi.test_utils.dummy_actor import DummyFormulaActor
+from powerapi.test_utils.dummy_actor import DummyActor
 from powerapi.test_utils.report.hwpc import gen_HWPCReports
 from powerapi.test_utils.abstract_test import recv_from_pipe
 
+
+PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
+REPORT_TYPE_TO_BE_SENT = PowerReport
 
 @pytest.fixture
 def pipe():
@@ -64,18 +68,49 @@ def formula_class():
 #    return DummyFormulasState({'logger': logger}, 0.1)
 
 @pytest.fixture
-def route_table(logger):
+def route_table():
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
     return route_table
 
+@pytest.fixture
+def started_fake_pusher_power_report(dummy_pipe_in):
+    pusher = DummyActor(PUSHER_NAME_POWER_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
+    pusher.start()
+    pusher.connect_data()
+    pusher.connect_control()
+    pusher.send_control(StartMessage('test_case'))
+    _ = pusher.receive_control(2000)
+    yield pusher
+    if pusher.is_alive():
+        pusher.terminate()
 
-def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_FakePusher(system,
-                                                                                                started_dispatcher,
+@pytest.fixture
+def started_dispatcher(started_fake_pusher_power_report, route_table):
+    actor = DispatcherActor(name='test-integration-dispatcher',
+                            formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
+                                                                                          pushers=pushers, socket=0,
+                                                                                          core=0),
+                            route_table=route_table,
+                            pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
+    actor.start()
+    actor.connect_data()
+    actor.connect_control()
+    actor.send_control(StartMessage('test_case'))
+    _ = actor.receive_control(2000)
+    yield actor
+    if actor.is_alive():
+        actor.terminate()
+    actor.socket_interface.close()
+
+
+def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_DummyPusher(started_dispatcher,
                                                                                                 dummy_pipe_out):
     for report in gen_HWPCReports(5):
-        system.tell(started_dispatcher, report)
+        started_dispatcher.send_data(report)
 
     for _ in range(5):
         _, msg = recv_from_pipe(dummy_pipe_out, 1)
         assert isinstance(msg, PowerReport)
+
+
