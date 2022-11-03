@@ -29,22 +29,17 @@
 
 
 import logging
-import pytest
-import time
 
 from powerapi.database import MongoDB
-from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport
-from powerapi.message import StartMessage, ErrorMessage, PusherStartMessage, OKMessage
+from powerapi.message import StartMessage, ErrorMessage, OKMessage
 
-from powerapi.test_utils.actor import system, pusher, started_pusher, PUSHER_NAME, is_actor_alive
+from powerapi.test_utils.actor import pusher
 from powerapi.test_utils.db import define_database, define_report_type
 from powerapi.test_utils.db.mongo import mongo_database
 
-
 URI = "mongodb://localhost:27017"
 LOG_LEVEL = logging.NOTSET
-
 
 
 def mongodb_database(uri, database_name, collection_name):
@@ -76,7 +71,7 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize('database', [database])
 
     if 'report_type' in metafunc.fixturenames:
-        report_type= getattr(metafunc.function, '_report_type', None)
+        report_type = getattr(metafunc.function, '_report_type', None)
         metafunc.parametrize('report_type', [report_type])
 
 
@@ -85,8 +80,9 @@ def pytest_generate_tests(metafunc):
 ##############################################################################
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_report_type(PowerReport)
-def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok_message(system, pusher, database, report_type):
-    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database))
+def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok_message(pusher):
+    pusher.send_control(StartMessage('system'))
+    answer = pusher.receive_control(2000)
     assert isinstance(answer, OKMessage)
 
 
@@ -95,6 +91,7 @@ def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok
     ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
 ])
 @define_report_type(PowerReport)
-def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(system, pusher, database, report_type):
-    answer = system.ask(pusher, PusherStartMessage('system', PUSHER_NAME, database))
+def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(pusher):
+    pusher.send_control(StartMessage('system'))
+    answer = pusher.receive_control(2000)
     assert isinstance(answer, ErrorMessage)

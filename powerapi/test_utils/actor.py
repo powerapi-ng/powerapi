@@ -129,9 +129,17 @@ def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end
     """
-    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerModel)
+    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerModel())
+
+    actor.start()
+    actor.connect_data()
+    actor.connect_control()
+
     yield actor
     actor.send_control(PoisonPillMessage())
+    if actor.is_alive():
+        actor.terminate()
+    actor.socket_interface.close()
 
 
 @pytest.fixture()
