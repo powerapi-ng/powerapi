@@ -84,5 +84,5 @@ class PusherActor(Actor):
         each report type
         """
         self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
-        self.add_handler(self.state.report_model.get_type(), ReportHandler(self.state, self.delay, self.max_size))
+        self.add_handler(self.state.report_model, ReportHandler(self.state, self.delay, self.max_size))
         self.add_handler(StartMessage, PusherStartHandler(self.state))

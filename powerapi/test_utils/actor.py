@@ -33,7 +33,7 @@ from typing import Dict
 import pytest
 
 from powerapi.handler import PoisonPillMessageHandler
-from powerapi.report import Report
+from powerapi.report import Report, PowerReport, HWPCReport
 from powerapi.pusher import PusherActor
 from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
@@ -41,7 +41,6 @@ from powerapi.formula import FormulaActor
 from powerapi.message import PusherStartMessage, PullerStartMessage, DispatcherStartMessage, FormulaStartMessage, \
     StartMessage, PoisonPillMessage
 from powerapi.message import PingMessage, OKMessage
-from powerapi.report_model import HWPCModel, PowerModel
 
 PUSHER_NAME = 'test_pusher'
 PULLER_NAME = 'test_puller'
@@ -104,7 +103,7 @@ def puller(database, report_filter, stream_mode):
     fixture that create a PullerActor before launching the test and stop it after the test end
     """
     actor = PullerActor(name=PULLER_NAME, database=database, report_filter=report_filter, stream_mode=stream_mode,
-                        report_model=HWPCModel)
+                        report_model=HWPCReport)
 
     yield actor
     actor.send_control(PoisonPillMessage())
@@ -129,7 +128,7 @@ def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end
     """
-    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerModel())
+    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerReport)
 
     actor.start()
     actor.connect_data()

@@ -30,30 +30,31 @@ import time
 
 import pytest
 
-from thespian.actors import ActorExitRequest
-
+from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.pusher import PusherPoisonPillMessageHandler
 from powerapi.report import PowerReport
 from powerapi.cli.generator import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
-from powerapi.test_utils.actor import system
 from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
-
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'system'
+REPORTS_TO_SEND = 51
 
 
 @pytest.fixture
 def power_report():
-    return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 0.11, {'socket': 1, 'metadata1': 'azerty', 'metadata2': 'qwerty'})
+    return PowerReport(timestamp_to_datetime(1), SENSOR_NAME, TARGET_NAME, 0.11,
+                       {'socket': 1, 'metadata1': 'azerty', 'metadata2': 'qwerty'})
+
 
 @pytest.fixture
 def influxdb_content():
     return []
 
 
-
-def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(system, influx_database, power_report):
+def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(
+        influx_database, power_report):
     """
     Create a PusherGenerator that generate pusher with a PowerReportModel that keep formula_name metadata in PowerReport
     Generate a pusher connected to an influxDB
@@ -72,19 +73,28 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
                                          'db': INFLUX_DBNAME}}
               }
 
-
     generator = PusherGenerator()
     generator.remove_report_class('PowerReport')
     generator.add_report_class('PowerReport', PowerReport)
 
     actors = generator.generate(config)
-    pusher_cls, pusher_start_message = actors['test_pusher']
+    pusher = actors['test_pusher']
 
-    pusher = system.createActor(pusher_cls)
-    system.ask(pusher, pusher_start_message)
-    system.tell(pusher, power_report)
+    pusher.start()
+    pusher.connect_control()
+    pusher.connect_data()
+    pusher.send_control(StartMessage(TARGET_NAME))
+    _ = pusher.receive_control(2000)
+
+    messages_sent = 0
+    while messages_sent < REPORTS_TO_SEND:
+        pusher.send_data(power_report)
+        messages_sent += 1
+        power_report.timestamp = timestamp_to_datetime(messages_sent+1)
+
     time.sleep(0.3)
-    system.tell(pusher, ActorExitRequest())
+    pusher.send_control(PoisonPillMessage())
+
     influx_database.switch_database(INFLUX_DBNAME)
     reports = list(influx_database.query('SELECT * FROM "power_consumption"').get_points(tags={'socket': '1'}))
-    assert len(reports) == 1
+    assert len(reports) == 51
