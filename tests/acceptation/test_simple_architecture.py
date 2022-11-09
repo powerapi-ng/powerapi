@@ -54,10 +54,10 @@ from datetime import datetime
 import pytest
 import pymongo
 
+from powerapi.actor import Supervisor
 from powerapi.database import MongoDB
 from powerapi.pusher import PusherActor
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulasState
-from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
+from powerapi.formula.dummy import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.puller import PullerActor
@@ -65,40 +65,50 @@ from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.generator import PusherGenerator, PullerGenerator
-from powerapi.test_utils.actor import shutdown_system
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_DATABASE_NAME
 from powerapi.test_utils.db.influx import influx_database, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT, get_all_reports
 from powerapi.test_utils.db.csv import FILES, files, ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
 
 
-def filter_rule(msg):
+def filter_rule(_):
     return True
+
 
 def launch_simple_architecture(config, supervisor):
     # Pusher
     pusher_generator = PusherGenerator()
     pusher_info = pusher_generator.generate(config)
-    pusher_cls, pusher_start_message = pusher_info['test_pusher']
+    pusher = pusher_info['test_pusher']
 
-    pusher = supervisor.launch(pusher_cls, pusher_start_message)
+    supervisor.launch_actor(actor=pusher, start_message=True)
 
     # Dispatcher
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
+    # dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor,
+    #                                                  DummyFormulasState({'test_pusher': pusher}, 0), route_table,
+    #                                                  'cpu')
+    dispatcher = DispatcherActor(name='dispatcher',
+                                 formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
+                                                                                               pushers=pushers,
+                                                                                               socket=0,
+                                                                                               core=0),
+                                 route_table=route_table,
+                                 pushers={'test_pusher': pusher})
 
-    dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
+    supervisor.launch_actor(actor=dispatcher, start_message=True)
 
     # Puller
     report_filter = Filter()
     report_filter.filter(filter_rule, dispatcher)
     puller_generator = PullerGenerator(report_filter, [])
     puller_info = puller_generator.generate(config)
-    puller_cls, puller_start_message = puller_info['test_puller']
-    puller = supervisor.launch(puller_cls, puller_start_message)
+    puller = puller_info['test_puller']
+    supervisor.launch_actor(actor=puller, start_message=True)
 
 
 ##################
@@ -120,12 +130,12 @@ def check_mongo_db():
 
 @pytest.fixture
 def mongodb_content():
-    return extract_rapl_reports_with_2_sockets(10)
+    return extract_rapl_reports_with_2_sockets(51)
 
-def test_run_mongo(mongo_database, shutdown_system):
+
+def test_run_mongo(mongo_database):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'mongodb',
                                          'tags': 'socket',
                                          'model': 'PowerReport',
@@ -139,11 +149,13 @@ def test_run_mongo(mongo_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    supervisor.monitor()
 
+    time.sleep(2)
     check_mongo_db()
+
+    supervisor.kill_actors()
 
 
 ###################
@@ -153,28 +165,30 @@ def test_run_mongo(mongo_database, shutdown_system):
 def influxdb_content():
     return []
 
+
 def check_influx_db(influx_client):
     mongo = pymongo.MongoClient(INFLUX_URI)
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = get_all_reports(influx_client, INFLUX_DBNAME)
 
-    assert c_input.count_documents({}) * 2 == len(c_output)
+    assert len(c_output) == c_input.count_documents({}) * 2
 
     for report in c_input.find():
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         influx_client.switch_database(INFLUX_DBNAME)
         # l = list(influx_client.query('SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'].strftime('%Y-%m-%dT%H:%M:%SZ') + '\'').get_points())
-        l = list(influx_client.query('SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'] + 'Z\'').get_points())
+        l = list(influx_client.query(
+            'SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'] + 'Z\'').get_points())
         assert len(l) == 2
 
 
-def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
+def test_run_mongo_to_influx(mongo_database, influx_database):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'influxdb',
                                          'tags': 'socket',
                                          'model': 'PowerReport',
+                                         'max_buffer_size': 0,
                                          'uri': INFLUX_URI,
                                          'port': INFLUX_PORT,
                                          'db': INFLUX_DBNAME}},
@@ -185,11 +199,14 @@ def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    supervisor.monitor()
+
+    time.sleep(2)
 
     check_influx_db(influx_database)
+
+    supervisor.kill_actors()
 
 
 ##############
@@ -241,28 +258,33 @@ def check_output_file():
         assert int(output_line[3]) == 42
 
 
-def test_run_csv_to_csv(files, shutdown_system):
+def test_run_csv_to_csv(files):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'csv',
                                          'tags': 'socket',
                                          'model': 'PowerReport',
+                                         'max_buffer_size': 0,
                                          'directory': OUTPUT_PATH}},
               'input': {'test_puller': {'type': 'csv',
                                         'files': FILES,
                                         'model': 'HWPCReport'}},
               }
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    supervisor.monitor()
+
+    time.sleep(2)
+
     check_output_file()
+
+    supervisor.kill_actors()
 
 
 ################
 # SOCKET INPUT #
 ################
 def check_db_socket():
+    time.sleep(2)
     json_reports = extract_rapl_reports_with_2_sockets(10)
     mongo = pymongo.MongoClient(MONGO_URI)
     c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
@@ -270,52 +292,61 @@ def check_db_socket():
     assert c_output.count_documents({}) == 20
 
     for report in json_reports:
-
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         assert c_output.count_documents(
             {'timestamp': ts, 'sensor': report['sensor'],
              'target': report['target']}) == 2
 
 
-def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
+def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'mongodb',
                                          'model': 'PowerReport',
                                          'uri': MONGO_URI,
                                          'db': MONGO_DATABASE_NAME,
+                                         'max_buffer_size': 0,
                                          'collection': MONGO_OUTPUT_COLLECTION_NAME}},
               'input': {'test_puller': {'type': 'socket',
                                         'port': unused_tcp_port,
                                         'model': 'HWPCReport'}},
               }
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
+    time.sleep(2)
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
-    supervisor.monitor()
+
+    time.sleep(2)
+
     check_db_socket()
 
-def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
-    config = {'verbose': True,
-              'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'model': 'PowerReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-              'input': {'test_puller': {'type': 'socket',
-                                        'port': unused_tcp_port,
-                                        'model': 'HWPCReport'}},
-              }
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
-    launch_simple_architecture(config, supervisor)
-    client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
-    client.start()
-    supervisor.monitor()
-    check_db_socket()
+    supervisor.kill_actors()
+
+
+def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port):
+     config = {'verbose': True,
+               'stream': False,
+               'output': {'test_pusher': {'type': 'mongodb',
+                                          'model': 'PowerReport',
+                                          'uri': MONGO_URI,
+                                          'db': MONGO_DATABASE_NAME,
+                                          'max_buffer_size': 0,
+                                          'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+               'input': {'test_puller': {'type': 'socket',
+                                         'port': unused_tcp_port,
+                                         'model': 'HWPCReport'}},
+               }
+     supervisor = Supervisor()
+     launch_simple_architecture(config, supervisor)
+     time.sleep(2)
+     client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+     client.start()
+
+     time.sleep(2)
+     check_db_socket()
+
+     supervisor.kill_actors()
 
 
 ##############
@@ -360,23 +391,31 @@ def check_output_file2():
         int(output_line_s0[3]) == 42
         int(output_line_s1[3]) == 42
 
-def test_run_socket_to_csv(unused_tcp_port, files, shutdown_system):
+
+def test_run_socket_to_csv(unused_tcp_port, files):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'csv',
                                          'tags': 'socket',
                                          'model': 'PowerReport',
                                          'name': 'pusher',
+                                         'max_buffer_size': 0,
                                          'directory': OUTPUT_PATH}},
               'input': {'test_puller': {'type': 'socket',
                                         'port': unused_tcp_port,
                                         'model': 'HWPCReport'
                                         }},
               }
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
+
+    time.sleep(2)
+
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
-    supervisor.monitor()
+
+    time.sleep(2)
+
     check_output_file2()
+
+    supervisor.kill_actors()

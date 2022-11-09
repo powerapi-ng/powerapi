@@ -53,7 +53,7 @@ class SocketDB(BaseDB):
 
     async def connect(self):
         self.queue = asyncio.Queue()
-        self.server = await asyncio.start_server(self._gen_server_callback(), host='0.0.0.0', port=self.port)
+        self.server = await asyncio.start_server(self._gen_server_callback(), host='127.0.0.1', port=self.port)
 
     async def stop(self):
         """
@@ -78,6 +78,7 @@ class SocketDB(BaseDB):
                     continue
                 count = 0
                 await self.queue.put(json_str)
+
                 # self.queue.put(json_str)
 
         return callback

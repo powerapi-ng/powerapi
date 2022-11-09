@@ -62,22 +62,30 @@ class DBPullerThread(Thread):
 
     def _connect(self):
         try:
+            print('Puller - Connecting DB !')
             self.state.database.connect()
+            print('Puller - Connected !')
             self.loop.run_until_complete(self.state.database.connect())
-            self.state.database_it = self.state.database.iter(self.state.report_model, self.state.stream_mode)
-
+            print('Puller - Run until connect !' + str(self.state.database))
+            print('Puller - Run until connect !' + str(self.state.report_model))
+            print('Puller - Run until connect !' + str(self.state.stream_mode))
+            self.state.database_it = self.state.database.iter(self.state.stream_mode)
+            print('Puller - Connection ended !')
         except DBError as error:
+            print('Puller - DBError !' + str(error.msg))
             self.state.actor.send_control(ErrorMessage(error.msg))
             self.state.alive = False
 
     def _pull_database(self):
         try:
             if self.state.asynchrone:
+                print('DBPullerThread- Next...')
                 report = self.loop.run_until_complete(self.state.database_it.__anext__())
+                print('DBPullerThread- Next report '+str(report))
                 if report is not None:
                     return report
-                else:
-                    raise StopIteration()
+                # else:
+                #    raise StopIteration()
             else:
                 return next(self.state.database_it)
 
@@ -101,18 +109,21 @@ class DBPullerThread(Thread):
 
         :param None msg: None.
         """
+
         if self.state.asynchrone:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             self.state.loop = self.loop
             self.loop.set_debug(enabled=True)
             logging.basicConfig(level=logging.DEBUG)
+
             self._connect()
+
 
         while self.state.alive:
             try:
                 raw_report = self._pull_database()
-                print(raw_report)
+
                 report = self._modify_report(raw_report)
 
                 dispatchers = self._get_dispatchers(report)
@@ -141,8 +152,8 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
 
 class PullerInitializationException(Exception):
 
-     def __init__(self, msg):
-         self.msg = msg
+    def __init__(self, msg):
+        self.msg = msg
 
 
 class PullerStartHandler(StartHandler):

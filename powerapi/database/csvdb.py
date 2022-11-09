@@ -276,7 +276,6 @@ class CsvDB(BaseDB):
 
         for filename, values in data.items():
             rep_path_with_file = rep_path + '/' + filename + '.csv'
-
             # Get the header and check if it's ok
             for value in values:
                 header = csv_header + sorted(list(set([event_key for event_key, _ in value.items()]) - set(csv_header)))
@@ -289,6 +288,7 @@ class CsvDB(BaseDB):
 
                         if header != reader.fieldnames:
                             raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
+                        csvfile.flush()
                         csvfile.close()
                 except FileNotFoundError:
                     pass

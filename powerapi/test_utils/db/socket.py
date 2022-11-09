@@ -46,7 +46,7 @@ class ClientThread(Thread):
 
     def run(self):
 
-        self.socket.connect(('localhost', self.port))
+        self.socket.connect(('127.0.0.1', self.port))
         for msg in self.msg_list:
             self.socket.send(bytes(json.dumps(msg), 'utf-8'))
         self.socket.close()
@@ -67,7 +67,7 @@ class ClientThreadDelay(Thread):
 
     def run(self):
 
-        self.socket.connect(('localhost', self.port))
+        self.socket.connect(('127.0.0.1', self.port))
         midle = int(len(self.msg_list) / 2)
         for msg in self.msg_list[:midle]:
             self.socket.send(bytes(json.dumps(msg), 'utf-8'))

@@ -31,7 +31,7 @@ import pytest
 from influxdb import InfluxDBClient
 
 
-INFLUX_URI = 'localhost'
+INFLUX_URI = '127.0.0.1'
 INFLUX_PORT = 8086
 INFLUX_DBNAME = 'acceptation_test'
 

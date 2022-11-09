@@ -88,7 +88,8 @@ class Supervisor:
           - connect the data and control socket
           - send a StartMessage to initialize the actor if needed
 
-        :param boolean startMessage: True a StartMessage need to be sent to
+        :param Actor actor: Actor to be launched
+        :param boolean start_message: True a StartMessage need to be sent to
                                      this actor
 
         :raise: zmq.error.ZMQError if a communication error occurs

@@ -43,9 +43,9 @@ class ReportHandler(Handler):
         :param report: Input Report
         :return: List of PowerReport
         """
-        metadata = {'formula_name': self.state.actor.name}
-
         socket_id = self.state.metadata['socket'] if 'socket' in self.state.metadata else -1
+
+        metadata = {'formula_name': self.state.actor.name, 'socket': socket_id}
 
         result_msg = PowerReport(timestamp=report.timestamp, sensor=report.sensor, target=report.target, power=42,
                                  metadata=metadata)

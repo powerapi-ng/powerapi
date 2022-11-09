@@ -115,6 +115,7 @@ class PullerActor(Actor):
                                  report_modifier_list=report_modifier_list, asynchrone=database.asynchrone)
 
         self.low_exception += database.exceptions
+        print('Puller created !')
 
     def setup(self):
         """

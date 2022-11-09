@@ -30,7 +30,7 @@ import pytest
 import pymongo
 
 
-MONGO_URI = "mongodb://localhost:27017/"
+MONGO_URI = "mongodb://127.0.0.1:27017/"
 MONGO_INPUT_COLLECTION_NAME = 'test_input'
 MONGO_OUTPUT_COLLECTION_NAME = 'test_output'
 MONGO_DATABASE_NAME = 'MongoDB1'

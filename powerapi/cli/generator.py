@@ -51,6 +51,7 @@ COMPONENT_MODEL_KEY = 'model'
 COMPONENT_DB_NAME_KEY = 'db'
 COMPONENT_DB_COLLECTION_KEY = 'collection'
 COMPONENT_DB_MANAGER_KEY = 'db_manager'
+COMPONENT_DB_MAX_BUFFER_SIZE = 'max_buffer_size'
 
 COMPONENT_STREAM_MODE_KEY = 'stream'
 
@@ -84,7 +85,6 @@ class Generator:
         Generate an actor class and actor start message from config dict
         """
         if self.component_group_name not in main_config:
-            print('Configuration error : no ' + self.component_group_name + ' specified', file=sys.stderr)
             raise PowerAPIException('Configuration error : no ' + self.component_group_name + ' specified')
 
         actors = {}
@@ -328,8 +328,13 @@ class PusherGenerator(DBActorGenerator):
         DBActorGenerator.__init__(self, 'output')
 
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        if 'max_buffer_size' in component_config.keys():
+            return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
+                               database=component_config[COMPONENT_DB_MANAGER_KEY],
+                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE])
+
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
-                           database=component_config[COMPONENT_DB_MANAGER_KEY])
+                                database=component_config[COMPONENT_DB_MANAGER_KEY])
 
 
 class SimplePusherGenerator(SimpleGenerator):
