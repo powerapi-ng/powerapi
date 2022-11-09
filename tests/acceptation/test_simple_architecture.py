@@ -89,9 +89,6 @@ def launch_simple_architecture(config, supervisor):
     # Dispatcher
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-    # dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor,
-    #                                                  DummyFormulasState({'test_pusher': pusher}, 0), route_table,
-    #                                                  'cpu')
     dispatcher = DispatcherActor(name='dispatcher',
                                  formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
                                                                                                pushers=pushers,
