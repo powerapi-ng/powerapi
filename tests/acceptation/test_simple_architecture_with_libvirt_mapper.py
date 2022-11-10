@@ -114,7 +114,6 @@ def launch_simple_architecture(config, supervisor):
                                  route_table=route_table,
                                  pushers={'test_pusher': pusher})
 
-    # dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
 
     supervisor.launch_actor(actor=dispatcher, start_message=True)
 
@@ -149,7 +148,6 @@ def test_run(mocked_libvirt, mongo_database):
                                                      'domain_regexp': REGEXP}}
               }
 
-    # supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
     supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
     time.sleep(2)
