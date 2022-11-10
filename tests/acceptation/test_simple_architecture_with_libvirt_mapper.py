@@ -56,22 +56,19 @@ from mock import patch
 import pytest
 import pymongo
 
-from powerapi.database import MongoDB
-from powerapi.pusher import PusherActor
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulasState
-from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
+from powerapi.actor import Supervisor
+from powerapi.formula.dummy import DummyFormulaActor
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
-from powerapi.puller import PullerActor
 from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
-from powerapi.test_utils.actor import shutdown_system
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_DATABASE_NAME
 from powerapi.test_utils.report.hwpc import extract_all_events_reports_with_vm_name
 from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, REGEXP, UUID_1
+
 
 @pytest.fixture
 def mongodb_content():
@@ -88,26 +85,38 @@ def check_db():
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         cursor = c_output.find(
             {'timestamp': ts, 'sensor': report['sensor']})
+        print('metadata: '+str(cursor.__getitem__(0)["metadata"]))
         assert cursor.__getitem__(0)["metadata"]["domain_id"] == UUID_1
         assert cursor.__getitem__(1)["metadata"]["domain_id"] == UUID_1
 
+
 def filter_rule(msg):
     return True
+
 
 def launch_simple_architecture(config, supervisor):
     # Pusher
     pusher_generator = PusherGenerator()
     pusher_info = pusher_generator.generate(config)
-    pusher_cls, pusher_start_message = pusher_info['test_pusher']
-    
-    pusher = supervisor.launch(pusher_cls, pusher_start_message)
+    pusher = pusher_info['test_pusher']
+
+    supervisor.launch_actor(actor=pusher, start_message=True)
 
     # Dispatcher
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
 
-    dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
+    dispatcher = DispatcherActor(name='dispatcher',
+                                 formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
+                                                                                               pushers=pushers,
+                                                                                               socket=0,
+                                                                                               core=0),
+                                 route_table=route_table,
+                                 pushers={'test_pusher': pusher})
+
+    # dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', DummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
+
+    supervisor.launch_actor(actor=dispatcher, start_message=True)
 
     # Puller
     report_filter = Filter()
@@ -116,32 +125,35 @@ def launch_simple_architecture(config, supervisor):
     report_modifier_list = report_modifier_generator.generate(config)
     puller_generator = PullerGenerator(report_filter, report_modifier_list)
     puller_info = puller_generator.generate(config)
-    puller_cls, puller_start_message = puller_info['test_puller']
-    puller = supervisor.launch(puller_cls, puller_start_message)
+    puller = puller_info['test_puller']
+    supervisor.launch_actor(actor=puller, start_message=True)
 
 
 @patch('powerapi.report_modifier.libvirt_mapper.openReadOnly', return_value=MockedLibvirt())
-def test_run(mocked_libvirt, mongo_database, shutdown_system):
+def test_run(mocked_libvirt, mongo_database):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'input': {'test_puller': {'type': 'mongodb',
-                                   'uri': MONGO_URI,
-                                   'db': MONGO_DATABASE_NAME,
-                                   'collection': MONGO_INPUT_COLLECTION_NAME,
-                                   'model': 'HWPCReport',
-                                    }},
+                                        'uri': MONGO_URI,
+                                        'db': MONGO_DATABASE_NAME,
+                                        'collection': MONGO_INPUT_COLLECTION_NAME,
+                                        'model': 'HWPCReport',
+                                        }},
               'output': {'test_pusher': {'type': 'mongodb',
-                                    'uri': MONGO_URI,
-                                    'db': MONGO_DATABASE_NAME,
-                                    'collection': MONGO_OUTPUT_COLLECTION_NAME,
-                                    'model': 'PowerReport'}},
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'collection': MONGO_OUTPUT_COLLECTION_NAME,
+                                         'model': 'PowerReport',
+                                         'max_buffer_size': 0, }},
               'report_modifier': {'libvirt_mapper': {'uri': '',
                                                      'domain_regexp': REGEXP}}
               }
 
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    # supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
+    supervisor = Supervisor()
     launch_simple_architecture(config, supervisor)
-    supervisor.monitor()
+    time.sleep(2)
 
     check_db()
+
+    supervisor.kill_actors()
