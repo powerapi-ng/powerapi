@@ -92,7 +92,8 @@ class CrashDummyReportHandler(ReportHandler):
 
 class CrashDummyFormulaActor(AbstractCpuDramFormula):
     def __init__(self, name, pushers, socket, core, level_logger=logging.WARNING, sleep_time=0, timeout=None):
-        AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger,
+        AbstractCpuDramFormula.__init__(self, name=name, pushers=pushers, socket=socket, core=core,
+                                        level_logger=level_logger,
                                         timeout=timeout)
         self.blocked = False
         self.sleep_time = sleep_time
