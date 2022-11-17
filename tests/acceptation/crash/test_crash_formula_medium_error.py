@@ -74,10 +74,11 @@ class CrashDummyReportHandler(ReportHandler):
         Otherwise, send report to the pushers
         :param powerapi.Report message:  Received message
         """
-        print('received message ' + str(message))
         self.state.actor.logger.debug('received message ' + str(message))
         if message.timestamp == datetime.strptime("2021-07-12T11:33:16.521", "%Y-%m-%dT%H:%M:%S.%f"):
             self.state.actor.blocked = True
+
+        time.sleep(self.state.actor.sleep_time)
 
         if self.state.actor.blocked:
             print('Exception')
@@ -91,9 +92,10 @@ class CrashDummyReportHandler(ReportHandler):
 
 class CrashDummyFormulaActor(AbstractCpuDramFormula):
     def __init__(self, name, pushers, socket, core, level_logger=logging.WARNING, sleep_time=0, timeout=None):
-        AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger=logging.WARNING,
-                                        timeout=None)
+        AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger,
+                                        timeout=timeout)
         self.blocked = False
+        self.sleep_time = sleep_time
 
     def setup(self):
         """
@@ -135,7 +137,6 @@ def mongodb_content():
 
 
 def test_run_mongo(mongo_database):
-
     supervisor = Supervisor()
     launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor, hwpc_depth_level=ROOT_DEPTH_LEVEL,
                                formula_class=CrashDummyFormulaActor)

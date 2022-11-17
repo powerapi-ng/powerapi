@@ -56,7 +56,7 @@ class Actor(multiprocessing.Process):
 
     :Method Interface:
 
-    This table list from wich interface each methods are accessible
+    This table list from which interface each methods are accessible
 
     +---------------------------------+--------------------------------------------------------------------------------------------+
     |  Interface type                 |                                   method name                                              |
