@@ -44,6 +44,7 @@ Test if:
   - The first sequence must end with a report with ts = 2021-07-12T11:33:15.520
   - the second sequence must start with a report with ts > 2021-07-12T11:33:15.520 + 2s
 """
+import logging
 import time
 from datetime import datetime, timedelta
 
@@ -51,66 +52,58 @@ import pytest
 
 import pymongo
 
-from thespian.actors import ActorAddress
-
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulasState
-from powerapi.report import Report, PowerReport, HWPCReport
-from powerapi.cli.generator import PusherGenerator, PullerGenerator
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.message import DispatcherStartMessage
-from powerapi.filter import Filter
-from powerapi.supervisor import Supervisor, SIMPLE_SYSTEM_IMP
+from powerapi.actor import Supervisor
+from powerapi.formula import AbstractCpuDramFormula, FormulaPoisonPillMessageHandler
+from powerapi.formula.dummy.dummy_handlers import ReportHandler
+from powerapi.handler import StartHandler
+from powerapi.report import Report, PowerReport
+from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.test_utils.acceptation import launch_simple_architecture, ROOT_DEPTH_LEVEL
 
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, MONGO_DATABASE_NAME
-from powerapi.test_utils.actor import shutdown_system
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_DATABASE_NAME
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
-class CrashDummyFormulaActor(DummyFormulaActor):
-    def __init__(self):
-        DummyFormulaActor.__init__(self)
-        self.blocked = False
 
-    def receiveMsg_Report(self, message: Report, sender: ActorAddress):
-        self.log_debug('received message ' + str(message))
+class CrashDummyReportHandler(ReportHandler):
+
+    def handle(self, message: Report):
+        """
+        Process a report and raise an exception when a report having a given date is received.
+        Otherwise, send report to the pushers
+        :param powerapi.Report message:  Received message
+        """
+        print('received message ' + str(message))
+        self.state.actor.logger.debug('received message ' + str(message))
         if message.timestamp == datetime.strptime("2021-07-12T11:33:16.521", "%Y-%m-%dT%H:%M:%S.%f"):
-            self.blocked = True
+            self.state.actor.blocked = True
 
-        if self.blocked:
+        if self.state.actor.blocked:
+            print('Exception')
             raise Exception
 
-        time.sleep(self.sleeping_time)
-        power_report = PowerReport(message.timestamp, message.sensor, message.target, 42, {'socket': self.socket})
-        for _, pusher in self.pushers.items():
-            self.send(pusher, power_report)
+        power_report = PowerReport(timestamp=message.timestamp, sensor=message.sensor, target=message.target,
+                                   power=42, metadata={'socket': self.state.socket})
+        for _, pusher in self.state.pushers.items():
+            pusher.send_data(power_report)
 
 
-def filter_rule(msg):
-    return True
+class CrashDummyFormulaActor(AbstractCpuDramFormula):
+    def __init__(self, name, pushers, socket, core, level_logger=logging.WARNING, sleep_time=0, timeout=None):
+        AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger=logging.WARNING,
+                                        timeout=None)
+        self.blocked = False
 
-def launch_simple_architecture(config, supervisor):
-    # Pusher
-    pusher_generator = PusherGenerator()
-    pusher_info = pusher_generator.generate(config)
-    pusher_cls, pusher_start_message = pusher_info['test_pusher']
-    
-    pusher = supervisor.launch(pusher_cls, pusher_start_message)
+    def setup(self):
+        """
+        Initialize Handler
+        """
+        AbstractCpuDramFormula.setup(self)
+        self.add_handler(PoisonPillMessage, FormulaPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartHandler(self.state))
+        self.add_handler(Report, CrashDummyReportHandler(self.state))
 
-    # Dispatcher
-    route_table = RouteTable()
-    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
-    dispatcher_start_message = DispatcherStartMessage('system', 'dispatcher', CrashDummyFormulaActor, DummyFormulasState({'test_pusher': pusher}, 0), route_table, 'cpu')
-
-    dispatcher = supervisor.launch(DispatcherActor, dispatcher_start_message)
-
-    # Puller
-    report_filter = Filter()
-    report_filter.filter(filter_rule, dispatcher)
-    puller_generator = PullerGenerator(report_filter, [])
-    puller_info = puller_generator.generate(config)
-    puller_cls, puller_start_message = puller_info['test_puller']
-    puller = supervisor.launch(puller_cls, puller_start_message)
 
 def check_mongo_db():
     mongo = pymongo.MongoClient(MONGO_URI)
@@ -118,7 +111,6 @@ def check_mongo_db():
     c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
 
     assert c_output.count_documents({}) <= c_input.count_documents({})
-
 
     crash_ts = datetime.strptime("2021-07-12T11:33:16.521", "%Y-%m-%dT%H:%M:%S.%f")
     first_sequence = []
@@ -130,12 +122,11 @@ def check_mongo_db():
         else:
             second_sequence.append(report)
 
-    # last_ts_from_first_sequence = datetime.strptime(first_sequence[-1]['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
+    assert first_sequence[-1]['timestamp'] == datetime.strptime("2021-07-12T11:33:15.522", "%Y-%m-%dT%H:%M:%S.%f")
 
-    assert first_sequence[-1]['timestamp'] == datetime.strptime("2021-07-12T11:33:15.520", "%Y-%m-%dT%H:%M:%S.%f")
     for report in second_sequence:
         # ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
-        assert report['timestamp'] > crash_ts + timedelta(seconds=2)
+        assert report['timestamp'] > crash_ts + timedelta(milliseconds=1)
 
 
 @pytest.fixture
@@ -143,14 +134,14 @@ def mongodb_content():
     return extract_rapl_reports_with_2_sockets(10)
 
 
-def test_run_mongo(mongo_database, shutdown_system):
+def test_run_mongo(mongo_database):
     config = {'verbose': True,
               'stream': False,
-              'actor_system': SIMPLE_SYSTEM_IMP,
               'output': {'test_pusher': {'type': 'mongodb',
                                          'model': 'PowerReport',
                                          'uri': MONGO_URI,
                                          'db': MONGO_DATABASE_NAME,
+                                         'max_buffer_size': 0,
                                          'collection': MONGO_OUTPUT_COLLECTION_NAME}},
               'input': {'test_puller': {'type': 'mongodb',
                                         'model': 'HWPCReport',
@@ -159,8 +150,12 @@ def test_run_mongo(mongo_database, shutdown_system):
                                         'collection': MONGO_INPUT_COLLECTION_NAME}}
               }
 
-    supervisor = Supervisor(verbose_mode=config['verbose'], system_imp=config['actor_system'])
-    launch_simple_architecture(config, supervisor)
-    supervisor.monitor()
+    supervisor = Supervisor()
+    launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=ROOT_DEPTH_LEVEL,
+                               formula_class=CrashDummyFormulaActor)
+
+    time.sleep(10)
 
     check_mongo_db()
+
+    supervisor.kill_actors()
