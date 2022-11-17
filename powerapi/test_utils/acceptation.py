@@ -35,6 +35,8 @@ from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
 from powerapi.formula import DummyFormulaActor
 from powerapi.report import HWPCReport
+from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_INPUT_COLLECTION_NAME
 
 
 def filter_rule(msg):
@@ -42,6 +44,21 @@ def filter_rule(msg):
 
 
 ROOT_DEPTH_LEVEL = 'ROOT'
+
+BASIC_CONFIG = {'verbose': True,
+          'stream': False,
+          'output': {'test_pusher': {'type': 'mongodb',
+                                     'model': 'PowerReport',
+                                     'uri': MONGO_URI,
+                                     'db': MONGO_DATABASE_NAME,
+                                     'max_buffer_size': 0,
+                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+          'input': {'test_puller': {'type': 'mongodb',
+                                    'model': 'HWPCReport',
+                                    'uri': MONGO_URI,
+                                    'db': MONGO_DATABASE_NAME,
+                                    'collection': MONGO_INPUT_COLLECTION_NAME}}
+          }
 
 
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,

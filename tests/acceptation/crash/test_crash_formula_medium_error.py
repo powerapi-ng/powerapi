@@ -58,7 +58,7 @@ from powerapi.formula.dummy.dummy_handlers import ReportHandler
 from powerapi.handler import StartHandler
 from powerapi.report import Report, PowerReport
 from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.test_utils.acceptation import launch_simple_architecture, ROOT_DEPTH_LEVEL
+from powerapi.test_utils.acceptation import launch_simple_architecture, ROOT_DEPTH_LEVEL, BASIC_CONFIG
 
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
@@ -135,23 +135,9 @@ def mongodb_content():
 
 
 def test_run_mongo(mongo_database):
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'model': 'PowerReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'max_buffer_size': 0,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-              'input': {'test_puller': {'type': 'mongodb',
-                                        'model': 'HWPCReport',
-                                        'uri': MONGO_URI,
-                                        'db': MONGO_DATABASE_NAME,
-                                        'collection': MONGO_INPUT_COLLECTION_NAME}}
-              }
 
     supervisor = Supervisor()
-    launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=ROOT_DEPTH_LEVEL,
+    launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor, hwpc_depth_level=ROOT_DEPTH_LEVEL,
                                formula_class=CrashDummyFormulaActor)
 
     time.sleep(10)
