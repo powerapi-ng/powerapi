@@ -36,7 +36,6 @@ import pytest
 
 from powerapi.database import DirectPrometheusDB
 from powerapi.report import PowerReport
-from powerapi.test_utils.abstract_test import recv_from_pipe
 
 ADDR = 'localhost'
 METRIC = 'test'

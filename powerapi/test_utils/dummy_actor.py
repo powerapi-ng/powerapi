@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -32,28 +32,13 @@ import pytest
 
 from powerapi.actor.actor import InitializationException
 from powerapi.handler import PoisonPillMessageHandler, StartHandler
-from powerapi.message import StartMessage, OKMessage, ErrorMessage, Message, PoisonPillMessage
+from powerapi.message import StartMessage, Message, PoisonPillMessage
 from powerapi.actor import Actor as PowerapiActor, Actor, State
 from powerapi.formula import DomainValues
 from powerapi.test_utils.dummy_handlers import DummyHandler, DummyFormulaHandler, CrashFormulaHandler, \
     CrashInitFormulaHandler
 
 LOGGER_NAME = 'multiprocess_test_logger'
-
-
-# @pytest.fixture
-# def logger(dummy_pipe_in):
-#     """
-#     fixture that return a DummyActor
-#
-#     A DummyActor is an actor that send every received message to the pytest process through a pipe
-#     This type of actor is usefull to unit test actor that interact with other actors.
-#     It may tests if the tested actor send the correct message to the actor it must interact with
-#     """
-#     logger_actor = DummyActor(), globalName=LOGGER_NAME)
-#     system.tell(logger_actor, DummyStartMessage('system', 'logger', dummy_pipe_in))
-#     yield logger_actor
-#     system.tell(logger_actor, ActorExitRequest())
 
 
 class DummyActorState(State):
@@ -166,18 +151,3 @@ class CrashInitActor(DummyPowerapiActor):
 
     def setup(self, msg):
         raise InitializationException('error')
-
-# TODO IS IT REQUIRED ?
-# class CrashActor(DummyPowerapiActor):
-#     """
-#     Basic powerapi actor that crash 2s after initialization
-#     """
-#
-#     def _initialization(self, _):
-#         self.wakeupAfter(2)
-#
-#     def receiveMsg_WakeupMessage(self, message, sender):
-#         """
-#         crash after being waked up by system, 2s after initialization
-#         """
-#         raise CrashException()

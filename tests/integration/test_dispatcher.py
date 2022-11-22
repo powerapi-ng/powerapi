@@ -37,8 +37,7 @@ from powerapi.report import HWPCReport, PowerReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.test_utils.dummy_actor import DummyActor
 from powerapi.test_utils.report.hwpc import gen_HWPCReports
-from powerapi.test_utils.abstract_test import recv_from_pipe
-
+from tests.unit.actor.abstract_test_actor import recv_from_pipe
 
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
 REPORT_TYPE_TO_BE_SENT = PowerReport

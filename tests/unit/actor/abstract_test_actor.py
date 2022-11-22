@@ -36,11 +36,14 @@ import pytest
 from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
 from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
+from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, HWPCReport
 from powerapi.test_utils.db import FakeDB
 from powerapi.test_utils.dummy_actor import DummyActor
 
 SENDER_NAME = 'test case'
+
+PUSHER_NAME = 'test_pusher'
 
 
 class FakeActor(Actor):
@@ -104,6 +107,37 @@ def recv_from_pipe(pipe, timeout):
         return pipe.recv()
     else:
         return None, None
+
+def define_database_content(content):
+    """
+    Decorator used to define database content when using an actor with database
+
+    ! If you use this decorator, you need to insert handler in  pytest_generate_tests function !
+    ! see tests/unit/test_puller.py::pytest_generate_tests for example  !
+    """
+
+    def wrap(func):
+        setattr(func, '_content', content)
+        return func
+
+    return wrap
+
+@pytest.fixture()
+def pusher(database):
+    """
+    fixture that create a PusherActor before launching the test and stop it after the test end
+    """
+    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerReport)
+
+    actor.start()
+    actor.connect_data()
+    actor.connect_control()
+
+    yield actor
+    actor.send_control(PoisonPillMessage())
+    if actor.is_alive():
+        actor.terminate()
+    actor.socket_interface.close()
 
 
 def start_actor(actor: Actor):

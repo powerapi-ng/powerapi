@@ -62,26 +62,12 @@ from powerapi.test_utils.acceptation import launch_simple_architecture, SOCKET_D
     get_basic_config_with_stream
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
-    MONGO_DATABASE_NAME
 
 
 class MainProcess(Process):
 
     def run(self):
-        config = {'verbose': True,
-                  'stream': True,
-                  'output': {'test_pusher': {'type': 'mongodb',
-                                             'model': 'PowerReport',
-                                             'uri': MONGO_URI,
-                                             'db': MONGO_DATABASE_NAME,
-                                             'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-                  'input': {'test_puller': {'type': 'mongodb',
-                                            'model': 'HWPCReport',
-                                            'uri': MONGO_URI,
-                                            'db': MONGO_DATABASE_NAME,
-                                            'collection': MONGO_INPUT_COLLECTION_NAME}}
-                  }
+
         supervisor = Supervisor()
 
         def term_handler(_, __):

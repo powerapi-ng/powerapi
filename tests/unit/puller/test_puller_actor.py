@@ -36,8 +36,7 @@ from powerapi.filter import Filter
 from powerapi.message import StartMessage, ErrorMessage
 from powerapi.puller import PullerActor
 from powerapi.report import Report
-from powerapi.test_utils.abstract_test import define_database_content
-from powerapi.test_utils.db.db import REPORT1, REPORT2
+from powerapi.test_utils.db.db import REPORT1, REPORT2, define_database_content
 from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB
 
 
