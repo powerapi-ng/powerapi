@@ -33,7 +33,7 @@ import threading
 from threading import Thread
 
 from powerapi.actor import State
-from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage, ErrorMessage, Message
+from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage, Message
 from powerapi.handler import HandlerException
 from powerapi.exception import PowerAPIException
 from powerapi.filter import FilterUselessError
@@ -62,26 +62,17 @@ class DBPullerThread(Thread):
 
     def _connect(self):
         try:
-            print('Puller - Connecting DB !')
             self.state.database.connect()
-            print('Puller - Connected !')
             self.loop.run_until_complete(self.state.database.connect())
-            print('Puller - Run until connect !' + str(self.state.database))
-            print('Puller - Run until connect !' + str(self.state.report_model))
-            print('Puller - Run until connect !' + str(self.state.stream_mode))
             self.state.database_it = self.state.database.iter(self.state.stream_mode)
-            print('Puller - Connection ended !')
         except DBError as error:
-            print('Puller - DBError !' + str(error.msg))
             self.state.actor.send_control(ErrorMessage(error.msg))
             self.state.alive = False
 
     def _pull_database(self):
         try:
             if self.state.asynchrone:
-                print('DBPullerThread- Next...')
                 report = self.loop.run_until_complete(self.state.database_it.__anext__())
-                print('DBPullerThread- Next report '+str(report))
                 if report is not None:
                     return report
                 # else:
@@ -109,7 +100,6 @@ class DBPullerThread(Thread):
 
         :param None msg: None.
         """
-
         if self.state.asynchrone:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
@@ -119,11 +109,9 @@ class DBPullerThread(Thread):
 
             self._connect()
 
-
         while self.state.alive:
             try:
                 raw_report = self._pull_database()
-
                 report = self._modify_report(raw_report)
 
                 dispatchers = self._get_dispatchers(report)
@@ -210,17 +198,14 @@ class PullerStartHandler(StartHandler):
         Initialize the database and connect all dispatcher to the
         socket_interface
         """
-        # db_puller_thread = DBPullerThread(self.state, self.timeout, loop=asyncio.get_event_loop())
         db_puller_thread = DBPullerThread(self.state, self.timeout, self)
         db_puller_thread.start()
-        # while db_puller_thread.is_alive() and self.state.alive:
+
         while self.state.alive:
             time.sleep(0.4)
             msg = self.state.actor.receive_control(0.1)
             if msg is not None:
                 self.handle_internal_msg(msg)
-
-        # self.handle_internal_msg(PoisonPillMessage(soft=False))
 
     def _database_connection(self):
         try:

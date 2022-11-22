@@ -33,7 +33,6 @@ from powerapi.cli.generator import PusherGenerator, PullerGenerator
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
-from powerapi.formula import DummyFormulaActor
 from powerapi.report import HWPCReport
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_INPUT_COLLECTION_NAME
@@ -46,23 +45,25 @@ def filter_rule(msg):
 ROOT_DEPTH_LEVEL = 'ROOT'
 
 BASIC_CONFIG = {'verbose': True,
-          'stream': False,
-          'output': {'test_pusher': {'type': 'mongodb',
-                                     'model': 'PowerReport',
-                                     'uri': MONGO_URI,
-                                     'db': MONGO_DATABASE_NAME,
-                                     'max_buffer_size': 0,
-                                     'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-          'input': {'test_puller': {'type': 'mongodb',
-                                    'model': 'HWPCReport',
-                                    'uri': MONGO_URI,
-                                    'db': MONGO_DATABASE_NAME,
-                                    'collection': MONGO_INPUT_COLLECTION_NAME}}
-          }
+                'stream': False,
+                'output': {'test_pusher': {'type': 'mongodb',
+                                           'model': 'PowerReport',
+                                           'uri': MONGO_URI,
+                                           'db': MONGO_DATABASE_NAME,
+                                           'max_buffer_size': 0,
+                                           'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+                'input': {'test_puller': {'type': 'mongodb',
+                                          'model': 'HWPCReport',
+                                          'uri': MONGO_URI,
+                                          'db': MONGO_DATABASE_NAME,
+                                          'collection': MONGO_INPUT_COLLECTION_NAME}}
+                }
+
+DISPATCHER_ACTOR_NAME = "dispatcher"
 
 
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,
-                               formula_class: Callable = DummyFormulaActor):
+                               formula_class: Callable):
     """
     Launch a simple architecture with a pusher, a dispatcher et a puller.
     :param config: Architecture configuration
@@ -72,6 +73,7 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
     """
 
     # Pusher
+    print('acceptation : formula class ' + str(formula_class))
     pusher_generator = PusherGenerator()
     pusher_info = pusher_generator.generate(config)
     pusher = pusher_info['test_pusher']
@@ -82,7 +84,7 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, hwpc_depth_level), primary=True))
 
-    dispatcher = DispatcherActor(name='dispatcher',
+    dispatcher = DispatcherActor(name=DISPATCHER_ACTOR_NAME,
                                  formula_init_function=lambda name, pushers: formula_class(name=name,
                                                                                            pushers=pushers,
                                                                                            socket=0,
@@ -99,3 +101,17 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
     puller_info = puller_generator.generate(config)
     puller = puller_info['test_puller']
     supervisor.launch_actor(actor=puller, start_message=True)
+
+
+def get_actor_by_name(actor_name: str, actors: []):
+    """
+        Return an actor with the given name inside a provided list of actors
+
+        :param actor_name: The name of the actor for looking for
+        :param actors: The list of actors to execute the search
+    """
+    for actor in actors:
+        if actor.name == actor_name:
+            return actor
+
+    return None

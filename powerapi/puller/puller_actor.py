@@ -33,7 +33,6 @@ from powerapi.exception import PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.puller import PullerPoisonPillMessageHandler
 from powerapi.puller import PullerStartHandler
-from powerapi.actor import NotConnectedException
 
 
 class NoReportExtractedException(PowerAPIException):
@@ -115,7 +114,6 @@ class PullerActor(Actor):
                                  report_modifier_list=report_modifier_list, asynchrone=database.asynchrone)
 
         self.low_exception += database.exceptions
-        print('Puller created !')
 
     def setup(self):
         """
