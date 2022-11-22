@@ -65,6 +65,8 @@ from powerapi.report import HWPCReport
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import DispatcherStartMessage, FormulaStartMessage
 from powerapi.cli.generator import PusherGenerator, PullerGenerator
+from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
+    INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
@@ -72,40 +74,6 @@ from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME,
 from powerapi.test_utils.db.influx import influx_database, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT, get_all_reports
 from powerapi.test_utils.db.csv import FILES, files, ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
-
-
-def filter_rule(_):
-    return True
-
-
-def launch_simple_architecture(config, supervisor):
-    # Pusher
-    pusher_generator = PusherGenerator()
-    pusher_info = pusher_generator.generate(config)
-    pusher = pusher_info['test_pusher']
-
-    supervisor.launch_actor(actor=pusher, start_message=True)
-
-    # Dispatcher
-    route_table = RouteTable()
-    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-    dispatcher = DispatcherActor(name='dispatcher',
-                                 formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
-                                                                                               pushers=pushers,
-                                                                                               socket=0,
-                                                                                               core=0),
-                                 route_table=route_table,
-                                 pushers={'test_pusher': pusher})
-
-    supervisor.launch_actor(actor=dispatcher, start_message=True)
-
-    # Puller
-    report_filter = Filter()
-    report_filter.filter(filter_rule, dispatcher)
-    puller_generator = PullerGenerator(report_filter, [])
-    puller_info = puller_generator.generate(config)
-    puller = puller_info['test_puller']
-    supervisor.launch_actor(actor=puller, start_message=True)
 
 
 ##################
@@ -131,23 +99,9 @@ def mongodb_content():
 
 
 def test_run_mongo(mongo_database):
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'tags': 'socket',
-                                         'model': 'PowerReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-              'input': {'test_puller': {'type': 'mongodb',
-                                        'model': 'HWPCReport',
-                                        'uri': MONGO_URI,
-                                        'db': MONGO_DATABASE_NAME,
-                                        'collection': MONGO_INPUT_COLLECTION_NAME}}
-              }
-
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor)
 
     time.sleep(2)
     check_mongo_db()
@@ -180,24 +134,9 @@ def check_influx_db(influx_client):
 
 
 def test_run_mongo_to_influx(mongo_database, influx_database):
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'influxdb',
-                                         'tags': 'socket',
-                                         'model': 'PowerReport',
-                                         'max_buffer_size': 0,
-                                         'uri': INFLUX_URI,
-                                         'port': INFLUX_PORT,
-                                         'db': INFLUX_DBNAME}},
-              'input': {'test_puller': {'type': 'mongodb',
-                                        'model': 'HWPCReport',
-                                        'uri': MONGO_URI,
-                                        'db': MONGO_DATABASE_NAME,
-                                        'collection': MONGO_INPUT_COLLECTION_NAME}}
-              }
-
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=INFLUX_OUTPUT_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor)
 
     time.sleep(2)
 
@@ -256,19 +195,10 @@ def check_output_file():
 
 
 def test_run_csv_to_csv(files):
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'csv',
-                                         'tags': 'socket',
-                                         'model': 'PowerReport',
-                                         'max_buffer_size': 0,
-                                         'directory': OUTPUT_PATH}},
-              'input': {'test_puller': {'type': 'csv',
-                                        'files': FILES,
-                                        'model': 'HWPCReport'}},
-              }
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=CSV_INPUT_OUTPUT_CONFIG, supervisor=supervisor,
+                               hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor)
 
     time.sleep(2)
 
@@ -309,7 +239,8 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
                                         'model': 'HWPCReport'}},
               }
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor)
     time.sleep(2)
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.start()
@@ -322,28 +253,29 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
 
 
 def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port):
-     config = {'verbose': True,
-               'stream': False,
-               'output': {'test_pusher': {'type': 'mongodb',
-                                          'model': 'PowerReport',
-                                          'uri': MONGO_URI,
-                                          'db': MONGO_DATABASE_NAME,
-                                          'max_buffer_size': 0,
-                                          'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-               'input': {'test_puller': {'type': 'socket',
-                                         'port': unused_tcp_port,
-                                         'model': 'HWPCReport'}},
-               }
-     supervisor = Supervisor()
-     launch_simple_architecture(config, supervisor)
-     time.sleep(2)
-     client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
-     client.start()
+    config = {'verbose': True,
+              'stream': False,
+              'output': {'test_pusher': {'type': 'mongodb',
+                                         'model': 'PowerReport',
+                                         'uri': MONGO_URI,
+                                         'db': MONGO_DATABASE_NAME,
+                                         'max_buffer_size': 0,
+                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+              'input': {'test_puller': {'type': 'socket',
+                                        'port': unused_tcp_port,
+                                        'model': 'HWPCReport'}},
+              }
+    supervisor = Supervisor()
+    launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor)
+    time.sleep(2)
+    client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+    client.start()
 
-     time.sleep(2)
-     check_db_socket()
+    time.sleep(2)
+    check_db_socket()
 
-     supervisor.kill_actors()
+    supervisor.kill_actors()
 
 
 ##############
@@ -404,7 +336,8 @@ def test_run_socket_to_csv(unused_tcp_port, files):
                                         }},
               }
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=config, supervisor=supervisor,
+                               hwpc_depth_level=SOCKET_DEPTH_LEVEL, formula_class=DummyFormulaActor)
 
     time.sleep(2)
 

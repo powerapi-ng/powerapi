@@ -58,16 +58,12 @@ import pymongo
 
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.filter import Filter
-from powerapi.report import HWPCReport
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
+from powerapi.test_utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, LIBVIRT_CONFIG
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME
 from powerapi.test_utils.report.hwpc import extract_all_events_reports_with_vm_name
-from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, REGEXP, UUID_1
+from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
 
 
 @pytest.fixture
@@ -85,71 +81,17 @@ def check_db():
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         cursor = c_output.find(
             {'timestamp': ts, 'sensor': report['sensor']})
-        print('metadata: '+str(cursor.__getitem__(0)["metadata"]))
+        print('metadata: ' + str(cursor.__getitem__(0)["metadata"]))
         assert cursor.__getitem__(0)["metadata"]["domain_id"] == UUID_1
         assert cursor.__getitem__(1)["metadata"]["domain_id"] == UUID_1
 
 
-def filter_rule(msg):
-    return True
-
-
-def launch_simple_architecture(config, supervisor):
-    # Pusher
-    pusher_generator = PusherGenerator()
-    pusher_info = pusher_generator.generate(config)
-    pusher = pusher_info['test_pusher']
-
-    supervisor.launch_actor(actor=pusher, start_message=True)
-
-    # Dispatcher
-    route_table = RouteTable()
-    route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-
-    dispatcher = DispatcherActor(name='dispatcher',
-                                 formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
-                                                                                               pushers=pushers,
-                                                                                               socket=0,
-                                                                                               core=0),
-                                 route_table=route_table,
-                                 pushers={'test_pusher': pusher})
-
-
-    supervisor.launch_actor(actor=dispatcher, start_message=True)
-
-    # Puller
-    report_filter = Filter()
-    report_filter.filter(filter_rule, dispatcher)
-    report_modifier_generator = ReportModifierGenerator()
-    report_modifier_list = report_modifier_generator.generate(config)
-    puller_generator = PullerGenerator(report_filter, report_modifier_list)
-    puller_info = puller_generator.generate(config)
-    puller = puller_info['test_puller']
-    supervisor.launch_actor(actor=puller, start_message=True)
-
-
 @patch('powerapi.report_modifier.libvirt_mapper.openReadOnly', return_value=MockedLibvirt())
 def test_run(mocked_libvirt, mongo_database):
-    config = {'verbose': True,
-              'stream': False,
-              'input': {'test_puller': {'type': 'mongodb',
-                                        'uri': MONGO_URI,
-                                        'db': MONGO_DATABASE_NAME,
-                                        'collection': MONGO_INPUT_COLLECTION_NAME,
-                                        'model': 'HWPCReport',
-                                        }},
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME,
-                                         'model': 'PowerReport',
-                                         'max_buffer_size': 0, }},
-              'report_modifier': {'libvirt_mapper': {'uri': '',
-                                                     'domain_regexp': REGEXP}}
-              }
 
     supervisor = Supervisor()
-    launch_simple_architecture(config, supervisor)
+    launch_simple_architecture(config=LIBVIRT_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                               formula_class=DummyFormulaActor, generate_report_modifier_list=True)
     time.sleep(2)
 
     check_db()

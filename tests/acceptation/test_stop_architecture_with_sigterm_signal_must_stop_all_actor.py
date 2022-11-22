@@ -46,12 +46,10 @@ Scenario:
 Test if:
   - all actors are killed after the signal was sent
 """
-import logging
 import signal
 import os
 import subprocess
 import time
-from datetime import datetime
 from multiprocessing import Process
 
 import pytest
@@ -59,19 +57,13 @@ import pymongo
 
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.filter import Filter
-from powerapi.report import HWPCReport
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.cli.generator import PusherGenerator, PullerGenerator
+
+from powerapi.test_utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, \
+    get_basic_config_with_stream
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME
-
-
-def filter_rule(msg):
-    return True
 
 
 class MainProcess(Process):
@@ -98,32 +90,10 @@ class MainProcess(Process):
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
-        # Pusher
-        pusher_generator = PusherGenerator()
-        pusher_info = pusher_generator.generate(config)
-        pusher = pusher_info['test_pusher']
 
-        supervisor.launch_actor(actor=pusher, start_message=True)
-        # Dispatcher
-        route_table = RouteTable()
-        route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'SOCKET'), primary=True))
-
-        dispatcher = DispatcherActor(name='dispatcher',
-                                     formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
-                                                                                                   pushers=pushers,
-                                                                                                   socket=0,
-                                                                                                   core=0),
-                                     route_table=route_table,
-                                     pushers={'test_pusher': pusher})
-
-        supervisor.launch_actor(actor=dispatcher, start_message=True)
-        # Puller
-        report_filter = Filter()
-        report_filter.filter(filter_rule, dispatcher)
-        puller_generator = PullerGenerator(report_filter, [])
-        puller_info = puller_generator.generate(config)
-        puller = puller_info['test_puller']
-        supervisor.launch_actor(actor=puller, start_message=True)
+        launch_simple_architecture(config=get_basic_config_with_stream, supervisor=supervisor,
+                                   hwpc_depth_level=SOCKET_DEPTH_LEVEL,
+                                   formula_class=DummyFormulaActor, generate_report_modifier_list=True)
 
 
 @pytest.fixture

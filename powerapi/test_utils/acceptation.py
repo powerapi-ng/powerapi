@@ -28,14 +28,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import Dict, Callable
 
+from pytest_asyncio.plugin import unused_tcp_port
+
 from powerapi.actor import Supervisor
-from powerapi.cli.generator import PusherGenerator, PullerGenerator
+from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
+from powerapi.test_utils.db.csv import OUTPUT_PATH, FILES
+from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_INPUT_COLLECTION_NAME
+from powerapi.test_utils.libvirt import REGEXP
 
 
 def filter_rule(msg):
@@ -43,6 +48,7 @@ def filter_rule(msg):
 
 
 ROOT_DEPTH_LEVEL = 'ROOT'
+SOCKET_DEPTH_LEVEL = 'SOCKET'
 
 BASIC_CONFIG = {'verbose': True,
                 'stream': False,
@@ -59,21 +65,77 @@ BASIC_CONFIG = {'verbose': True,
                                           'collection': MONGO_INPUT_COLLECTION_NAME}}
                 }
 
+INFLUX_OUTPUT_CONFIG = {'verbose': True,
+                        'stream': False,
+                        'output': {'test_pusher': {'type': 'influxdb',
+                                                   'tags': 'socket',
+                                                   'model': 'PowerReport',
+                                                   'max_buffer_size': 0,
+                                                   'uri': INFLUX_URI,
+                                                   'port': INFLUX_PORT,
+                                                   'db': INFLUX_DBNAME}},
+                        'input': {'test_puller': {'type': 'mongodb',
+                                                  'model': 'HWPCReport',
+                                                  'uri': MONGO_URI,
+                                                  'db': MONGO_DATABASE_NAME,
+                                                  'collection': MONGO_INPUT_COLLECTION_NAME}}
+                        }
+
+CSV_INPUT_OUTPUT_CONFIG = {'verbose': True,
+                           'stream': False,
+                           'output': {'test_pusher': {'type': 'csv',
+                                                      'tags': 'socket',
+                                                      'model': 'PowerReport',
+                                                      'max_buffer_size': 0,
+                                                      'directory': OUTPUT_PATH}},
+                           'input': {'test_puller': {'type': 'csv',
+                                                     'files': FILES,
+                                                     'model': 'HWPCReport'}},
+                           }
+
+LIBVIRT_CONFIG = {'verbose': True,
+                  'stream': False,
+                  'input': {'test_puller': {'type': 'mongodb',
+                                            'uri': MONGO_URI,
+                                            'db': MONGO_DATABASE_NAME,
+                                            'collection': MONGO_INPUT_COLLECTION_NAME,
+                                            'model': 'HWPCReport',
+                                            }},
+                  'output': {'test_pusher': {'type': 'mongodb',
+                                             'uri': MONGO_URI,
+                                             'db': MONGO_DATABASE_NAME,
+                                             'collection': MONGO_OUTPUT_COLLECTION_NAME,
+                                             'model': 'PowerReport',
+                                             'max_buffer_size': 0, }},
+                  'report_modifier': {'libvirt_mapper': {'uri': '',
+                                                         'domain_regexp': REGEXP}}
+                  }
+
 DISPATCHER_ACTOR_NAME = "dispatcher"
 
 
+def get_basic_config_with_stream():
+    """
+    Return the basic config with actived stream
+    """
+
+    config_stream = BASIC_CONFIG
+    config_stream['stream'] = True
+    return config_stream
+
+
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,
-                               formula_class: Callable):
+                               formula_class: Callable, generate_report_modifier_list=False):
     """
     Launch a simple architecture with a pusher, a dispatcher et a puller.
     :param config: Architecture configuration
     :param supervisor: Supervisor to start and stop actors
     :param hwpc_depth_level: Depth level of the report ('ROOT' or 'SOCKET')
     :param formula_class: The class for create the formula
+    :param generate_report_modifier_list: Boolean indicating if a list of modifiers has to be generated
     """
 
     # Pusher
-    print('acceptation : formula class ' + str(formula_class))
     pusher_generator = PusherGenerator()
     pusher_info = pusher_generator.generate(config)
     pusher = pusher_info['test_pusher']
@@ -97,7 +159,13 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
     # Puller
     report_filter = Filter()
     report_filter.filter(filter_rule, dispatcher)
-    puller_generator = PullerGenerator(report_filter, [])
+
+    report_modifier_list = []
+    if generate_report_modifier_list:
+        report_modifier_generator = ReportModifierGenerator()
+        report_modifier_list = report_modifier_generator.generate(config)
+
+    puller_generator = PullerGenerator(report_filter, report_modifier_list)
     puller_info = puller_generator.generate(config)
     puller = puller_info['test_puller']
     supervisor.launch_actor(actor=puller, start_message=True)
