@@ -64,10 +64,10 @@ class FakeDB(BaseDB):
     def iter(self, stream_mode):
         return self._content.__iter__()
 
-    def save(self, report, report_model):
+    def save(self, report):
         self.q.put(report, block=False)
 
-    def save_many(self, reports, report_model):
+    def save_many(self, reports):
         self.q.put(reports, block=False)
 
 

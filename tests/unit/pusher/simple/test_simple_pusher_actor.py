@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import time
 from time import sleep
 
 import pytest
@@ -49,6 +50,7 @@ class TestSimplePusher(AbstractTestActor):
     def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, started_actor):
         report = HWPCReport.create_empty_report()
         started_actor.send_data(report)
+        sleep(2)
         started_actor.send_control(GetReceivedReportsSimplePusherMessage('system'))
         message_reports = started_actor.receive_control(2000)
         assert len(message_reports.reports) == 1

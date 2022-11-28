@@ -85,7 +85,7 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize('delay', [100])
 
 
-class TestPuller(AbstractTestActorWithDB):
+class TestPusher(AbstractTestActorWithDB):
 
     @pytest.fixture
     def fake_db(self, content):
@@ -93,8 +93,7 @@ class TestPuller(AbstractTestActorWithDB):
 
     @pytest.fixture
     def actor(self, fake_db, buffer_size, delay):
-        report_model = Mock()
-        report_model.get_type = Mock(return_value=Report)
+        report_model = Report
         return PusherActor('pusher_test', report_model, fake_db, level_logger=logging.DEBUG, max_size=buffer_size,
                            delay=delay)
 
