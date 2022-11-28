@@ -61,6 +61,8 @@ from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CO
     INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
+from powerapi.test_utils.db.influx import influx_database
+from powerapi.test_utils.db.csv import files
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME
 from powerapi.test_utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports
