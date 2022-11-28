@@ -86,12 +86,10 @@ class Report1(Report):
     """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
 
     def __init__(self, a, b, b2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
         self.a = a
         self.b = b
         self.b2 = b2
-        self.timestamp = timestamp
-        self.sensor = sensor
-        self.target = target
 
     def __eq__(self, other):
         if not isinstance(other, Report1):
@@ -148,12 +146,10 @@ class Report2(Report):
     """ Fake report that can contains two or three values : *a*, *c*, *c2* """
 
     def __init__(self, a, c, c2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
         self.a = a
         self.c = c
         self.c2 = c2
-        self.timestamp = timestamp
-        self.sensor = sensor
-        self.target = target
 
     def __eq__(self, other):
         if not isinstance(other, Report2):
@@ -210,12 +206,10 @@ class Report3(Report):
     """ Fake report that contains same values as Report 1 and an other value"""
 
     def __init__(self, a, b, d, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
         self.a = a
         self.b = b
         self.d = d
-        self.timestamp = timestamp
-        self.sensor = sensor
-        self.target = target
 
     def __eq__(self, other):
         if not isinstance(other, Report3):
@@ -285,7 +279,8 @@ class TestDispatcher(AbstractTestActor):
                                                                                               pushers=pushers, socket=0,
                                                                                               core=0),
                                 route_table=route_table,
-                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
+                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
+                                device_id='test_device')
 
         return actor
 
@@ -329,12 +324,12 @@ class TestDispatcher(AbstractTestActor):
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self,
                                                                                                    dispatcher_with_formula,
                                                                                                    dummy_pipe_out):
+        expected_metadata = {'formula_name': "('" + dispatcher_with_formula.name + "', '" + REPORT_1.a + "', '"
+                                             + REPORT_1.b + "')",
+                             'socket': 0}
 
         expected_report = PowerReport(timestamp=REPORT_1.timestamp, power=42, sensor=REPORT_1.sensor,
-                                      target=REPORT_1.target, metadata={'formula_name':
-                                                                            "('" + dispatcher_with_formula.name +
-                                                                            "', '" + REPORT_1.a + "', '" + REPORT_1.b +
-                                                                            "')"})
+                                      target=REPORT_1.target, metadata=expected_metadata)
         dispatcher_with_formula.send_data(REPORT_1)
         _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
 
@@ -346,11 +341,13 @@ class TestDispatcher(AbstractTestActor):
     def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_forward_report_to_all_formula(self,
                                                                                                                dispatcher_with_two_formula,
                                                                                                                dummy_pipe_out):
-        metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')"}
+        metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')",
+                      'socket': 0}
         expected_report_b = PowerReport(timestamp=REPORT_2.timestamp, sensor=REPORT_2.sensor, target=REPORT_2.target,
                                         power=42, metadata=metadata_b)
 
-        metadata_c = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'c')"}
+        metadata_c = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'c')",
+                      'socket': 0}
         expected_report_c = PowerReport(timestamp=REPORT_2.timestamp, sensor=REPORT_2.sensor, target=REPORT_2.target,
                                         power=42, metadata=metadata_c)
 
@@ -380,9 +377,11 @@ class TestDispatcher(AbstractTestActor):
     def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(self,
                                                                                                           started_actor,
                                                                                                           dummy_pipe_out):
-        metadata_b = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b')"}
+        metadata_b = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b')",
+                      'socket': 0}
 
-        metadata_b2 = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b2')"}
+        metadata_b2 = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b2')",
+                       'socket': 0}
 
         expected_report_b_report_3 = PowerReport(timestamp=REPORT_3.timestamp, sensor=REPORT_3.sensor,
                                                  target=REPORT_3.target, power=42, metadata=metadata_b)

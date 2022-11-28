@@ -75,8 +75,8 @@ class DBPullerThread(Thread):
                 report = self.loop.run_until_complete(self.state.database_it.__anext__())
                 if report is not None:
                     return report
-                # else:
-                #    raise StopIteration()
+                else:
+                    raise StopIteration()
             else:
                 return next(self.state.database_it)
 
@@ -193,6 +193,8 @@ class PullerStartHandler(StartHandler):
 
         self.pull_db()
 
+        self.handle_internal_msg(PoisonPillMessage(soft=False))
+
     def pull_db(self):
         """
         Initialize the database and connect all dispatcher to the
@@ -202,7 +204,6 @@ class PullerStartHandler(StartHandler):
         db_puller_thread.start()
 
         while self.state.alive:
-            time.sleep(0.4)
             msg = self.state.actor.receive_control(0.1)
             if msg is not None:
                 self.handle_internal_msg(msg)

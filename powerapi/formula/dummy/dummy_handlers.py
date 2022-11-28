@@ -43,7 +43,7 @@ class ReportHandler(Handler):
         :param report: Input Report
         :return: List of PowerReport
         """
-        socket_id = self.state.metadata['socket'] if 'socket' in self.state.metadata else -1
+        socket_id = self.state.socket if self.state.socket is not None else -1
 
         metadata = report.metadata
 

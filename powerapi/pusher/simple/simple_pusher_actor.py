@@ -29,11 +29,11 @@
 
 from powerapi.actor import Actor, State
 from powerapi.handler import PoisonPillMessageHandler
-from powerapi.message import EndMessage, SimplePusherStartMessage, StartMessage, \
-    GetReceivedReportsSimplePusherMessage, ReceivedReportsSimplePusherMessage, PoisonPillMessage
+from powerapi.message import StartMessage, \
+    GetReceivedReportsSimplePusherMessage, PoisonPillMessage
 from powerapi.pusher.simple.simple_pusher_handlers import SimplePusherStartHandler, SimplePusherHandler, \
     SimplePusherGetReceivedReportsHandler
-from powerapi.report import PowerReport, Report, HWPCReport
+from powerapi.report import PowerReport, HWPCReport
 
 
 class SimplePusherState(State):

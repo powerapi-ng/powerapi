@@ -32,9 +32,9 @@ from typing import Dict
 from powerapi.formula import FormulaActor, FormulaPoisonPillMessageHandler
 from powerapi.formula.simple.simple_handlers import ReportHandler
 from powerapi.handler import StartHandler
-from powerapi.message import FormulaStartMessage, PoisonPillMessage, StartMessage
+from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.pusher import PusherActor
-from powerapi.report import Report, HWPCReport, PowerReport
+from powerapi.report import HWPCReport, PowerReport
 
 
 class SimpleFormulaActor(FormulaActor):

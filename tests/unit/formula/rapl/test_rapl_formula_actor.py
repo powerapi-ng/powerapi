@@ -29,11 +29,8 @@
 import pytest
 import math
 
-from powerapi.formula import CpuDramDomainValues
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaConfig, RAPLFormulaScope
-from powerapi.message import StartMessage, FormulaStartMessage, ErrorMessage, EndMessage, OKMessage
-from powerapi.report import Report, PowerReport, HWPCReport
-import datetime
+from powerapi.report import PowerReport, HWPCReport
 
 from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
 

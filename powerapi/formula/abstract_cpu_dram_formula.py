@@ -31,21 +31,7 @@ from typing import Type, Tuple, Dict, Any
 
 from powerapi.actor import Actor
 from powerapi.formula.formula_actor import FormulaActor, DomainValues, FormulaState
-from powerapi.message import FormulaStartMessage
 from powerapi.pusher import PusherActor
-
-
-# TODO TO BE DELETED
-class CpuDramDomainValues(DomainValues):
-    """
-    Socket values for device with socket and core domains
-    """
-
-    def __init__(self, device_id: str, formula_id: Tuple):
-        DomainValues.__init__(self, device_id, formula_id)
-
-        self.socket = None if len(formula_id) <= 1 else int(formula_id[1])
-        self.core = None if len(formula_id) <= 2 else int(formula_id[2])
 
 
 class AbstractCpuDramFormulaState(FormulaState):
@@ -68,10 +54,4 @@ class AbstractCpuDramFormula(FormulaActor):
     def __init__(self, name, pushers: Dict[str, PusherActor], socket: str, core: str, level_logger=logging.WARNING,
                  timeout=None):
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
-        # TODO IS IT REQUIRED?
         self.state = AbstractCpuDramFormulaState(self, pushers, self.formula_metadata, socket, core)
-
-    @staticmethod
-    def gen_domain_values(device_id: str, formula_id: Tuple) -> CpuDramDomainValues:
-        # TODO is it required?
-        return CpuDramDomainValues(device_id, formula_id)

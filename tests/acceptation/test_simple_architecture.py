@@ -55,24 +55,16 @@ import pytest
 import pymongo
 
 from powerapi.actor import Supervisor
-from powerapi.database import MongoDB
-from powerapi.pusher import PusherActor
 from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from powerapi.filter import Filter
-from powerapi.puller import PullerActor
-from powerapi.report import HWPCReport
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.message import DispatcherStartMessage, FormulaStartMessage
-from powerapi.cli.generator import PusherGenerator, PullerGenerator
+
 from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
 from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME
-from powerapi.test_utils.db.influx import influx_database, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT, get_all_reports
-from powerapi.test_utils.db.csv import FILES, files, ROOT_PATH, OUTPUT_PATH
+from powerapi.test_utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports
+from powerapi.test_utils.db.csv import ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
 
 

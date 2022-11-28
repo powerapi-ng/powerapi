@@ -91,7 +91,8 @@ def started_dispatcher(started_fake_pusher_power_report, route_table):
                                                                                           pushers=pushers, socket=0,
                                                                                           core=0),
                             route_table=route_table,
-                            pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
+                            pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
+                            device_id='test_device')
     actor.start()
     actor.connect_data()
     actor.connect_control()

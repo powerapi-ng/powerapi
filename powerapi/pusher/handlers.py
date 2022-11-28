@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -80,9 +80,6 @@ class ReportHandler(InitHandler):
 
         :param powerapi.PowerReport msg: PowerReport to save.
         """
-        print('processing ' + str(msg))
-        print('delay ' + str(self.delay))
-        print('difference ' + str(time.time() - self.last_database_write_time))
         self.state.buffer.append(msg)
         if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
             self.last_database_write_time = time.time()
@@ -90,6 +87,5 @@ class ReportHandler(InitHandler):
             self.state.buffer.sort(key=lambda x: x.timestamp)
 
             self.state.database.save_many(self.state.buffer)
-            print('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
             self.state.buffer = []

@@ -32,7 +32,6 @@ import re
 from typing import Dict, Type, Tuple
 
 from powerapi.actor import Actor, State
-from powerapi.message import FormulaStartMessage, EndMessage
 from powerapi.pusher import PusherActor
 
 
@@ -100,11 +99,3 @@ class FormulaActor(Actor):
         """
         for _, pusher in self.state.pushers.items():
             pusher.connect_data()
-
-    @staticmethod
-    def gen_domain_values(device_id: str, formula_id: Tuple) -> DomainValues:
-        """
-        generate domain values of the formula from device and formula id
-        TODO IS IT REQUIRED?
-        """
-        return DomainValues(device_id, formula_id)

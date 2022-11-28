@@ -31,16 +31,14 @@ from typing import Dict
 
 import pytest
 
-from powerapi.actor import Actor
 from powerapi.cli.generator import SimplePusherGenerator, SimplePullerGenerator
 from powerapi.dispatch_rule.simple_dispatch_rule import SimpleDispatchRule
-from powerapi.dispatcher import DispatcherActor, RouteTable
+from powerapi.dispatcher import RouteTable
 from powerapi.dispatcher.simple.simple_dispatcher_actor import SimpleDispatcherActor
 from powerapi.filter import Filter
-from powerapi.formula import FormulaState
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
-from powerapi.message import DispatcherStartMessage, SimplePullerSendReportsMessage, \
-    GetReceivedReportsSimplePusherMessage, StartMessage, PoisonPillMessage
+from powerapi.message import SimplePullerSendReportsMessage, \
+    GetReceivedReportsSimplePusherMessage
 from powerapi.report import HWPCReport
 from tests.unit.actor.abstract_test_actor import start_actor, stop_actor
 
@@ -53,6 +51,7 @@ def filter_rule(_):
     Rule of filter. Here none
     """
     return True
+
 
 class TestSimplePullerFormulaPusher:
 

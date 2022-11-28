@@ -35,7 +35,6 @@ from powerapi.cli.generator import PullerGenerator, PusherGenerator, DBActorGene
 from powerapi.cli.generator import ModelNameDoesNotExist, DatabaseNameDoesNotExist
 from powerapi.puller import PullerActor
 from powerapi.database import MongoDB
-from powerapi.message import PullerStartMessage, PusherStartMessage
 from powerapi.exception import PowerAPIException
 
 

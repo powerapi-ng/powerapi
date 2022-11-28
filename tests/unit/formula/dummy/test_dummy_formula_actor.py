@@ -28,12 +28,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from powerapi.formula.dummy import DummyFormulaActor, DummyFormulaState
-from powerapi.formula import CpuDramDomainValues
-from powerapi.message import StartMessage, FormulaStartMessage, ErrorMessage, EndMessage, OKMessage
-from powerapi.report import Report, PowerReport
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
-    REPORT_TYPE_TO_BE_SENT
+from powerapi.formula.dummy import DummyFormulaActor
+from powerapi.report import Report
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
 
 
 class TestDummyFormula(AbstractTestActor):

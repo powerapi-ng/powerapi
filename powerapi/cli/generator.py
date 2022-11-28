@@ -40,8 +40,7 @@ from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, Prom
     VirtioFSDB, FileDB, BaseDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.message import StartMessage, PusherStartMessage, PullerStartMessage, SimplePusherStartMessage, \
-    SimplePullerStartMessage
+
 from powerapi.report_modifier.libvirt_mapper import LibvirtMapper
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
@@ -174,7 +173,7 @@ class SimpleGenerator(Generator):
     def _gen_actor(self, component_config: Dict, main_config: Dict, component_name: str):
         model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
         component_config[COMPONENT_MODEL_KEY] = model
-        # start_message = self._start_message_factory(actor_name, db_config, model, None, model)
+
         actor = self._actor_factory(component_name, main_config, component_config)
         return actor
 

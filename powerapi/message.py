@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,18 +52,6 @@ class Message:
         raise NotImplementedError()
 
 
-class PingMessage(Message):
-    """
-    Message used to test if an actor is alive
-    """
-
-    def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "PingMessage"
-
-
 class OKMessage(Message):
     """
     Message sends to acknowledge last received message
@@ -114,117 +102,6 @@ class EndMessage(Message):
 
     def __str__(self):
         return "EndMessage"
-
-
-class PullerStartMessage(StartMessage):
-    """
-    Message used to start a Puller actor
-    """
-
-    def __init__(self, sender_name: str, name: str, database: BaseDB, report_filter: Filter, stream_mode: bool,
-                 report_modifiers: List[ReportModifier] = []):
-        """
-        :param sender_name: name of the actor that send the message
-        :param name: puller actor name
-        :param database: database used by the puller to pull report
-        :param report_filter: report filter used to filter reports
-        :param stream_mode: True if stream mode is enabled
-        :param report_modifier_list: list of ReportModifier used to modify report before sending them to dispatcher
-        """
-        StartMessage.__init__(self, sender_name, name)
-        self.database = database
-        self.report_filter = report_filter
-        self.stream_mode = stream_mode
-        self.report_modifier_list = report_modifiers
-
-
-class SimplePullerStartMessage(StartMessage):
-    """
-    Message used to start a Puller actor
-    """
-
-    def __init__(self, sender_name: str, name: str, number_of_reports_to_send: int, report_filter: Filter,
-                 report_type_to_send):
-        """
-            :param sender_name: name of the actor that send the message
-            :param name: puller actor name
-            :param number_of_reports_to_send: Number of messages to be sent by the actor
-            :param report_type_to_send: Type of message to be sent
-            :param report_filter:
-        """
-        StartMessage.__init__(self, sender_name, name)
-        self.number_of_reports_to_send = number_of_reports_to_send
-        self.report_type_to_send = report_type_to_send
-        self.report_filter = report_filter
-
-
-class DispatcherStartMessage(StartMessage):
-    """
-    Message used to start Dispatcher actor
-    """
-
-    def __init__(self, sender_name: str, name: str, formula_class: Type[FormulaActor], formula_values: FormulaState,
-                 route_table: RouteTable, device_id: str):
-        """
-        :param sender_name: name of the actor that send the message
-        :param name: puller actor name
-        :param formula_class: Class of the formula the dispatcher handle
-        :param formula_values: Values that will be always passed to formula for initialization
-        :param route_table: Dispatcher's Route table
-        :param device_id: name of the device the dispatcher handle
-        """
-        StartMessage.__init__(self, sender_name)
-        self.formula_class = formula_class
-        self.formula_values = formula_values
-        self.route_table = route_table
-        self.device_id = device_id
-
-
-class FormulaStartMessage(StartMessage):
-    """
-    Message used to start formula actor
-    """
-
-    def __init__(self, sender_name: str, name: str, formula_values: FormulaState, domain_values: DomainValues):
-        """
-        :param sender_name: name of the actor that send the message
-        :param name: puller actor name
-        :param formula_values: values used by formula for initialization (depend of the formula class)
-        :param domain_values: domain of the formula (depend of the formula class)
-        """
-        StartMessage.__init__(self, sender_name, name)
-        self.values = formula_values
-        self.domain_values = domain_values
-
-
-class PusherStartMessage(StartMessage):
-    """
-    Message used to start a Pusher actor
-    """
-
-    def __init__(self, sender_name: str, name: str, database: BaseDB):
-        """
-        :param sender_name: name of the actor that send the message
-        :param name: puller actor name
-        :param BaseDB database: Database use for saving data.
-        """
-        StartMessage.__init__(self, sender_name, name)
-        self.database = database
-
-
-class SimplePusherStartMessage(StartMessage):
-    """
-    Message used to start a Simple Pusher actor
-    """
-
-    def __init__(self, sender_name: str, name: str, number_of_reports_to_store: int):
-        """
-        :param sender_name: name of the actor that send the message
-        :param name: simple puller actor name
-        :param number_of_reports_to_store : Number of reports to store
-        """
-        StartMessage.__init__(self, sender_name, name)
-        self.number_of_reports_to_store = number_of_reports_to_store
 
 
 class SimplePullerSendReportsMessage(Message):

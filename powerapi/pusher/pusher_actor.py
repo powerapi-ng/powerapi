@@ -1,5 +1,5 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,8 @@ class PusherActor(Actor):
     The Pusher allow to save Report sent by Formula.
     """
 
-    def __init__(self, name, report_model, database, level_logger=logging.WARNING, timeout=1000, delay=100, max_size=50):
+    def __init__(self, name, report_model, database, level_logger=logging.WARNING, timeout=1000, delay=100,
+                 max_size=50):
         """
         :param str name: Pusher name.
         :param Report report_model: ReportModel

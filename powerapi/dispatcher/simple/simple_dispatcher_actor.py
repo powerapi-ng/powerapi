@@ -33,7 +33,7 @@ from powerapi.actor import Actor, State
 from powerapi.dispatcher import RouteTable
 from powerapi.dispatcher.simple.simple_dispatcher_handlers import SimpleDispatcherStartHandler, \
     SimpleDispatcherPoisonPillMessageHandler, SimpleDispatcherReportHandler
-from powerapi.message import StartMessage, DispatcherStartMessage, FormulaStartMessage, OKMessage, PoisonPillMessage
+from powerapi.message import StartMessage, PoisonPillMessage
 from powerapi.report import Report
 
 

@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 
 # All rights reserved.
 
@@ -32,26 +32,23 @@ import logging
 import signal
 import sys
 import json
-from typing import Dict
+from typing import Dict, Literal
 
 from powerapi import __version__ as powerapi_version
-from powerapi.dispatcher import RouteTable
+from powerapi.backend_supervisor import BackendSupervisor
+from powerapi.dispatcher import RouteTable, DispatcherActor
 
 from powerapi.cli import ConfigValidator
 from powerapi.cli.tools import store_true, CommonCLIParser
 from powerapi.cli.generator import ReportModifierGenerator, PullerGenerator, PusherGenerator
-from powerapi.message import DispatcherStartMessage
+from powerapi.dispatcher.rapl.rapl_dispatcher_actor import RAPLDispatcherActor
 from powerapi.report import HWPCReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
-from powerapi.actor import InitializationException
-from powerapi.supervisor import Supervisor
+from powerapi.actor import InitializationException, Supervisor
 
-
-from rapl_formula import __version__ as rapl_formula_version
-from rapl_formula.dispatcher import RAPLDispatcherActor
-from rapl_formula.actor import RAPLFormulaActor, RAPLValues
-from rapl_formula.context import RAPLFormulaScope, RAPLFormulaConfig
+from powerapi import __version__ as rapl_formula_version
+from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaScope, RAPLFormulaConfig
 
 
 def generate_rapl_parser():
@@ -62,15 +59,20 @@ def generate_rapl_parser():
     parser = CommonCLIParser()
 
     # Formula control parameters
-    parser.add_argument('enable-cpu-formula', help='Enable CPU formula', flag=True, type=bool, default=True, action=store_true)
-    parser.add_argument('enable-dram-formula', help='Enable DRAM formula', flag=True, type=bool, default=True, action=store_true)
+    parser.add_argument('enable-cpu-formula', help='Enable CPU formula', flag=True, type=bool, default=True,
+                        action=store_true)
+    parser.add_argument('enable-dram-formula', help='Enable DRAM formula', flag=True, type=bool, default=True,
+                        action=store_true)
 
     # Formula RAPL reference event
-    parser.add_argument('cpu-rapl-ref-event', help='RAPL event used as reference for the CPU power models', default='RAPL_ENERGY_PKG')
-    parser.add_argument('dram-rapl-ref-event', help='RAPL event used as reference for the DRAM power models', default='RAPL_ENERGY_DRAM')
+    parser.add_argument('cpu-rapl-ref-event', help='RAPL event used as reference for the CPU power models',
+                        default='RAPL_ENERGY_PKG')
+    parser.add_argument('dram-rapl-ref-event', help='RAPL event used as reference for the DRAM power models',
+                        default='RAPL_ENERGY_DRAM')
 
     # Sensor information
-    parser.add_argument('sensor-report-sampling-interval', help='The frequency with which measurements are made (in milliseconds)', type=int, default=1000)
+    parser.add_argument('sensor-report-sampling-interval',
+                        help='The frequency with which measurements are made (in milliseconds)', type=int, default=1000)
 
     return parser
 
@@ -82,56 +84,74 @@ def filter_rule(_):
     return True
 
 
-def setup_cpu_formula_actor(supervisor, fconf, route_table, report_filter, power_pushers):
+def setup_cpu_formula_actor(supervisor: Supervisor, fconf: Dict, route_table: RouteTable, report_filter: Filter,
+                            power_pushers: Dict, logger_level: Literal = logging.INFO):
     """
     Setup CPU formula actor.
     :param supervisor: Actor supervisor
     :param fconf: Global configuration
     :param route_table: Reports routing table
     :param report_filter: Reports filter
-    :param pushers: Reports pushers
+    :param power_pushers: Reports pushers
+    :param logger_level: Logger level
     """
 
-    formula_config = RAPLFormulaConfig(RAPLFormulaScope.CPU, fconf['sensor-report-sampling-interval'],
-                                       fconf['cpu-rapl-ref-event'])
+    formula_config = RAPLFormulaConfig(scope=RAPLFormulaScope.CPU,
+                                       reports_frequency=fconf['sensor-report-sampling-interval'],
+                                       rapl_event=fconf['cpu-rapl-ref-event'])
 
-    dispatcher_start_message = DispatcherStartMessage('system', 'cpu_dispatcher', RAPLFormulaActor,
-                                                      RAPLValues(power_pushers, formula_config),
-                                                      route_table, 'cpu')
-    cpu_dispatcher = supervisor.launch(RAPLDispatcherActor, dispatcher_start_message)
+    cpu_dispatcher = RAPLDispatcherActor(name='cpu_dispatcher',
+                                         formula_init_function=RAPLFormulaActor,
+                                         route_table=route_table,
+                                         pushers=power_pushers,
+                                         level_logger=logger_level,
+                                         device_id='cpu',
+                                         formula_config=formula_config)
+
+    supervisor.launch_actor(cpu_dispatcher)
+
     report_filter.filter(filter_rule, cpu_dispatcher)
 
 
-def setup_dram_formula_actor(supervisor, fconf, route_table, report_filter, power_pushers):
+def setup_dram_formula_actor(supervisor: Supervisor, fconf: Dict, route_table: RouteTable, report_filter: Filter,
+                             power_pushers: Dict, logger_level: Literal = logging.INFO):
     """
     Setup DRAM formula actor.
     :param supervisor: Actor supervisor
     :param fconf: Global configuration
     :param route_table: Reports routing table
     :param report_filter: Reports filter
-    :param pushers: Reports pushers
+    :param power_pushers: Reports pushers
+    :param logger_level: Logger level
     :return: Initialized DRAM dispatcher actor
     """
-    formula_config = RAPLFormulaConfig(RAPLFormulaScope.DRAM,
-                                       fconf['sensor-report-sampling-interval'],
-                                       fconf['dram-rapl-ref-event'])
+    formula_config = RAPLFormulaConfig(scope=RAPLFormulaScope.DRAM,
+                                       reports_frequency=fconf['sensor-report-sampling-interval'],
+                                       rapl_event=fconf['dram-rapl-ref-event'])
 
-    dispatcher_start_message = DispatcherStartMessage('system',
-                                                      'dram_dispatcher',
-                                                      RAPLFormulaActor,
-                                                      RAPLValues(power_pushers, formula_config),
-                                                      route_table, 'dram')
-    dram_dispatcher = supervisor.launch(RAPLDispatcherActor, dispatcher_start_message)
+    dram_dispatcher = RAPLDispatcherActor(name='dram_dispatcher',
+                                          formula_init_function=RAPLFormulaActor,
+                                          route_table=route_table,
+                                          pushers=power_pushers,
+                                          level_logger=logger_level,
+                                          device_id='dram',
+                                          formula_config=formula_config)
+
+    supervisor.launch_actor(dram_dispatcher)
     report_filter.filter(filter_rule, dram_dispatcher)
 
 
-def run_rapl(args) -> None:
+def run_rapl(fconf) -> None:
     """
-    Run PowerAPI with the SmartWatts formula.
-    :param args: CLI arguments namespace
-    :param logger: Logger to use for the actors
+    Run PowerAPI with the RAPL formula.
+    :param fconf: CLI arguments namespace
     """
-    fconf = args
+
+    verbose = fconf['verbose']
+    logger_level = logging.INFO
+
+    if verbose:
+        logger_level = logging.WARNING
 
     logging.info('RAPL-Formula version %s using PowerAPI version %s', rapl_formula_version, powerapi_version)
 
@@ -146,10 +166,10 @@ def run_rapl(args) -> None:
 
     report_modifier_list = ReportModifierGenerator().generate(fconf)
 
-    supervisor = Supervisor(args['verbose'])
+    supervisor = BackendSupervisor(fconf['stream'])
 
     def term_handler(_, __):
-        supervisor.shutdown()
+        supervisor.kill_actors()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, term_handler)
@@ -158,34 +178,36 @@ def run_rapl(args) -> None:
         logging.info('Starting RAPL-formula actors...')
 
         power_pushers = {}
-        pushers_info = PusherGenerator().generate(args)
+        pushers_info = PusherGenerator().generate(fconf)
         for pusher_name in pushers_info:
-            pusher_cls, pusher_start_message = pushers_info[pusher_name]
-            power_pushers[pusher_name] = supervisor.launch(
-                pusher_cls, pusher_start_message
-            )
+            pusher = pushers_info[pusher_name]
+            power_pushers[pusher_name] = pusher
+            supervisor.launch_actor(pusher)
 
         logging.info('CPU formula is %s' % ('DISABLED' if not fconf['enable-cpu-formula'] else 'ENABLED'))
         if fconf['enable-cpu-formula']:
             logging.info('CPU formula parameters: RAPL_REF=%s' % (fconf['cpu-rapl-ref-event']))
-            setup_cpu_formula_actor(supervisor, fconf, route_table, report_filter, power_pushers)
+            setup_cpu_formula_actor(supervisor=supervisor, fconf=fconf, route_table=route_table,
+                                    report_filter=report_filter, power_pushers=power_pushers, logger_level=logger_level)
 
             logging.info('DRAM formula is %s' % ('DISABLED' if not fconf['enable-dram-formula'] else 'ENABLED'))
         if fconf['enable-dram-formula']:
             logging.info('DRAM formula parameters: RAPL_REF=%s' % (fconf['dram-rapl-ref-event']))
-            setup_dram_formula_actor(supervisor, fconf, route_table, report_filter, power_pushers)
+            setup_dram_formula_actor(supervisor=supervisor, fconf=fconf, route_table=route_table,
+                                     report_filter=report_filter, power_pushers=power_pushers,
+                                     logger_level=logger_level)
 
-        pullers_info = PullerGenerator(report_filter, report_modifier_list).generate(args)
+        pullers_info = PullerGenerator(report_filter, report_modifier_list).generate(fconf)
         for puller_name in pullers_info:
-            puller_cls, puller_start_message = pullers_info[puller_name]
-            supervisor.launch(puller_cls, puller_start_message)
+            puller = pullers_info[puller_name]
+            supervisor.launch_actor(puller)
     except InitializationException as exn:
         logging.error('Actor initialization error: ' + exn.msg)
-        supervisor.shutdown()
+        supervisor.kill_actors()
         sys.exit(-1)
 
     logging.info('RAPL-formula is now running...')
-    supervisor.monitor()
+    supervisor.join()
     logging.info('RAPL-formula is shutting down...')
 
 
@@ -216,6 +238,7 @@ class RAPLConfigValidator(ConfigValidator):
     """
     Class used that check the config extracted and verify it conforms to constraints
     """
+
     @staticmethod
     def validate(config: Dict):
         if not ConfigValidator.validate(config):
@@ -250,7 +273,8 @@ if __name__ == "__main__":
     conf = get_config()
     if not RAPLConfigValidator.validate(conf):
         sys.exit(-1)
-    logging.basicConfig(level=logging.WARNING if conf['verbose'] else logging.INFO)
+    logging.basicConfig(level=logging.WARNING if conf['verbose'] else logging.INFO,
+                        handlers=[logging.StreamHandler(sys.stdout)])
     logging.captureWarnings(True)
 
     logging.debug(str(conf))

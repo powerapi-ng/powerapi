@@ -29,10 +29,8 @@
 from typing import Type
 
 from powerapi.actor import Actor, State
-from powerapi.actor.actor import InitializationException
-from powerapi.handler import StartHandler
-from powerapi.message import SimplePullerStartMessage, StartMessage, EndMessage, \
-    SimplePullerSendReportsMessage, PoisonPillMessage, Message
+from powerapi.message import StartMessage, \
+    SimplePullerSendReportsMessage, PoisonPillMessage
 from powerapi.puller import PullerPoisonPillMessageHandler
 from powerapi.puller.simple.simple_puller_handlers import SimplePullerHandler, SimplePullerStartHandler
 from powerapi.report import Report
