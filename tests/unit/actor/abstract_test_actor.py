@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import multiprocessing
 import time
 
 from multiprocessing import Queue, Pipe
@@ -108,6 +109,7 @@ def recv_from_pipe(pipe, timeout):
     else:
         return None, None
 
+
 def define_database_content(content):
     """
     Decorator used to define database content when using an actor with database
@@ -121,6 +123,7 @@ def define_database_content(content):
         return func
 
     return wrap
+
 
 @pytest.fixture()
 def pusher(database):
@@ -138,6 +141,8 @@ def pusher(database):
     if actor.is_alive():
         actor.terminate()
     actor.socket_interface.close()
+
+    join_actor(actor)
 
 
 def start_actor(actor: Actor):
@@ -189,6 +194,11 @@ REPORT_TYPE_TO_BE_SENT = PowerReport
 REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
+def join_actor(actor):
+    actor_sentinels = [actor.sentinel]
+    multiprocessing.connection.wait(actor_sentinels)
+
+
 class AbstractTestActor:
 
     @pytest.fixture
@@ -216,9 +226,12 @@ class AbstractTestActor:
         actor.connect_data()
         actor.connect_control()
         yield actor
+
         if actor.is_alive():
             actor.terminate()
         actor.socket_interface.close()
+
+        join_actor(actor)
 
     @pytest.fixture
     def started_actor(self, init_actor):
@@ -234,6 +247,8 @@ class AbstractTestActor:
         if pusher.is_alive():
             pusher.terminate()
 
+        join_actor(pusher)
+
     @pytest.fixture
     def started_fake_pusher_hwpc_report(self, dummy_pipe_in):
         pusher = DummyActor(PUSHER_NAME_HWPC_REPORT, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT_2)
@@ -241,6 +256,8 @@ class AbstractTestActor:
         yield pusher
         if pusher.is_alive():
             pusher.terminate()
+
+        join_actor(pusher)
 
     @pytest.fixture
     def fake_pushers(self, started_fake_pusher_power_report, started_fake_pusher_hwpc_report):
@@ -263,6 +280,8 @@ class AbstractTestActor:
         if actor.is_alive():
             actor.terminate()
         actor.socket_interface.close()
+
+        join_actor(actor)
 
     @pytest.fixture
     def started_actor_with_crash_handler(self, actor_with_crash_handler):
