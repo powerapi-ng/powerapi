@@ -179,7 +179,7 @@ class SimpleGenerator(Generator):
 
     def _get_report_class(self, model_name, component_config):
         if model_name not in self.report_classes:
-            msg = 'Configuration error : model type ' + model_name + ' unknown'
+            msg = 'Configuration error : model type ' + str(model_name) + ' unknown'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
         else:
