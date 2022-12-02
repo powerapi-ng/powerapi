@@ -75,8 +75,3 @@ class SimplePusherActor(Actor):
         self.add_handler(PowerReport, report_handler)
         self.add_handler(HWPCReport, report_handler)
         self.add_handler(GetReceivedReportsSimplePusherMessage, SimplePusherGetReceivedReportsHandler(self.state))
-
-
-
-
-

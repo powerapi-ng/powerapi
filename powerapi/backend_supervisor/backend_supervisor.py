@@ -90,7 +90,7 @@ class BackendSupervisor(Supervisor):
             if not actor.is_alive():
                 self.kill_actors()
                 return
-        
+
         actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
         import select
         select.select(actor_sentinels, actor_sentinels, actor_sentinels)

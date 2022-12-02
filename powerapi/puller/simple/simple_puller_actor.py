@@ -71,7 +71,6 @@ class SimplePullerActor(Actor):
         :param int number_of_reports_to_send: Number of reports to send
         :param Report report_type_to_send: Report type to be sent
         :param Filter report_filter: Filters and the associated dispatchers and rules
-        
         """
         self.state = SimplePullerState(self, number_of_reports_to_send, report_type_to_send, report_filter)
 

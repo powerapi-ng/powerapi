@@ -81,5 +81,3 @@ class ReportHandler(Handler):
         for _, actor_pusher in self.state.pushers.items():
             for result in reports:
                 actor_pusher.send_data(result)
-
-

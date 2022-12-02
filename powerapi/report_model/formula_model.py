@@ -32,6 +32,7 @@ from typing import Dict, List, Tuple
 from powerapi.report import Report, FormulaReport
 from powerapi.exception import PowerAPIException
 
+
 class FormulaModel:
     """
     ReportModel class.

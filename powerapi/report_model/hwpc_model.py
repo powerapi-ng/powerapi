@@ -92,7 +92,7 @@ class HWPCModel(ReportModel):
         final_dict = {}
 
         try:
-            group_name = file_name[:-4] if file_name[len(file_name)-4:] == '.csv' else file_name
+            group_name = file_name[:-4] if file_name[len(file_name) - 4:] == '.csv' else file_name
             final_dict = {key: row[key] for key in CSV_HEADER_COMMON}
             final_dict['timestamp'] = timestamp_to_datetime(int(row['timestamp']))
             final_dict['groups'] = {}

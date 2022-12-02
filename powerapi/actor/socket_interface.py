@@ -45,6 +45,7 @@ class NotConnectedException(PowerAPIException):
     that is not conected
     """
 
+
 class SocketInterface:
     """
     Interface to handle comunication to/from the actor
@@ -179,7 +180,7 @@ class SocketInterface:
         event = self.control_socket.poll(timeout)
 
         if event == 0:
-            return  None
+            return None
 
         return self._recv_serialized(self.control_socket)
 

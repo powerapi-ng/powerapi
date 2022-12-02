@@ -32,6 +32,7 @@ from powerapi.actor import Actor, State, SocketInterface
 from powerapi.pusher import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 from powerapi.message import PoisonPillMessage, StartMessage
 
+
 class PusherState(State):
     """
     Pusher Actor State
@@ -39,6 +40,7 @@ class PusherState(State):
     Contains in addition to State values :
       - The database interface
     """
+
     def __init__(self, actor, database, report_model):
         """
         :param BaseDB database: Database for saving data.

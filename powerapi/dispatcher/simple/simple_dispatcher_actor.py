@@ -86,5 +86,5 @@ class SimpleDispatcherActor(Actor):
 
     def _create_formula(self):
         self.state.formula = self.state.formula_init_function(self.state.formula_name, self.state.pushers,
-                                                        self.logger.getEffectiveLevel())
+                                                              self.logger.getEffectiveLevel())
         self.logger.info('create formula ' + self.state.formula_name)

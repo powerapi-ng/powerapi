@@ -57,4 +57,3 @@ class SimpleFormulaActor(FormulaActor):
         self.add_handler(HWPCReport, ReportHandler(self.state))
         self.add_handler(PowerReport, ReportHandler(self.state))
         self.add_handler(StartMessage, StartHandler(self.state))
-

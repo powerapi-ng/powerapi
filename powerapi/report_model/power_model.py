@@ -92,11 +92,11 @@ class PowerModel(ReportModel):
         }
         """
 
-        if ('sensor' not in serialized_report or 'target' not in serialized_report
-            or 'metadata' not in serialized_report or 'timestamp' not in serialized_report
-            or 'power' not in serialized_report):
+        if ('sensor' not in serialized_report or 'target' not in serialized_report or
+                'metadata' not in serialized_report or 'timestamp' not in serialized_report or
+                'power' not in serialized_report):
             raise BadInputData()
-        
+
         tags = {tag: serialized_report[tag] for tag in self.get_tags()}
 
         for metadata_name in self._influxdb_keept_metadata():
@@ -175,13 +175,12 @@ class PowerModel(ReportModel):
 
         return final_dict
 
-
     def to_prometheus(self, serialized_report) -> Dict:
-        if ('sensor' not in serialized_report or 'target' not in serialized_report
-            or 'metadata' not in serialized_report or 'timestamp' not in serialized_report
-            or 'power' not in serialized_report):
+        if ('sensor' not in serialized_report or 'target' not in serialized_report or
+                'metadata' not in serialized_report or 'timestamp' not in serialized_report or
+                'power' not in serialized_report):
             raise BadInputData()
-        
+
         tags = {tag: serialized_report[tag] for tag in self.get_tags()}
 
         for metadata_name in self._influxdb_keept_metadata():
@@ -195,6 +194,7 @@ class PowerModel(ReportModel):
             'time': int(serialized_report['timestamp'].timestamp()),
             'value': serialized_report['power']
         }
+
     def to_mongodb(self, serialized_report) -> Dict:
         """
         Return raw data from serialized report

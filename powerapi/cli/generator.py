@@ -333,7 +333,7 @@ class PusherGenerator(DBActorGenerator):
                                max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE])
 
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
-                                database=component_config[COMPONENT_DB_MANAGER_KEY])
+                           database=component_config[COMPONENT_DB_MANAGER_KEY])
 
 
 class SimplePusherGenerator(SimpleGenerator):

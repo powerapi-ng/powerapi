@@ -53,7 +53,7 @@ class RAPLFormulaConfig:
     Global config of the SmartWatts formula.
     """
 
-    def __init__(self, scope:RAPLFormulaScope, reports_frequency:int, rapl_event:str):
+    def __init__(self, scope: RAPLFormulaScope, reports_frequency: int, rapl_event: str):
         """
         Initialize a new formula config object.
         :param scope: Scope of the formula
