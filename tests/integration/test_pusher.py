@@ -29,6 +29,7 @@
 
 
 import logging
+import time
 
 from powerapi.database import MongoDB
 from powerapi.report import PowerReport
@@ -93,5 +94,6 @@ def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok
 @define_report_type(PowerReport)
 def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(pusher):
     pusher.send_control(StartMessage('system'))
+    time.sleep(4)
     answer = pusher.receive_control(2000)
     assert isinstance(answer, ErrorMessage)

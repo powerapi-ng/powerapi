@@ -96,7 +96,7 @@ class Actor(multiprocessing.Process):
                             timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
-
+        # self.daemon = True
         #: (logging.Logger): Logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level_logger)

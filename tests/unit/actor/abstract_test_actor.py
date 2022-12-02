@@ -195,8 +195,7 @@ REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
 def join_actor(actor):
-    actor_sentinels = [actor.sentinel]
-    multiprocessing.connection.wait(actor_sentinels)
+    actor.join()
 
 
 class AbstractTestActor:

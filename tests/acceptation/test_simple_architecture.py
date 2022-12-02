@@ -205,7 +205,7 @@ def test_run_csv_to_csv(files):
 # SOCKET INPUT #
 ################
 def check_db_socket():
-    time.sleep(2)
+    time.sleep(6)
     json_reports = extract_rapl_reports_with_2_sockets(10)
     mongo = pymongo.MongoClient(MONGO_URI)
     c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
@@ -237,6 +237,7 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
                                formula_class=DummyFormulaActor)
     time.sleep(2)
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+    client.daemon = True
     client.start()
 
     time.sleep(6)
@@ -264,6 +265,7 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
                                formula_class=DummyFormulaActor)
     time.sleep(2)
     client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+    client.daemon = True
     client.start()
 
     time.sleep(2)
@@ -336,9 +338,10 @@ def test_run_socket_to_csv(unused_tcp_port, files):
     time.sleep(2)
 
     client = ClientThread(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
+    client.daemon = True
     client.start()
 
-    time.sleep(2)
+    time.sleep(4)
 
     check_output_file2()
 
