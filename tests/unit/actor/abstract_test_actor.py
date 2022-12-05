@@ -165,6 +165,7 @@ def stop_actor(actor: Actor):
     if actor.is_alive():
         actor.terminate()
     actor.socket_interface.close()
+    actor.join()
 
 
 class CrashMessage:

@@ -55,6 +55,7 @@ M4 = {
     'value': 4.0
 }
 
+
 def test_asking_if_stat_is_available_on_a_key_that_was_never_append_must_raise_KeyError():
     buffer = StatBuffer(3)
 
@@ -70,6 +71,7 @@ def test_asking_if_stat_is_available_on_a_stat_buffer_with_aggregation_periode_o
     buffer.append(M2, 'ab')
     assert not buffer.is_available('ab')
 
+
 def test_asking_if_stat_is_available_on_a_stat_buffer_with_aggregation_periode_of_1_while_2_measure_where_append_on_1_seconds_return_true():
     buffer = StatBuffer(1)
 
@@ -77,12 +79,14 @@ def test_asking_if_stat_is_available_on_a_stat_buffer_with_aggregation_periode_o
     buffer.append(M2, 'ab')
     assert buffer.is_available('ab')
 
+
 def test_asking_if_stat_is_available_on_a_stat_buffer_with_aggregation_periode_of_1_while_2_measure_where_append_on_2_seconds_return_true():
     buffer = StatBuffer(1)
 
     buffer.append(M1, 'ab')
     buffer.append(M3, 'ab')
     assert buffer.is_available('ab')
+
 
 def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_3_while_2_measure_where_append_on_2_seconds_return_None():
     buffer = StatBuffer(3)
@@ -114,6 +118,7 @@ def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_1_while_2_measur
         'time': 2
     }
 
+
 def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_1_while_3_measure_where_append_on_2_seconds_return_stats_on_two_first_results():
     buffer = StatBuffer(1)
 
@@ -129,6 +134,7 @@ def test_get_stats_on_a_stat_buffer_with_aggregation_periode_of_1_while_3_measur
         'time': 2
     }
 
+
 def test_get_stats_second_times_on_a_stat_buffer_with_aggregation_periode_of_1_while_3_measure_where_append_on_2_seconds_return_None():
     buffer = StatBuffer(1)
 
@@ -138,7 +144,8 @@ def test_get_stats_second_times_on_a_stat_buffer_with_aggregation_periode_of_1_w
     buffer.get_stats('ab')
     assert buffer.get_stats('ab') is None
 
-def test_get_stats_second_times_on_a_stat_buffer_with_aggregation_periode_of_1_while_4_measure_where_append_on_2_seconds_return_good_result_for_two_last_measure():
+
+def test_get_stat_buffer_with_aggregation_periode_of_1_while_4_measure_append_good_result_for_two_last_measure():
     buffer = StatBuffer(1)
 
     buffer.append(M1, 'ab')

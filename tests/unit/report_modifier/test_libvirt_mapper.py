@@ -41,8 +41,8 @@ from powerapi.report import Report
 from powerapi.test_utils.libvirt import MockedLibvirt
 from powerapi.test_utils.libvirt import DOMAIN_NAME_1, LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2, UUID_1, REGEXP
 
-
 BAD_TARGET = 'lkjqlskjdlqksjdlkj'
+
 
 @pytest.fixture
 def libvirt_mapper():
@@ -61,6 +61,7 @@ def test_modify_report_that_match_regexp_must_modify_report(libvirt_mapper):
     report = Report(0, 'sensor', LIBVIRT_TARGET_NAME1)
     new_report = libvirt_mapper.modify_report(report)
     assert new_report.metadata["domain_id"] == UUID_1
+
 
 def test_modify_report_that_match_regexp_but_with_wrong_domain_name_musnt_modify_report(libvirt_mapper):
     report = Report(0, 'sensor', LIBVIRT_TARGET_NAME2)

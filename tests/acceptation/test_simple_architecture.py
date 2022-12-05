@@ -116,15 +116,14 @@ def check_influx_db(influx_client):
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = get_all_reports(influx_client, INFLUX_DBNAME)
 
-    assert len(c_output) == c_input.count_documents({}) # * 2
+    assert len(c_output) == c_input.count_documents({})
 
     for report in c_input.find():
-        ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
         influx_client.switch_database(INFLUX_DBNAME)
 
-        l = list(influx_client.query(
+        query_result = list(influx_client.query(
             'SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'] + 'Z\'').get_points())
-        assert len(l) == 1
+        assert len(query_result) == 1
 
 
 def test_run_mongo_to_influx(mongo_database, influx_database):

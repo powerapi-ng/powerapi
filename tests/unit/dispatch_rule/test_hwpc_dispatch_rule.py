@@ -31,6 +31,7 @@ from copy import deepcopy
 import pytest
 from powerapi.report import HWPCReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
+
 """
 Test HWPCDispatcheRule
 
@@ -44,6 +45,7 @@ each report could be associated with a RAPL group that contain one socket and
 one CPU
 
 """
+
 
 def create_core_report(core_id, event_id, event_value, events=None):
     id_str = str(core_id)
@@ -75,6 +77,7 @@ def create_report_root(group_list, timestamp=datetime.fromtimestamp(0), sensor='
     for (group_id, group) in group_list:
         sensor.groups[group_id] = group
     return sensor
+
 
 CPU_1 = create_core_report('1', 'e0', '0')
 CPU_2 = create_core_report('2', 'e0', '1')
@@ -135,7 +138,7 @@ def validate_formula_id(formula_id_list, validation_list):
     """
     assert len(formula_id_list) == len(validation_list)
     formula_id_list.sort()
-    
+
     for a, b in zip(formula_id_list, validation_list):
         assert a == b
 
@@ -204,7 +207,7 @@ def test_get_formula_id_socket_rule_report_2(report_2):
     [('toto','1'), ('toto','2')]
     """
     ids = HWPCDispatchRule(HWPCDepthLevel.SOCKET).get_formula_id(report_2)
-    validate_formula_id(ids,  [('toto', '1')])
+    validate_formula_id(ids, [('toto', '1')])
 
 
 def test_get_formula_id_socket_rule_report_3(report_3):

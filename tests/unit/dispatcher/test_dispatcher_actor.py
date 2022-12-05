@@ -324,8 +324,8 @@ class TestDispatcher(AbstractTestActor):
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self,
                                                                                                    dispatcher_with_formula,
                                                                                                    dummy_pipe_out):
-        expected_metadata = {'formula_name': "('" + dispatcher_with_formula.name + "', '" + REPORT_1.a + "', '"
-                                             + REPORT_1.b + "')",
+        expected_metadata = {'formula_name': "('" + dispatcher_with_formula.name + "', '" + REPORT_1.a + "', '" +
+                                             REPORT_1.b + "')",
                              'socket': 0}
 
         expected_report = PowerReport(timestamp=REPORT_1.timestamp, power=42, sensor=REPORT_1.sensor,

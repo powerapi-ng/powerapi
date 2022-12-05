@@ -83,8 +83,6 @@ def main_process():
         pass
 
 
-
-
 class MainProcess(Process):
     """
     Process that run the global architecture and crash the dispatcher
@@ -120,6 +118,7 @@ def test_crash_dispatcher(mongo_database, main_process):
     if main_process.is_alive():
         os.kill(main_process.pid, signal.SIGTERM)
         main_process.join(5)
+
         assert not main_process.is_alive()
 
     assert True

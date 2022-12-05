@@ -34,7 +34,6 @@ from mock import Mock
 
 from powerapi.utils import JsonStream
 
-
 SOCKET_TIMEOUT = 0.2
 
 
@@ -52,6 +51,7 @@ class MockedStreamReader(Mock):
             data = self.message[:byte_to_read]
             self.message = self.message[byte_to_read:]
             return bytes(data, 'utf-8')
+
 
 def test_read_json_object_from_a_socket_without_data_return_None():
     socket = MockedStreamReader('')
@@ -127,4 +127,3 @@ def test_read_json_object_twice_from_a_socket_with_two_json_object_must_return_t
     future = asyncio.ensure_future(stream.read_json_object())
     asyncio.get_event_loop().run_until_complete(future)
     assert future.result() is None
-

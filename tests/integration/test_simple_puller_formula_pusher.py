@@ -88,6 +88,7 @@ class TestSimplePullerFormulaPusher:
 
         for _, pusher in pushers.items():
             stop_actor(pusher)
+            pusher.join()
 
     @pytest.fixture
     def report_filter(self):
@@ -123,6 +124,7 @@ class TestSimplePullerFormulaPusher:
 
         for _, puller in pullers.items():
             stop_actor(puller)
+            puller.join()
 
         stop_actor(dispatcher)
 

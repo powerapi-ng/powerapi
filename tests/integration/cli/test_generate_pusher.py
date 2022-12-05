@@ -90,7 +90,7 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
     while messages_sent < REPORTS_TO_SEND:
         pusher.send_data(power_report)
         messages_sent += 1
-        power_report.timestamp = timestamp_to_datetime(messages_sent+1)
+        power_report.timestamp = timestamp_to_datetime(messages_sent + 1)
 
     time.sleep(0.3)
     pusher.send_control(PoisonPillMessage())

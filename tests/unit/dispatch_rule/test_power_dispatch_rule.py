@@ -1,21 +1,21 @@
 # Copyright (c) 2022, INRIA
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,9 @@ from powerapi.report import PowerReport
 from powerapi.dispatch_rule import PowerDispatchRule, PowerDepthLevel
 
 TS1 = 0
-SENSOR1= 'sensor1'
+SENSOR1 = 'sensor1'
 TARGET1 = 'target1'
+
 
 @pytest.fixture
 def report1_socket0():
@@ -49,9 +50,10 @@ def validate_formula_id(formula_id_list, validation_list):
     """
     assert len(formula_id_list) == len(validation_list)
     formula_id_list.sort()
-    
+
     for a, b in zip(formula_id_list, validation_list):
         assert a == b
+
 
 def test_get_formula_id_with_sensor_rule_must_return_good_id(report1_socket0):
     """
@@ -68,12 +70,14 @@ def test_get_formula_id_with_target_rule_must_return_good_id(report1_socket0):
     ids = PowerDispatchRule(PowerDepthLevel.TARGET).get_formula_id(report1_socket0)
     validate_formula_id(ids, [(TARGET1,)])
 
+
 def test_get_formula_id_with_socket_rule_must_return_good_id(report1_socket0):
     """
     get formula id from reports with a rule that dispatch by target :
     """
     ids = PowerDispatchRule(PowerDepthLevel.SOCKET).get_formula_id(report1_socket0)
     validate_formula_id(ids, [(SENSOR1, 0)])
+
 
 def test_get_formula_id_with_core_rule_must_return_good_id(report1_socket0):
     """

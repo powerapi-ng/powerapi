@@ -52,15 +52,12 @@ class TestRAPLFormula(AbstractTestActor):
              "sensor": "toto",
              "target": "all",
              "groups":
-                 {"rapl":
-                      {"0":
-                           {"7":
-                                {"RAPL_ENERGY_PKG": 5558763520.0,
-                                 "time_enabled": 1000770053.0,
-                                 "time_running": 1000770053.0
+                 {"rapl": {"0": {"7": {"RAPL_ENERGY_PKG": 5558763520.0,
+                                       "time_enabled": 1000770053.0,
+                                       "time_running": 1000770053.0
+                                       }
                                  }
-                            }
-                       }
+                           }
                   }
              }
         )

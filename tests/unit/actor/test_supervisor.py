@@ -33,6 +33,7 @@ from mock import Mock
 from powerapi.actor import Actor, Supervisor, ActorInitError, State
 from powerapi.message import OKMessage, ErrorMessage, StartMessage
 
+
 #########
 # Utils #
 #########
@@ -74,6 +75,7 @@ class FakeActorConnectError(FakeActor):
     """
     FakeActor that raise an error when trying to connect to it
     """
+
     def connect_control(self):
         raise zmq.error.ZMQError()
 
@@ -82,8 +84,10 @@ class FakeActorInitError(FakeActor):
     """
     FakeActor that raise an error when trying to initialize it
     """
+
     def receive_control(self, timeout=None):
         return ErrorMessage('error', 'FakeActorConnectError')
+
 
 ############
 # Fixtures #
@@ -97,7 +101,7 @@ def supervisor(request):
     supervisor.actor_list = request.param
     yield supervisor
 
-    
+
 ###############
 # TEST LAUNCH #
 ###############

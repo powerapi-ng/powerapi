@@ -46,13 +46,17 @@ def define_buffer_size(size):
     def wrap(func):
         setattr(func, '_buffer_size', size)
         return func
+
     return wrap
+
 
 def define_delay(delay):
     def wrap(func):
         setattr(func, '_delay', delay)
         return func
+
     return wrap
+
 
 def pytest_generate_tests(metafunc):
     """
@@ -109,7 +113,8 @@ class TestPusher(AbstractTestActorWithDB):
             fake_db.q.get(timeout=1)
 
     @define_buffer_size(1)
-    def test_send_two_report_to_pusher_with_1sized_buffer_make_it_save_the_reports_in_one_call(self, started_actor, fake_db):
+    def test_send_two_report_to_pusher_with_1sized_buffer_make_it_save_the_reports_in_one_call(self, started_actor,
+                                                                                               fake_db):
         started_actor.send_data(REPORT1)
         started_actor.send_data(REPORT2)
         assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
@@ -127,14 +132,16 @@ class TestPusher(AbstractTestActorWithDB):
             fake_db.q.get(timeout=1)
 
     @define_delay(2000)
-    def test_send_two_report__with_two_second_between_messages_to_pusher_with_2seconde_delay_make_it_save_the_report(self, started_actor, fake_db):
+    def test_send_two_report__with_two_second_between_messages_to_pusher_with_2seconde_delay_make_it_save_the_report(
+            self, started_actor, fake_db):
         started_actor.send_data(REPORT1)
         time.sleep(2)
         started_actor.send_data(REPORT2)
         assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
 
     @define_buffer_size(1)
-    def test_send_two_report_in_wrong_time_order_to_a_pusher_make_it_save_them_in_good_order(self, started_actor, fake_db):
+    def test_send_two_report_in_wrong_time_order_to_a_pusher_make_it_save_them_in_good_order(self, started_actor,
+                                                                                             fake_db):
         started_actor.send_data(REPORT2)
         started_actor.send_data(REPORT1)
         assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]

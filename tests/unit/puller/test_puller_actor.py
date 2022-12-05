@@ -104,8 +104,8 @@ class TestPuller(AbstractTestActorWithDB):
 
     @define_database_content([REPORT1, REPORT2])
     def test_start_actor_with_db_that_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor,
-                                                                                               fake_dispatcher,
-                                                                                               content):
+                                                                                              fake_dispatcher,
+                                                                                              content):
         for report in content:
             assert fake_dispatcher.q.get(timeout=2) == report
 

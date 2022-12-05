@@ -31,7 +31,8 @@ import pytest
 from powerapi.cli.parser import Parser, MainParser, ComponentSubParser
 from powerapi.cli.parser import store_true
 from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
-from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, ComponentAlreadyExistException
+from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, \
+    ComponentAlreadyExistException
 from powerapi.cli.parser import SubParserWithoutNameArgumentException, NoNameSpecifiedForComponentException
 from powerapi.cli.parser import TooManyArgumentNamesException
 
@@ -105,6 +106,7 @@ def test_add_argument_long():
     parser.add_argument('aaa')
     assert parser.long_arg == ['aaa=']
 
+
 def test_add_flag_long():
     """
     Add a long argument to the parser
@@ -119,7 +121,6 @@ def test_add_flag_long():
 
 # full parsing test #
 def check_parsing_result(parser, input_str, outputs):
-
     result = parser.parse(input_str.split())
 
     assert len(result) == len(outputs)
@@ -224,7 +225,8 @@ def test_actor_subparser():
     with pytest.raises(NoNameSpecifiedForComponentException):
         check_parsing_result(parser, '-a --sub toto -b', {})
 
-    check_parsing_result(parser, '-a --sub toto -b --name titi', {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+    check_parsing_result(parser, '-a --sub toto -b --name titi',
+                         {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
 
     with pytest.raises(BadContextException):
         check_parsing_result(parser, '-b', None)
@@ -271,7 +273,9 @@ def test_create_two_component():
     subparser.add_argument('n', 'name')
     parser.add_actor_subparser('sub', subparser)
 
-    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
+    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu',
+                         {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
+
 
 def test_create_two_with_different_type_component():
     """
@@ -283,7 +287,7 @@ def test_create_two_with_different_type_component():
 
     """
     parser = MainParser(help_arg=False)
-    
+
     subparser = ComponentSubParser('toto')
     subparser.add_argument('n', 'name')
     parser.add_actor_subparser('sub', subparser)
@@ -292,7 +296,8 @@ def test_create_two_with_different_type_component():
     subparser.add_argument('n', 'name')
     parser.add_actor_subparser('sub', subparser)
 
-    check_parsing_result(parser, '--sub toto --name titi --sub tutu --name tete', {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
+    check_parsing_result(parser, '--sub toto --name titi --sub tutu --name tete',
+                         {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
 
 
 def test_create_component_that_already_exist():
@@ -311,6 +316,7 @@ def test_create_component_that_already_exist():
 
     with pytest.raises(ComponentAlreadyExistException):
         check_parsing_result(parser, '--sub toto --name titi --sub toto --name titi', None)
+
 
 def test_argument_with_val():
     """
@@ -343,6 +349,7 @@ def test_short_and_long_name_val():
     parser.add_argument('c', 'coco')
 
     check_parsing_result(parser, '-c 1', {'coco': '1'})
+
 
 def test_add_two_short_name():
     """
@@ -459,6 +466,7 @@ def test_parse_empty_string_default_value():
     assert 'a' in result
     assert result['a'] == 1
 
+
 ############################
 # COMPONENT_SUBPARSER TEST #
 ############################
@@ -474,11 +482,9 @@ def component_subparser():
 
 def test_component_subparser_empty(component_subparser):
     """
-    test component_subparser, parse an empty token list. 
-
-    must return return an empty dictionary as parse result and a empty token
+    Test component_subparser, parse an empty token list.
+    Must return an empty dictionary as parse result and an empty token
     list
-
     """
     assert component_subparser.subparse([]) == ([], {})
 

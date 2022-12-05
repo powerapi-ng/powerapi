@@ -103,6 +103,7 @@ def test_invalid_url_connection():
     with pytest.raises(BaseException):
         db.connect()
 
+
 def test_invalid_url_connection_with_port():
     """
      Try to connect the InfluxDB instance to an influxdb database with an invalid

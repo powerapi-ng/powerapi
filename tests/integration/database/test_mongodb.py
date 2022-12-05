@@ -34,6 +34,7 @@ from powerapi.database import MongoDB, MongoBadDBError
 from powerapi.test_utils.db.mongo import mongo_database, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
 from powerapi.test_utils.report.hwpc import gen_HWPCReports, extract_rapl_reports_with_2_sockets
 
+
 @pytest.fixture
 def mongodb_content():
     return extract_rapl_reports_with_2_sockets(10)

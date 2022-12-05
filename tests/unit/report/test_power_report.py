@@ -55,21 +55,22 @@ def test_create_power_report_from_json_with_str_timestamp_with_bad_format_raise_
     json_input = gen_json_power_report(1)[0]
     json_input['timestamp'] = '1970-09-01T090909.543'
     with pytest.raises(BadInputData):
-        report = PowerReport.from_json(json_input)
+        _ = PowerReport.from_json(json_input)
 
 
 def test_create_power_report_from_json_without_timestamp_field_raise_BadInputData():
     json_input = gen_json_power_report(1)[0]
     del json_input['timestamp']
     with pytest.raises(BadInputData):
-        report = PowerReport.from_json(json_input)
+        _ = PowerReport.from_json(json_input)
 
 
 def test_create_power_report_from_json_without_sensor_field_raise_BadInputData():
     json_input = gen_json_power_report(1)[0]
     del json_input['sensor']
     with pytest.raises(BadInputData):
-        report = PowerReport.from_json(json_input)
+        _ = PowerReport.from_json(json_input)
+
 
 #######
 # CSV #
@@ -77,10 +78,10 @@ def test_create_power_report_from_json_without_sensor_field_raise_BadInputData()
 def test_create_power_report_from_csv_with_one_lines_create_an_power_report():
     csv_lines = [("power",
                   {
-            "timestamp": "2021-09-14T12:37:37.168817",
-            "sensor": "formula_group",
-            "target": "all",
-            "power": 42
+                      "timestamp": "2021-09-14T12:37:37.168817",
+                      "sensor": "formula_group",
+                      "target": "all",
+                      "power": 42
                   }
                   )
                  ]
@@ -99,29 +100,29 @@ def test_create_power_report_from_csv_with_bad_timestamp_format_raise_BadInputDa
                   )
                  ]
     with pytest.raises(BadInputData):
-        report = PowerReport.from_csv_lines(csv_lines)
+        _ = PowerReport.from_csv_lines(csv_lines)
 
 
 def test_create_power_report_from_csv_with_two_lines_raise_BadInputData():
     csv_lines = [("power",
                   {
-            "timestamp": "2021-09-14T12:37:37.168817",
-            "sensor": "formula_group",
-            "target": "all",
-            "power": 42
+                      "timestamp": "2021-09-14T12:37:37.168817",
+                      "sensor": "formula_group",
+                      "target": "all",
+                      "power": 42
                   }
                   ),
                  ("power",
                   {
-            "timestamp": "2021-09-14T12:37:37.168817",
-            "sensor": "formula_group",
-            "target": "all",
-            "power": 42
+                      "timestamp": "2021-09-14T12:37:37.168817",
+                      "sensor": "formula_group",
+                      "target": "all",
+                      "power": 42
                   }
                   )
                  ]
     with pytest.raises(BadInputData):
-        report = PowerReport.from_csv_lines(csv_lines)
+        _ = PowerReport.from_csv_lines(csv_lines)
 
 
 ############
@@ -129,8 +130,9 @@ def test_create_power_report_from_csv_with_two_lines_raise_BadInputData():
 ############
 
 def test_creating_report_with_metadata():
-    report = PowerReport(('1970-09-01T09:09:10.543'), 'toto', 'all',42, {"tag": 1})
+    report = PowerReport(('1970-09-01T09:09:10.543'), 'toto', 'all', 42, {"tag": 1})
     assert report.metadata["tag"] == 1
+
 
 def test_create_report_from_json_with_metadata():
     json_input = gen_json_power_report(1)[0]
@@ -147,7 +149,7 @@ def test_create_report_from_csv_with_metadata():
                       "sensor": "formula_group",
                       "target": "all",
                       "power": 42,
-                      "tag":1
+                      "tag": 1
                   }
                   )
                  ]

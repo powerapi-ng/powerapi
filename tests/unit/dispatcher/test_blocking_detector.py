@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-This test will use a sequence of message that will be sent in alphabetical order : 
+This test will use a sequence of message that will be sent in alphabetical order:
 
   MessageA, MessageB, MessageC, MessageD, MessageE, MessageF
 
@@ -36,7 +36,6 @@ import pytest
 
 from powerapi.dispatcher.blocking_detector import BlockingDetector
 from powerapi.report import Report
-
 
 
 @pytest.fixture
@@ -65,6 +64,7 @@ def message_d():
     msg = Report(3, 'D', 'D')
     msg.dispatcher_report_id = 4
     return msg
+
 
 @pytest.fixture
 def message_e():
@@ -116,6 +116,7 @@ def test_receive_poison_A_B_C_and_D_dont_make_blocked(message_a, message_b, mess
     blocking_detector.notify_poison_received(message_d)
     assert not blocking_detector.is_blocked()
 
+
 def test_receive_poison_A_B_C_D_and_E_dont_make_blocked(message_a, message_b, message_c, message_d, message_e):
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
@@ -125,7 +126,9 @@ def test_receive_poison_A_B_C_D_and_E_dont_make_blocked(message_a, message_b, me
     blocking_detector.notify_poison_received(message_e)
     assert not blocking_detector.is_blocked()
 
-def test_receive_poison_A_B_C_D_E_and_F_dont_make_blocked(message_a, message_b, message_c, message_d, message_e, message_f):
+
+def test_receive_poison_A_B_C_D_E_and_F_dont_make_blocked(message_a, message_b, message_c, message_d, message_e,
+                                                          message_f):
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -197,7 +200,8 @@ def test_receive_poison_A_B_D_E_and_F_make_blocked(message_a, message_b, message
     assert blocking_detector.is_blocked()
 
 
-def test_receive_poison_A_B_D_E_F_and_G_dont_make_blocked(message_a, message_b, message_d, message_e, message_f, message_g):
+def test_receive_poison_A_B_D_E_F_and_G_dont_make_blocked(message_a, message_b, message_d, message_e, message_f,
+                                                          message_g):
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)

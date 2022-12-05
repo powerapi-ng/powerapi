@@ -34,7 +34,6 @@ from powerapi.report import PowerReport, BadInputData
 from powerapi.test_utils.db.influx import influx_database, get_all_reports, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT
 from powerapi.test_utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_power_report
 
-
 POWER_REPORT_0 = PowerReport(datetime.datetime.fromtimestamp(0), SENSOR_NAME,
                              TARGET_NAME, 100, {'socket': 0})
 POWER_REPORT_1 = PowerReport(datetime.datetime.fromtimestamp(1), SENSOR_NAME,
@@ -47,7 +46,9 @@ def define_influxdb_content(content):
     def wrap(func):
         setattr(func, '_influxdb_content', content)
         return func
+
     return wrap
+
 
 def pytest_generate_tests(metafunc):
     """
@@ -65,11 +66,13 @@ def pytest_generate_tests(metafunc):
         else:
             metafunc.parametrize('influxdb_content', [[]])
 
+
 @pytest.fixture()
 def database():
     db = InfluxDB(PowerReport, INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, ['socket'])
     yield db
     db.client.close()
+
 
 ####################
 # CONNECTION TESTS #
@@ -94,7 +97,6 @@ def test_invalid_uri_connection():
     db = InfluxDB(PowerReport, 'tqldjslqskjd', INFLUX_PORT, INFLUX_DBNAME, ['socket'])
     with pytest.raises(CantConnectToInfluxDBException):
         db.connect()
-
 
 
 def test_invalid_port_connection():

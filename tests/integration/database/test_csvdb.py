@@ -41,7 +41,6 @@ from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError, Header
 from powerapi.utils import timestamp_to_datetime
 from powerapi.test_utils.db.csv import ROOT_PATH
 
-
 # All this file raise error
 BAD_COMMON = [ROOT_PATH + "bad_common_miss_sensor.csv",
               ROOT_PATH + "bad_common_miss_target.csv",
@@ -72,8 +71,9 @@ SECOND_RAPL_MISSING = [ROOT_PATH + "core2.csv",
                        ROOT_PATH + "rapl1_miss_second.csv",
                        ROOT_PATH + "pcu2.csv"]
 
-
-######### For CsvDB saving
+###################
+# For CsvDB saving
+###################
 
 # Cpt
 CPT = 1
@@ -118,7 +118,9 @@ TARGET = "target"
 def gen_power_report():
     global CPT
     CPT += 1
-    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11, {'mdt_socket': '-1', 'metadata1': 'truc', 'metadata2': 'oui'})
+    return PowerReport(timestamp_to_datetime(CPT), SENSOR, TARGET, 0.11,
+                       {'mdt_socket': '-1', 'metadata1': 'truc', 'metadata2': 'oui'})
+
 
 ##################
 #    FIXTURES    #
@@ -126,7 +128,6 @@ def gen_power_report():
 
 @pytest.fixture
 def clean_csv_files():
-
     """
     setup: remove repository in current path
     """
@@ -149,6 +150,7 @@ def corrupted_csvdb():
         writer = csv.DictWriter(csvfile, ["fake_field", "fake_field2"])
         writer.writeheader()
         writer.writerow({"fake_field": "One", "fake_field2": "Two"})
+
 
 @pytest.fixture()
 def power_csvdb():
@@ -206,7 +208,7 @@ class TestCsvDB():
             for group in group_name:
                 assert group in report.groups
 
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_iter)
 
     def test_csvdb_first_primary_missing(self, hwpc_csvdb):
@@ -222,7 +224,7 @@ class TestCsvDB():
         for group in group_name:
             assert group in report.groups
         assert report.timestamp == timestamp_to_datetime(1539260665189)
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_iter)
 
     def test_csvdb_second_primary_missing(self, hwpc_csvdb):
@@ -238,7 +240,7 @@ class TestCsvDB():
         for group in group_name:
             assert group in report.groups
         assert report.timestamp == timestamp_to_datetime(1539260664189)
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_iter)
 
     def test_csvdb_first_rapl_missing(self, hwpc_csvdb):
@@ -257,7 +259,7 @@ class TestCsvDB():
                     assert group not in report.groups
                 else:
                     assert group in report.groups
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_iter)
 
     def test_csvdb_second_rapl_missing(self, hwpc_csvdb):
@@ -276,7 +278,7 @@ class TestCsvDB():
                     assert group not in report.groups
                 else:
                     assert group in report.groups
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_iter)
 
     ############
@@ -292,7 +294,7 @@ class TestCsvDB():
 
         # Try to save one PowerReport
         power_report = gen_power_report()
-        with pytest.raises(HeaderAreNotTheSameError) as pytest_wrapped:
+        with pytest.raises(HeaderAreNotTheSameError) as _:
             csvdb.save(power_report)
 
     def test_csvdb_save_on(self, clean_csv_files):
@@ -323,7 +325,7 @@ class TestCsvDB():
         for _ in range(4):
             reading_power_reports.append(next(csvdb_read_iter))
 
-        with pytest.raises(StopIteration) as pytest_wrapped:
+        with pytest.raises(StopIteration) as _:
             next(csvdb_read_iter)
 
         for i in range(4):

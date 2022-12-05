@@ -30,11 +30,13 @@ import pytest
 
 from powerapi.cli.config_parser import ConfigParser, MainConfigParser, SubConfigParser
 from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
-from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, ComponentAlreadyExistException
+from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, \
+    ComponentAlreadyExistException
 from powerapi.cli.parser import SubParserWithoutNameArgumentException, NoNameSpecifiedForComponentException
 from powerapi.cli.parser import TooManyArgumentNamesException
 from powerapi.cli.parser import store_val, store_true
 from powerapi.cli.config_parser import AlreadyAddedSubparserException
+
 
 ###############
 # PARSER TEST #
@@ -92,6 +94,7 @@ def test_add_argument_long():
     parser.add_argument('aaa')
     assert parser.cli_parser.long_arg == ['help', 'aaa=']
 
+
 def test_add_flag_long():
     """
     Add a long argument to the parser
@@ -106,7 +109,6 @@ def test_add_flag_long():
 
 # full parsing test #
 def check_parsing_cli_result(parser, input_str, outputs):
-
     result = parser._parse_cli(input_str.split())
 
     assert len(result) == len(outputs)
@@ -253,7 +255,6 @@ def test_actor_subparser_cli():
     subparser.add_argument('n', 'name')
     parser.add_subparser('sub', subparser)
 
-
     dic = {
         "z": True
     }
@@ -266,7 +267,9 @@ def test_actor_subparser_cli():
     with pytest.raises(NoNameSpecifiedForComponentException):
         check_parsing_cli_result(parser, '-a --sub toto -b', {})
 
-    check_parsing_cli_result(parser, '-a --sub toto -b --name titi', {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+    check_parsing_cli_result(parser, '-a --sub toto -b --name titi',
+                             {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+
 
 def test_actor_subparser_validate():
     """
@@ -285,7 +288,7 @@ def test_actor_subparser_validate():
     - subparser toto binded to the argument sub with sub arguments : -b and --name
     """
     parser = MainConfigParser()
-    parser.add_argument('a', type=bool,flag=True, action=store_true)
+    parser.add_argument('a', type=bool, flag=True, action=store_true)
 
     subparser = SubConfigParser('toto')
     subparser.add_argument('b', flag=True, action=store_true)
@@ -303,10 +306,10 @@ def test_actor_subparser_validate():
         'a': True,
         'sub': {
             'titi':
-            {
-                'type': 'toto',
-                'b': "type"
-            }
+                {
+                    'type': 'toto',
+                    'b': "type"
+                }
         }
     }
 
@@ -316,8 +319,6 @@ def test_actor_subparser_validate():
     assert parser._validate(a_dic) == a_dic
 
     assert parser._validate(right_dic) == right_dic
-
-
 
 
 def test_create_two_component_cli():
@@ -338,8 +339,8 @@ def test_create_two_component_cli():
     subparser.add_argument('n', 'name')
     parser.add_subparser('sub', subparser)
 
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub toto -b --name tutu', {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
-
+    check_parsing_cli_result(parser, '--sub toto --name titi --sub toto -b --name tutu',
+                             {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
 
 
 def test_create_two_component_validate():
@@ -364,7 +365,6 @@ def test_create_two_component_validate():
     assert parser._validate(dic) == dic
 
 
-
 def test_create_two_with_different_type_component():
     """
     Create two component with different type with the following cli :
@@ -384,8 +384,8 @@ def test_create_two_with_different_type_component():
     subparser.add_argument('n', 'name')
     parser.add_subparser('sub', subparser)
 
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub tutu --name tete', {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
-
+    check_parsing_cli_result(parser, '--sub toto --name titi --sub tutu --name tete',
+                             {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
 
 
 def test_create_component_that_already_exist_cli():
@@ -440,10 +440,9 @@ def test_argument_with_val_validate():
     parser = MainConfigParser()
     parser.add_argument('c')
 
-    dic ={'c': '1'}
+    dic = {'c': '1'}
 
     assert parser._validate(dic) == dic
-
 
 
 def test_type_cli():
@@ -451,7 +450,7 @@ def test_type_cli():
     parser.add_argument('c', type=int)
 
     with pytest.raises(BadTypeException):
-        check_parsing_cli_result(parser, '-c string', {'c':'string'})
+        check_parsing_cli_result(parser, '-c string', {'c': 'string'})
 
     check_parsing_cli_result(parser, '-c 1', {'c': 1})
 
@@ -468,6 +467,7 @@ def test_type_validate():
 
     assert parser._validate(int_dic) == int_dic
 
+
 # multi name tests #
 def test_short_and_long_name_val():
     """
@@ -479,6 +479,7 @@ def test_short_and_long_name_val():
     parser.add_argument('c', 'coco')
 
     check_parsing_cli_result(parser, '-c 1', {'coco': '1'})
+
 
 def test_add_two_short_name():
     """

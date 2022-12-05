@@ -170,7 +170,7 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
     generator = PullerGenerator(None, [])
     generator.remove_report_class('HWPCReport')
     with pytest.raises(PowerAPIException):
-        result = generator.generate(args)
+        _ = generator.generate(args)
 
 
 @patch('sys.exit', side_effect=SysExitException())
@@ -181,4 +181,4 @@ def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_i
     generator = PullerGenerator(None, [])
     generator.remove_db_factory('mongodb')
     with pytest.raises(PowerAPIException):
-        result = generator.generate(args)
+        _ = generator.generate(args)

@@ -42,6 +42,7 @@ from tests.unit.actor.abstract_test_actor import recv_from_pipe
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
 REPORT_TYPE_TO_BE_SENT = PowerReport
 
+
 @pytest.fixture
 def pipe():
     return Pipe()
@@ -62,15 +63,12 @@ def formula_class():
     return DummyFormulaActor
 
 
-# TODO REMOVE @pytest.fixture
-# def formula_values(logger):
-#    return DummyFormulasState({'logger': logger}, 0.1)
-
 @pytest.fixture
 def route_table():
     route_table = RouteTable()
     route_table.dispatch_rule(HWPCReport, HWPCDispatchRule(getattr(HWPCDepthLevel, 'ROOT'), primary=True))
     return route_table
+
 
 @pytest.fixture
 def started_fake_pusher_power_report(dummy_pipe_in):
@@ -83,6 +81,7 @@ def started_fake_pusher_power_report(dummy_pipe_in):
     yield pusher
     if pusher.is_alive():
         pusher.terminate()
+
 
 @pytest.fixture
 def started_dispatcher(started_fake_pusher_power_report, route_table):
@@ -102,15 +101,14 @@ def started_dispatcher(started_fake_pusher_power_report, route_table):
     if actor.is_alive():
         actor.terminate()
     actor.socket_interface.close()
+    actor.join()
 
 
 def test_send_5_message_to_dispatcher_that_handle_DummyFormula_send_5_PowerReport_to_DummyPusher(started_dispatcher,
-                                                                                                dummy_pipe_out):
+                                                                                                 dummy_pipe_out):
     for report in gen_HWPCReports(5):
         started_dispatcher.send_data(report)
 
     for _ in range(5):
         _, msg = recv_from_pipe(dummy_pipe_out, 1)
         assert isinstance(msg, PowerReport)
-
-

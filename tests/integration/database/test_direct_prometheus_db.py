@@ -58,6 +58,7 @@ REPORTB_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET2, 70, 
 REPORTB_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET2, 80, {'socket': 0})
 REPORTB_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET2, 90, {'socket': 0})
 
+
 def extract_metrics(metric_prefix, url):
     time.sleep(0.5)
     request_result = requests.get(url)
@@ -71,6 +72,7 @@ def extract_metrics(metric_prefix, url):
             metrics[target] = []
         metrics[target].append({'socket': socket, 'sensor': sensor, 'value': float(value)})
     return metrics
+
 
 class DirectPrometheusServer(multiprocessing.Process):
     def __init__(self, q, port):
@@ -109,6 +111,7 @@ def db_info(unused_tcp_port_factory):
         yield q, _gen_url(port)
     p.terminate()
 
+
 def _gen_url(port):
     return 'http://' + ADDR + ':' + str(port) + '/metrics'
 
@@ -120,9 +123,9 @@ def test_create_direct_prometheus_db_and_connect_it_must_launch_web_server_on_gi
 
 
 def test_create_direct_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address(unused_tcp_port):
-    db = DirectPrometheusDB(PowerReport, unused_tcp_port, ADDR, METRIC, DESC, ['socket'])
+    _ = DirectPrometheusDB(PowerReport, unused_tcp_port, ADDR, METRIC, DESC, ['socket'])
     with pytest.raises(requests.exceptions.ConnectionError):
-        r = requests.get(_gen_url(unused_tcp_port))
+        _ = requests.get(_gen_url(unused_tcp_port))
 
 
 def test_save_one_report_must_expose_data(db_info):
@@ -169,7 +172,8 @@ def test_save_two_report_with_different_target_must_expose_correct_data_for_each
     assert data[TARGET2][0]['value'] == 40
 
 
-def test_save_report_from_two_target_and_then_report_from_one_target_must_finaly_only_expose_report_from_remaining_target(db_info):
+def test_save_report_from_two_target_and_then_report_from_one_target_must_finaly_only_expose_report_from_remaining_target(
+        db_info):
     db, url = db_info
     db.put([REPORTA_1, REPORTB_1, REPORTA_2, REPORTA_3])
     data = extract_metrics(METRIC, url)

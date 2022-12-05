@@ -41,7 +41,6 @@ class TestTree():
 
         assert tree.get(['A', 'B']) == []
 
-
     def test_add_child_to_empty_tree(self):
         tree = Tree()
         tree.add(['A', 'B'], 1)

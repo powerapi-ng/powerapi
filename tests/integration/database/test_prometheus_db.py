@@ -61,6 +61,7 @@ REPORTB_3 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 2), 0, TARGET2, 70, 
 REPORTB_4 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 3), 0, TARGET2, 80, {'socket': 0})
 REPORTB_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET2, 90, {'socket': 0})
 
+
 def extract_metrics(metric_prefix, url):
     time.sleep(0.5)
     request_result = requests.get(url)
@@ -78,6 +79,7 @@ def extract_metrics(metric_prefix, url):
         metrics[metric][target].append({'socket': socket, 'sensor': sensor, 'value': float(value)})
     return metrics
 
+
 class Prometheus_server(multiprocessing.Process):
     def __init__(self, q):
         multiprocessing.Process.__init__(self)
@@ -89,6 +91,7 @@ class Prometheus_server(multiprocessing.Process):
         while True:
             report_list = self.q.get()
             db.save_many(report_list)
+
 
 @pytest.fixture
 def db():
@@ -108,9 +111,9 @@ def test_create_prometheus_db_and_connect_it_must_launch_web_server_on_given_add
 
 
 def test_create_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address():
-    db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
+    _ = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
     with pytest.raises(requests.exceptions.ConnectionError):
-        r = requests.get(URL)
+        _ = requests.get(URL)
 
 
 def test_save_one_report_must_not_expose_data(db):
@@ -121,6 +124,7 @@ def test_save_one_report_must_not_expose_data(db):
 def test_save_two_report_with_same_target_must_not_expose_data(db):
     db.put([REPORTA_1, REPORTA_2])
     assert extract_metrics(METRIC, URL) == {}
+
 
 def test_save_three_report_with_same_target_must_expose_data_for_the_two_first_reports(db):
     db.put([REPORTA_1, REPORTA_2, REPORTA_3])
@@ -167,8 +171,10 @@ def test_save_six_report_with_different_target_must_expose_correct_data_for_each
     assert TARGET2 in data['mean']
 
 
-def test_save_report_from_two_target_and_then_report_from_one_target_must_finaly_only_expose_report_from_remaining_target(db):
-    db.put([REPORTA_1, REPORTB_1, REPORTA_2, REPORTB_2, REPORTA_3, REPORTB_3, REPORTA_4, REPORTA_5, REPORTA_6, REPORTA_7])
+def test_save_report_from_two_target_and_then_report_from_one_target_must_finaly_only_expose_report_from_remaining_target(
+        db):
+    db.put(
+        [REPORTA_1, REPORTB_1, REPORTA_2, REPORTB_2, REPORTA_3, REPORTB_3, REPORTA_4, REPORTA_5, REPORTA_6, REPORTA_7])
     data = extract_metrics(METRIC, URL)
     assert TARGET1 in data['mean']
     assert TARGET2 not in data['mean']
