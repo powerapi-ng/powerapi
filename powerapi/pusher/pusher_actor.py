@@ -28,9 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from powerapi.actor import Actor, State, SocketInterface
-from powerapi.pusher import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
+from powerapi.actor import Actor, State
 from powerapi.message import PoisonPillMessage, StartMessage
+
+from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 
 
 class PusherState(State):

@@ -27,16 +27,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-import time
 from typing import Dict, Any
 
 from powerapi.actor import Actor
-from powerapi.formula import AbstractCpuDramFormula, FormulaPoisonPillMessageHandler
-from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormulaState
-from powerapi.formula.dummy.dummy_handlers import ReportHandler
+
 from powerapi.handler import StartHandler
 from powerapi.report import Report
 from powerapi.message import PoisonPillMessage, StartMessage
+
+from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula, AbstractCpuDramFormulaState
+from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
+from powerapi.formula.dummy.dummy_handlers import ReportHandler
 
 
 class DummyFormulaState(AbstractCpuDramFormulaState):

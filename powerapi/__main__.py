@@ -36,7 +36,7 @@ from typing import Dict, Literal
 
 from powerapi import __version__ as powerapi_version
 from powerapi.backend_supervisor import BackendSupervisor
-from powerapi.dispatcher import RouteTable, DispatcherActor
+from powerapi.dispatcher import RouteTable
 
 from powerapi.cli import ConfigValidator
 from powerapi.cli.tools import store_true, CommonCLIParser
@@ -47,7 +47,6 @@ from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.filter import Filter
 from powerapi.actor import InitializationException, Supervisor
 
-from powerapi import __version__ as rapl_formula_version
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaScope, RAPLFormulaConfig
 
 
@@ -153,7 +152,7 @@ def run_rapl(fconf) -> None:
     if verbose:
         logger_level = logging.WARNING
 
-    logging.info('RAPL-Formula version %s using PowerAPI version %s', rapl_formula_version, powerapi_version)
+    logging.info('RAPL-Formula version %s using PowerAPI version %s', powerapi_version, powerapi_version)
 
     if not fconf['enable-cpu-formula'] and not fconf['enable-dram-formula']:
         logging.error('You need to enable at least one formula')

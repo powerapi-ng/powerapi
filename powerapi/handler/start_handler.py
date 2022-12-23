@@ -28,7 +28,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.message import OKMessage, StartMessage, ErrorMessage
-from powerapi.handler import Handler
+from .handler import Handler
+
+
 
 
 class StartHandler(Handler):
@@ -61,4 +63,3 @@ class StartHandler(Handler):
         """
         Abstract method that initialize the actor after receiving a start msg
         """
-        pass

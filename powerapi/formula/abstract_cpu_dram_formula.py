@@ -27,10 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Type, Tuple, Dict, Any
+from typing import Dict, Any
 
 from powerapi.actor import Actor
-from powerapi.formula.formula_actor import FormulaActor, DomainValues, FormulaState
+from powerapi.formula.formula_actor import FormulaActor, FormulaState
 from powerapi.pusher import PusherActor
 
 

@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import Handler, HandlerException
 from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
+from .handler import Handler
 
 
 class PoisonPillMessageHandler(Handler):
@@ -43,13 +43,11 @@ class PoisonPillMessageHandler(Handler):
         """
 
     def handle_msg(self, msg):
-        try:
-            handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
-        except UnknowMessageTypeException:
-            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
-        except HandlerException:
-            self.state.actor.logger.warning("HandlerException")
+        """
+        Handle the given message
+        :param msg: The message to handle
+        """
+        Handler.delegate_message_handling(self, msg)
 
     def _empty_mail_box(self):
         print(str(self.state.actor.name) + " empty mail box")

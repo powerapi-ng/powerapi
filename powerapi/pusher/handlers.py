@@ -29,7 +29,7 @@
 
 import time
 
-from powerapi.handler import InitHandler, Handler, StartHandler, PoisonPillMessageHandler
+from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import ErrorMessage
 from powerapi.database import DBError
 
@@ -52,6 +52,9 @@ class PusherStartHandler(StartHandler):
 
 
 class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Handler for PoisonPillMessage
+    """
     def teardown(self, soft=False):
         if len(self.state.buffer) > 0:
             self.state.database.save_many(self.state.buffer)

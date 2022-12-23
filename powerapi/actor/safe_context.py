@@ -27,11 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import zmq
 from multiprocessing import current_process
+import zmq
 
 
-class SafeContext():
+
+class SafeContext:
     """
     A context that is bind to a process
     """
@@ -56,4 +57,7 @@ class SafeContext():
 
     @classmethod
     def destroy(cls):
+        """
+        Destroy all the context
+        """
         cls._context.destroy()

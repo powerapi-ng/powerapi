@@ -26,8 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import multiprocessing
-import signal
+
+import select
 
 from powerapi.actor import Supervisor
 from powerapi.puller import PullerActor
@@ -35,6 +35,10 @@ from powerapi.dispatcher import DispatcherActor
 
 
 class BackendSupervisor(Supervisor):
+
+    """
+    Provide additional functionality to deal with actors: join
+    """
 
     def __init__(self, stream_mode):
         super().__init__()
@@ -79,20 +83,22 @@ class BackendSupervisor(Supervisor):
         3. If still alive, send SIGKILL
         4. Join
         """
-        def kill_behaviour(actor):
-            actor.terminate()
-            actor.join(5)
-            if actor.is_alive():
-                actor.kill()
-                actor.join()
+        def kill_behaviour(the_actor):
+            the_actor.terminate()
+            the_actor.join(5)
+            if the_actor.is_alive():
+                the_actor.kill()
+                the_actor.join()
 
         for actor in self.supervised_actors:
             if not actor.is_alive():
                 self.kill_actors()
                 return
+            else:
+                kill_behaviour(actor)
 
         actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
-        import select
+
         select.select(actor_sentinels, actor_sentinels, actor_sentinels)
         self.kill_actors()
 

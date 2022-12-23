@@ -33,8 +33,9 @@ import multiprocessing
 import ctypes
 
 import zmq
-from powerapi.actor import SafeContext
+
 from powerapi.exception import PowerAPIException
+from powerapi.actor.safe_context import SafeContext
 
 LOCAL_ADDR = 'tcp://127.0.0.1'
 

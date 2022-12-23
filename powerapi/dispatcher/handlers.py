@@ -47,12 +47,17 @@ def _clean_list(id_list):
 
 
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Dispatcher Handler for PoisonPillMessage
+    """
     def teardown(self, soft=False):
         self.state.supervisor.kill_actors(soft=soft)
 
 
 class DispatcherSendMessageToDeadFormulaError(PowerAPIException):
-    pass
+    """
+    Error when sending a message to a dead formula
+    """
 
 
 def match_report_id(report_id, dispatch_rule, primary_rule):

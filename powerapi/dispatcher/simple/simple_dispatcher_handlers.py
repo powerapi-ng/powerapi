@@ -49,6 +49,9 @@ class SimpleDispatcherStartHandler(StartHandler):
 
 
 class SimpleDispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Simple Handler for PoisonPillMessage
+    """
     def teardown(self, soft=False):
         if self.state.formula.is_alive():
             self.state.formula.terminate()

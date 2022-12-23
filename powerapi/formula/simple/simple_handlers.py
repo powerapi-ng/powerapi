@@ -26,10 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import time
 
 from powerapi.handler import Handler
-from powerapi.report import PowerReport
 
 
 class ReportHandler(Handler):
@@ -42,9 +40,6 @@ class ReportHandler(Handler):
         Method that estimate the power consumption from an input report
         :param report: Input Report
         :return: List of Input Report
-        """
-        """
-            When receiving a report send it to the destinations
         """
         self.state.actor.logger.debug('received message ' + str(report))
         return [report]
@@ -59,7 +54,7 @@ class ReportHandler(Handler):
         :raises UnknowMessageTypeException: If the msg is not a Report
         """
         results = self._estimate(msg)
-        for msg_type, actor_pusher in self.state.pushers.items():
+        for _, actor_pusher in self.state.pushers.items():
             for result in results:
                 actor_pusher.send_data(result)
                 self.state.actor.logger.debug('sent message ' + str(result) + ' to ' + str(actor_pusher))

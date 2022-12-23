@@ -120,5 +120,5 @@ class TestSimplePuller(AbstractTestActor):
 
     def test_starting_actor_terminate_itself_after_poison_message_reception(self, init_actor_without_terminate):
 
-        init_actor_without_terminate.send_control(PoisonPillMessage())
+        init_actor_without_terminate.send_control(PoisonPillMessage('simple-test-simple-puller'))
         assert not is_actor_alive(init_actor_without_terminate)

@@ -93,7 +93,7 @@ def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_P
         power_report.timestamp = timestamp_to_datetime(messages_sent + 1)
 
     time.sleep(0.3)
-    pusher.send_control(PoisonPillMessage())
+    pusher.send_control(PoisonPillMessage(sender_name='system-test-generate-pusher'))
 
     influx_database.switch_database(INFLUX_DBNAME)
     reports = list(influx_database.query('SELECT * FROM "power_consumption"').get_points(tags={'socket': '1'}))

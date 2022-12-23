@@ -29,7 +29,8 @@
 import logging
 from typing import Dict
 
-from powerapi.formula import FormulaActor, FormulaPoisonPillMessageHandler
+from powerapi.formula.formula_actor import FormulaActor
+from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
 from powerapi.formula.simple.simple_handlers import ReportHandler
 from powerapi.handler import StartHandler
 from powerapi.message import PoisonPillMessage, StartMessage

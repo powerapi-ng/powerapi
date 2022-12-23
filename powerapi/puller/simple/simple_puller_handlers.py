@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.actor import State
-from powerapi.handler import Handler, StartHandler, HandlerException
+from powerapi.handler import Handler, StartHandler
 from powerapi.message import Message, SimplePullerSendReportsMessage, UnknowMessageTypeException
 from powerapi.puller.handlers import PullerInitializationException
 

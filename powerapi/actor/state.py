@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor import Supervisor
 from powerapi.message import UnknowMessageTypeException
+from powerapi.actor.supervisor import Supervisor
 
 
 class State:
@@ -71,7 +71,11 @@ class State:
 
         :raises UnknowMessageTypeException: if no handler could be find
         """
+        print('Message Type... ' + str(msg))
+        print('Actor Type... ' + str(self.actor))
         for (msg_type, handler) in self.handlers:
+            print('Current Message Type... ' + str(msg_type))
+            print('is instance... ' + str(msg)+' '+str(msg_type))
             if isinstance(msg, msg_type):
                 return handler
         raise UnknowMessageTypeException()
@@ -88,4 +92,6 @@ class State:
         self.handlers.append((message_type, handler))
 
     def reinit(self):
-        pass
+        """
+        Reinitialize the state
+        """

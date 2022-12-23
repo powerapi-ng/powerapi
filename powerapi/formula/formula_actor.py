@@ -29,7 +29,7 @@
 import logging
 import re
 
-from typing import Dict, Type, Tuple
+from typing import Dict, Tuple
 
 from powerapi.actor import Actor, State
 from powerapi.pusher import PusherActor

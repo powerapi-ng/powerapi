@@ -77,6 +77,9 @@ SUPERVISOR_NAME = 'powerapi_supervisor'
 
 class Supervisor:
 
+    """
+    Provide basic functionality to deal with actors: launch and kill
+    """
     def __init__(self):
         #: ([powerapi.actor.actor.Actor]): list of supervised actors
         self.supervised_actors = []
@@ -125,7 +128,7 @@ class Supervisor:
         # for actor in self.supervised_actors:
         #     actor.join()
 
-    def kill_actors(self, soft=False, by_data=False):
+    def kill_actors(self, soft=False):
         """
         Kill all the supervised actors
         """

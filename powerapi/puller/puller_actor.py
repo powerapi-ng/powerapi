@@ -31,8 +31,7 @@ import logging
 from powerapi.actor import Actor, State
 from powerapi.exception import PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.puller import PullerPoisonPillMessageHandler
-from powerapi.puller import PullerStartHandler
+from powerapi.puller.handlers import PullerPoisonPillMessageHandler, PullerStartHandler
 
 
 class NoReportExtractedException(PowerAPIException):

@@ -35,9 +35,9 @@ from powerapi.formula import AbstractCpuDramFormula, FormulaPoisonPillMessageHan
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.report import HWPCReport
 
-from .rapl_handlers import ReportHandler
-from ...handler import StartHandler
-from ...pusher import PusherActor
+from powerapi.formula.rapl.rapl_handlers import ReportHandler
+from powerapi.handler import StartHandler
+from powerapi.pusher import PusherActor
 
 
 class RAPLFormulaScope(Enum):

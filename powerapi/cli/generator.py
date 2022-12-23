@@ -29,7 +29,7 @@
 
 import os
 import sys
-from typing import Dict, Tuple, Type
+from typing import Dict, Type
 
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
@@ -37,7 +37,7 @@ from powerapi.exception import PowerAPIException
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
-    VirtioFSDB, FileDB, BaseDB
+    VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -186,6 +186,9 @@ class SimpleGenerator(Generator):
             return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
 
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
+        msg = 'Configuration error : actor factory not implemented. Parameters' + actor_name + ' ' + \
+              str(main_config) + ' ' + str(component_config)
+        print(msg, file=sys.stderr)
         return NotImplementedError
 
 

@@ -32,7 +32,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict, Any
 
-from powerapi.report import Report
+from powerapi.report.report import Report
 
 
 class FormulaReport(Report):

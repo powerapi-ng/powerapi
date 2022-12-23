@@ -29,19 +29,16 @@
 import time
 import asyncio
 import logging
-import threading
 from threading import Thread
 
 from powerapi.actor import State
-from powerapi.message import UnknowMessageTypeException, StartMessage, OKMessage, Message
-from powerapi.handler import HandlerException
-from powerapi.exception import PowerAPIException
+from powerapi.message import Message
+from powerapi.exception import PowerAPIException, BadInputData
 from powerapi.filter import FilterUselessError
 from powerapi.handler import StartHandler, PoisonPillMessageHandler
 from powerapi.database import DBError
 from powerapi.message import ErrorMessage, PoisonPillMessage
 from powerapi.report.report import DeserializationFail
-from powerapi.report_model.report_model import BadInputData
 
 
 class NoReportExtractedException(PowerAPIException):
@@ -52,7 +49,9 @@ class NoReportExtractedException(PowerAPIException):
 
 
 class DBPullerThread(Thread):
-
+    """
+    Thread for pulling data from source
+    """
     def __init__(self, state, timeout, handler):
         Thread.__init__(self)
         self.timeout = timeout
@@ -66,7 +65,7 @@ class DBPullerThread(Thread):
             self.loop.run_until_complete(self.state.database.connect())
             self.state.database_it = self.state.database.iter(self.state.stream_mode)
         except DBError as error:
-            self.state.actor.send_control(ErrorMessage(error.msg))
+            self.state.actor.send_control(ErrorMessage(sender_name='system', error_message=error.msg))
             self.state.alive = False
 
     def _pull_database(self):
@@ -80,8 +79,8 @@ class DBPullerThread(Thread):
             else:
                 return next(self.state.database_it)
 
-        except (StopIteration, BadInputData, DeserializationFail):
-            raise NoReportExtractedException()
+        except (StopIteration, BadInputData, DeserializationFail) as database_problem:
+            raise NoReportExtractedException() from database_problem
 
     def _get_dispatchers(self, report):
         return self.state.report_filter.route(report)
@@ -121,11 +120,11 @@ class DBPullerThread(Thread):
             except NoReportExtractedException:
                 time.sleep(self.state.timeout_puller / 1000)
                 if not self.state.stream_mode:
-                    self.handler.handle_internal_msg(PoisonPillMessage(soft=False))
+                    self.handler.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
                     return
 
             except FilterUselessError:
-                self.handler.handle_internal_msg(PoisonPillMessage(soft=False))
+                self.handler.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
                 return
 
             except StopIteration:
@@ -133,14 +132,20 @@ class DBPullerThread(Thread):
 
 
 class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Default handler PoisonPillMessage
+    """
     def teardown(self, soft=False):
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.socket_interface.close()
 
 
 class PullerInitializationException(Exception):
-
+    """
+    Exception related to puller initialization
+    """
     def __init__(self, msg):
+        Exception.__init__(self)
         self.msg = msg
 
 
@@ -155,13 +160,11 @@ class PullerStartHandler(StartHandler):
         self.timeout = timeout
 
     def handle_internal_msg(self, msg):
-        try:
-            handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
-        except UnknowMessageTypeException:
-            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
-        except HandlerException:
-            self.state.actor.logger.warning("HandlerException")
+        """
+        Deal with the given message
+        :param msg: Message to handle
+        """
+        StartHandler.delegate_message_handling(self, msg)
 
     def initialization(self):
 
@@ -174,26 +177,14 @@ class PullerStartHandler(StartHandler):
             dispatcher.connect_data()
 
     def handle(self, msg: Message):
-        if self.state.initialized:
-            self.state.actor.send_control(
-                ErrorMessage(self.state.actor.name, 'Actor already initialized'))
-            return
-
-        if not isinstance(msg, StartMessage):
-            return
-
         try:
-            self.initialization()
+            StartHandler.handle(self, msg)
         except PullerInitializationException as e:
             self.state.actor.send_control(ErrorMessage(self.state.actor.name, e.msg))
 
-        if self.state.alive:
-            self.state.initialized = True
-            self.state.actor.send_control(OKMessage(self.state.actor.name))
-
         self.pull_db()
 
-        self.handle_internal_msg(PoisonPillMessage(soft=False))
+        self.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
 
     def pull_db(self):
         """

@@ -65,13 +65,14 @@ class SimplePullerActor(Actor):
     """
 
     def __init__(self, name: str, number_of_reports_to_send: int, report_type_to_send: Type[Report], report_filter):
-        Actor.__init__(self, name)
         """
+        Create an actor with the given information
         :param str name: The actor's name
         :param int number_of_reports_to_send: Number of reports to send
         :param Report report_type_to_send: Report type to be sent
         :param Filter report_filter: Filters and the associated dispatchers and rules
         """
+        Actor.__init__(self, name)
         self.state = SimplePullerState(self, number_of_reports_to_send, report_type_to_send, report_filter)
 
     def setup(self):

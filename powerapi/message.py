@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
-from typing import Type, List
 from typing import TYPE_CHECKING
 
 from powerapi.exception import PowerAPIException
@@ -158,7 +157,8 @@ class PoisonPillMessage(Message):
     Message which allow to kill an actor
     """
 
-    def __init__(self, soft=True):
+    def __init__(self, soft: bool = True, sender_name: str = ''):
+        Message.__init__(self, sender_name=sender_name)
         self.is_soft = soft
         self.is_hard = not soft
 

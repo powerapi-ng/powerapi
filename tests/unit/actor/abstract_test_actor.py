@@ -137,7 +137,7 @@ def pusher(database):
     actor.connect_control()
 
     yield actor
-    actor.send_control(PoisonPillMessage())
+    actor.send_control(PoisonPillMessage(sender_name='system-test'))
     if actor.is_alive():
         actor.terminate()
     actor.socket_interface.close()
@@ -293,7 +293,7 @@ class AbstractTestActor:
         assert init_actor.is_alive()
 
     def test_send_PoisonPillMessage_set_actor_alive_to_False(self, init_actor):
-        init_actor.send_control(PoisonPillMessage())
+        init_actor.send_control(PoisonPillMessage(sender_name='system-abstract-test'))
         time.sleep(0.1)
         assert not init_actor.is_alive()
 

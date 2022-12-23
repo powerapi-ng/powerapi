@@ -66,7 +66,7 @@ class TestSimplePusher(AbstractTestActor):
         assert message_reports.reports[0] == report
 
     def test_starting_actor_terminate_itself_after_poison_message_reception(self, started_actor):
-        started_actor.send_control(PoisonPillMessage())
+        started_actor.send_control(PoisonPillMessage(sender_name='system-test-simple-pusher'))
         assert not is_actor_alive(started_actor)
 
     def test_check_actor_still_alive_if_x_messages_are_no_still_received(self, started_actor):

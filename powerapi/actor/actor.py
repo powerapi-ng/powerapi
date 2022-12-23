@@ -30,18 +30,17 @@
 import logging
 import signal
 import multiprocessing
-import setproctitle
 import sys
-import threading
 import traceback
+import setproctitle
 
-import zmq
-
-from powerapi.actor import SocketInterface, State
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import PoisonPillMessage
 from powerapi.message import UnknowMessageTypeException
 from powerapi.handler import HandlerException
+
+from .socket_interface import SocketInterface
+from .state import State
 
 
 class InitializationException(PowerAPIExceptionWithMessage):
@@ -155,7 +154,7 @@ class Actor(multiprocessing.Process):
         def term_handler(_, __):
             self.logger.debug("Term handler")
             pp_handler = self.state.get_corresponding_handler(PoisonPillMessage())
-            pp_handler.handle(PoisonPillMessage(soft=False))
+            pp_handler.handle(PoisonPillMessage(soft=False, sender_name='Term handler'))
             self._kill_process()
             sys.exit(0)
 
@@ -300,7 +299,7 @@ class Actor(multiprocessing.Process):
         <powerapi.message.message.PoisonPillMessage>`
 
         """
-        self.send_control(PoisonPillMessage(soft=True))
+        self.send_control(PoisonPillMessage(soft=True, sender_name='system'))
         self.socket_interface.close()
 
     def hard_kill(self):
@@ -308,5 +307,5 @@ class Actor(multiprocessing.Process):
         <powerapi.message.message.PoisonPillMessage>`
 
         """
-        self.send_control(PoisonPillMessage(soft=False))
+        self.send_control(PoisonPillMessage(soft=False, sender_name='system'))
         self.socket_interface.close()

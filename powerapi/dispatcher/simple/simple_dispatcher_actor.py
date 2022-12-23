@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Tuple, Callable, Literal, Type
+from typing import Callable, Literal
 
 from powerapi.actor import Actor, State
 from powerapi.dispatcher import RouteTable

@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.exception import PowerAPIException
-from powerapi.message import Message
+from powerapi.message import Message, UnknowMessageTypeException
 
 
 class HandlerException(PowerAPIException):
@@ -39,7 +39,7 @@ class HandlerException(PowerAPIException):
         """
         :param str msg: Message of the error
         """
-        super().__init__(msg)
+        PowerAPIException.__init__(self, msg)
 
 
 class Handler:
@@ -55,7 +55,7 @@ class Handler:
 
     def handle_message(self, msg: Message):
         """
-        Handle a message and return a the new state value of the actor
+        Handle a message and return a new state value of the actor
 
         This is the method that should be called to handle received message
         this method call :meth:`Handler.handle <powerapi.handler.abstract_handler.Handler.handle>`
@@ -74,6 +74,18 @@ class Handler:
         """
         raise NotImplementedError()
 
+    def delegate_message_handling(self, msg: Message):
+        """
+        Deletage the message handling to a suitable handler
+        :param msg: The message to handle
+        """
+        try:
+            handler = self.state.get_corresponding_handler(msg)
+            handler.handle_message(msg)
+        except UnknowMessageTypeException:
+            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
+        except HandlerException:
+            self.state.actor.logger.warning("HandlerException")
 
 class InitHandler(Handler):
     """

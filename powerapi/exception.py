@@ -32,12 +32,22 @@ class PowerAPIException(Exception):
     """
     PowerAPIException base class
     """
+    def __init__(self, *args: object):
+        Exception.__init__(self, args)
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
     """
     PowerAPIException base class
     """
+
     def __init__(self, msg):
         PowerAPIException.__init__(self)
         self.msg = msg
+
+
+class BadInputData(PowerAPIException):
+    """
+    Exception raised when the data read in input are not
+    in the good format
+    """

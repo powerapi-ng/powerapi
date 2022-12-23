@@ -78,12 +78,14 @@ class SimplePusherHandler(Handler):
         if len(self.state.reports) >= self.state.number_of_reports_to_store:
             self.state.actor.logger.debug("reports saved :" + str(len(self.state.reports)))
             print("reports saved :" + str(len(self.state.reports)))
-            self.state.actor.send_control(PoisonPillMessage())
+            self.state.actor.send_control(PoisonPillMessage(sender_name='system'))
             self.state.actor.logger.debug("exit request sent")
 
 
 class SimplePusherGetReceivedReportsHandler(Handler):
-
+    """
+    Handler for GetReceivedReports
+    """
     def __init__(self, state: State):
         Handler.__init__(self, state)
 

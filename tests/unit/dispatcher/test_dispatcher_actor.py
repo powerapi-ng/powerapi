@@ -412,7 +412,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula,
                                                                           dummy_pipe_out):
-        dispatcher_with_two_formula.send_control(PoisonPillMessage())
+        dispatcher_with_two_formula.send_control(PoisonPillMessage('system-test-dispatcher'))
 
         sleep(10)
 

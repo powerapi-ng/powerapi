@@ -35,7 +35,9 @@ from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaConfig
 
 
 class RAPLDispatcherActor(DispatcherActor):
-
+    """
+    Dispatcher Actor for RAPL
+    """
     def __init__(self, name: str, formula_init_function: Callable, pushers: [], route_table: RouteTable, device_id: str,
                  formula_config: RAPLFormulaConfig, level_logger: Literal = logging.WARNING, timeout=None):
         DispatcherActor.__init__(self, name=name, formula_init_function=formula_init_function, pushers=pushers,
