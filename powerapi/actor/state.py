@@ -71,13 +71,8 @@ class State:
 
         :raises UnknowMessageTypeException: if no handler could be find
         """
-        print('Message... ' + str(msg))
-        print('Actor Type... ' + str(self.actor))
         for (msg_type, handler) in self.handlers:
-            print('Current Message Type... ' + str(msg_type))
-            print('is instance... ' + str(msg)+' '+str(msg_type))
             if isinstance(msg, msg_type):
-                print('handler found for '+str(msg))
                 return handler
         raise UnknowMessageTypeException()
 

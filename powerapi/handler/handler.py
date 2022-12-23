@@ -87,6 +87,7 @@ class Handler:
         except HandlerException:
             self.state.actor.logger.warning("HandlerException")
 
+
 class InitHandler(Handler):
     """
     Class that handle a message of a given type if the actor is initialized

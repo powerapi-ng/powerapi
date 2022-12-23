@@ -31,7 +31,6 @@ from multiprocessing import current_process
 import zmq
 
 
-
 class SafeContext:
     """
     A context that is bind to a process

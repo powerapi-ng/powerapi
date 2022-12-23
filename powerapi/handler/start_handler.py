@@ -31,8 +31,6 @@ from powerapi.message import OKMessage, StartMessage, ErrorMessage
 from .handler import Handler
 
 
-
-
 class StartHandler(Handler):
     """
     Initialize the received state
