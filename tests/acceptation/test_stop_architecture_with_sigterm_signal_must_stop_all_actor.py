@@ -46,14 +46,17 @@ Scenario:
 Test if:
   - all actors are killed after the signal was sent
 """
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
 import signal
 import os
-import subprocess
+
+import sys
 import time
 from multiprocessing import Process
 
 import pytest
-import pymongo
 
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
@@ -65,34 +68,47 @@ from powerapi.test_utils.db.mongo import mongo_database
 
 
 class MainProcess(Process):
+    """
+        Process executing the actor system for testing
+    """
+
+    def __init__(self):
+        Process.__init__(self)
+        self.supervisor = Supervisor()
+
+
 
     def run(self):
-
-        supervisor = Supervisor()
-
         def term_handler(_, __):
-            supervisor.kill_actors()
-            exit(0)
+            self.supervisor.kill_actors()
+            time.sleep(3)
+            for actor in self.supervisor.supervised_actors:
+                assert not actor.is_alive()
+            sys.exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-        launch_simple_architecture(config=get_basic_config_with_stream, supervisor=supervisor,
+        launch_simple_architecture(config=get_basic_config_with_stream(), supervisor=self.supervisor,
                                    hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                    formula_class=DummyFormulaActor, generate_report_modifier_list=True)
 
 
 @pytest.fixture
 def mongodb_content():
+    """
+        Retrieve 10 RAPL reports from a mongo database
+    """
     return extract_rapl_reports_with_2_sockets(10)
 
 
-def test_run_mongo(mongo_database):
+def test_system_stop(mongo_database):
+    """
+        Check via term_handler that all actors (pusher, puller and dispatcher) are stopped
+    """
+
     process = MainProcess()
     process.start()
     time.sleep(3)
     os.system('kill ' + str(process.pid))
     time.sleep(3)
-    a = subprocess.run(['ps', 'ax'], stdout=subprocess.PIPE)
-    b = subprocess.run(['grep', 'Thespian'], input=a.stdout, stdout=subprocess.PIPE)
-    assert b.stdout == b''

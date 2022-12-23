@@ -125,6 +125,23 @@ def define_database_content(content):
     return wrap
 
 
+def pytest_generate_tests_abstract(metafunc):
+    """
+    Function called by pytest when collecting a test_XXX function
+
+    define the content fixtures in test environment with collected the
+    value _content if it exists or with an empty content
+
+    :param metafunc: the test context given by pytest
+    """
+    if 'content' in metafunc.fixturenames:
+        content = getattr(metafunc.function, '_content', None)
+        if isinstance(content, list):
+            metafunc.parametrize('content', [content])
+        else:
+            metafunc.parametrize('content', [[]])
+
+
 @pytest.fixture()
 def pusher(database):
     """

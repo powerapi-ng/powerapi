@@ -47,6 +47,9 @@ Test if:
   - each HWPCReport in the intput database was converted in one PowerReport per
     socket in the output database
 """
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
 import logging
 import time
 from datetime import datetime
@@ -74,6 +77,9 @@ from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
 # MONGO to MONGO #
 ##################
 def check_mongo_db():
+    """
+        Verify that output DB has the correct information
+    """
     mongo = pymongo.MongoClient(MONGO_URI)
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
@@ -89,10 +95,17 @@ def check_mongo_db():
 
 @pytest.fixture
 def mongodb_content():
+    """
+        Get reports from a file for testing purposes
+    """
     return extract_rapl_reports_with_2_sockets(51)
 
 
 def test_run_mongo(mongo_database):
+    """
+        Check that report are correctly stored into an output mongo database.
+        The input source is also a mongo database
+    """
     supervisor = Supervisor()
     launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                formula_class=DummyFormulaActor)
@@ -108,10 +121,16 @@ def test_run_mongo(mongo_database):
 ###################
 @pytest.fixture
 def influxdb_content():
+    """
+        Return an empty content for an influxdb
+    """
     return []
 
 
 def check_influx_db(influx_client):
+    """
+        Verify that output DB has the correct information
+    """
     mongo = pymongo.MongoClient(INFLUX_URI)
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = get_all_reports(influx_client, INFLUX_DBNAME)
@@ -127,6 +146,10 @@ def check_influx_db(influx_client):
 
 
 def test_run_mongo_to_influx(mongo_database, influx_database):
+    """
+        Check that report are correctly stored into an output influx database.
+        The input source is a mongo database.
+    """
     supervisor = Supervisor()
     launch_simple_architecture(config=INFLUX_OUTPUT_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                formula_class=DummyFormulaActor)
@@ -142,6 +165,9 @@ def test_run_mongo_to_influx(mongo_database, influx_database):
 # CSV to CSV #
 ##############
 def check_output_file():
+    """
+         Verify that output file has the correct information
+    """
     input_file = open(ROOT_PATH + 'rapl2.csv', 'r')
     output_file = open(OUTPUT_PATH + 'grvingt-12-system/PowerReport.csv', 'r')
 
@@ -188,6 +214,10 @@ def check_output_file():
 
 
 def test_run_csv_to_csv(files):
+    """
+        Check that report are correctly stored into an output file.
+        The input source is a CSV file
+    """
     supervisor = Supervisor()
     launch_simple_architecture(config=CSV_INPUT_OUTPUT_CONFIG, supervisor=supervisor,
                                hwpc_depth_level=SOCKET_DEPTH_LEVEL,
@@ -204,6 +234,9 @@ def test_run_csv_to_csv(files):
 # SOCKET INPUT #
 ################
 def check_db_socket():
+    """
+         Verify that output DB has the correct information
+    """
     time.sleep(6)
     json_reports = extract_rapl_reports_with_2_sockets(10)
     mongo = pymongo.MongoClient(MONGO_URI)
@@ -219,6 +252,10 @@ def check_db_socket():
 
 
 def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
+    """
+        Check that report are correctly stored into an output mongo database.
+        The input source is a socket
+    """
     config = {'verbose': True,
               'stream': False,
               'output': {'test_pusher': {'type': 'mongodb',
@@ -247,6 +284,9 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
 
 
 def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port):
+    """
+        Check that report are correctly stored into an output mongo database
+    """
     config = {'verbose': True,
               'stream': False,
               'output': {'test_pusher': {'type': 'mongodb',
@@ -277,6 +317,9 @@ def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_t
 # Socket to CSV #
 ##############
 def check_output_file2():
+    """
+        Check that report are correctly stored into an output file
+    """
     input_reports = extract_rapl_reports_with_2_sockets(10)
     output_file = open(OUTPUT_PATH + 'test_sensor-all/PowerReport.csv', 'r')
 
@@ -312,11 +355,15 @@ def check_output_file2():
         assert report['target'] == output_line_s0[2]
         assert report['target'] == output_line_s1[2]
 
-        int(output_line_s0[3]) == 42
-        int(output_line_s1[3]) == 42
+        assert int(output_line_s0[3]) == 42
+        assert int(output_line_s1[3]) == 42
 
 
 def test_run_socket_to_csv(unused_tcp_port, files):
+    """
+        Check that report are correctly stored into an output file.
+        The input source is a socket
+    """
     config = {'verbose': True,
               'stream': False,
               'output': {'test_pusher': {'type': 'csv',

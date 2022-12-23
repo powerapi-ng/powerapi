@@ -48,7 +48,9 @@ Test if:
     socket in the output database
   - only target name LIBVIRT_TARGET_NAME1 was converted into UUID_1
 """
-import logging
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
 import time
 from datetime import datetime
 from mock import patch
@@ -68,10 +70,16 @@ from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUI
 
 @pytest.fixture
 def mongodb_content():
+    """
+        Get reports from a file for testing purposes
+    """
     return extract_all_events_reports_with_vm_name(20)
 
 
 def check_db():
+    """
+        Verify that output DB has correct information
+    """
     mongo = pymongo.MongoClient(MONGO_URI)
     c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
     c_output = mongo[MONGO_DATABASE_NAME][MONGO_OUTPUT_COLLECTION_NAME]
@@ -88,7 +96,9 @@ def check_db():
 
 @patch('powerapi.report_modifier.libvirt_mapper.openReadOnly', return_value=MockedLibvirt())
 def test_run(mocked_libvirt, mongo_database):
-
+    """
+        Check that the actor system behave correctly with libvirt mapper
+    """
     supervisor = Supervisor()
     launch_simple_architecture(config=LIBVIRT_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                formula_class=DummyFormulaActor, generate_report_modifier_list=True)

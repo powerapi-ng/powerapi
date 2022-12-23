@@ -49,17 +49,22 @@ Scenario:
 Test if:
   - if the architecture process was terminated
 """
-import logging
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
+
+from multiprocessing import Process
+
+import sys
 import time
 import signal
 import os
 import pytest
 
-from multiprocessing import Process
-
 from powerapi.formula import DummyFormulaActor
 
 from powerapi.test_utils.db.mongo import mongo_database
+from powerapi.test_utils.acceptation import mongodb_content, MainProcess
 from powerapi.actor import Supervisor
 from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CONFIG, ROOT_DEPTH_LEVEL, \
     get_actor_by_name, DISPATCHER_ACTOR_NAME
@@ -67,13 +72,12 @@ from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 @pytest.fixture
-def mongodb_content():
-    return extract_rapl_reports_with_2_sockets(10)
-
-
-@pytest.fixture
-def main_process():
-    p = MainProcess()
+def main_process_crash_dispatcher():
+    """
+        Return the process to be used for testing.
+        At the end of the test, the process will be stopped
+    """
+    p = MainProcessTestCrashDispatcher()
     p.start()
     time.sleep(1)
     yield p
@@ -83,42 +87,31 @@ def main_process():
         pass
 
 
-class MainProcess(Process):
+class MainProcessTestCrashDispatcher(MainProcess):
     """
     Process that run the global architecture and crash the dispatcher
     """
 
     def __init__(self):
-        Process.__init__(self, name='test_crash_dispatcher')
+        MainProcess.__init__(self, name='test_crash_dispatcher', sleep_time=1, formula_class=DummyFormulaActor)
 
     def run(self):
-        # Setup signal handler
-        def term_handler(_, __):
-            # Kill puller, dispatcher and pusher
-            supervisor.kill_actors()
-            exit(0)
+        MainProcess.run(self)
 
-        signal.signal(signal.SIGTERM, term_handler)
-        signal.signal(signal.SIGINT, term_handler)
-
-        supervisor = Supervisor()
-
-        launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor,
-                                   hwpc_depth_level=ROOT_DEPTH_LEVEL, formula_class=DummyFormulaActor)
-
-        time.sleep(1)
-
-        dispatcher = get_actor_by_name(DISPATCHER_ACTOR_NAME, supervisor.supervised_actors)
+        dispatcher = get_actor_by_name(DISPATCHER_ACTOR_NAME, self.supervisor.supervised_actors)
         os.kill(dispatcher.pid, signal.SIGKILL)
 
-        supervisor.join()
+        self.supervisor.join()
 
 
-def test_crash_dispatcher(mongo_database, main_process):
-    if main_process.is_alive():
-        os.kill(main_process.pid, signal.SIGTERM)
-        main_process.join(5)
+def test_crash_dispatcher(mongo_database, main_process_crash_dispatcher):
+    """
+        Check that the main process is actually stopped
+    """
+    if main_process_crash_dispatcher.is_alive():
+        os.kill(main_process_crash_dispatcher.pid, signal.SIGTERM)
+        main_process_crash_dispatcher.join(5)
 
-        assert not main_process.is_alive()
+        assert not main_process_crash_dispatcher.is_alive()
 
     assert True

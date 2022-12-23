@@ -26,8 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import pytest
+
+# pylint: disable=arguments-differ
+
 import math
+import pytest
+
 
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaConfig, RAPLFormulaScope
 from powerapi.report import PowerReport, HWPCReport
@@ -36,6 +40,9 @@ from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, Abstr
 
 
 class TestRAPLFormula(AbstractTestActor):
+    """
+        Class for testing the RAPLFormulaActor
+    """
     @pytest.fixture
     def actor(self, started_fake_pusher_power_report):
         actor = RAPLFormulaActor(name='test_rapl_formula',
@@ -47,6 +54,9 @@ class TestRAPLFormula(AbstractTestActor):
         return actor
 
     def test_send_hwpc_report_to_rapl_formula_return_correct_result(self, started_actor, dummy_pipe_out):
+        """
+            Check that the compute power estimation is correct
+        """
         report = HWPCReport.from_json(
             {"timestamp": "2021-10-05T09:14:58.226",
              "sensor": "toto",

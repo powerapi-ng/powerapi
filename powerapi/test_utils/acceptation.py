@@ -26,8 +26,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import signal
+import string
+import sys
+import time
+from multiprocessing import Process
 from typing import Dict, Callable
 
+import pytest
 from pytest_asyncio.plugin import unused_tcp_port
 
 from powerapi.actor import Supervisor
@@ -41,6 +47,7 @@ from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_INPUT_COLLECTION_NAME
 from powerapi.test_utils.libvirt import REGEXP
+from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 def filter_rule(msg):
@@ -184,3 +191,38 @@ def get_actor_by_name(actor_name: str, actors: []):
             return actor
 
     return None
+
+
+@pytest.fixture
+def mongodb_content():
+    """
+        Get reports from a file for testing purposes
+    """
+    return extract_rapl_reports_with_2_sockets(10)
+
+
+class MainProcess(Process):
+    """
+    Process that run the global architecture and crash the dispatcher
+    """
+
+    def __init__(self, name: string, formula_class: str, sleep_time: int):
+        Process.__init__(self, name=name)
+        self.formula_class = formula_class
+        self.sleep_time = sleep_time
+        self.supervisor = Supervisor()
+
+    def run(self):
+        # Setup signal handler
+        def term_handler(_, __):
+            # Kill puller, dispatcher and pusher
+            self.supervisor.kill_actors()
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, term_handler)
+        signal.signal(signal.SIGINT, term_handler)
+
+        launch_simple_architecture(config=BASIC_CONFIG, supervisor=self.supervisor,
+                                   hwpc_depth_level=ROOT_DEPTH_LEVEL, formula_class=self.formula_class)
+
+        time.sleep(self.sleep_time)

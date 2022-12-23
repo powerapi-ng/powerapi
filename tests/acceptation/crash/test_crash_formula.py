@@ -41,20 +41,26 @@ MongoDB1 content:
 Test if:
   - if the architecture process was terminated
 """
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
 import logging
+import sys
 import time
 import signal
 import os
-import pytest
 
 from multiprocessing import Process
+
+import pytest
 
 from powerapi.actor import Supervisor
 from powerapi.handler import Handler
 from powerapi.message import PoisonPillMessage
 from powerapi.report import PowerReport, Report
 from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.formula import DummyFormulaActor, FormulaState, AbstractCpuDramFormula, FormulaActor, \
+from powerapi.test_utils.acceptation import mongodb_content, MainProcess
+from powerapi.formula import FormulaState, AbstractCpuDramFormula, FormulaActor, \
     FormulaPoisonPillMessageHandler
 
 from powerapi.test_utils.acceptation import BASIC_CONFIG, ROOT_DEPTH_LEVEL, launch_simple_architecture
@@ -65,6 +71,10 @@ from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 # Crash Formula #
 #################
 class CrashState(FormulaState):
+    """
+        State for a CrashFormulaActor
+    """
+
     def __init__(self, actor, pushers, metadata, nb_reports_max, exception, sleep_time):
         FormulaState.__init__(self, actor, pushers, metadata)
         self.nb_reports = 0
@@ -77,10 +87,16 @@ class CrashState(FormulaState):
 
 
 class CrashException(Exception):
-    pass
+    """
+        Exception to indicate that there is a crash
+    """
 
 
 class ReportHandler(Handler):
+    """
+        Handler for Reports in a CrashFormulaActor
+    """
+
     def _estimate(self, report):
         if self.state.nb_reports >= self.state.nb_reports_max:
             raise self.state.exception()
@@ -104,6 +120,10 @@ class ReportHandler(Handler):
 
 
 class CrashFormulaActor(AbstractCpuDramFormula):
+    """
+        Formula Actor that crash after a given number of reports are processed
+    """
+
     def __init__(self, name, pushers, socket, core, nb_reports_max=5, exception=CrashException,
                  level_logger=logging.WARNING, sleep_time=0, timeout=None):
         AbstractCpuDramFormula.__init__(self, name, pushers, socket, core, level_logger, timeout)
@@ -119,13 +139,12 @@ class CrashFormulaActor(AbstractCpuDramFormula):
 
 
 @pytest.fixture
-def mongodb_content():
-    return extract_rapl_reports_with_2_sockets(10)
-
-
-@pytest.fixture
 def main_process():
-    p = MainProcess()
+    """
+        Return the process to be used for testing.
+        At the end of the test, the process will be stopped
+    """
+    p = MainProcessTestCrashFormula()
     p.start()
     time.sleep(1)
     yield p
@@ -135,35 +154,23 @@ def main_process():
         pass
 
 
-class MainProcess(Process):
+class MainProcessTestCrashFormula(MainProcess):
     """
     Process that run the global architecture and crash the formula
     """
 
     def __init__(self):
-        Process.__init__(self, name='test_crash_dispatcher')
+        MainProcess.__init__(self, name='test_crash_dispatcher', sleep_time=0.5, formula_class=CrashFormulaActor)
 
     def run(self):
-        # Setup signal handler
-        def term_handler(_, __):
-            # Kill puller, dispatcher and pusher
-            supervisor.kill_actors()
-            exit(0)
-
-        signal.signal(signal.SIGTERM, term_handler)
-        signal.signal(signal.SIGINT, term_handler)
-
-        supervisor = Supervisor()
-
-        launch_simple_architecture(config=BASIC_CONFIG, supervisor=supervisor,
-                                   hwpc_depth_level=ROOT_DEPTH_LEVEL, formula_class=CrashFormulaActor)
-
-        time.sleep(0.5)
-
-        supervisor.join()
+        MainProcess.run(self)
+        self.supervisor.join()
 
 
 def test_crash_formula(mongo_database, main_process):
+    """
+        Check that the actor system is actually stopped when the formula crashes
+    """
     if main_process.is_alive():
         os.kill(main_process.pid, signal.SIGTERM)
         main_process.join(5)

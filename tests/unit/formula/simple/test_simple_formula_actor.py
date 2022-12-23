@@ -26,6 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=arguments-differ
+
 import pytest
 
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
@@ -34,6 +37,9 @@ from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pi
 
 
 class TestSimpleFormula(AbstractTestActor):
+    """
+        Class for testing the SimpleFormulaActor
+    """
 
     @pytest.fixture
     def actor(self, started_fake_pusher_power_report):
@@ -44,13 +50,19 @@ class TestSimpleFormula(AbstractTestActor):
 
     def test_send_power_report_to_simple_formula_make_formula_send_same_report_to_pusher(self, started_actor,
                                                                                          dummy_pipe_out):
+        """
+            Check that a power report sent to the formula is the same one received by the pusher
+        """
         report1 = REPORT_TYPE_TO_BE_SENT.create_empty_report()
         started_actor.send_data(report1)
         _, msg = recv_from_pipe(dummy_pipe_out, 2)
         assert msg == report1
 
-    def test_send_hwpc_report_to_simple_formula_make_formula_send_none_to_pusher(self, started_actor,
-                                                                                 dummy_pipe_out):
+    def test_send_empty_hwpc_report_to_simple_formula_make_formula_send_none_to_pusher(self, started_actor,
+                                                                                       dummy_pipe_out):
+        """
+            Check that a hwpc report is ignored by the pusher, i.e., it is not forwarded to the output (pipe)
+        """
         report1 = REPORT_TYPE_TO_BE_SENT_2.create_empty_report()
         started_actor.send_data(report1)
 

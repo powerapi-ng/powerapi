@@ -48,10 +48,6 @@ class ReportHandler(Handler):
         """
         Process a report and send the result to the pusher actor
         :param powerapi.Report msg:  Received message
-        :param powerapi.State state: Actor state
-        :return: New Actor state
-        :rtype:  powerapi.State
-        :raises UnknowMessageTypeException: If the msg is not a Report
         """
         results = self._estimate(msg)
         for _, actor_pusher in self.state.pushers.items():

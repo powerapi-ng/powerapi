@@ -26,6 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=redefined-outer-name
+
 """
 This test will use a sequence of message that will be sent in alphabetical order:
 
@@ -40,6 +43,9 @@ from powerapi.report import Report
 
 @pytest.fixture
 def message_a():
+    """
+        Return an initialized Report
+    """
     msg = Report(0, 'A', 'A')
     msg.dispatcher_report_id = 1
     return msg
@@ -47,6 +53,9 @@ def message_a():
 
 @pytest.fixture
 def message_b():
+    """
+        Return an initialized Report
+    """
     msg = Report(1, 'B', 'B')
     msg.dispatcher_report_id = 2
     return msg
@@ -54,6 +63,9 @@ def message_b():
 
 @pytest.fixture
 def message_c():
+    """
+        Return an initialized Report
+    """
     msg = Report(2, 'C', 'C')
     msg.dispatcher_report_id = 3
     return msg
@@ -61,6 +73,9 @@ def message_c():
 
 @pytest.fixture
 def message_d():
+    """
+        Return an initialized Report
+    """
     msg = Report(3, 'D', 'D')
     msg.dispatcher_report_id = 4
     return msg
@@ -68,6 +83,9 @@ def message_d():
 
 @pytest.fixture
 def message_e():
+    """
+        Return an initialized Report
+    """
     msg = Report(4, 'E', 'E')
     msg.dispatcher_report_id = 5
     return msg
@@ -75,6 +93,9 @@ def message_e():
 
 @pytest.fixture
 def message_f():
+    """
+        Return an initialized Report
+    """
     msg = Report(5, 'F', 'F')
     msg.dispatcher_report_id = 6
     return msg
@@ -82,18 +103,27 @@ def message_f():
 
 @pytest.fixture
 def message_g():
+    """
+        Return an initialized Report
+    """
     msg = Report(6, 'G', 'G')
     msg.dispatcher_report_id = 7
     return msg
 
 
 def test_receive_poison_A_dont_make_blocked(message_a):
+    """
+        Check that the BlockingDetector is not blocked with a first received message
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     assert not blocking_detector.is_blocked()
 
 
 def test_receive_poison_A_and_B_dont_make_blocked(message_a, message_b):
+    """
+        Check that the BlockingDetector is not blocked with two received messages
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -101,6 +131,9 @@ def test_receive_poison_A_and_B_dont_make_blocked(message_a, message_b):
 
 
 def test_receive_poison_A_B_and_C_make_blocked(message_a, message_b, message_c):
+    """
+        Check that the BlockingDetector is blocked with three received messages with consecutive ids
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -109,6 +142,9 @@ def test_receive_poison_A_B_and_C_make_blocked(message_a, message_b, message_c):
 
 
 def test_receive_poison_A_B_C_and_D_dont_make_blocked(message_a, message_b, message_c, message_d):
+    """
+        Check that the BlockingDetector is blocked with more than 2 received messages with consecutive ids
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -118,6 +154,9 @@ def test_receive_poison_A_B_C_and_D_dont_make_blocked(message_a, message_b, mess
 
 
 def test_receive_poison_A_B_C_D_and_E_dont_make_blocked(message_a, message_b, message_c, message_d, message_e):
+    """
+        Check that the BlockingDetector is blocked with more than 2 received messages with consecutive ids
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -129,6 +168,10 @@ def test_receive_poison_A_B_C_D_and_E_dont_make_blocked(message_a, message_b, me
 
 def test_receive_poison_A_B_C_D_E_and_F_dont_make_blocked(message_a, message_b, message_c, message_d, message_e,
                                                           message_f):
+
+    """
+        Check that the BlockingDetector is blocked with more than 2 received messages with consecutive ids
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -140,6 +183,9 @@ def test_receive_poison_A_B_C_D_E_and_F_dont_make_blocked(message_a, message_b, 
 
 
 def test_receive_poison_A_and_C_dont_make_blocked(message_a, message_c):
+    """
+        Check that the BlockingDetector is not blocked with 2 received messages with not consecutive ids
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_c)
@@ -147,6 +193,9 @@ def test_receive_poison_A_and_C_dont_make_blocked(message_a, message_c):
 
 
 def test_receive_poison_A_C_and_D_dont_make_blocked(message_a, message_c, message_d):
+    """
+        Check that the BlockingDetector is not blocked with 3 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_c)
@@ -155,6 +204,9 @@ def test_receive_poison_A_C_and_D_dont_make_blocked(message_a, message_c, messag
 
 
 def test_receive_poison_A_C_D_and_E_make_blocked(message_a, message_c, message_d, message_e):
+    """
+        Check that the BlockingDetector is blocked with 4 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_c)
@@ -164,6 +216,9 @@ def test_receive_poison_A_C_D_and_E_make_blocked(message_a, message_c, message_d
 
 
 def test_receive_poison_A_C_D_E_and_F_dont_make_blocked(message_a, message_c, message_d, message_e, message_f):
+    """
+        Check that the BlockingDetector is blocked with more than 4 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_c)
@@ -174,6 +229,9 @@ def test_receive_poison_A_C_D_E_and_F_dont_make_blocked(message_a, message_c, me
 
 
 def test_receive_poison_A_B_and_D_dont_make_blocked(message_a, message_b, message_d):
+    """
+        Check that the BlockingDetector is not blocked with 3 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -182,6 +240,9 @@ def test_receive_poison_A_B_and_D_dont_make_blocked(message_a, message_b, messag
 
 
 def test_receive_poison_A_B_D_and_E_dont_make_blocked(message_a, message_b, message_d, message_e):
+    """
+        Check that the BlockingDetector is not blocked with 4 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -191,6 +252,9 @@ def test_receive_poison_A_B_D_and_E_dont_make_blocked(message_a, message_b, mess
 
 
 def test_receive_poison_A_B_D_E_and_F_make_blocked(message_a, message_b, message_d, message_e, message_f):
+    """
+        Check that the BlockingDetector is blocked with more than 4 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -202,6 +266,9 @@ def test_receive_poison_A_B_D_E_and_F_make_blocked(message_a, message_b, message
 
 def test_receive_poison_A_B_D_E_F_and_G_dont_make_blocked(message_a, message_b, message_d, message_e, message_f,
                                                           message_g):
+    """
+        Check that the BlockingDetector is blocked with more than 4 received messages, one with not consecutive id
+    """
     blocking_detector = BlockingDetector()
     blocking_detector.notify_poison_received(message_a)
     blocking_detector.notify_poison_received(message_b)
@@ -213,6 +280,9 @@ def test_receive_poison_A_B_D_E_F_and_G_dont_make_blocked(message_a, message_b, 
 
 
 def test_receive_poison_A_B_and_C_with_B_sup_to_max_id_make_blocked(message_a, message_b, message_c):
+    """
+        Check that the BlockingDetector is blocked with 3 received messages, one with max_id_value
+    """
     message_a.dispatcher_report_id = 10000
     message_b.dispatcher_report_id = 0
     message_c.dispatcher_report_id = 1

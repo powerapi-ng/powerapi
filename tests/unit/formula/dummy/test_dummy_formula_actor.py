@@ -26,6 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=arguments-differ
 import pytest
 
 from powerapi.formula.dummy import DummyFormulaActor
@@ -34,6 +36,9 @@ from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, Abstr
 
 
 class TestDummyFormula(AbstractTestActor):
+    """
+        Class for testing the DummyFormulaActor
+    """
     @pytest.fixture
     def actor(self, started_fake_pusher_power_report):
         actor = DummyFormulaActor(name='test_dummy_formula',
@@ -45,6 +50,9 @@ class TestDummyFormula(AbstractTestActor):
 
     def test_send_Report_to_dummy_formula_make_formula_send_power_report_with_42_as_power_value_after_1_second(
             self, started_actor, dummy_pipe_out):
+        """
+            Check that a sent report is processed by the actor formula
+        """
         report1 = Report(1, 2, 3)
         started_actor.send_data(report1)
 

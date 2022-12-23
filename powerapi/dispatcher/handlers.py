@@ -113,7 +113,7 @@ def extract_formula_id(report, dispatch_rule, primary_dispatch_rule):
 class FormulaDispatcherReportHandler(InitHandler):
     """
     Split received report into sub-reports (if needed) and return the sub
-    reports and formulas ids to send theses reports.
+    reports and formulas ids to send these reports.
     """
 
     def handle(self, msg):

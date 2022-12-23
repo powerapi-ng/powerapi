@@ -26,6 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=arguments-differ
+# pylint: disable=unused-argument
+
 import logging
 from multiprocessing import Queue
 
@@ -37,12 +41,12 @@ from powerapi.message import StartMessage, ErrorMessage
 from powerapi.puller import PullerActor
 from powerapi.report import Report
 from powerapi.test_utils.db.db import REPORT1, REPORT2, define_database_content
-from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB
+from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB, pytest_generate_tests_abstract
 
 
 def define_filter(filt):
     """
-    Decorator to set the _filt
+    Decorator to set the _filter
     attribute for individual tests.
     """
 
@@ -62,12 +66,7 @@ def pytest_generate_tests(metafunc):
 
     :param metafunc: the test context given by pytest
     """
-    if 'content' in metafunc.fixturenames:
-        content = getattr(metafunc.function, '_content', None)
-        if isinstance(content, list):
-            metafunc.parametrize('content', [content])
-        else:
-            metafunc.parametrize('content', [[]])
+    pytest_generate_tests_abstract(metafunc)
 
     if 'filt' in metafunc.fixturenames:
         filt = getattr(metafunc.function, '_filter', None)
@@ -76,21 +75,36 @@ def pytest_generate_tests(metafunc):
 
 class FakeDispatcher:
 
+    """
+        Fake dispatcher using a queue for sending the reports from the puller
+    """
+
     def __init__(self):
         self.q = Queue()
 
     def send_data(self, report):
+        """
+            Put the report in the queue
+        """
         self.q.put(report, block=False)
 
 
 class TestPuller(AbstractTestActorWithDB):
-
+    """
+        Class for testing the PullerActor
+    """
     @pytest.fixture
     def fake_dispatcher(self):
+        """
+            Return a FakeDispatcher
+        """
         return FakeDispatcher()
 
     @pytest.fixture
     def fake_filter(self, fake_dispatcher):
+        """
+            Return a fake filter by using mocks
+        """
         fake_filter = Mock()
         fake_filter.filters = [(Mock(return_value=True), Mock())]
         fake_filter.route = Mock(return_value=[fake_dispatcher])
@@ -106,15 +120,24 @@ class TestPuller(AbstractTestActorWithDB):
     def test_start_actor_with_db_that_contains_2_report_make_actor_send_reports_to_dispatcher(self, started_actor,
                                                                                               fake_dispatcher,
                                                                                               content):
+        """
+            Check that PullerActor sent a report to the dispatcher when the input database has at least 2 reports
+        """
         for report in content:
             assert fake_dispatcher.q.get(timeout=2) == report
 
     def test_starting_actor_in_stream_mode_make_it_terminate_itself_after_empty_db(self, started_actor):
+        """
+            Check that started actor stopped with empty database in stream mode
+        """
         started_actor.join(2)
         assert started_actor.is_alive() is False
 
     @define_filter(Filter())
     def test_send_start_message_to_puller_without_filter_answer_with_error_message(self, init_actor):
+        """
+            Check that starting a PullerActor without filter produces an error message
+        """
         init_actor.send_control(StartMessage('test-case'))
         msg = init_actor.receive_control(2000)
         assert isinstance(msg, ErrorMessage)

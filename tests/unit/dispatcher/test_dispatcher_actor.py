@@ -26,8 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=arguments-differ
+
 from datetime import datetime
-from multiprocessing.queues import Queue
 from time import sleep
 
 import pytest
@@ -42,21 +44,12 @@ from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pi
 
 
 def define_dispatch_rules(rules):
+    """
+        Return a wrap function with dispatch rules by using the given rules
+        :param rules: The rules to be applied
+    """
     def wrap(func):
         setattr(func, '_dispatch_rules', rules)
-        return func
-
-    return wrap
-
-
-def define_formula_class(formula_class):
-    """
-    A decorator to set the _formula_class
-    attribute for individual tests.
-    """
-
-    def wrap(func):
-        setattr(func, '_formula_class', formula_class)
         return func
 
     return wrap
@@ -83,7 +76,9 @@ def pytest_generate_tests(metafunc):
 
 
 class Report1(Report):
-    """ Fake report that can contain 2 or three values *a*, *b*, and *b2* """
+    """
+        Fake report that can contain 2 or three values *a*, *b*, and *b2*
+    """
 
     def __init__(self, a, b, b2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
         Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
@@ -107,9 +102,8 @@ class Report1(Report):
 
 
 class DispatchRule1A(DispatchRule):
-    """ Group by rule that return the received report
-
-    its id is the report *a* value
+    """
+        Group by rule that return the received report its id is the report *a* value
 
     """
 
@@ -122,14 +116,15 @@ class DispatchRule1A(DispatchRule):
 
 
 class DispatchRule1AB(DispatchRule):
-    """Group by rule that split the report if it contains a *b2* value
+    """
+        Group by rule that split the report if it contains a *b2* value
 
-    if the report contain a *b2* value, it is split in two report the first
-    one containing the *b* value and the second one containing the *b2* value
+        if the report contain a *b2* value, it is split in two report the first
+        one containing the *b* value and the second one containing the *b2* value
 
-    sub-report identifier is a tuple of two values, the first one is the *a*
-    value of the report, the second one is the *b* value or the *b2 value of the
-    report
+        sub-report identifier is a tuple of two values, the first one is the *a*
+        value of the report, the second one is the *b* value or the *b2 value of the
+        report
 
     """
 
@@ -143,7 +138,9 @@ class DispatchRule1AB(DispatchRule):
 
 
 class Report2(Report):
-    """ Fake report that can contains two or three values : *a*, *c*, *c2* """
+    """
+        Fake report that can contains two or three values : *a*, *c*, *c2*
+    """
 
     def __init__(self, a, c, c2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
         Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
@@ -167,9 +164,8 @@ class Report2(Report):
 
 
 class DispatchRule2A(DispatchRule):
-    """ Group by rule that return the received report
-
-    its id is the report *a* value
+    """
+        Group by rule that return the received report its id is the report *a* value
 
     """
 
@@ -182,15 +178,15 @@ class DispatchRule2A(DispatchRule):
 
 
 class DispatchRule2AC(DispatchRule):
-    """Group by rule that split the report if it contains a *c2* value
+    """
+        Group by rule that split the report if it contains a *c2* value
 
-    if the report contain a *c2* value, it is spliten in two report the first
-    one containing the *c* value and the second one containing the *c2* value
+        if the report contain a *c2* value, it is split in two report the first
+        one containing the *c* value and the second one containing the *c2* value
 
-    sub-report identifier is a tuple of two values, the first one is the *a*
-    value of the report, the second one is the *c* value or the *c2 value of the
-    report
-
+        sub-report identifier is a tuple of two values, the first one is the *a*
+        value of the report, the second one is the *c* value or the *c2 value of the
+        report
     """
 
     def __init__(self, primary=False):
@@ -203,7 +199,9 @@ class DispatchRule2AC(DispatchRule):
 
 
 class Report3(Report):
-    """ Fake report that contains same values as Report 1 and an other value"""
+    """
+        Fake report that contains same values as Report 1 and an other value
+    """
 
     def __init__(self, a, b, d, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
         Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
@@ -224,14 +222,15 @@ class Report3(Report):
 
 
 class DispatchRule3(DispatchRule):
-    """Group by rule that split the report if it contains a *b2* value
+    """
+        Group by rule that split the report if it contains a *b2* value
 
-    if the report contain a *b2* value, it is spliten in two report the first
-    one containing the *b* value and the second one containing the *b2* value
+        if the report contain a *b2* value, it is spliten in two report the first
+        one containing the *b* value and the second one containing the *b2* value
 
-    sub-report identifier is a tuple of two values, the first one is the *a*
-    value of the report, the second one is the *b* value or the *b2 value of the
-    report
+        sub-report identifier is a tuple of two values, the first one is the *a*
+        value of the report, the second one is the *b* value or the *b2 value of the
+        report
 
     """
 
@@ -260,12 +259,14 @@ REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 class TestDispatcher(AbstractTestActor):
 
-    @pytest.fixture
-    def formula_queue(self):
-        return Queue()
-
+    """
+        Class for testing DispatcherActor
+    """
     @pytest.fixture
     def formula_class(self):
+        """
+            Return the formula class that will be used for
+        """
         return lambda name, pushers: DummyFormulaActor(name=name, pushers=pushers, socket=0, core=0)
 
     @pytest.fixture
@@ -286,6 +287,10 @@ class TestDispatcher(AbstractTestActor):
 
     @pytest.fixture
     def dispatcher_with_formula(self, started_actor, dummy_pipe_out):
+        """
+            Send a report to force the creation of a formula in a started DispatcherActor.
+            The actor with the created formula is returned
+        """
         started_actor.send_data(REPORT_1)
         recv_from_pipe(dummy_pipe_out, 0.5)
         recv_from_pipe(dummy_pipe_out, 0.5)
@@ -293,20 +298,31 @@ class TestDispatcher(AbstractTestActor):
 
     @pytest.fixture
     def dispatcher_with_two_formula(self, dispatcher_with_formula, dummy_pipe_out):
+        """
+            Send a report to force the creation of a formula in a DispatcherActor that already has a formula.
+            The actor with two formulas is returned
+        """
         dispatcher_with_formula.send_data(Report1('a', 'c'))
         recv_from_pipe(dummy_pipe_out, 0.5)
         recv_from_pipe(dummy_pipe_out, 0.5)
         return dispatcher_with_formula
 
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
-    def test_send_Report1_without_dispatch_rule_for_Report1_keep_dispatcher_alive(self, started_actor):
+    def test_send_Report1_without_dispatch_rule_for_Report1_stop_dispatcher(self, started_actor):
+        """
+            Check that dispatcher stops when it receives a report that it can no deal with it.
+        """
         started_actor.send_data(REPORT_1)
-        assert is_actor_alive(started_actor)
+        assert not is_actor_alive(started_actor)
 
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
     def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, started_actor,
-
                                                                                 dummy_pipe_out):
+
+        """
+            Check that a formula is no created by DispatcherActor when it does not have a rule to deal with
+            a given report type
+        """
         started_actor.send_data(REPORT_1)
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
         assert len(started_actor.state.formula_dict) == 0
@@ -315,15 +331,22 @@ class TestDispatcher(AbstractTestActor):
     def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(self,
                                                                                                           started_actor,
                                                                                                           dummy_pipe_out):
+
+        """
+            Check that a formula is created when a report is received
+        """
         started_actor.send_data(REPORT_1)
         _, power_report = recv_from_pipe(dummy_pipe_out, 2)
         assert isinstance(power_report, PowerReport)
         assert power_report.power == 42
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_forward_report_to_formula(self,
-                                                                                                   dispatcher_with_formula,
-                                                                                                   dummy_pipe_out):
+    def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_send_report_to_formula(self,
+                                                                                                dispatcher_with_formula,
+                                                                                                dummy_pipe_out):
+        """
+            Check that DispatcherActor with a created formula sent a report to it
+        """
         expected_metadata = {'formula_name': "('" + dispatcher_with_formula.name + "', '" + REPORT_1.a + "', '" +
                                              REPORT_1.b + "')",
                              'socket': 0}
@@ -338,9 +361,13 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report2, DispatchRule2A())])
-    def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_forward_report_to_all_formula(self,
-                                                                                                               dispatcher_with_two_formula,
-                                                                                                               dummy_pipe_out):
+    def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_send_report_to_all_formula(self,
+                                                                                                            dispatcher_with_two_formula,
+                                                                                                            dummy_pipe_out):
+
+        """
+            Check that DispatcherActor sent a report to all existing formulas
+        """
         metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')",
                       'socket': 0}
         expected_report_b = PowerReport(timestamp=REPORT_2.timestamp, sensor=REPORT_2.sensor, target=REPORT_2.target,
@@ -355,14 +382,17 @@ class TestDispatcher(AbstractTestActor):
         _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
         _, msg2 = recv_from_pipe(dummy_pipe_out, 0.5)
 
-        assert msg1 == expected_report_b or msg1 == expected_report_c
-        assert msg2 == expected_report_b or msg2 == expected_report_c
+        assert msg1 in [expected_report_b, expected_report_c]
+        assert msg2 in [expected_report_b, expected_report_c]
 
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, started_actor,
                                                                             dummy_pipe_out):
+        """
+            Check that two formulas are created by DispatcherActor
+        """
         started_actor.send_data(REPORT_1_B2)
         reports = []
 
@@ -375,43 +405,30 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)),
                             (Report3, DispatchRule3())])
     def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(self,
-                                                                                                          started_actor,
+                                                                                                          dispatcher_with_two_formula,
                                                                                                           dummy_pipe_out):
-        metadata_b = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b')",
-                      'socket': 0}
 
-        metadata_b2 = {'formula_name': "('" + started_actor.state.actor.name + "', 'a', 'b2')",
-                       'socket': 0}
+        """
+            Check that 3 reports are produced by formulas when DispatcherActor receives
+        """
+
+        metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')",
+                      'socket': 0}
 
         expected_report_b_report_3 = PowerReport(timestamp=REPORT_3.timestamp, sensor=REPORT_3.sensor,
                                                  target=REPORT_3.target, power=42, metadata=metadata_b)
 
-        expected_report_b_report_1_B2 = PowerReport(timestamp=REPORT_1_B2.timestamp, sensor=REPORT_1_B2.sensor,
-                                                    target=REPORT_1_B2.target, power=42, metadata=metadata_b)
-
-        expected_report_b2_report_1_B2 = PowerReport(timestamp=REPORT_1_B2.timestamp, sensor=REPORT_1_B2.sensor,
-                                                     target=REPORT_1_B2.target, power=42, metadata=metadata_b2)
-
-        started_actor.send_data(REPORT_1_B2)
-
-        _, msg0 = recv_from_pipe(dummy_pipe_out, 0.5)
-
-        started_actor.send_data(REPORT_3)
+        dispatcher_with_two_formula.send_data(REPORT_3)
         _, msg1 = recv_from_pipe(dummy_pipe_out, 0.5)
 
-        _, msg2 = recv_from_pipe(dummy_pipe_out, 0.5)
-
-        assert msg0 == expected_report_b_report_3 or msg0 == expected_report_b_report_1_B2 \
-               or msg0 == expected_report_b2_report_1_B2
-        assert msg1 == expected_report_b_report_3 or msg1 == expected_report_b_report_1_B2 \
-               or msg1 == expected_report_b2_report_1_B2
-        assert msg2 == expected_report_b_report_3 or msg2 == expected_report_b_report_1_B2 \
-               or msg2 == expected_report_b2_report_1_B2
+        assert msg1 == expected_report_b_report_3
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula,
-                                                                          dummy_pipe_out):
+    def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula):
+        """
+            Check that a PoissonPillMessage stops the DispatcherActor as well as their formulas
+        """
         dispatcher_with_two_formula.send_control(PoisonPillMessage('system-test-dispatcher'))
 
         sleep(10)
@@ -431,8 +448,8 @@ class TestDispatcher(AbstractTestActor):
 #############################################
 def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_report, validation_id):
     """
-    generate a test with that extract a formula id from an input report with a given dispatch rule and a primary dispatch rules
-    test if the extracted formula_ids are the same that given validation report ids
+        Generate a test with that extract a formula id from an input report with a given dispatch rule and a primary dispatch rules
+        test if the extracted formula_ids are the same that given validation report ids
     """
     formula_ids = extract_formula_id(input_report, dispatch_rule, primary_dispatch_rule)
     formula_ids.sort()
@@ -441,36 +458,54 @@ def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_repo
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_on_REPORT_1_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a',)])
     gen_test_extract_formula_id(pgb, pgb, REPORT_1_B2, [('a',)])
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2_C2, [('a',)])
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2_C2, [('a',)])
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_on_REPORT_1_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a', 'b')])
     gen_test_extract_formula_id(pgb, pgb, REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2_C2, [('a',)])
 
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
+    """
+        Check the formula id extraction
+    """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2_C2, [('a',)])

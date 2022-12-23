@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import time
+
 from time import sleep
 
 import pytest
@@ -43,11 +43,18 @@ NUMBER_OF_REPORTS_TO_STORE = 100
 
 class TestSimplePusher(AbstractTestActor):
 
+    """
+        Class for testing SimplePusherActor
+    """
+
     @pytest.fixture
     def actor(self):
         return SimplePusherActor('pusher_test', NUMBER_OF_REPORTS_TO_STORE)
 
     def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, started_actor):
+        """
+            Check that SimplePusherActor stores the received report
+        """
         report = HWPCReport.create_empty_report()
         started_actor.send_data(report)
         sleep(2)
@@ -57,6 +64,9 @@ class TestSimplePusher(AbstractTestActor):
         assert message_reports.reports[0] == report
 
     def test_send_one_power_report_to_pusher_make_it_save_it(self, started_actor):
+        """
+            Check that SimplePusherActor stores the received report
+        """
         report = PowerReport.create_empty_report()
         started_actor.send_data(report)
         sleep(2)
@@ -66,10 +76,17 @@ class TestSimplePusher(AbstractTestActor):
         assert message_reports.reports[0] == report
 
     def test_starting_actor_terminate_itself_after_poison_message_reception(self, started_actor):
+        """
+            Check that SimplePusherActor stops when it receives a PoisonPillMessage
+        """
         started_actor.send_control(PoisonPillMessage(sender_name='system-test-simple-pusher'))
         assert not is_actor_alive(started_actor)
 
     def test_check_actor_still_alive_if_x_messages_are_no_still_received(self, started_actor):
+        """
+            Check that SimplePusherActor is still running when the number of reports
+            to stose is no still reached
+        """
         sent = 0
 
         while sent < NUMBER_OF_REPORTS_TO_STORE - 1:
