@@ -213,7 +213,7 @@ REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
 def join_actor(actor):
-    actor.join()
+    actor.join(timeout=10)
 
 
 class AbstractTestActor:
