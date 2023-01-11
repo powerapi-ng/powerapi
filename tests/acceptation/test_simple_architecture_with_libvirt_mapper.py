@@ -66,6 +66,7 @@ from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME,
     MONGO_DATABASE_NAME
 from powerapi.test_utils.report.hwpc import extract_all_events_reports_with_vm_name
 from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
+from tests.unit.actor.abstract_test_actor import shutdown_system
 
 
 @pytest.fixture
@@ -95,7 +96,7 @@ def check_db():
 
 
 @patch('powerapi.report_modifier.libvirt_mapper.openReadOnly', return_value=MockedLibvirt())
-def test_run(mocked_libvirt, mongo_database):
+def test_run(mocked_libvirt, mongo_database, shutdown_system):
     """
         Check that the actor system behave correctly with libvirt mapper
     """

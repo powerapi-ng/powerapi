@@ -34,7 +34,7 @@ import pytest
 from powerapi.message import PoisonPillMessage, GetReceivedReportsSimplePusherMessage
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
 from powerapi.report import PowerReport, HWPCReport
-from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor
+from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor, shutdown_system
 
 REPORT_TYPE_TO_BE_STORED = HWPCReport
 REPORT_TYPE_TO_BE_STORED_2 = PowerReport
@@ -51,7 +51,7 @@ class TestSimplePusher(AbstractTestActor):
     def actor(self):
         return SimplePusherActor('pusher_test', NUMBER_OF_REPORTS_TO_STORE)
 
-    def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, started_actor):
+    def test_send_one_hwpc_report_to_pusher_make_it_save_it(self, started_actor, shutdown_system):
         """
             Check that SimplePusherActor stores the received report
         """
@@ -63,7 +63,7 @@ class TestSimplePusher(AbstractTestActor):
         assert len(message_reports.reports) == 1
         assert message_reports.reports[0] == report
 
-    def test_send_one_power_report_to_pusher_make_it_save_it(self, started_actor):
+    def test_send_one_power_report_to_pusher_make_it_save_it(self, started_actor, shutdown_system):
         """
             Check that SimplePusherActor stores the received report
         """
@@ -75,17 +75,17 @@ class TestSimplePusher(AbstractTestActor):
         assert len(message_reports.reports) == 1
         assert message_reports.reports[0] == report
 
-    def test_starting_actor_terminate_itself_after_poison_message_reception(self, started_actor):
+    def test_starting_actor_terminate_itself_after_poison_message_reception(self, started_actor, shutdown_system):
         """
             Check that SimplePusherActor stops when it receives a PoisonPillMessage
         """
         started_actor.send_control(PoisonPillMessage(sender_name='system-test-simple-pusher'))
         assert not is_actor_alive(started_actor)
 
-    def test_check_actor_still_alive_if_x_messages_are_no_still_received(self, started_actor):
+    def test_check_actor_still_alive_if_x_messages_are_no_still_received(self, started_actor, shutdown_system):
         """
             Check that SimplePusherActor is still running when the number of reports
-            to stose is no still reached
+            to store is no still reached
         """
         sent = 0
 

@@ -29,7 +29,7 @@
 import multiprocessing
 import time
 
-from multiprocessing import Queue, Pipe
+from multiprocessing import Queue, Pipe, active_children
 from mock import Mock
 
 import pytest
@@ -214,6 +214,14 @@ REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 def join_actor(actor):
     actor.join(timeout=10)
+
+
+@pytest.fixture
+def shutdown_system():
+    yield None
+    active = active_children()
+    for child in active:
+        child.kill()
 
 
 class AbstractTestActor:

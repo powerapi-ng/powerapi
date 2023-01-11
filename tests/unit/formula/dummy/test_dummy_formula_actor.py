@@ -32,7 +32,8 @@ import pytest
 
 from powerapi.formula.dummy import DummyFormulaActor
 from powerapi.report import Report
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
+    shutdown_system
 
 
 class TestDummyFormula(AbstractTestActor):
@@ -49,7 +50,7 @@ class TestDummyFormula(AbstractTestActor):
         return actor
 
     def test_send_Report_to_dummy_formula_make_formula_send_power_report_with_42_as_power_value_after_1_second(
-            self, started_actor, dummy_pipe_out):
+            self, started_actor, dummy_pipe_out, shutdown_system):
         """
             Check that a sent report is processed by the actor formula
         """

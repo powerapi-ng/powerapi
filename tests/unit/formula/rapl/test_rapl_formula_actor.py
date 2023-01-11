@@ -36,7 +36,8 @@ import pytest
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaConfig, RAPLFormulaScope
 from powerapi.report import PowerReport, HWPCReport
 
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
+    shutdown_system
 
 
 class TestRAPLFormula(AbstractTestActor):
@@ -53,7 +54,8 @@ class TestRAPLFormula(AbstractTestActor):
                                  config=RAPLFormulaConfig(RAPLFormulaScope.CPU, 1000, 'RAPL_ENERGY_PKG'))
         return actor
 
-    def test_send_hwpc_report_to_rapl_formula_return_correct_result(self, started_actor, dummy_pipe_out):
+    def test_send_hwpc_report_to_rapl_formula_return_correct_result(self, started_actor, dummy_pipe_out,
+                                                                    shutdown_system):
         """
             Check that the compute power estimation is correct
         """

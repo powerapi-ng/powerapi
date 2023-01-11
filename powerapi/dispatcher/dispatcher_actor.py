@@ -54,54 +54,6 @@ class PrimaryDispatchRuleRuleAlreadyDefinedException(PowerAPIException):
     """
 
 
-# class RouteTable:
-#     """
-#     Structure that map a :class:`Report<powerapi.report.Report>` type to a
-#     :class:`DispatchRule<powerapi.dispatch_rule.DispatchRule>` rule
-#     """
-#
-#     def __init__(self):
-#         #: (array): Array of tuple that link a Report type to a DispatchRule
-#         # rule
-#         self.route_table = []
-#         #: (powerapi.DispatchRule): Allow to define how to create the Formula id
-#         self.primary_dispatch_rule = None
-#
-#     def get_dispatch_rule(self, msg):
-#         """
-#         Return the corresponding group by rule mapped to the received message
-#         type
-#
-#         :param type msg: the received message
-#         :return: the dispatch_rule rule mapped to the received message type
-#         :rtype: powerapi.dispatch_rule.DispatchRule
-#         :raise: UnknowMessageTypeException if no group by rule is mapped to the
-#                 received message type
-#         """
-#
-#         for (report_class, dispatch_rule) in self.route_table:
-#             if isinstance(msg, report_class):
-#                 return dispatch_rule
-#
-#         raise UnknowMessageTypeException(type(msg))
-#
-#     def dispatch_rule(self, report_class, dispatch_rule):
-#         """
-#         Add a dispatch_rule rule to the route table
-#
-#         :param Type report_class: Type of the message that the
-#                                   dispatch_rule rule must handle
-#         :param dispatch_rule: Group_by rule to add
-#         :type dispatch_rule:  powerapi.dispatch_rule.DispatchRule
-#         """
-#         if dispatch_rule.is_primary:
-#             if self.primary_dispatch_rule is not None:
-#                 raise PrimaryDispatchRuleRuleAlreadyDefinedException()
-#             self.primary_dispatch_rule = dispatch_rule
-#
-#         self.route_table.append((report_class, dispatch_rule))
-
-
 class DispatcherState(State):
     """
     DispatcherState class herited from State.
@@ -240,7 +192,7 @@ class DispatcherActor(Actor):
         formula_init_function = self.formula_init_function
 
         def factory(formula_id):
-            formula = formula_init_function(str((self.name,) + formula_id), pushers)
+            formula = formula_init_function(name=str((self.name,) + formula_id), pushers=pushers)
             self.state.supervisor.launch_actor(formula, start_message=False)
             return formula
 

@@ -33,7 +33,7 @@ import pytest
 
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, REPORT_TYPE_TO_BE_SENT, \
-    REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT
+    REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT, shutdown_system
 
 
 class TestSimpleFormula(AbstractTestActor):
@@ -49,7 +49,8 @@ class TestSimpleFormula(AbstractTestActor):
         return actor
 
     def test_send_power_report_to_simple_formula_make_formula_send_same_report_to_pusher(self, started_actor,
-                                                                                         dummy_pipe_out):
+                                                                                         dummy_pipe_out,
+                                                                                         shutdown_system):
         """
             Check that a power report sent to the formula is the same one received by the pusher
         """
@@ -59,7 +60,8 @@ class TestSimpleFormula(AbstractTestActor):
         assert msg == report1
 
     def test_send_empty_hwpc_report_to_simple_formula_make_formula_send_none_to_pusher(self, started_actor,
-                                                                                       dummy_pipe_out):
+                                                                                       dummy_pipe_out,
+                                                                                       shutdown_system):
         """
             Check that a hwpc report is ignored by the pusher, i.e., it is not forwarded to the output (pipe)
         """

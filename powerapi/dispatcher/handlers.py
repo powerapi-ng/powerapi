@@ -104,8 +104,8 @@ def extract_formula_id(report, dispatch_rule, primary_dispatch_rule):
     if dispatch_rule.is_primary:
         return id_list
 
-    def f(id):
-        return match_report_id(id, dispatch_rule, primary_dispatch_rule)
+    def f(identifier):
+        return match_report_id(identifier, dispatch_rule, primary_dispatch_rule)
 
     return _clean_list(list(map(f, id_list)))
 

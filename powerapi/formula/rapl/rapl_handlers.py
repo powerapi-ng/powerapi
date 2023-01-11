@@ -40,7 +40,7 @@ class ReportHandler(Handler):
     Handler behaviour for HWPC Reports
     """
 
-    def _estimate(self, timestamp, target, counter):
+    def _gen_power_report(self, timestamp, target, counter):
         """
         Generate a power report using the given parameters.
         :param timestamp: Timestamp of the measurements
@@ -56,7 +56,11 @@ class ReportHandler(Handler):
 
         power = ldexp(counter, -32)
 
-        report = PowerReport(timestamp, self.state.sensor, target, power, metadata)
+        report = PowerReport(timestamp=timestamp,
+                             sensor=self.state.sensor,
+                             target=target,
+                             power=power,
+                             metadata=metadata)
 
         return report
 
@@ -74,8 +78,9 @@ class ReportHandler(Handler):
             for events_counter in socket_report.values():
                 for event, counter in events_counter.items():
                     if event.startswith(RAPL_PREFIX):
-                        reports.append(self._estimate(msg.timestamp, socket,
-                                                      counter))
+                        reports.append(self._gen_power_report(timestamp=msg.timestamp,
+                                                              target=socket,
+                                                              counter=counter))
 
         for _, actor_pusher in self.state.pushers.items():
             for result in reports:

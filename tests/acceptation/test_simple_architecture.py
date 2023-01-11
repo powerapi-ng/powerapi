@@ -66,11 +66,14 @@ from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
 from powerapi.test_utils.db.mongo import mongo_database
 from powerapi.test_utils.db.influx import influx_database
 from powerapi.test_utils.db.csv import files
+
 from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME
 from powerapi.test_utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports
 from powerapi.test_utils.db.csv import ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
+
+from tests.unit.actor.abstract_test_actor import shutdown_system
 
 
 ##################
@@ -145,7 +148,7 @@ def check_influx_db(influx_client):
         assert len(query_result) == 1
 
 
-def test_run_mongo_to_influx(mongo_database, influx_database):
+def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
     """
         Check that report are correctly stored into an output influx database.
         The input source is a mongo database.
@@ -213,7 +216,7 @@ def check_output_file():
         assert int(output_line[3]) == 42
 
 
-def test_run_csv_to_csv(files):
+def test_run_csv_to_csv(files, shutdown_system):
     """
         Check that report are correctly stored into an output file.
         The input source is a CSV file
@@ -251,7 +254,7 @@ def check_db_socket():
              'target': report['target']}) == 2
 
 
-def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
+def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     """
         Check that report are correctly stored into an output mongo database.
         The input source is a socket
@@ -283,7 +286,7 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port):
     supervisor.kill_actors()
 
 
-def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port):
+def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     """
         Check that report are correctly stored into an output mongo database
     """
@@ -359,7 +362,7 @@ def check_output_file2():
         assert int(output_line_s1[3]) == 42
 
 
-def test_run_socket_to_csv(unused_tcp_port, files):
+def test_run_socket_to_csv(unused_tcp_port, files, shutdown_system):
     """
         Check that report are correctly stored into an output file.
         The input source is a socket

@@ -41,7 +41,7 @@ from powerapi.report import HWPCReport
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
 
 from powerapi.test_utils.dummy_actor import DummyActor
-from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive
+from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, shutdown_system
 
 NUMBER_OF_REPORTS_TO_SEND = 100
 REPORT_TYPE_TO_BE_SENT = HWPCReport
@@ -126,7 +126,7 @@ class TestSimplePuller(AbstractTestActor):
         actor.connect_control()
         return actor
 
-    def test_create_simple_puller_without_rules_is_no_initialized(self, init_actor_without_rules):
+    def test_create_simple_puller_without_rules_is_no_initialized(self, init_actor_without_rules, shutdown_system):
         """
             Check that a SimplePuller without rules is no initialized
         """
@@ -137,7 +137,8 @@ class TestSimplePuller(AbstractTestActor):
     def test_start_actor_send_reports_to_dispatcher(self,
                                                     started_actor,
                                                     started_fake_dispatcher,
-                                                    dummy_pipe_out):
+                                                    dummy_pipe_out,
+                                                    shutdown_system):
 
         """
             Check that a SimplePuller sends reports to dispatcher
@@ -151,7 +152,8 @@ class TestSimplePuller(AbstractTestActor):
             assert recv_from_pipe(dummy_pipe_out, 2) == (DISPATCHER_NAME, report)
             count += 1
 
-    def test_starting_actor_terminate_itself_after_poison_message_reception(self, init_actor_without_terminate):
+    def test_starting_actor_terminate_itself_after_poison_message_reception(self, init_actor_without_terminate,
+                                                                            shutdown_system):
 
         """
             Check that a SimplePuller stops when it receives a PoisonPillMessage
