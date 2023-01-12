@@ -70,7 +70,7 @@ class RAPLFormulaActor(AbstractCpuDramFormula):
     This actor handle the reports for the RAPL formula.
     """
 
-    def __init__(self, name:str, pushers: Dict[str, PusherActor], socket: str, core: str, config: RAPLFormulaConfig,
+    def __init__(self, name: str, pushers: Dict[str, PusherActor], socket: str, core: str, config: RAPLFormulaConfig,
                  sensor: str,
                  level_logger=logging.WARNING,
                  timeout=None):
