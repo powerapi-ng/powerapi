@@ -37,7 +37,8 @@ from powerapi.message import StartMessage, ErrorMessage, OKMessage
 
 from powerapi.test_utils.db import define_database, define_report_type
 from powerapi.test_utils.db.mongo import mongo_database
-from tests.unit.actor.abstract_test_actor import pusher
+from tests.unit.actor.abstract_test_actor import pusher, shutdown_system
+
 
 URI = "mongodb://localhost:27017"
 LOG_LEVEL = logging.NOTSET
@@ -81,7 +82,7 @@ def pytest_generate_tests(metafunc):
 ##############################################################################
 @define_database(mongodb_database(URI, "test_mongodb", "test_mongodb1"))
 @define_report_type(PowerReport)
-def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok_message(pusher):
+def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok_message(pusher, shutdown_system):
     pusher.send_control(StartMessage('system'))
     answer = pusher.receive_control(2000)
     assert isinstance(answer, OKMessage)
@@ -92,7 +93,7 @@ def test_create_pusher_and_connect_it_to_mongodb_with_good_config_must_answer_ok
     ("mongodb://localhost:27016", "test_mongodb", "test_mongodb1"),
 ])
 @define_report_type(PowerReport)
-def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(pusher):
+def test_create_pusher_and_connect_it_to_mongodb_with_bad_config_must_answer_error_message(pusher, shutdown_system):
     pusher.send_control(StartMessage('system'))
     time.sleep(4)
     answer = pusher.receive_control(2000)

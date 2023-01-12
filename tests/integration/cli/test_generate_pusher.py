@@ -36,6 +36,7 @@ from powerapi.report import PowerReport
 from powerapi.cli.generator import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
 from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
+from tests.unit.actor.abstract_test_actor import shutdown_system
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'system'
@@ -54,7 +55,7 @@ def influxdb_content():
 
 
 def test_generate_pusher_with_socket_tags_and_send_it_a_powerReport_must_store_PowerReport_with_right_tag(
-        influx_database, power_report):
+        influx_database, power_report, shutdown_system):
     """
     Create a PusherGenerator that generate pusher with a PowerReportModel that keep formula_name metadata in PowerReport
     Generate a pusher connected to an influxDB

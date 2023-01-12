@@ -40,7 +40,7 @@ from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
 from powerapi.message import SimplePullerSendReportsMessage, \
     GetReceivedReportsSimplePusherMessage
 from powerapi.report import HWPCReport
-from tests.unit.actor.abstract_test_actor import start_actor, stop_actor
+from tests.unit.actor.abstract_test_actor import start_actor, stop_actor, shutdown_system
 
 FORMULA_NAME = "simple-formula-test"
 REPORTS_TO_SEND = 10
@@ -128,7 +128,7 @@ class TestSimplePullerFormulaPusher:
 
         stop_actor(dispatcher)
 
-    def test_sending_x_messages(self, setup_simple_pullers_formula_actors, formula_pushers, config):
+    def test_sending_x_messages(self, setup_simple_pullers_formula_actors, formula_pushers, config, shutdown_system):
 
         # Exercise
         setup_simple_pullers_formula_actors[list(config['input'].keys())[0]]. \
