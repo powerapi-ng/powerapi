@@ -89,6 +89,7 @@ class Generator:
         actors = {}
 
         for component_name, component_config in main_config[self.component_group_name].items():
+            component_type = ''
             try:
                 component_type = component_config[COMPONENT_TYPE_KEY]
                 component_model = component_config[COMPONENT_MODEL_KEY]
