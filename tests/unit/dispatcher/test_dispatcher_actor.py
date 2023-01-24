@@ -40,7 +40,8 @@ from powerapi.formula import DummyFormulaActor
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
-    PUSHER_NAME_POWER_REPORT, shutdown_system
+    PUSHER_NAME_POWER_REPORT
+from powerapi.test_utils.unit import shutdown_system
 
 
 def define_dispatch_rules(rules):

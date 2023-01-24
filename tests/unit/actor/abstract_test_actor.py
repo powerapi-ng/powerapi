@@ -216,14 +216,6 @@ def join_actor(actor):
     actor.join(timeout=10)
 
 
-@pytest.fixture
-def shutdown_system():
-    yield None
-    active = active_children()
-    for child in active:
-        child.kill()
-
-
 class AbstractTestActor:
 
     @pytest.fixture

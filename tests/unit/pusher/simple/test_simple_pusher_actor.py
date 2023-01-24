@@ -34,7 +34,8 @@ import pytest
 from powerapi.message import PoisonPillMessage, GetReceivedReportsSimplePusherMessage
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
 from powerapi.report import PowerReport, HWPCReport
-from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor, shutdown_system
+from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor
+from powerapi.test_utils.unit import shutdown_system
 
 REPORT_TYPE_TO_BE_STORED = HWPCReport
 REPORT_TYPE_TO_BE_STORED_2 = PowerReport

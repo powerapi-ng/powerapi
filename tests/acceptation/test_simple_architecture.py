@@ -73,7 +73,7 @@ from powerapi.test_utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_rep
 from powerapi.test_utils.db.csv import ROOT_PATH, OUTPUT_PATH
 from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
 
-from tests.unit.actor.abstract_test_actor import shutdown_system
+from powerapi.test_utils.unit import shutdown_system
 
 
 ##################

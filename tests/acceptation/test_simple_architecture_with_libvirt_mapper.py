@@ -66,7 +66,7 @@ from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME,
     MONGO_DATABASE_NAME
 from powerapi.test_utils.report.hwpc import extract_all_events_reports_with_vm_name
 from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
-from tests.unit.actor.abstract_test_actor import shutdown_system
+from powerapi.test_utils.unit import shutdown_system
 
 
 @pytest.fixture

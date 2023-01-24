@@ -36,8 +36,8 @@ import pytest
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaConfig, RAPLFormulaScope
 from powerapi.report import PowerReport, HWPCReport
 
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
-    shutdown_system
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
+from powerapi.test_utils.unit import shutdown_system
 
 
 class TestRAPLFormula(AbstractTestActor):

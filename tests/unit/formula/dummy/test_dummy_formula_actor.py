@@ -32,8 +32,8 @@ import pytest
 
 from powerapi.formula.dummy import DummyFormulaActor
 from powerapi.report import Report
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe, \
-    shutdown_system
+from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
+from powerapi.test_utils.unit import shutdown_system
 
 
 class TestDummyFormula(AbstractTestActor):
