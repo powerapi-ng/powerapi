@@ -27,8 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ
-
+# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,unused-import,no-self-use
 from datetime import datetime
 from time import sleep
 
@@ -39,9 +38,11 @@ from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
 from powerapi.formula import DummyFormulaActor
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
+from powerapi.test_utils.unit import shutdown_system
+
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
     PUSHER_NAME_POWER_REPORT
-from powerapi.test_utils.unit import shutdown_system
+
 
 
 def define_dispatch_rules(rules):

@@ -27,6 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# pylint: disable=redefined-outer-name,unused-argument,unused-import,no-self-use
+
 from time import sleep
 
 import pytest
@@ -34,8 +36,10 @@ import pytest
 from powerapi.message import PoisonPillMessage, GetReceivedReportsSimplePusherMessage
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
 from powerapi.report import PowerReport, HWPCReport
-from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor
 from powerapi.test_utils.unit import shutdown_system
+
+from tests.unit.actor.abstract_test_actor import is_actor_alive, AbstractTestActor
+
 
 REPORT_TYPE_TO_BE_STORED = HWPCReport
 REPORT_TYPE_TO_BE_STORED_2 = PowerReport

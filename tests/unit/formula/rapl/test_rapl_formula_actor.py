@@ -27,17 +27,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ
-
+# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,no-self-use,unused-import
 import math
 import pytest
 
 
 from powerapi.formula.rapl.rapl_formula_actor import RAPLFormulaActor, RAPLFormulaConfig, RAPLFormulaScope
 from powerapi.report import PowerReport, HWPCReport
+from powerapi.test_utils.unit import shutdown_system
 
 from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
-from powerapi.test_utils.unit import shutdown_system
+
 
 
 class TestRAPLFormula(AbstractTestActor):

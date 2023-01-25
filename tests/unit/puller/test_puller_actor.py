@@ -27,8 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ
-# pylint: disable=unused-argument
+# pylint: disable=arguments-differ,unused-argument,no-self-use
 
 import logging
 from multiprocessing import Queue

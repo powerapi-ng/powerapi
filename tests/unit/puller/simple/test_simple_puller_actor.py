@@ -27,8 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ
-# pylint: disable=unused-argument
+# pylint: disable=arguments-differ,unused-argument,no-self-use,redefined-outer-name,unused-import
 
 from time import sleep
 
@@ -39,10 +38,11 @@ from powerapi.message import StartMessage, \
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
-
 from powerapi.test_utils.dummy_actor import DummyActor
-from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive
 from powerapi.test_utils.unit import shutdown_system
+
+from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive
+
 
 NUMBER_OF_REPORTS_TO_SEND = 100
 REPORT_TYPE_TO_BE_SENT = HWPCReport
