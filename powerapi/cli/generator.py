@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # pylint: disable=no-self-use
-
+import logging
 import os
 import sys
 from typing import Dict, Type
@@ -54,7 +54,8 @@ COMPONENT_DB_COLLECTION_KEY = 'collection'
 COMPONENT_DB_MANAGER_KEY = 'db_manager'
 COMPONENT_DB_MAX_BUFFER_SIZE = 'max_buffer_size'
 
-COMPONENT_STREAM_MODE_KEY = 'stream'
+GENERAL_CONF_STREAM_MODE_KEY = 'stream'
+GENERAL_CONF_VERBOSE_KEY = 'verbose'
 
 
 class Generator:
@@ -297,9 +298,10 @@ class PullerGenerator(DBActorGenerator):
 
     def _actor_factory(self, actor_name: str, main_config, component_config: Dict):
         return PullerActor(name=actor_name, database=component_config[COMPONENT_DB_MANAGER_KEY],
-                           report_filter=self.report_filter, stream_mode=main_config[COMPONENT_STREAM_MODE_KEY],
+                           report_filter=self.report_filter, stream_mode=main_config[GENERAL_CONF_STREAM_MODE_KEY],
                            report_modifier_list=self.report_modifier_list,
-                           report_model=component_config[COMPONENT_MODEL_KEY])
+                           report_model=component_config[COMPONENT_MODEL_KEY],
+                           level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
 
 
 COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY = 'number_of_reports_to_send'
@@ -339,7 +341,8 @@ class PusherGenerator(DBActorGenerator):
                                max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE])
 
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
-                           database=component_config[COMPONENT_DB_MANAGER_KEY])
+                           database=component_config[COMPONENT_DB_MANAGER_KEY],
+                           level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
 
 
 class SimplePusherGenerator(SimpleGenerator):
