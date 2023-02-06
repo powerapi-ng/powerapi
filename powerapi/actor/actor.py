@@ -272,7 +272,7 @@ class Actor(multiprocessing.Process):
             timeout = self.socket_interface.timeout
 
         msg = self.socket_interface.receive_control(timeout)
-        self.logger.debug('Actor '+self.name+' receive control : [' + str(msg) + ']')
+        self.logger.debug('Actor ' + self.name + ' receive control : [' + str(msg) + ']')
         return msg
 
     def send_data(self, msg):
@@ -282,7 +282,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.socket_interface.send_data(msg)
-        self.logger.debug('Actor '+self.name+' send data [' + str(msg) + '] to ' + self.name)
+        self.logger.debug('Actor ' + self.name + ' send data [' + str(msg) + '] to ' + self.name)
 
     def receive(self):
         """
@@ -293,7 +293,7 @@ class Actor(multiprocessing.Process):
         :rtype: a list of Object
         """
         msg = self.socket_interface.receive()
-        self.logger.debug('Actor '+self.name+' receive data : [' + str(msg) + ']')
+        self.logger.debug('Actor ' + self.name + ' receive data : [' + str(msg) + ']')
         return msg
 
     def soft_kill(self):
