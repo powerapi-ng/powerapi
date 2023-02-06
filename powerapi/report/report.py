@@ -102,7 +102,7 @@ class Report(Message):
             try:
                 return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
-                    return datetime.fromtimestamp(int(ts) / 1000)
+                return datetime.fromtimestamp(int(ts) / 1000)
         if isinstance(ts, datetime):
             return ts
 
