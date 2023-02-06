@@ -95,8 +95,7 @@ class Generator:
             component_type = ''
             try:
                 component_type = component_config[COMPONENT_TYPE_KEY]
-                component_model = component_config[COMPONENT_MODEL_KEY]
-                actors[component_name] = self._gen_actor(component_config, main_config, component_model)
+                actors[component_name] = self._gen_actor(component_config, main_config, component_name)
             except KeyError as exn:
                 msg = 'Configuration error : argument ' + exn.args[0]
                 msg += ' needed with output ' + component_type
@@ -277,7 +276,7 @@ class DBActorGenerator(SimpleGenerator):
             return self.db_factory[db_name](component_config)
 
     def _gen_actor(self, component_config: Dict, main_config: Dict, actor_name: str):
-        model = self._get_report_class(actor_name, component_config)
+        model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
         component_config[COMPONENT_MODEL_KEY] = model
         database_manager = self._generate_db(component_config[COMPONENT_TYPE_KEY], component_config)
         component_config[COMPONENT_DB_MANAGER_KEY] = database_manager
