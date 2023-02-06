@@ -119,7 +119,7 @@ class Node:
 
     def __init__(self, label, val=None):
         self.label = label
-        self.is_leaf = (val is not None)
+        self.is_leaf = val is not None
 
         self.childs = []
         self.val = val
