@@ -76,10 +76,10 @@ SUPERVISOR_NAME = 'powerapi_supervisor'
 
 
 class Supervisor:
-
     """
     Provide basic functionality to deal with actors: launch and kill
     """
+
     def __init__(self):
         #: ([powerapi.actor.actor.Actor]): list of supervised actors
         self.supervised_actors = []
@@ -125,8 +125,6 @@ class Supervisor:
         """
         actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
         multiprocessing.connection.wait(actor_sentinels)
-        # for actor in self.supervised_actors:
-        #     actor.join()
 
     def kill_actors(self, soft=False):
         """
@@ -139,3 +137,13 @@ class Supervisor:
                 else:
                     actor.hard_kill()
                 actor.join()
+
+    def are_all_actors_alive(self) -> bool:
+        """
+        Identify if one of the actors is dead
+        :return: True if all the actors are alive
+        """
+        for actor in self.supervised_actors:
+            if not actor.is_alive():
+                return False
+        return True

@@ -109,7 +109,8 @@ class PullerActor(Actor):
 
         Actor.__init__(self, name, level_logger, timeout)
         #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller,
+        self.state = PullerState(self, database=database, report_filter=report_filter, report_model=report_model,
+                                 stream_mode=stream_mode, timeout_puller=timeout_puller,
                                  report_modifier_list=report_modifier_list, asynchrone=database.asynchrone)
 
         self.low_exception += database.exceptions
