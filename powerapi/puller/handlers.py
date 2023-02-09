@@ -52,6 +52,7 @@ class DBPullerThread(Thread):
     """
     Thread for pulling data from source
     """
+
     def __init__(self, state, timeout, handler):
         Thread.__init__(self)
         self.timeout = timeout
@@ -119,7 +120,8 @@ class DBPullerThread(Thread):
 
             except NoReportExtractedException:
                 time.sleep(self.state.timeout_puller / 1000)
-                self.state.actor.logger.debug('NoReportExtractedException with stream mode '+str(self.state.stream_mode))
+                self.state.actor.logger.debug('NoReportExtractedException with stream mode ' +
+                                              str(self.state.stream_mode))
                 if not self.state.stream_mode:
                     self.handler.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
                     return
@@ -136,6 +138,7 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
     """
     Default handler PoisonPillMessage
     """
+
     def teardown(self, soft=False):
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.socket_interface.close()
@@ -145,6 +148,7 @@ class PullerInitializationException(Exception):
     """
     Exception related to puller initialization
     """
+
     def __init__(self, msg):
         Exception.__init__(self)
         self.msg = msg
