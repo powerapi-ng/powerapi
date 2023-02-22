@@ -70,13 +70,6 @@ class CommonCLIParser(MainConfigParser):
             help="enable stream mode",
         )
 
-        self.add_argument(
-            "as",
-            "actor_system",
-            default='simpleSystemBase',
-            help="choose actor system implementation: multiprocQueueBase, multiprocTCPBase or simpleSystemBase",
-        )
-
         subparser_libvirt_mapper_modifier = SubConfigParser("libvirt_mapper")
         subparser_libvirt_mapper_modifier.add_argument(
             "u", "uri", help="libvirt daemon uri", default=""
