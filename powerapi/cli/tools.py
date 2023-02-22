@@ -109,7 +109,7 @@ class CommonCLIParser(MainConfigParser):
         subparser_mongo_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
+            help="specify data type that will be stored in the database",
             default="HWPCReport",
         )
         self.add_subparser(
@@ -164,8 +164,8 @@ class CommonCLIParser(MainConfigParser):
         subparser_file_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="PowerReport",
+            help="specify data type that will be stored in the database",
+            default="HWPCReport",
         )
         subparser_file_input.add_argument("f", "filename", help="specify file name")
         subparser_file_input.add_argument(
@@ -181,7 +181,7 @@ class CommonCLIParser(MainConfigParser):
         subparser_file_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
+            help="specify data type that will be stored in the database",
             default="PowerReport",
         )
         subparser_file_output.add_argument("f", "filename", help="specify file name")
@@ -242,7 +242,7 @@ class CommonCLIParser(MainConfigParser):
         subparser_mongo_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
+            help="specify data type that will be stored in the database",
             default="PowerReport",
         )
         subparser_mongo_output.add_argument(
@@ -261,7 +261,7 @@ class CommonCLIParser(MainConfigParser):
             "p", "port", help="specify server port", type=int
         )
         subparser_prom_output.add_argument(
-            "M", "metric_name", help="speify metric name"
+            "M", "metric_name", help="specify metric name"
         )
         subparser_prom_output.add_argument(
             "d",
@@ -330,7 +330,7 @@ class CommonCLIParser(MainConfigParser):
         subparser_csv_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
+            help="specify data type that will be stored in the database",
             default="PowerReport",
         )
 
