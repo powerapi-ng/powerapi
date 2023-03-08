@@ -1,0 +1,14 @@
+coverage:
+  precision: 2
+  round: down
+  range: "50...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 5%
+
+comment:
+  layout: "reach, diff, files"
+  behavior: default
+  require_changes: true
