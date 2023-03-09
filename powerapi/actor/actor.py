@@ -136,7 +136,7 @@ class Actor(multiprocessing.Process):
         while self.state.alive:
             try:
                 self.behaviour(self)
-            except Exception as exn:
+            except Exception as exn:  # pylint: disable=broad-exception-caught
                 if type(exn) in self.low_exception:
                     self.logger.error('Minor exception raised, restart actor !')
                     traceback.print_exc()
