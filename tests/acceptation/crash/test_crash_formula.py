@@ -150,7 +150,7 @@ def main_process():
     yield p
     try:
         os.kill(p.pid, signal.SIGTERM)
-    except Exception:
+    except OSError:
         pass
 
 
