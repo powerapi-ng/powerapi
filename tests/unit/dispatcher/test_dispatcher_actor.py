@@ -44,7 +44,6 @@ from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pi
     PUSHER_NAME_POWER_REPORT
 
 
-
 def define_dispatch_rules(rules):
     """
         Return a wrap function with dispatch rules by using the given rules

@@ -83,7 +83,7 @@ def main_process_crash_dispatcher():
     yield p
     try:
         os.kill(p.pid, signal.SIGKILL)
-    except Exception:
+    except OSError:
         pass
 
 

@@ -5,8 +5,7 @@
 !powerapi/
 !LICENSE
 !README.md
-!setup.py
-!setup.cfg
+!pyproject.toml
 
 # Ignore Byte-compiled / optimized / DLL files
 **/__pycache__

@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "powerapi"
+description = "PowerAPI is a middleware toolkit for building software-defined power meters."
+readme = "README.md"
+keywords = ["powerapi", "energy", "power-meter", "green-computing"]
+license = {text = "BSD-3-Clause"}
+requires-python = ">=3.8"
+dynamic = ["version"]
+
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: BSD License",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+authors = [
+    {name = "PowerAPI Staff", email = "powerapi-staff@inria.fr"},
+]
+
+dependencies = [
+    "pyzmq >= 15.2.0",
+    "setproctitle >= 1.1.8",
+    "numpy >= 1.11.0"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest >= 7.0.1",
+    "pytest-asyncio >= 0.20.1",
+    "pytest-timeout >= 1.4.2",
+    "pytest-cov >= 4.0.0",
+    "mock >= 4.0.3"
+]
+
+docs = [
+    "sphinx >= 1.8.1",
+    "sphinx-autodoc-typehints >= 1.6.0"
+]
+
+# Databases:
+mongodb = ["pymongo >= 3.7.2"]
+influxdb = ["influxdb-client >= 1.30.0", "influxdb >= 2.12"]
+opentsdb = ["opentsdb-py >= 0.6.0"]
+prometheus = ["prometheus-client >= 0.9.0"]
+
+# Plaforms:
+libvirt = ["libvirt-python >= 6.1.0"]
+
+[project.urls]
+homepage = "http://powerapi.org"
+documentation = "https://powerapi.readthedocs.org"
+repository = "https://github.com/powerapi-ng/powerapi"
+
+[tool.setuptools.dynamic]
+version = {attr = "powerapi.__version__"}
+

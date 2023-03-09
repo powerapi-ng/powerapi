@@ -36,7 +36,6 @@ from powerapi.test_utils.unit import shutdown_system
 from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
 
 
-
 class TestDummyFormula(AbstractTestActor):
     """
         Class for testing the DummyFormulaActor

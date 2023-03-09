@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build project and run tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.x"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build flake8 pylint
+        pip install -e ".[test, mongodb, influxdb, opentsdb, prometheus]"
+
+    - name: Lint with flake8
+      run: |
+        flake8 --count --show-source --statistics powerapi/ tests/
+
+    - name: Static code analysis with pylint
+      run: |
+        pylint powerapi/ tests/
+
+    - name: Test with pytest
+      run: |
+        pytest --cov=powerapi --cov-report=term --cov-report=xml tests/unit
+
+    - name: Upload coverage reports to Codecov
+      if: ${{ matrix.python-version }} == "3.8"
+      uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70 # v3.1.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage.xml
