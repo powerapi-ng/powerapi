@@ -91,11 +91,11 @@ class Sync():
                 main_buff.pop(0)
 
             if report.timestamp < second_report.timestamp:
-                return None
+                return
 
             if len(main_buff) == 0:
                 secondary_buff.append(report)
-                return None
+                return
 
             second_report = main_buff[0]
             diff = abs(report.timestamp - second_report.timestamp)
