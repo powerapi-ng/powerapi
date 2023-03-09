@@ -76,8 +76,6 @@ class MainProcess(Process):
         Process.__init__(self)
         self.supervisor = Supervisor()
 
-
-
     def run(self):
         def term_handler(_, __):
             self.supervisor.kill_actors()

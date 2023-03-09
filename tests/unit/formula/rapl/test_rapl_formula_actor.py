@@ -39,7 +39,6 @@ from powerapi.test_utils.unit import shutdown_system
 from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
 
 
-
 class TestRAPLFormula(AbstractTestActor):
     """
         Class for testing the RAPLFormulaActor

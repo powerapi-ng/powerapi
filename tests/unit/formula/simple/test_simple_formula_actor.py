@@ -37,7 +37,6 @@ from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pi
     REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT
 
 
-
 class TestSimpleFormula(AbstractTestActor):
     """
         Class for testing the SimpleFormulaActor
