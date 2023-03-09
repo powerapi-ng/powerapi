@@ -88,11 +88,8 @@ def check_db():
     assert c_output.count_documents({}) == c_input.count_documents({}) * 2
     for report in c_input.find({"target": LIBVIRT_TARGET_NAME1}):
         ts = datetime.strptime(report['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
-        cursor = c_output.find(
-            {'timestamp': ts, 'sensor': report['sensor']})
-        print('metadata: ' + str(cursor.__getitem__(0)["metadata"]))
-        assert cursor.__getitem__(0)["metadata"]["domain_id"] == UUID_1
-        assert cursor.__getitem__(1)["metadata"]["domain_id"] == UUID_1
+        for socket_report in c_output.find({'timestamp': ts, 'sensor': report['sensor']}):
+            assert socket_report["metadata"]["domain_id"] == UUID_1
 
 
 @patch('powerapi.report_modifier.libvirt_mapper.openReadOnly', return_value=MockedLibvirt())
