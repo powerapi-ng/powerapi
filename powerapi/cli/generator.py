@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=no-self-use
 import logging
 import os
 import sys
@@ -182,17 +181,12 @@ class SimpleGenerator(Generator):
 
     def _get_report_class(self, model_name, component_config):
         if model_name not in self.report_classes:
-            msg = 'Configuration error : model type ' + str(model_name) + ' unknown'
-            print(msg, file=sys.stderr)
-            raise PowerAPIException(msg)
-        else:
-            return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
+            raise PowerAPIException(f'Configuration error: model type {model_name} unknown')
+
+        return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
 
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):
-        msg = 'Configuration error : actor factory not implemented. Parameters' + actor_name + ' ' + \
-              str(main_config) + ' ' + str(component_config)
-        print(msg, file=sys.stderr)
-        return NotImplementedError
+        raise NotImplementedError
 
 
 class DBActorGenerator(SimpleGenerator):
