@@ -37,7 +37,6 @@ import ctypes
 import zmq
 
 from powerapi.exception import PowerAPIException
-from powerapi.actor.safe_context import SafeContext
 
 LOCAL_ADDR = 'tcp://127.0.0.1'
 
@@ -143,7 +142,7 @@ class SocketInterface:
         :return (zmq.Socket, int): the initialized socket and the port where the
                                    socket is bound
         """
-        socket = SafeContext.get_context().socket(socket_type)
+        socket = zmq.Context.instance().socket(socket_type)
         socket.setsockopt(zmq.LINGER, linger_value)
         socket.set_hwm(0)
         port_number = socket.bind_to_random_port(LOCAL_ADDR)
@@ -236,7 +235,7 @@ class SocketInterface:
             self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
             self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
 
-        self.push_socket = SafeContext.get_context().socket(zmq.PUSH)
+        self.push_socket = zmq.Context.instance().socket(zmq.PUSH)
         self.push_socket.setsockopt(zmq.LINGER, -1)
         self.push_socket.set_hwm(0)
         self.push_socket.connect(self.pull_socket_address)
@@ -255,7 +254,7 @@ class SocketInterface:
             self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
             self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
 
-        self.control_socket = SafeContext.get_context().socket(zmq.PAIR)
+        self.control_socket = zmq.Context.instance().socket(zmq.PAIR)
         self.control_socket.setsockopt(zmq.LINGER, 0)
         self.control_socket.set_hwm(0)
         self.control_socket.connect(self.control_socket_address)
