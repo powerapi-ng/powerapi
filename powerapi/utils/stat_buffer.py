@@ -27,16 +27,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Dict, List, Tuple
-import numpy as np
+from statistics import mean, pstdev
+from typing import Dict, List, Tuple, Any
 
 
-def _compute_stats(values: List[float]) -> Tuple[float, float, float, float]:
+def _compute_stats(samples: List[Dict[str, Any]]) -> Tuple[float, float, float, float]:
     """
-    compute mean, std, min, max from a list of float
+    Compute the mean, std, min, max values from a list samples.
     """
-    np_values = np.array([value['value'] for value in values])
-    return np_values.mean(), np_values.std(), np_values.min(), np_values.max()
+    values = [sample['value'] for sample in samples]
+    return mean(values), pstdev(values), min(values), max(values)
 
 
 class StatBuffer:
@@ -118,13 +118,13 @@ class StatBuffer:
 
         values, self.buffer[key] = self._split_values(self.buffer[key])
 
-        mean, std, min, max = _compute_stats(values)
+        meanv, stdv, minv, maxv = _compute_stats(values)
 
         return {
-            'mean': mean,
-            'std': std,
-            'min': min,
-            'max': max,
+            'mean': meanv,
+            'std': stdv,
+            'min': minv,
+            'max': maxv,
             'time': values[-1]['time'],
             'tags': values[-1]['tags']
         }
