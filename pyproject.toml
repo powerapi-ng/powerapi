@@ -30,7 +30,6 @@ authors = [
 dependencies = [
     "pyzmq >= 15.2.0",
     "setproctitle >= 1.1.8",
-    "numpy >= 1.11.0"
 ]
 
 [project.optional-dependencies]
