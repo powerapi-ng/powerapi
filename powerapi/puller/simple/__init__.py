@@ -26,5 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from powerapi.puller.simple.simple_puller_handlers import SimplePullerHandler
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor, SimplePullerState
