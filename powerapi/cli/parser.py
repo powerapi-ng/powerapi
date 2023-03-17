@@ -264,7 +264,7 @@ class Parser:
         :param lambda action: action that will be executed when the argument is
                               caught by the parser. the lambda take 4 parameters
                               (the name of the argument caught by the parser,
-                              the value attached to this arguemnt, the current
+                              the value attached to this argument, the current
                               list of arguments that is parsed by the parser and
                               the parser result) and return a list of token and
                               a parser result(dict)
@@ -305,9 +305,9 @@ class Parser:
         raise NotImplementedError()
 
     def _parse(self, args, acc):
+
         while args != []:
             arg, val = args.pop(0)
-
             if arg not in self.actions:
                 args.insert(0, (arg, val))
                 return self._unknow_argument_behaviour(arg, val, args, acc)

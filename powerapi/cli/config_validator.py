@@ -61,8 +61,13 @@ class ConfigValidator:
             logging.error("no input configuration found")
             return False
 
-        for input_type in config['input']:
-            input_config = config['input'][input_type]
+        for input_id in config['input']:
+            input_config = config['input'][input_id]
+            if input_config['type'] == 'csv' \
+                    and ('files' not in input_config or input_config['files'] is None or len(input_config['files']) == 0):
+                logging.error("no files parameter found for csv input")
+                return False
+
             if 'model' not in input_config:
                 input_config['model'] = 'PowerReport'
             if 'name' not in input_config:
@@ -74,9 +79,15 @@ class ConfigValidator:
 
     @staticmethod
     def _validate_input(config: Dict):
-        for _, input_config in config['input'].items():
+        for key, input_config in config['input'].items():
             if input_config['type'] == 'csv':
-                for file_name in input_config['files']:
+                list_of_files = input_config['files']
+
+                if isinstance(list_of_files, str):
+                    list_of_files = input_config['files'].split(",")
+                    config['input'][key]['files'] = list_of_files
+
+                for file_name in list_of_files:
                     if not os.access(file_name, os.R_OK):
                         return False
         return True
