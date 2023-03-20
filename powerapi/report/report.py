@@ -34,7 +34,13 @@ from typing import Dict, NewType, Tuple, List, Any
 from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
 from powerapi.message import Message
 
-CSV_HEADER_COMMON = ['timestamp', 'sensor', 'target']
+TIMESTAMP_KEY = 'timestamp'
+SENSOR_KEY = 'sensor'
+TARGET_KEY = 'target'
+METADATA_KEY = 'metadata'
+GROUPS_KEY = 'groups'
+
+CSV_HEADER_COMMON = [TIMESTAMP_KEY, SENSOR_KEY, TARGET_KEY]
 CsvLines = NewType('CsvLines', Tuple[List[str], Dict[str, str]])
 
 
