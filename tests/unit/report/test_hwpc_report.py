@@ -189,5 +189,5 @@ def test_create_report_from_csv_with_events():
 
     assert 'RAPL_VALUE' in report.groups['rapl']['0']['7']
     assert 'RAPL_ENERGY_PKG' in report.groups['rapl']['0']['7']
-    assert report.groups['rapl']['0']['7']['RAPL_VALUE'] == '1234'
+    assert report.groups['rapl']['0']['7']['RAPL_VALUE'] == 1234
     assert report.groups['rapl']['0']['7']['RAPL_ENERGY_PKG'] == 1

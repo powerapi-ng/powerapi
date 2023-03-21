@@ -173,7 +173,7 @@ class HWPCReport(Report):
         # We retrieve values for each event group
         for current_key, value in row.items():
             if current_key not in CSV_HEADER_HWPC:
-                groups[group_name][row[SOCKET_KEY]][row[CPU_KEY]][current_key] = value
+                groups[group_name][row[SOCKET_KEY]][row[CPU_KEY]][current_key] = int(value)
 
     @staticmethod
     def create_empty_report():
