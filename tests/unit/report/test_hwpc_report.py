@@ -150,25 +150,42 @@ def test_create_hwpc_report_from_csv_without_socket_field_raise_BadInputData():
 
 
 ############
-# METADATA #
+# EVENTS   #
 ############
 
-def test_creating_report_with_metadata():
-    report = HWPCReport(('1970-09-01T09:09:10.543'), 'toto', 'all', {}, {"tag": 1})
-    assert report.metadata["tag"] == 1
+def test_creating_report_with_event():
+    report = HWPCReport(datetime.strptime('1970-09-01T09:09:10.543', "%Y-%m-%dT%H:%M:%S.%f"), 'toto', 'all',
+                        {'g1': {'c1': 1}})
+    assert report.groups['g1']['c1'] == 1
 
 
-def test_create_report_from_json_with_metadata():
+def test_create_report_from_json_with_events():
+    expected_event_values = {"rapl": {"0": {"11": {"RAPL_ENERGY_PKG": 8.7599611904e+10,
+                                                   "time_enabled": 1.000120188e+09,
+                                                   "time_running": 1.000120188e+09}},
+                                      "1": {"21": {"RAPL_ENERGY_PKG": 8.0734322688e+10,
+                                                   "time_enabled": 1.000169705e+09,
+                                                   "time_running": 1.000169705e+09}
+                                            }}}
     json_input = extract_rapl_reports_with_2_sockets(1)[0]
-    json_input["metadata"] = {}
-    json_input["metadata"]["tag"] = 1
+
     report = HWPCReport.from_json(json_input)
-    assert report.metadata["tag"] == 1
+
+    for group_name in expected_event_values:
+        for group_key in expected_event_values[group_name]:
+            for sub_group_key in expected_event_values[group_name][group_key]:
+                for event_key in expected_event_values[group_name][group_key][sub_group_key]:
+                    assert report.groups[group_name][group_key][sub_group_key][event_key] == \
+                           expected_event_values[group_name][group_key][sub_group_key][event_key]
 
 
-def test_create_report_from_csv_with_metadata():
+def test_create_report_from_csv_with_events():
     csv_lines = [('rapl',
                   {'sensor': 'toto', 'timestamp': '1970-09-01T09:09:09.543', 'target': 'all', 'socket': '0', 'cpu': '7',
-                   'RAPL_VALUE': '1234', 'tag': 1})]
+                   'RAPL_VALUE': '1234', 'RAPL_ENERGY_PKG': 1})]
     report = HWPCReport.from_csv_lines(csv_lines)
-    assert report.metadata["tag"] == 1
+
+    assert 'RAPL_VALUE' in report.groups['rapl']['0']['7']
+    assert 'RAPL_ENERGY_PKG' in report.groups['rapl']['0']['7']
+    assert report.groups['rapl']['0']['7']['RAPL_VALUE'] == 1234
+    assert report.groups['rapl']['0']['7']['RAPL_ENERGY_PKG'] == 1

@@ -106,6 +106,8 @@ class Sync():
         else:
             self.pair_ready.append((second_report, report))
 
+        return
+
     def add_report(self, report):
         """
         Receive a new report.

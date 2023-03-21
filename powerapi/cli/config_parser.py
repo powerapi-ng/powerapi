@@ -116,7 +116,8 @@ class SubConfigParser(ConfigParser):
             for _, waited_value in self.args.items():
                 if args in waited_value.names:
                     # check type
-                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
+
+                    if not isinstance(value, waited_value.type) and not waited_value.is_flag and args != 'files':
                         raise BadTypeException(args, waited_value.type)
 
         for args, value in self.args.items():
