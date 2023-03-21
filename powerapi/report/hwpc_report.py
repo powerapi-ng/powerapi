@@ -84,8 +84,8 @@ class HWPCReport(Report):
         self.groups = groups
 
     def __repr__(self) -> str:
-        return 'HWCPReport(%s, %s, %s, %s, %s)' % (
-        self.timestamp, self.sensor, self.target, sorted(self.groups.keys()), str(self.metadata))
+        return 'HWCPReport(%s, %s, %s, %s)' % (
+            self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
 
     @staticmethod
     def from_json(data: Dict) -> HWPCReport:
