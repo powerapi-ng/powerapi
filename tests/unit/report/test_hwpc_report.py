@@ -160,14 +160,12 @@ def test_creating_report_with_event():
 
 
 def test_create_report_from_json_with_events():
-    expected_event_values = {"rapl": {"0": {"11":
-                                                {"RAPL_ENERGY_PKG": 8.7599611904e+10,
-                                                 "time_enabled": 1.000120188e+09,
-                                                 "time_running": 1.000120188e+09}},
-                                      "1": {"21":
-                                                {"RAPL_ENERGY_PKG": 8.0734322688e+10,
-                                                 "time_enabled": 1.000169705e+09,
-                                                 "time_running": 1.000169705e+09}
+    expected_event_values = {"rapl": {"0": {"11": {"RAPL_ENERGY_PKG": 8.7599611904e+10,
+                                                   "time_enabled": 1.000120188e+09,
+                                                   "time_running": 1.000120188e+09}},
+                                      "1": {"21": {"RAPL_ENERGY_PKG": 8.0734322688e+10,
+                                                   "time_enabled": 1.000169705e+09,
+                                                   "time_running": 1.000169705e+09}
                                             }}}
     json_input = extract_rapl_reports_with_2_sockets(1)[0]
 
