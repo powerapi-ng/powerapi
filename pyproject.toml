@@ -58,7 +58,13 @@ opentsdb = ["opentsdb-py >= 0.6.0"]
 prometheus = ["prometheus-client >= 0.9.0"]
 
 # Plaforms:
-libvirt = ["libvirt-python >= 6.1.0"]
+libvirt = ["libvirt-python >= 6.1.0"]  # requires libvirt lib/headers, do not include by default.
+
+# Aliases:
+all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
+all-platforms = []
+everything = ["powerapi[all-databases, all-platforms]"]
+devel = ["powerapi[everything, test, docs, lint]"]
 
 [project.urls]
 homepage = "https://powerapi.org"
