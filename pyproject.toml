@@ -46,6 +46,11 @@ docs = [
     "sphinx-autodoc-typehints >= 1.6.0"
 ]
 
+lint = [
+    "flake8 >= 3.9.2",
+    "pylint >= 2.16.0"
+]
+
 # Databases:
 mongodb = ["pymongo >= 3.7.2"]
 influxdb = ["influxdb-client >= 1.30.0", "influxdb >= 2.12"]
