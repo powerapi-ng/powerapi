@@ -37,7 +37,7 @@ import pytest
 
 from powerapi.report import Report
 from powerapi.pusher import PusherActor
-from powerapi.test_utils.db.db import REPORT2, REPORT1, FakeDB
+from tests.utils.db.db import REPORT2, REPORT1, FakeDB
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB, pytest_generate_tests_abstract
 

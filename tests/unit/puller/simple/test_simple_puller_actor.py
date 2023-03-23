@@ -38,10 +38,12 @@ from powerapi.message import StartMessage, \
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
-from powerapi.test_utils.dummy_actor import DummyActor
-from powerapi.test_utils.unit import shutdown_system
+from tests.utils.dummy_actor import DummyActor
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive
+
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 
 NUMBER_OF_REPORTS_TO_SEND = 100

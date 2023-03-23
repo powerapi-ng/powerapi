@@ -60,13 +60,14 @@ import pymongo
 
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.test_utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, LIBVIRT_CONFIG
-from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
-    MONGO_DATABASE_NAME
-from powerapi.test_utils.report.hwpc import extract_all_events_reports_with_vm_name
-from powerapi.test_utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
-from powerapi.test_utils.unit import shutdown_system
+from tests.utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, LIBVIRT_CONFIG
+# noinspection PyUnresolvedReferences
+from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_DATABASE_NAME, mongo_database
+from tests.utils.report.hwpc import extract_all_events_reports_with_vm_name
+from tests.utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 
 @pytest.fixture

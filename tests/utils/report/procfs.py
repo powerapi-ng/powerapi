@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (c) 2021, INRIA
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
@@ -26,3 +28,28 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# pylint: disable=redefined-outer-name
+# pylint: disable=unused-import
+
+import datetime
+
+SENSOR_NAME = 'sensor_test'
+TARGET_NAME = 'target_test'
+
+
+def gen_json_procfs_report(number_of_reports, procfs_timeline):
+    """
+    generate number_of_reports power report with json format
+    each power report have the same sensor, target and power value (100W)
+    only the timestamp is different.
+    timestamp is generated from 01/01/1970 0:00.0 for the first report and is incremented by 1s for each returned report
+    """
+    reports = []
+    for ts in range(number_of_reports):
+        tmstp_tmp = str(datetime.datetime.fromtimestamp(ts))
+        tmstp = tmstp_tmp[:tmstp_tmp.index(' ')] + 'T' + tmstp_tmp[tmstp_tmp.index(' ') + 1:] + '.0'
+        tmp_report = procfs_timeline
+        tmp_report["timestamp"] = tmstp
+        reports.append(tmp_report)
+    return reports

@@ -33,6 +33,9 @@ from powerapi.report import Report
 
 
 def define_database_content(content):
+    """
+    Decorator for defining a database content
+    """
     def wrap(func):
         setattr(func, '_content', content)
         return func
@@ -51,8 +54,10 @@ class FakeDBError(Exception):
 
 
 class FakeDB(BaseDB):
-
-    def __init__(self, content=[], *args, **kwargs):
+    """
+    Fake DB for testing purposes
+    """
+    def __init__(self, content=[]):
         BaseDB.__init__(self, Report)
         self._content = content
         self.q = Queue()
@@ -76,7 +81,7 @@ class SilentFakeDB(BaseDB):
     An empty Database that don't send information through the pipe
     """
 
-    def __init__(self, content=[], pipe=None, *args, **kwargs):
+    def __init__(self, content=[]):
         BaseDB.__init__(self, Report)
         self._content = content
 
@@ -98,7 +103,7 @@ class CrashDB(BaseDB):
     FakeDB that crash when using its connect method
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         BaseDB.__init__(self, Report)
 
     def connect(self):

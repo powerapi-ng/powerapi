@@ -26,16 +26,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import logging
-
-import pytest
 
 from powerapi.actor.actor import InitializationException
 from powerapi.handler import PoisonPillMessageHandler, StartHandler
 from powerapi.message import StartMessage, Message, PoisonPillMessage
-from powerapi.actor import Actor as PowerapiActor, Actor, State
+from powerapi.actor import Actor, State
 from powerapi.formula import DomainValues
-from powerapi.test_utils.dummy_handlers import DummyHandler, DummyFormulaHandler, CrashFormulaHandler, \
+from tests.utils.dummy_handlers import DummyHandler, DummyFormulaHandler, CrashFormulaHandler, \
     CrashInitFormulaHandler
 
 LOGGER_NAME = 'multiprocess_test_logger'
@@ -69,7 +66,6 @@ class DummyActor(Actor):
         self.add_handler(self.message_type, DummyHandler(self.state))
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(StartMessage, StartHandler(self.state))
-        print('setup: Called in '+str(self))
 
 
 class DummyFormulaActorState(State):
@@ -100,6 +96,11 @@ class DummyFormulaActor(Actor):
 
     @staticmethod
     def gen_domain_values(device_id, formula_id):
+        """
+        Create a DomainValue object with the provided values
+        :param device_id: Id of the device
+        :formula_id; Id of the formula
+        """
         return DomainValues(device_id, formula_id)
 
 
@@ -135,13 +136,13 @@ class CrashInitFormulaActor(DummyFormulaActor):
         self.add_handler(Message, CrashInitFormulaHandler(self.state))
 
 
-class DummyPowerapiActor(PowerapiActor):
+class DummyPowerapiActor(Actor):
     """
     Actor that have the same API than a basic powerapi actor
     """
 
     def __init__(self, name: str):
-        PowerapiActor.__init__(self, name)
+        Actor.__init__(self, name)
 
 
 class CrashInitActor(DummyPowerapiActor):
@@ -149,5 +150,5 @@ class CrashInitActor(DummyPowerapiActor):
     Basic powerapi actor that crash at setup
     """
 
-    def setup(self, msg):
+    def setup(self):
         raise InitializationException('error')

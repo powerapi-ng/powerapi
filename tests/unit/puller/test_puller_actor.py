@@ -39,7 +39,7 @@ from powerapi.filter import Filter
 from powerapi.message import StartMessage, ErrorMessage
 from powerapi.puller import PullerActor
 from powerapi.report import Report
-from powerapi.test_utils.db.db import REPORT1, REPORT2, define_database_content
+from tests.utils.db.db import REPORT1, REPORT2, define_database_content
 from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB, pytest_generate_tests_abstract
 
 

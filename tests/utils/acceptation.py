@@ -34,7 +34,6 @@ from multiprocessing import Process
 from typing import Dict, Callable
 
 import pytest
-from pytest_asyncio.plugin import unused_tcp_port
 
 from powerapi.actor import Supervisor
 from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
@@ -42,15 +41,18 @@ from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
-from powerapi.test_utils.db.csv import OUTPUT_PATH, FILES
-from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+from tests.utils.db.csv import OUTPUT_PATH, FILES
+from tests.utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME
+from tests.utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_INPUT_COLLECTION_NAME
-from powerapi.test_utils.libvirt import REGEXP
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
+from tests.utils.libvirt import REGEXP
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
-def filter_rule(msg):
+def filter_rule(_):
+    """
+    Default filter rule
+    """
     return True
 
 
@@ -129,6 +131,25 @@ def get_basic_config_with_stream():
     config_stream = BASIC_CONFIG
     config_stream['stream'] = True
     return config_stream
+
+
+@pytest.fixture()
+def socket_info_config():
+    """
+    Return a configuration with socket as input and mongo as output
+    """
+    return {'verbose': True,
+            'stream': False,
+            'input': {'test_puller': {'type': 'socket',
+                                      'port': 0,
+                                      'model': 'HWPCReport'}},
+            'output': {'test_pusher': {'type': 'mongodb',
+                                       'uri': MONGO_URI,
+                                       'db': MONGO_DATABASE_NAME,
+                                       'model': 'PowerReport',
+                                       'max_buffer_size': 0,
+                                       'collection': MONGO_OUTPUT_COLLECTION_NAME}},
+            }
 
 
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,

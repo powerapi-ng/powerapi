@@ -30,9 +30,9 @@ import pytest
 
 from powerapi.report import HWPCReport
 from powerapi.database import MongoDB, MongoBadDBError
-
-from powerapi.test_utils.db.mongo import mongo_database, MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME
-from powerapi.test_utils.report.hwpc import gen_HWPCReports, extract_rapl_reports_with_2_sockets
+# noinspection PyUnresolvedReferences
+from tests.utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_INPUT_COLLECTION_NAME, mongo_database
+from tests.utils.report.hwpc import gen_HWPCReports, extract_rapl_reports_with_2_sockets
 
 
 @pytest.fixture

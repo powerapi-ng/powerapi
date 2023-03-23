@@ -53,9 +53,6 @@ Test if:
 # pylint: disable=unused-argument
 # pylint: disable=unused-import
 
-from multiprocessing import Process
-
-import sys
 import time
 import signal
 import os
@@ -63,12 +60,19 @@ import pytest
 
 from powerapi.formula import DummyFormulaActor
 
-from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.acceptation import mongodb_content, MainProcess
-from powerapi.actor import Supervisor
-from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CONFIG, ROOT_DEPTH_LEVEL, \
-    get_actor_by_name, DISPATCHER_ACTOR_NAME
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
+from tests.utils.acceptation import MainProcess
+from tests.utils.acceptation import get_actor_by_name, DISPATCHER_ACTOR_NAME
+# noinspection PyUnresolvedReferences
+from tests.utils.db.mongo import mongo_database
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
+
+
+@pytest.fixture
+def mongodb_content():
+    """
+        Retrieve 1 RAPL reports from a mongo database
+    """
+    return extract_rapl_reports_with_2_sockets(1)
 
 
 @pytest.fixture

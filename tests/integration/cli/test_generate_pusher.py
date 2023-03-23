@@ -31,12 +31,13 @@ import time
 import pytest
 
 from powerapi.message import StartMessage, PoisonPillMessage
-from powerapi.pusher import PusherPoisonPillMessageHandler
 from powerapi.report import PowerReport
 from powerapi.cli.generator import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
-from powerapi.test_utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
-from powerapi.test_utils.unit import shutdown_system
+# noinspection PyUnresolvedReferences
+from tests.utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'system'

@@ -27,19 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import datetime
-import os
-import time
-
 import pytest
-from urllib3.exceptions import LocationValueError, NewConnectionError
 
-from powerapi.database import InfluxDB, CantConnectToInfluxDBException
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.report import PowerReport
-from powerapi.test_utils.db.influx2 import INFLUX2_ORG, INFLUX2_TOKEN, INFLUX2_URL, INFLUX2_BUCKET_NAME, \
+# noinspection PyUnresolvedReferences
+from tests.utils.db.influx2 import INFLUX2_ORG, INFLUX2_TOKEN, INFLUX2_URL, INFLUX2_BUCKET_NAME, \
     influx_database, get_all_the_reports, INFLUX2_MEASUREMENT_NAME, INFLUX2_DEFAULT_START_DATE, INFLUX2_PORT, \
     INFLUX2_URL_WITHOUT_PORT
-from powerapi.test_utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_power_report
+from tests.utils.report.power import SENSOR_NAME, TARGET_NAME
 
 POWER_REPORT_0 = PowerReport(datetime.datetime.fromisoformat('1970-01-01T00:00:00+00:00'), SENSOR_NAME,
                              TARGET_NAME, 100, {'socket': 0})

@@ -26,10 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import multiprocessing
 import time
 
-from multiprocessing import Queue, Pipe, active_children
+from multiprocessing import Pipe
 from mock import Mock
 
 import pytest
@@ -39,8 +38,8 @@ from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, HWPCReport
-from powerapi.test_utils.db import FakeDB
-from powerapi.test_utils.dummy_actor import DummyActor
+from tests.utils.db import FakeDB
+from tests.utils.dummy_actor import DummyActor
 
 SENDER_NAME = 'test case'
 

@@ -29,7 +29,7 @@
 
 import pytest
 
-from powerapi.report import Report, BadInputData
+from powerapi.report import Report
 from datetime import datetime
 
 
@@ -38,7 +38,7 @@ from datetime import datetime
 ############
 
 def test_creating_report_with_metadata():
-    report = Report(('1970-09-01T09:09:10.543'), 'toto', 'all', {"tag": 1})
+    report = Report(datetime.strptime('1970-09-01T09:09:10.543', "%Y-%m-%dT%H:%M:%S.%f"), 'toto', 'all', {"tag": 1})
     assert report.metadata["tag"] == 1
 
 

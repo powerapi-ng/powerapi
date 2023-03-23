@@ -32,7 +32,7 @@ import pytest
 from powerapi.report import HWPCReport, BadInputData
 from datetime import datetime
 
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 ########

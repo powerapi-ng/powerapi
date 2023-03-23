@@ -30,8 +30,8 @@ import json
 from typing import Dict, List
 
 from powerapi.report import HWPCReport
-import powerapi.test_utils.report as parent_module
-from powerapi.test_utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
+import tests.utils.report as parent_module
+from tests.utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
 
 ###################

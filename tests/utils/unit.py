@@ -33,6 +33,9 @@ import pytest
 
 @pytest.fixture
 def shutdown_system():
+    """
+    Shutdown the actor system, i.e., all actors are killed
+    """
     yield None
     active = active_children()
     for child in active:

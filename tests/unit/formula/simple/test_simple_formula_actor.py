@@ -32,7 +32,8 @@
 import pytest
 
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
-from powerapi.test_utils.unit import shutdown_system
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, REPORT_TYPE_TO_BE_SENT, \
     REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT
 

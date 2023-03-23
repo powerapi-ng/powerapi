@@ -46,7 +46,6 @@ INFLUX2_URL = 'http://localhost:8086'
 if os.environ.get('INFLUX2_URL') is not None:
     INFLUX2_URL = os.environ.get('INFLUX2_URL')
 
-
 INFLUX2_URL_WITHOUT_PORT = 'http://localhost'
 if os.environ.get('INFLUX2_URL_WITHOUT_PORT') is not None:
     INFLUX2_URL_WITHOUT_PORT = os.environ.get('INFLUX2_URL_WITHOUT_PORT')
@@ -62,8 +61,6 @@ if os.environ.get('INFLUX2_BUCKET_NAME') is not None:
 INFLUX2_DEFAULT_START_DATE = '1970-01-01T00:00:00Z'
 
 INFLUX2_MEASUREMENT_NAME = 'power_consumption'
-
-
 
 
 @pytest.fixture()
