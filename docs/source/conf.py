@@ -53,7 +53,7 @@ extensions = [
     'sphinx.ext.githubpages',
 ]
 
-#apidoc
+# apidoc
 apidoc_module_dir = '../../powerapi/'
 apidoc_output_dir = './_doc'
 

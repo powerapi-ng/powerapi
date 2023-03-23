@@ -38,7 +38,8 @@ from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
 from powerapi.formula import DummyFormulaActor
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
-from powerapi.test_utils.unit import shutdown_system
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
     PUSHER_NAME_POWER_REPORT
@@ -49,6 +50,7 @@ def define_dispatch_rules(rules):
         Return a wrap function with dispatch rules by using the given rules
         :param rules: The rules to be applied
     """
+
     def wrap(func):
         setattr(func, '_dispatch_rules', rules)
         return func
@@ -259,10 +261,10 @@ REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
 class TestDispatcher(AbstractTestActor):
-
     """
         Class for testing DispatcherActor
     """
+
     @pytest.fixture
     def formula_class(self):
         """
@@ -317,8 +319,8 @@ class TestDispatcher(AbstractTestActor):
         assert not is_actor_alive(started_actor)
 
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
-    def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, started_actor,
-                                                                                dummy_pipe_out, shutdown_system):
+    def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(self, started_actor, dummy_pipe_out,
+                                                                                shutdown_system):
 
         """
             Check that a formula is no created by DispatcherActor when it does not have a rule to deal with
@@ -342,6 +344,7 @@ class TestDispatcher(AbstractTestActor):
         assert isinstance(power_report, PowerReport)
         assert power_report.power == 42
 
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_send_report_to_formula(self,
                                                                                                 dispatcher_with_formula,
@@ -393,8 +396,7 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, started_actor,
-                                                                            dummy_pipe_out,
-                                                                            shutdown_system):
+                                                                            dummy_pipe_out, shutdown_system):
         """
             Check that two formulas are created by DispatcherActor
         """

@@ -32,7 +32,7 @@ import pytest
 from powerapi.report import PowerReport, BadInputData
 from datetime import datetime
 
-from powerapi.test_utils.report.power import gen_json_power_report
+from tests.utils.report.power import gen_json_power_report
 
 
 ########

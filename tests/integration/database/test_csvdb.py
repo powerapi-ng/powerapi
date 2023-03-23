@@ -33,13 +33,11 @@ import shutil
 import os
 import csv
 
-# from powerapi.report import create_core_report, create_group_report, create_report_root,\
-#     create_socket_report
 from powerapi.report import PowerReport, HWPCReport
 from powerapi.database import CsvDB
 from powerapi.database import CsvBadFilePathError, CsvBadCommonKeysError, HeaderAreNotTheSameError
 from powerapi.utils import timestamp_to_datetime
-from powerapi.test_utils.db.csv import ROOT_PATH
+from tests.utils.db.csv import ROOT_PATH
 
 # All this file raise error
 BAD_COMMON = [ROOT_PATH + "bad_common_miss_sensor.csv",

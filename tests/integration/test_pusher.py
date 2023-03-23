@@ -31,15 +31,17 @@
 import logging
 import time
 
+import pytest
+
 from powerapi.database import MongoDB
 from powerapi.report import PowerReport
 from powerapi.message import StartMessage, ErrorMessage, OKMessage
 
-from powerapi.test_utils.db import define_database, define_report_type
-from powerapi.test_utils.db.mongo import mongo_database
+from tests.utils.db import define_database, define_report_type
+# noinspection PyUnresolvedReferences
 from tests.unit.actor.abstract_test_actor import pusher
-from powerapi.test_utils.unit import shutdown_system
-
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 URI = "mongodb://localhost:27017"
 LOG_LEVEL = logging.NOTSET

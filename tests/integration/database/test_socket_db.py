@@ -36,7 +36,7 @@ import pytest_asyncio
 
 from powerapi.database import SocketDB
 from powerapi.report import HWPCReport
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 class ClientThread(Thread):

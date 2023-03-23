@@ -35,6 +35,10 @@ from powerapi.message import EndMessage, Message, StartMessage, ErrorMessage
 
 class DummyHandler(Handler):
 
+    """
+        Dummy actor handler for testing purposes
+    """
+
     def __init__(self, state):
         Handler.__init__(self, state)
 
@@ -44,13 +48,15 @@ class DummyHandler(Handler):
 
         :param Object msg: the message received by the actor
         """
-        print('DummyHandler: receive '+str(msg))
         self.state.pipe.send((self.state.actor.name, msg))
-        print('DummyHandler: sent ' + str(msg))
         logging.debug('receive : ' + str(msg), extra={'actor_name': self.state.actor.name})
 
 
 class DummyFormulaHandler(Handler):
+
+    """
+    Dummy formula actor handler for testing purposes
+    """
 
     def __init__(self, state: State):
         Handler.__init__(self, state)
@@ -61,15 +67,12 @@ class DummyFormulaHandler(Handler):
         if its an ActorExitRequest : notify the pusher that the Dummyformula died
         if its an other type of message : forward it to the fake puller
         """
-        print('DummyFormulaHandler: receive: '+str(msg))
         logging.debug('receive : ' + str(msg), extra={'actor_name': self.state.actor.name})
 
         if isinstance(msg, EndMessage):
             self.state.fake_pusher.send_control(msg)
         else:
-            print('DummyFormulaHandler: sending to fake_pusher '+str(self.state.fake_pusher)+ ' message ' + str(msg))
             self.state.fake_pusher.send_data(msg)
-            print('DummyFormulaHandler: sent to fake_pusher ' + str(msg))
 
 
 class CrashException(Exception):
@@ -80,6 +83,9 @@ class CrashException(Exception):
 
 class CrashFormulaHandler(DummyFormulaHandler):
 
+    """
+    CrashFormula Handler for testing purposes
+    """
     def __init__(self, state: State):
         DummyFormulaHandler.__init__(self, state)
 
@@ -92,7 +98,7 @@ class CrashFormulaHandler(DummyFormulaHandler):
         logging.debug('receive : ' + str(msg), extra={'actor_name': self.state.actor.name})
         self.state.actor.report_received += 1
 
-        if self.report_received >= 3:
+        if self.state.actor.report_received >= 3:
             self.state.fake_puller.send_control(EndMessage(self.state.fake_puller.name))
             raise CrashException
 
@@ -100,6 +106,10 @@ class CrashFormulaHandler(DummyFormulaHandler):
 
 
 class CrashInitFormulaHandler(DummyFormulaHandler):
+
+    """
+    CrashInitFormula Handler for testing purposes
+    """
 
     def __init__(self, state: State):
         DummyFormulaHandler.__init__(self, state)

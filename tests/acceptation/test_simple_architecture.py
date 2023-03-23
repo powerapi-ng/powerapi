@@ -50,7 +50,6 @@ Test if:
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
 # pylint: disable=unused-import
-import logging
 import time
 from datetime import datetime
 
@@ -60,20 +59,21 @@ import pymongo
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
 
-from powerapi.test_utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
+# noinspection PyUnresolvedReferences
+from tests.utils.acceptation import launch_simple_architecture, socket_info_config, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
-from powerapi.test_utils.db.mongo import mongo_database
-from powerapi.test_utils.db.influx import influx_database
-from powerapi.test_utils.db.csv import files
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
+# noinspection PyUnresolvedReferences
+from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
+    MONGO_DATABASE_NAME, mongo_database
+# noinspection PyUnresolvedReferences
+from tests.utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports, influx_database
+# noinspection PyUnresolvedReferences
+from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
+from tests.utils.db.socket import ClientThread, ClientThreadDelay
 
-from powerapi.test_utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
-    MONGO_DATABASE_NAME
-from powerapi.test_utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports
-from powerapi.test_utils.db.csv import ROOT_PATH, OUTPUT_PATH
-from powerapi.test_utils.db.socket import ClientThread, ClientThreadDelay
-
-from powerapi.test_utils.unit import shutdown_system
+# noinspection PyUnresolvedReferences
+from tests.utils.unit import shutdown_system
 
 
 ##################
@@ -254,23 +254,13 @@ def check_db_socket():
              'target': report['target']}) == 2
 
 
-def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
+def test_run_socket_to_mongo(mongo_database, unused_tcp_port, socket_info_config, shutdown_system):
     """
         Check that report are correctly stored into an output mongo database.
         The input source is a socket
     """
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'model': 'PowerReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'max_buffer_size': 0,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-              'input': {'test_puller': {'type': 'socket',
-                                        'port': unused_tcp_port,
-                                        'model': 'HWPCReport'}},
-              }
+    config = socket_info_config
+    config['input']['test_puller']['port'] = unused_tcp_port
     supervisor = Supervisor()
     launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                formula_class=DummyFormulaActor)
@@ -286,31 +276,22 @@ def test_run_socket_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
     supervisor.kill_actors()
 
 
-def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, shutdown_system):
+def test_run_socket_with_delay_between_message_to_mongo(mongo_database, unused_tcp_port, socket_info_config,
+                                                        shutdown_system):
     """
         Check that report are correctly stored into an output mongo database
     """
-    config = {'verbose': True,
-              'stream': False,
-              'output': {'test_pusher': {'type': 'mongodb',
-                                         'model': 'PowerReport',
-                                         'uri': MONGO_URI,
-                                         'db': MONGO_DATABASE_NAME,
-                                         'max_buffer_size': 0,
-                                         'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-              'input': {'test_puller': {'type': 'socket',
-                                        'port': unused_tcp_port,
-                                        'model': 'HWPCReport'}},
-              }
+    config = socket_info_config
+    config['input']['test_puller']['port'] = unused_tcp_port
     supervisor = Supervisor()
     launch_simple_architecture(config=config, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
                                formula_class=DummyFormulaActor)
-    time.sleep(2)
+    time.sleep(5)
     client = ClientThreadDelay(extract_rapl_reports_with_2_sockets(10), unused_tcp_port)
     client.daemon = True
     client.start()
 
-    time.sleep(2)
+    time.sleep(5)
     check_db_socket()
 
     supervisor.kill_actors()

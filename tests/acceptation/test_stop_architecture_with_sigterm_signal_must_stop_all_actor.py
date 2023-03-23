@@ -61,10 +61,11 @@ import pytest
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
 
-from powerapi.test_utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, \
+from tests.utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, \
     get_basic_config_with_stream
-from powerapi.test_utils.report.hwpc import extract_rapl_reports_with_2_sockets
-from powerapi.test_utils.db.mongo import mongo_database
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
+# noinspection PyUnresolvedReferences
+from tests.utils.db.mongo import mongo_database
 
 
 class MainProcess(Process):

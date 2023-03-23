@@ -38,8 +38,7 @@ except ImportError:
 from powerapi.report_modifier import LibvirtMapper
 from powerapi.report import Report
 
-from powerapi.test_utils.libvirt import MockedLibvirt
-from powerapi.test_utils.libvirt import DOMAIN_NAME_1, LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2, UUID_1, REGEXP
+from tests.utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2, UUID_1, REGEXP
 
 BAD_TARGET = 'lkjqlskjdlqksjdlkj'
 

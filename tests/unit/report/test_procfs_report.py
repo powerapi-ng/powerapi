@@ -32,41 +32,44 @@ import pytest
 from powerapi.report import ProcfsReport, BadInputData
 from datetime import datetime
 
-from powerapi.test_utils.report.procfs import gen_json_procfs_report
+from tests.utils.report.procfs import gen_json_procfs_report
+
+# noinspection PyUnresolvedReferences
+from tests.utils.reports import procfs_timeline
 
 
 ########
 # JSON #
 ########
-def test_create_procfs_report_from_json_wit_str_timestamp_create_a_ProcfsReport():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_procfs_report_from_json_wit_str_timestamp_create_a_ProcfsReport(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     report = ProcfsReport.from_json(json_input)
     assert isinstance(report, ProcfsReport)
 
 
-def test_create_procfs_report_from_json_with_datetime_timestamp_format_create_a_ProcfsReport():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_procfs_report_from_json_with_datetime_timestamp_format_create_a_ProcfsReport(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     json_input['timestamp'] = datetime.strptime(json_input['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
     report = ProcfsReport.from_json(json_input)
     assert isinstance(report, ProcfsReport)
 
 
-def test_create_procfs_report_from_json_with_str_timestamp_with_bad_format_raise_BadInputData():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_procfs_report_from_json_with_str_timestamp_with_bad_format_raise_BadInputData(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     json_input['timestamp'] = "1970-09-01T090909.543"
     with pytest.raises(BadInputData):
         _ = ProcfsReport.from_json(json_input)
 
 
-def test_create_procfs_report_from_json_without_timestamp_field_raise_BadInputData():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_procfs_report_from_json_without_timestamp_field_raise_BadInputData(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     del json_input['timestamp']
     with pytest.raises(BadInputData):
         _ = ProcfsReport.from_json(json_input)
 
 
-def test_create_procfs_report_from_json_without_sensor_field_raise_BadInputData():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_procfs_report_from_json_without_sensor_field_raise_BadInputData(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     del json_input['sensor']
     with pytest.raises(BadInputData):
         _ = ProcfsReport.from_json(json_input)
@@ -173,8 +176,8 @@ def test_creating_report_with_metadata():
     assert report.metadata["tag"] == 1
 
 
-def test_create_report_from_json_with_metadata():
-    json_input = gen_json_procfs_report(1)[0]
+def test_create_report_from_json_with_metadata(procfs_timeline):
+    json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
     json_input["metadata"] = {}
     json_input["metadata"]["tag"] = 1
     report = ProcfsReport.from_json(json_input)

@@ -30,9 +30,10 @@ import datetime
 import pytest
 
 from powerapi.database import InfluxDB, CantConnectToInfluxDBException
-from powerapi.report import PowerReport, BadInputData
-from powerapi.test_utils.db.influx import influx_database, get_all_reports, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT
-from powerapi.test_utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_power_report
+from powerapi.report import PowerReport
+# noinspection PyUnresolvedReferences
+from tests.utils.db.influx import influx_database, get_all_reports, INFLUX_DBNAME, INFLUX_URI, INFLUX_PORT
+from tests.utils.report.power import SENSOR_NAME, TARGET_NAME, gen_json_power_report
 
 POWER_REPORT_0 = PowerReport(datetime.datetime.fromtimestamp(0), SENSOR_NAME,
                              TARGET_NAME, 100, {'socket': 0})

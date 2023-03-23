@@ -27,10 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
 from powerapi.utils.sync import Sync
 from powerapi.report import Report, ProcfsReport, PowerReport
-from powerapi.test_utils.reports import power_timeline, procfs_timeline
+# noinspection PyUnresolvedReferences
+from tests.utils.reports import power_timeline, procfs_timeline
 import datetime
 
 
