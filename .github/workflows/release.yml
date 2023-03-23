@@ -21,6 +21,8 @@ jobs:
 
     - name: Check PowerAPI package version
       shell: python
+      env:
+        PYTHONPATH: ${{ github.workspace }}
       run: |
         import os
         import sys
