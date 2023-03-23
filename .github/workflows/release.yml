@@ -43,7 +43,7 @@ jobs:
         set -euo pipefail
         export BASE_URL="https://github.com/git-chglog/git-chglog/releases/download"
         export FILENAME="git-chglog_${CHGLOG_VERSION}_linux_amd64.tar.gz"
-        curl -fsSL "${BASE_URL}/v${CHGLOG_VERSION}/${FILENAME}" |sudo tar xz git-chglog -C /usr/local/bin
+        curl -fsSL "${BASE_URL}/v${CHGLOG_VERSION}/${FILENAME}" |sudo tar xz --no-same-owner -C /usr/local/bin git-chglog
         git-chglog --config .github/chglog/config.yml --output CHANGELOG.md "${GITHUB_REF_NAME}"
 
     - name: Create GitHub release
