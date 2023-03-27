@@ -101,12 +101,9 @@ class Report(Message):
         :return: a json dictionary, that can be converted into json format, from a given Report
         """
         json = report.__dict__
-        # sender_name is not used. It is always None
+        # sender_name and dispatcher_report_id are not used
         json.pop('sender_name')
-
-        # dispatcher_report_id is only used by Dispatcher. If empty, it is removed
-        if json['dispatcher_report_id'] is None:
-            json.pop('dispatcher_report_id')
+        json.pop('dispatcher_report_id')
 
         return json
 
