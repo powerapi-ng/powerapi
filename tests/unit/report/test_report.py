@@ -33,12 +33,23 @@ from powerapi.report import Report
 from datetime import datetime
 
 
-############
-# METADATA #
-############
+@pytest.fixture()
+def basic_report():
+    return Report(timestamp=datetime.strptime('1970-09-01T09:09:10.543', "%Y-%m-%dT%H:%M:%S.%f"), sensor='toto',
+                  target='all', metadata={"tag": 1})
+
+
+@pytest.fixture()
+def expected_json_report(basic_report):
+    return {'timestamp': basic_report.timestamp,
+            'sensor': basic_report.sensor,
+            'target': basic_report.target,
+            'metadata': basic_report.metadata}
+
 
 def test_creating_report_with_metadata():
-    report = Report(datetime.strptime('1970-09-01T09:09:10.543', "%Y-%m-%dT%H:%M:%S.%f"), 'toto', 'all', {"tag": 1})
+    report = Report(timestamp=datetime.strptime('1970-09-01T09:09:10.543', "%Y-%m-%dT%H:%M:%S.%f"), sensor='toto',
+                    target='all', metadata={"tag": 1})
     assert report.metadata["tag"] == 1
 
 
@@ -52,3 +63,21 @@ def test_create_two_report_without_metadata_metadata_are_different():
     a.metadata["test"] = "value"
     b = Report(0, 'toto', 'all')
     assert a.metadata != b.metadata
+
+
+def test_to_json(basic_report, expected_json_report):
+
+    json = Report.to_json(report=basic_report)
+    assert 'sender_name' not in json
+    assert 'dispatcher_report_id' not in json
+    assert json == expected_json_report
+
+
+def test_to_json_with_dispatcher_report_id(basic_report, expected_json_report):
+    basic_report.dispatcher_report_id = 10
+    expected_json_report['dispatcher_report_id'] = basic_report.dispatcher_report_id
+
+    json = Report.to_json(report=basic_report)
+    assert 'sender_name' not in json
+    assert 'dispatcher_report_id' in json
+    assert json == expected_json_report
