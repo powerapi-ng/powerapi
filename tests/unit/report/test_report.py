@@ -75,7 +75,7 @@ def test_to_json(basic_report, expected_json_report):
 
 def test_to_json_with_dispatcher_report_id(basic_report, expected_json_report):
     basic_report.dispatcher_report_id = 10
-    
+
     json = Report.to_json(report=basic_report)
     assert 'sender_name' not in json
     assert 'dispatcher_report_id' not in json
