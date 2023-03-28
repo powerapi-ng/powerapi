@@ -100,7 +100,12 @@ class Report(Message):
         """
         :return: a json dictionary, that can be converted into json format, from a given Report
         """
-        return report.__dict__
+        json = report.__dict__
+        # sender_name and dispatcher_report_id are not used
+        json.pop('sender_name')
+        json.pop('dispatcher_report_id')
+
+        return json
 
     @staticmethod
     def _extract_timestamp(ts):
