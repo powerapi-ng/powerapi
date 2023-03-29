@@ -283,8 +283,7 @@ class TestDispatcher(AbstractTestActor):
                                                                                               pushers=pushers, socket=0,
                                                                                               core=0),
                                 route_table=route_table,
-                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
-                                device_id='test_device')
+                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
 
         return actor
 

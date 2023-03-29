@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
     from powerapi.dispatcher import RouteTable
-    from powerapi.formula import FormulaActor, FormulaState, DomainValues
+    from powerapi.formula import FormulaActor, FormulaState
     from powerapi.report_modifier import ReportModifier
 
 
@@ -172,7 +172,7 @@ class PoisonPillMessage(Message):
         return False
 
 
-class UnknowMessageTypeException(PowerAPIException):
+class UnknownMessageTypeException(PowerAPIException):
     """
     Exception happen when we don't know the message type
     """

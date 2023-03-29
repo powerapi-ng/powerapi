@@ -150,12 +150,11 @@ class DispatcherActor(Actor):
     """
 
     def __init__(self, name: str, formula_init_function: Callable, pushers: [], route_table: RouteTable,
-                 device_id: str, level_logger: Literal = logging.WARNING, timeout=None):
+                 level_logger: Literal = logging.WARNING, timeout=None):
         """
         :param str name: Actor name
         :param func formula_init_function: Function for creating Formula
         :param route_table: initialized route table of the DispatcherActor
-        :param device_id: name of the device the dispatcher handle
         :param int level_logger: Define the level of the logger
         :param bool timeout: Define the time in millisecond to wait for a
                              message before run timeout_handler
@@ -167,7 +166,6 @@ class DispatcherActor(Actor):
 
         # (powerapi.DispatcherState): Actor state
         self.state = DispatcherState(self, self._create_factory(pushers), route_table)
-        self.device_id = device_id
 
     def setup(self):
         """

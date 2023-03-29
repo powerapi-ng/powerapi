@@ -180,8 +180,7 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
                                                                                            socket=0,
                                                                                            core=0),
                                  route_table=route_table,
-                                 pushers={'test_pusher': pusher},
-                                 device_id='test_device')
+                                 pushers={'test_pusher': pusher})
 
     supervisor.launch_actor(actor=dispatcher, start_message=True)
 

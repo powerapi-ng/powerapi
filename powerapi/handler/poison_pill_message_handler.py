@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.message import UnknowMessageTypeException, PoisonPillMessage
+from powerapi.message import UnknownMessageTypeException, PoisonPillMessage
 from .handler import Handler
 
 
@@ -68,7 +68,7 @@ class PoisonPillMessageHandler(Handler):
         :param Object msg: the message received by the actor
         """
         if not isinstance(msg, PoisonPillMessage):
-            raise UnknowMessageTypeException(type(msg))
+            raise UnknownMessageTypeException(type(msg))
 
         if msg.is_soft:
             self._empty_mail_box()

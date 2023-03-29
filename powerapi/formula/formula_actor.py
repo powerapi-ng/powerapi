@@ -30,7 +30,7 @@
 import logging
 import re
 
-from typing import Dict, Tuple
+from typing import Dict
 
 from powerapi.actor import Actor, State
 from powerapi.pusher import PusherActor
@@ -48,16 +48,6 @@ class FormulaState(State):
         super().__init__(actor)
         self.pushers = pushers
         self.metadata = metadata
-
-
-class DomainValues:
-    """
-    values that describe the device that the formula compute the power consumption for
-    """
-
-    def __init__(self, device_id: str, formula_id: Tuple):
-        self.device_id = device_id
-        self.sensor = formula_id[0]
 
 
 class FormulaActor(Actor):

@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.actor import State
 from powerapi.handler import StartHandler, PoisonPillMessageHandler, Handler
-from powerapi.message import StartMessage, UnknowMessageTypeException
+from powerapi.message import StartMessage, UnknownMessageTypeException
 from powerapi.report import Report
 
 
@@ -75,4 +75,4 @@ class SimpleDispatcherReportHandler(Handler):
             self.state.actor.logger.debug('send ' + str(msg) + ' to ' + self.state.formula_name)
             self.state.formula.send_data(msg)
         else:
-            raise UnknowMessageTypeException()
+            raise UnknownMessageTypeException()
