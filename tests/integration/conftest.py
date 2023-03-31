@@ -30,8 +30,6 @@ import pytest
 
 from multiprocessing import active_children
 
-from tests.utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME
-
 
 @pytest.fixture
 def shutdown_system():
