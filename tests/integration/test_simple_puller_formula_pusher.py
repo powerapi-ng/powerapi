@@ -41,8 +41,6 @@ from powerapi.message import SimplePullerSendReportsMessage, \
     GetReceivedReportsSimplePusherMessage
 from powerapi.report import HWPCReport
 from tests.unit.actor.abstract_test_actor import start_actor, stop_actor
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 FORMULA_NAME = "simple-formula-test"
 REPORTS_TO_SEND = 10

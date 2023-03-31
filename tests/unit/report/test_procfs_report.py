@@ -34,9 +34,6 @@ from datetime import datetime
 
 from tests.utils.report.procfs import gen_json_procfs_report
 
-# noinspection PyUnresolvedReferences
-from tests.utils.reports import procfs_timeline
-
 
 ########
 # JSON #

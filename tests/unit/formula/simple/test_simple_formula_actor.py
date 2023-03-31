@@ -27,13 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,no-self-use,unused-import
+# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,no-self-use
 
 import pytest
 
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, REPORT_TYPE_TO_BE_SENT, \
     REPORT_TYPE_TO_BE_SENT_2, PUSHER_NAME_POWER_REPORT
 
