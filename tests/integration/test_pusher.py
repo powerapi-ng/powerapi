@@ -40,8 +40,6 @@ from powerapi.message import StartMessage, ErrorMessage, OKMessage
 from tests.utils.db import define_database, define_report_type
 # noinspection PyUnresolvedReferences
 from tests.unit.actor.abstract_test_actor import pusher
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 URI = "mongodb://localhost:27017"
 LOG_LEVEL = logging.NOTSET

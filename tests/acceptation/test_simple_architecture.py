@@ -47,9 +47,7 @@ Test if:
   - each HWPCReport in the intput database was converted in one PowerReport per
     socket in the output database
 """
-# pylint: disable=redefined-outer-name
-# pylint: disable=unused-argument
-# pylint: disable=unused-import
+# pylint: disable=redefined-outer-name,unused-argument,unused-import
 import time
 from datetime import datetime
 
@@ -59,8 +57,7 @@ import pymongo
 from powerapi.actor import Supervisor
 from powerapi.formula.dummy import DummyFormulaActor
 
-# noinspection PyUnresolvedReferences
-from tests.utils.acceptation import launch_simple_architecture, socket_info_config, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
+from tests.utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
 from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 # noinspection PyUnresolvedReferences
@@ -71,9 +68,6 @@ from tests.utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports, in
 # noinspection PyUnresolvedReferences
 from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
 from tests.utils.db.socket import ClientThread, ClientThreadDelay
-
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 
 ##################

@@ -29,7 +29,7 @@
 
 from powerapi.actor import State
 from powerapi.handler import Handler, StartHandler
-from powerapi.message import Message, SimplePullerSendReportsMessage, UnknowMessageTypeException
+from powerapi.message import Message, SimplePullerSendReportsMessage, UnknownMessageTypeException
 from powerapi.puller.handlers import PullerInitializationException
 
 
@@ -72,4 +72,4 @@ class SimplePullerHandler(Handler):
                 sent += 1
             self.state.actor.logger.debug('sent reports: ' + str(sent))
         else:
-            raise UnknowMessageTypeException()
+            raise UnknownMessageTypeException()

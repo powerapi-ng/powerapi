@@ -38,8 +38,6 @@ from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from tests.utils.dummy_actor import DummyActor
 from tests.utils.report.hwpc import gen_HWPCReports
 from tests.unit.actor.abstract_test_actor import recv_from_pipe
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
 REPORT_TYPE_TO_BE_SENT = PowerReport
@@ -92,8 +90,7 @@ def started_dispatcher(started_fake_pusher_power_report, route_table):
                                                                                           pushers=pushers, socket=0,
                                                                                           core=0),
                             route_table=route_table,
-                            pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
-                            device_id='test_device')
+                            pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
     actor.start()
     actor.connect_data()
     actor.connect_control()

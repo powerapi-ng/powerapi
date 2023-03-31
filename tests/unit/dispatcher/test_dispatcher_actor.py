@@ -38,8 +38,6 @@ from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
 from powerapi.formula import DummyFormulaActor
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
     PUSHER_NAME_POWER_REPORT
@@ -283,8 +281,7 @@ class TestDispatcher(AbstractTestActor):
                                                                                               pushers=pushers, socket=0,
                                                                                               core=0),
                                 route_table=route_table,
-                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
-                                device_id='test_device')
+                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
 
         return actor
 

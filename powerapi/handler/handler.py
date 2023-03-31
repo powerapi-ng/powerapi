@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.exception import PowerAPIException
-from powerapi.message import Message, UnknowMessageTypeException
+from powerapi.message import Message, UnknownMessageTypeException
 
 
 class HandlerException(PowerAPIException):
@@ -83,7 +83,7 @@ class Handler:
         try:
             handler = self.state.get_corresponding_handler(msg)
             handler.handle_message(msg)
-        except UnknowMessageTypeException:
+        except UnknownMessageTypeException:
             self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
         except HandlerException:
             self.state.actor.logger.warning("HandlerException")

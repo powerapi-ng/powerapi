@@ -133,25 +133,6 @@ def get_basic_config_with_stream():
     return config_stream
 
 
-@pytest.fixture()
-def socket_info_config():
-    """
-    Return a configuration with socket as input and mongo as output
-    """
-    return {'verbose': True,
-            'stream': False,
-            'input': {'test_puller': {'type': 'socket',
-                                      'port': 0,
-                                      'model': 'HWPCReport'}},
-            'output': {'test_pusher': {'type': 'mongodb',
-                                       'uri': MONGO_URI,
-                                       'db': MONGO_DATABASE_NAME,
-                                       'model': 'PowerReport',
-                                       'max_buffer_size': 0,
-                                       'collection': MONGO_OUTPUT_COLLECTION_NAME}},
-            }
-
-
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,
                                formula_class: Callable, generate_report_modifier_list=False):
     """
@@ -180,8 +161,7 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
                                                                                            socket=0,
                                                                                            core=0),
                                  route_table=route_table,
-                                 pushers={'test_pusher': pusher},
-                                 device_id='test_device')
+                                 pushers={'test_pusher': pusher})
 
     supervisor.launch_actor(actor=dispatcher, start_message=True)
 

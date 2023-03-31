@@ -31,7 +31,6 @@ from powerapi.actor.actor import InitializationException
 from powerapi.handler import PoisonPillMessageHandler, StartHandler
 from powerapi.message import StartMessage, Message, PoisonPillMessage
 from powerapi.actor import Actor, State
-from powerapi.formula import DomainValues
 from tests.utils.dummy_handlers import DummyHandler, DummyFormulaHandler, CrashFormulaHandler, \
     CrashInitFormulaHandler
 
@@ -93,15 +92,6 @@ class DummyFormulaActor(Actor):
         Define message handler
         """
         self.add_handler(Message, DummyFormulaHandler(self.state))
-
-    @staticmethod
-    def gen_domain_values(device_id, formula_id):
-        """
-        Create a DomainValue object with the provided values
-        :param device_id: Id of the device
-        :formula_id; Id of the formula
-        """
-        return DomainValues(device_id, formula_id)
 
 
 class CrashFormulaActor(DummyFormulaActor):

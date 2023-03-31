@@ -1,21 +1,21 @@
-# Copyright (c) 2018, INRIA
-# Copyright (c) 2018, University of Lille
+# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, University of Lille
 # All rights reserved.
-#
+
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-#
+
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-#
+
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-#
+
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-#
+
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,51 +26,39 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from powerapi.message import UnknownMessageTypeException, PoisonPillMessage
-from .handler import Handler
+import pytest
 
 
-class PoisonPillMessageHandler(Handler):
+@pytest.fixture(name="invalid_csv_io_stream_config")
+def csv_io_stream_config():
     """
-    Generic handler for PoisonPillMessage
+     Invalid configuration with csv as input and output and stream mode enabled
     """
+    return {
+        "verbose": True,
+        "stream": True,
+        "input": {
+            "puller": {
+                "model": "HWPCReport",
+                "type": "csv",
+                "files": "/tmp/rapl.csv,/tmp/msr.csv"
+            }
+        },
+        "output": {
+            "pusher_power": {
+                "type": "csv",
+                "model": "PowerReport",
+                "directory": "/tmp/formula_results"
 
-    def teardown(self, soft=False):
-        """
-        function called before terminating the actor process
-        could be redefined
-        """
+            }
+        },
+    }
 
-    def handle_msg(self, msg):
-        """
-        Handle the given message
-        :param msg: The message to handle
-        """
-        Handler.delegate_message_handling(self, msg)
 
-    def _empty_mail_box(self):
-        print(str(self.state.actor.name) + " empty mail box")
-        while True:
-            self.state.actor.socket_interface.timeout = 0.1
-            msg = self.state.actor.socket_interface.receive()
-
-            if msg is not None:
-                self.handle_msg(msg)
-            else:
-                return
-
-    def handle(self, msg):
-        """
-        Set the :attr:`alive <powerapi.actor.state.State.alive>`
-        attribute of the actor state to False
-
-        :param Object msg: the message received by the actor
-        """
-        if not isinstance(msg, PoisonPillMessage):
-            raise UnknownMessageTypeException(type(msg))
-
-        if msg.is_soft:
-            self._empty_mail_box()
-        self.teardown(soft=msg.is_soft)
-        self.state.alive = False
+@pytest.fixture
+def csv_io_postmortem_config(invalid_csv_io_stream_config):
+    """
+     Valid configuration with csv as input and output and stream mode disabled
+    """
+    invalid_csv_io_stream_config["stream"] = False
+    return invalid_csv_io_stream_config

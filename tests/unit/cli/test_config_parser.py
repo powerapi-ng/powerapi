@@ -41,7 +41,7 @@ from powerapi.cli.config_parser import AlreadyAddedSubparserException
 ###############
 # PARSER TEST #
 ###############
-def test_add_argument_that_aldready_exists():
+def test_add_argument_that_already_exists():
     """
     Add an argument that already exists to a parser and test if an
     AlreadyAddedArgumentException is raised
@@ -576,7 +576,7 @@ def test_add_actor_subparser_with_two_name():
     check_parsing_cli_result(parser, '--sub titi -a --name tutu', {'sub': {'tutu': {'aaa': True, 'type': 'titi'}}})
 
 
-def test_add_component_subparser_that_aldready_exists2():
+def test_add_component_subparser_that_already_exists2():
     """
     Add a component_subparser with no argument 'name'
     test if a SubConfigParserWithoutNameArgumentException is raised

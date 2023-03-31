@@ -29,8 +29,7 @@
 
 from powerapi.utils.sync import Sync
 from powerapi.report import Report, ProcfsReport, PowerReport
-# noinspection PyUnresolvedReferences
-from tests.utils.reports import power_timeline, procfs_timeline
+
 import datetime
 
 

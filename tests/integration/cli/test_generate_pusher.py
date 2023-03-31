@@ -36,8 +36,6 @@ from powerapi.cli.generator import PusherGenerator
 from powerapi.utils import timestamp_to_datetime
 # noinspection PyUnresolvedReferences
 from tests.utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME, influx_database
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 SENSOR_NAME = 'sensor_test'
 TARGET_NAME = 'system'

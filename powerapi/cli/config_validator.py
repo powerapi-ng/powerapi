@@ -68,6 +68,10 @@ class ConfigValidator:
                 logging.error("no files parameter found for csv input")
                 return False
 
+            if input_config['type'] == 'csv' and config['stream']:
+                logging.error("stream mode cannot be used for csv input")
+                return False
+
             if 'model' not in input_config:
                 input_config['model'] = 'PowerReport'
             if 'name' not in input_config:

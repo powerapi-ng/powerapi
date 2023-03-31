@@ -38,7 +38,7 @@ import setproctitle
 
 from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import PoisonPillMessage
-from powerapi.message import UnknowMessageTypeException
+from powerapi.message import UnknownMessageTypeException
 from powerapi.handler import HandlerException
 
 from .socket_interface import SocketInterface
@@ -228,7 +228,7 @@ class Actor(multiprocessing.Process):
             try:
                 handler = self.state.get_corresponding_handler(msg)
                 handler.handle_message(msg)
-            except UnknowMessageTypeException:
+            except UnknownMessageTypeException:
                 self.logger.warning("UnknowMessageTypeException: " + str(msg))
             except HandlerException:
                 self.logger.warning("HandlerException")

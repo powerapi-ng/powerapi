@@ -48,9 +48,7 @@ Test if:
     socket in the output database
   - only target name LIBVIRT_TARGET_NAME1 was converted into UUID_1
 """
-# pylint: disable=redefined-outer-name
-# pylint: disable=unused-argument
-# pylint: disable=unused-import
+# pylint: disable=redefined-outer-name,disable=unused-argument,disable=unused-import
 import time
 from datetime import datetime
 from mock import patch
@@ -66,8 +64,6 @@ from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_O
     MONGO_DATABASE_NAME, mongo_database
 from tests.utils.report.hwpc import extract_all_events_reports_with_vm_name
 from tests.utils.libvirt import MockedLibvirt, LIBVIRT_TARGET_NAME1, UUID_1
-# noinspection PyUnresolvedReferences
-from tests.utils.unit import shutdown_system
 
 
 @pytest.fixture
