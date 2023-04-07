@@ -97,7 +97,7 @@ class PullerActor(Actor):
 
     def __init__(self, name, database, report_filter, report_model, stream_mode=False, report_modifier_list=[],
                  level_logger=logging.WARNING,
-                 timeout=0, timeout_puller=100):
+                 timeout=5000, timeout_puller=100):
         """
         :param str name: Actor name.
         :param BaseDB database: Allow to interact with a Database.
@@ -120,4 +120,4 @@ class PullerActor(Actor):
         Define StartMessage handler and PoisonPillMessage handler
         """
         self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))
-        self.add_handler(StartMessage, PullerStartHandler(self.state, 0.1))
+        self.add_handler(StartMessage, PullerStartHandler(self.state, self.socket_interface.timeout))

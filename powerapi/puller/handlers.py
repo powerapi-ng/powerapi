@@ -201,7 +201,7 @@ class PullerStartHandler(StartHandler):
         db_puller_thread.start()
 
         while self.state.alive:
-            msg = self.state.actor.receive_control(0.1)
+            msg = self.state.actor.receive_control(self.timeout)
             if msg is not None:
                 self.handle_internal_msg(msg)
 
