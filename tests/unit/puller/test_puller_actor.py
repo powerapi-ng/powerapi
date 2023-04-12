@@ -106,8 +106,8 @@ def test_puller_with_multiple_reports_filter():
     database = _setup_fake_database(num_reports)
 
     report_filter = Filter()
-    report_filter.filter(lambda msg: (int(msg.target.removeprefix('report-')) % 2) == 0, dispatcher_even)
-    report_filter.filter(lambda msg: (int(msg.target.removeprefix('report-')) % 2) != 0, dispatcher_odd)
+    report_filter.filter(lambda msg: (int(msg.target.lstrip('report-')) % 2) == 0, dispatcher_even)
+    report_filter.filter(lambda msg: (int(msg.target.lstrip('report-')) % 2) != 0, dispatcher_odd)
     report_filter.filter(lambda msg: True, dispatcher_catch_all)
 
     puller = _setup_puller_actor('puller_test_with_multiple_reports_filter', database, report_filter)
