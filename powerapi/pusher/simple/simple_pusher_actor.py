@@ -26,6 +26,9 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
+
+from multiprocessing import Value
 
 from powerapi.actor import Actor, State
 from powerapi.handler import PoisonPillMessageHandler
@@ -52,6 +55,7 @@ class SimplePusherState(State):
         State.__init__(self, actor)
         self.number_of_reports_to_store = number_of_reports_to_store
         self.reports = []
+        self.alive = Value('i', 1)
 
 
 class SimplePusherActor(Actor):
@@ -61,8 +65,8 @@ class SimplePusherActor(Actor):
     The Pusher allows to save Report sent by Formula.
     """
 
-    def __init__(self, name: str, number_of_reports_to_store: int):
-        Actor.__init__(self, name)
+    def __init__(self, name: str, number_of_reports_to_store: int, level_logger: int = logging.WARNING):
+        Actor.__init__(self, name=name, level_logger=level_logger)
         self.state = SimplePusherState(self, number_of_reports_to_store)
 
     def setup(self):

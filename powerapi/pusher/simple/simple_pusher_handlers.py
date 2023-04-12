@@ -62,7 +62,7 @@ class SimplePusherHandler(Handler):
         self.state.actor.logger.debug('received message ' + str(report))
         self.save_report(report)
         self.state.actor.logger.debug(str(report) + ' saved to list')
-
+        self.state.actor.logger.debug("reports saved :" + str(len(self.state.reports)))
         self.stop_actor_if_required()
 
     def save_report(self, report: Report):
@@ -78,8 +78,8 @@ class SimplePusherHandler(Handler):
         """
         if len(self.state.reports) >= self.state.number_of_reports_to_store:
             self.state.actor.logger.debug("reports saved :" + str(len(self.state.reports)))
-            print("reports saved :" + str(len(self.state.reports)))
             self.state.actor.send_control(PoisonPillMessage(sender_name='system'))
+            self.state.alive = 0
             self.state.actor.logger.debug("exit request sent")
 
 
