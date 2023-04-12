@@ -268,9 +268,6 @@ class Actor(multiprocessing.Process):
         """
         Receive a message from this actor on the control canal
         """
-        if timeout is None:
-            timeout = self.socket_interface.timeout
-
         msg = self.socket_interface.receive_control(timeout)
         self.logger.debug('Actor ' + self.name + ' receive control : [' + str(msg) + ']')
         return msg
