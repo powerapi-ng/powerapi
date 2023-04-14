@@ -55,7 +55,7 @@ import pytest
 import pymongo
 
 from powerapi.actor import Supervisor
-from powerapi.formula.dummy import DummyFormulaActor
+from tests.utils.formula.dummy import DummyFormulaActor
 
 from tests.utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG

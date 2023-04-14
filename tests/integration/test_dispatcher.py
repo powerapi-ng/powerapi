@@ -35,7 +35,7 @@ from powerapi.formula import DummyFormulaActor
 from powerapi.message import StartMessage
 from powerapi.report import HWPCReport, PowerReport
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from tests.utils.dummy_actor import DummyActor
+from tests.utils.actor.dummy_actor import DummyActor
 from tests.utils.report.hwpc import gen_HWPCReports
 from tests.unit.actor.abstract_test_actor import recv_from_pipe
 

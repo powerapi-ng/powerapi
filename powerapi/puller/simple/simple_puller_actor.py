@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import logging
 from typing import Type
 
 from powerapi.actor import Actor, State
@@ -65,7 +65,8 @@ class SimplePullerActor(Actor):
     Simple Actor that generated a given number of messages of a given type
     """
 
-    def __init__(self, name: str, number_of_reports_to_send: int, report_type_to_send: Type[Report], report_filter):
+    def __init__(self, name: str, number_of_reports_to_send: int, report_type_to_send: Type[Report], report_filter,
+                 level_logger: int = logging.WARNING):
         """
         Create an actor with the given information
         :param str name: The actor's name
@@ -73,7 +74,7 @@ class SimplePullerActor(Actor):
         :param Report report_type_to_send: Report type to be sent
         :param Filter report_filter: Filters and the associated dispatchers and rules
         """
-        Actor.__init__(self, name)
+        Actor.__init__(self, name, level_logger=level_logger)
         self.state = SimplePullerState(self, number_of_reports_to_send, report_type_to_send, report_filter)
 
     def setup(self):

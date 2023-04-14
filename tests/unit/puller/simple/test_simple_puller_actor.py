@@ -38,7 +38,7 @@ from powerapi.message import StartMessage, \
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
-from tests.utils.dummy_actor import DummyActor
+from tests.utils.actor.dummy_actor import DummyActor
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive
 
@@ -146,8 +146,10 @@ class TestSimplePuller(AbstractTestActor):
         count = 0
         report = REPORT_TYPE_TO_BE_SENT.create_empty_report()
 
+        # while count < NUMBER_OF_REPORTS_TO_SEND:
+        started_actor.send_data(SimplePullerSendReportsMessage('system', ACTOR_NAME))
+
         while count < NUMBER_OF_REPORTS_TO_SEND:
-            started_actor.send_data(SimplePullerSendReportsMessage('system', ACTOR_NAME))
             sleep(1)
             assert recv_from_pipe(dummy_pipe_out, 2) == (DISPATCHER_NAME, report)
             count += 1

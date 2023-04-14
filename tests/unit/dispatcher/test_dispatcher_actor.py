@@ -35,12 +35,13 @@ import pytest
 
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
-from powerapi.formula import DummyFormulaActor
 from powerapi.message import PoisonPillMessage
 from powerapi.report import Report, HWPCReport, PowerReport
 
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
     PUSHER_NAME_POWER_REPORT
+
+from tests.utils.formula.dummy import DummyFormulaActor
 
 
 def define_dispatch_rules(rules):
