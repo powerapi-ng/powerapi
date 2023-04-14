@@ -1,21 +1,21 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, University of Lille
 # All rights reserved.
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,35 +26,26 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
 
-# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,no-self-use
-import pytest
-
-from powerapi.formula.dummy import DummyFormulaActor
-from powerapi.report import Report
-from tests.unit.actor.abstract_test_actor import PUSHER_NAME_POWER_REPORT, AbstractTestActor, recv_from_pipe
+from powerapi.handler import Handler
+from powerapi.message import Message
 
 
-class TestDummyFormula(AbstractTestActor):
+class DummyHandler(Handler):
+
     """
-        Class for testing the DummyFormulaActor
+        Dummy actor handler for testing purposes
     """
-    @pytest.fixture
-    def actor(self, started_fake_pusher_power_report):
-        actor = DummyFormulaActor(name='test_dummy_formula',
-                                  pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report},
-                                  socket=0,
-                                  core=0)
 
-        return actor
+    def __init__(self, state):
+        Handler.__init__(self, state)
 
-    def test_send_Report_to_dummy_formula_make_formula_send_power_report_with_42_as_power_value_after_1_second(
-            self, started_actor, dummy_pipe_out, shutdown_system):
+    def handle(self, msg: Message):
         """
-            Check that a sent report is processed by the actor formula
-        """
-        report1 = Report(1, 2, 3)
-        started_actor.send_data(report1)
+        Handle a message and return a new state value of the actor
 
-        _, msg = recv_from_pipe(dummy_pipe_out, 2)
-        assert msg.power == 42
+        :param Object msg: the message received by the actor
+        """
+        self.state.pipe.send((self.state.actor.name, msg))
+        logging.debug('receive : ' + str(msg), extra={'actor_name': self.state.actor.name})

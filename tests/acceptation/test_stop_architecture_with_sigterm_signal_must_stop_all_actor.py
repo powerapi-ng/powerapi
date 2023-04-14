@@ -59,7 +59,7 @@ from multiprocessing import Process
 import pytest
 
 from powerapi.actor import Supervisor
-from powerapi.formula.dummy import DummyFormulaActor
+from tests.utils.formula.dummy import DummyFormulaActor
 
 from tests.utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, \
     get_basic_config_with_stream

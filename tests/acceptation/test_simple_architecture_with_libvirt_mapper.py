@@ -57,7 +57,7 @@ import pytest
 import pymongo
 
 from powerapi.actor import Supervisor
-from powerapi.formula.dummy import DummyFormulaActor
+from tests.utils.formula.dummy import DummyFormulaActor
 from tests.utils.acceptation import launch_simple_architecture, SOCKET_DEPTH_LEVEL, LIBVIRT_CONFIG
 # noinspection PyUnresolvedReferences
 from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \

@@ -39,7 +39,7 @@ from powerapi.handler import Handler
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, HWPCReport
 from tests.utils.db import FakeDB
-from tests.utils.dummy_actor import DummyActor
+from tests.utils.actor.dummy_actor import DummyActor
 
 SENDER_NAME = 'test case'
 
