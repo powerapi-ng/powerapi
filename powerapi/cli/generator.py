@@ -36,7 +36,7 @@ from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException
 from powerapi.filter import Filter
-from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report
+from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
     VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
@@ -196,6 +196,7 @@ class DBActorGenerator(SimpleGenerator):
 
     def __init__(self, component_group_name: str):
         SimpleGenerator.__init__(self, component_group_name)
+        self.report_classes['FormulaReport'] = FormulaReport
         self.report_classes['ControlReport'] = ControlReport
         self.report_classes['ProcfsReport'] = ProcfsReport
 
