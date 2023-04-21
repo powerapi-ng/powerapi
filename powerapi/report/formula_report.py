@@ -29,10 +29,13 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-from powerapi.report.report import Report
+from powerapi.report.report import Report, CSV_HEADER_COMMON
+
+CSV_HEADER_FORMULA_REPORT = CSV_HEADER_COMMON + ['metadata']
 
 
 class FormulaReport(Report):
@@ -43,23 +46,58 @@ class FormulaReport(Report):
 
     def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: Dict[str, Any]):
         """
-        Initialize a Power report using the given parameters.
+        Initialize a Formula report using the given parameters.
         :param timestamp: Report timestamp
         :param sensor: Sensor name
         :param target: Target name
-        :param metadata: Metadata values, can be anything that add useful information
+        :param metadata: Metadata values, can be anything but should be json serializable
         """
         Report.__init__(self, timestamp, sensor, target)
         self.metadata = metadata
 
     def __repr__(self) -> str:
-        return 'FormulaReport(%s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.metadata)
+        return f'FormulaReport({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
 
     @staticmethod
-    def deserialize(data: Dict) -> FormulaReport:
+    def to_csv_lines(report: FormulaReport, **_) -> (List[str], Dict[str, Any]):
         """
-        Generate a report using the given data.
-        :param data: Dictionary containing the report attributes
-        :return: The Formula report initialized with the given data
+        Convert a Formula report into a csv line.
+        :param report: Formula report that will be converted
+        :return: Tuple containing the csv header and the csv lines
         """
-        return FormulaReport(data['timestamp'], data['sensor'], data['target'], data['metadata'])
+
+        line = {
+            'timestamp': int(datetime.timestamp(report.timestamp) * 1000),
+            'sensor': report.sensor,
+            'target': report.target,
+            'metadata': json.dumps(report.metadata)
+        }
+
+        return CSV_HEADER_FORMULA_REPORT, {'FormulaReport': [line]}
+
+    @staticmethod
+    def to_mongodb(report: FormulaReport) -> Dict[str, Any]:
+        """
+        Convert a Formula report into a json document that can be stored into mongodb.
+        :return: a dictionary, that can be stored into a mongodb
+        """
+        return FormulaReport.to_json(report)
+
+    @staticmethod
+    def to_influxdb(report: FormulaReport, **_) -> Dict[str, Any]:
+        """
+        Convert a Formula report into a dict that can be stored into influxdb.
+        param report: Formula report that will be converted
+        :return: a dictionary, that can be stored into influxdb
+        """
+        document = {
+            'measurement': 'formula_report',
+            'tags': {
+                'sensor': report.sensor,
+                'target': report.target,
+            },
+            'time': int(datetime.timestamp(report.timestamp) * 1000),
+            'fields': report.metadata
+        }
+
+        return document
