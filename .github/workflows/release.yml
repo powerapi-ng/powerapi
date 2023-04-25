@@ -55,6 +55,9 @@ jobs:
     name: Publish Pypi package
     runs-on: ubuntu-latest
     needs: github-release
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
     - uses: actions/checkout@v3
@@ -75,8 +78,6 @@ jobs:
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@0bf742be3ebe032c25dd15117957dc15d0cfc38d # v1.8.5
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
         print-hash: true
 
   docker-image:
