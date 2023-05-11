@@ -41,18 +41,11 @@ from powerapi.cli.parser import store_val
 from powerapi.cli.parser import _find_longest_name
 
 
-def extract_file_names(arg, val, args, acc):
-    """
-    action used to convert string from --files parameter into a list of file name
-    """
-    acc[arg] = val.split(',')
-    return args, acc
-
-
 class ConfigParserArg:
     """
     Parser abstraction that retrieve the config.
     """
+
     def __init__(self, name_list: list, is_flag: bool, default_value, help: str, type: Type, mandatory: bool):
         self.names = name_list
         self.is_flag = is_flag
@@ -64,6 +57,7 @@ class ConfigParserArg:
 
 class ConfigParser:
     """ The config parser call the right parser on the CLI or the config file and then verify the type and add the default id needed."""
+
     def __init__(self):
         self.cli_parser = None
         self.args = {}
@@ -96,6 +90,7 @@ class SubConfigParser(ConfigParser):
     """
     Sub Parser for MainConfigParser
     """
+
     def __init__(self, name: str):
         ConfigParser.__init__(self)
         self.subparser = {}
@@ -136,6 +131,7 @@ class MainConfigParser(ConfigParser):
     """
     Parser abstraction for the configuration
     """
+
     def __init__(self):
         ConfigParser.__init__(self)
         self.subparser = {}
@@ -259,7 +255,8 @@ class MainConfigParser(ConfigParser):
             sys.exit(-1)
 
         except json.JSONDecodeError as exn:
-            logging.error('Configuration Error: JSON Error: ' + exn.msg + ' at line' + exn.lineno + ' colomn ' + exn.colno)
+            logging.error(
+                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + exn.lineno + ' colomn ' + exn.colno)
             sys.exit(-1)
 
         except MissingArgumentException as exn:
