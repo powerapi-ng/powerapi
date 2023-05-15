@@ -51,3 +51,118 @@ class BadInputData(PowerAPIException):
     Exception raised when the data read in input are not
     in the good format
     """
+
+#############
+# EXCEPTION #
+#############
+class ParserException(PowerAPIException):
+    """
+    Base Exception for parser error
+    """
+    def __init__(self, argument_name):
+        PowerAPIException.__init__(self)
+        self.argument_name = argument_name
+
+
+class NoNameSpecifiedForComponentException(ParserException):
+    """
+    Exception raised when attempting to parse substring thant describe a component which not contains the component name
+    """
+
+
+class ComponentAlreadyExistException(ParserException):
+    """
+    Exception raised when attempting to parse a substring to create a component with a name that already exist
+    """
+
+
+class SubParserWithoutNameArgumentException(PowerAPIException):
+    """
+    Exception raised when a subparser without argument name is added to a parser
+    """
+
+
+class TooManyArgumentNamesException(ParserException):
+    """
+    Exception raised when attemtping to add an argument with too much names
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+
+
+class AlreadyAddedArgumentException(ParserException):
+    """
+    Exception raised when attempting to add an argument to a parser that already
+    have this argument
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Parser already contain an argument ' + argument_name
+
+
+class AlreadyAddedSubparserException(ParserException):
+    """
+    Exception raised when attempting to add an argument to a parser that already
+    have this argument
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Parser already contain SubParser with name ' + argument_name
+
+
+class MissingArgumentException(ParserException):
+    """
+    Exception raised when a mandatory argument is missing
+    """
+
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Argument ' + argument_name + ' is missing'
+
+
+class MissingValueException(ParserException):
+    """
+    Exception raised when an argument that require a value is caught without
+    its value
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Argument ' + argument_name + ' require a value'
+
+
+class UnknownArgException(ParserException):
+    """
+    Exception raised when the parser catch an argument that it can't handle
+
+    """
+    def __init__(self, argument_name):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Unknow argument ' + argument_name
+
+
+class BadTypeException(ParserException):
+    """
+    Exception raised when an argument is parsed with a value of an incorrect type
+    """
+    def __init__(self, argument_name, arg_type):
+        ParserException.__init__(self, argument_name)
+        self.msg = argument_name + " expect " + arg_type.__name__
+
+
+class BadContextException(ParserException):
+    """
+    Exception raised when the parser catch an argument that it can't handle in
+    the current context
+    """
+    def __init__(self, argument_name, context_list):
+        ParserException.__init__(self, argument_name)
+        self.context_list = context_list
+        self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
+        for main_arg_name, context_name in context_list:
+            self.msg += '\n  --' + main_arg_name + ' ' + context_name
+
+

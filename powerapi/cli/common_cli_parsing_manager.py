@@ -29,11 +29,10 @@
 
 import sys
 
-from powerapi.cli.config_parser import MainConfigParser, SubConfigParser
-from powerapi.cli.parser import store_true
-from powerapi.cli.parser import MissingValueException
-from powerapi.cli.parser import BadTypeException, BadContextException
-from powerapi.cli.parser import UnknowArgException
+from powerapi.cli.parsing_manager import RootConfigParsingManager, SubGroupConfigParsingManager
+from powerapi.cli.config_parser import store_true
+from powerapi.cli.config_parser import MissingValueException
+from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
 
 def extract_file_names(arg, val, args, acc):
@@ -44,13 +43,13 @@ def extract_file_names(arg, val, args, acc):
     return args, acc
 
 
-class CommonCLIParser(MainConfigParser):
+class CommonCLIParsingManager(RootConfigParsingManager):
     """
     PowerAPI basic config parser
     """
 
     def __init__(self):
-        MainConfigParser.__init__(self)
+        RootConfigParsingManager.__init__(self)
 
         self.add_argument(
             "v",
@@ -69,7 +68,7 @@ class CommonCLIParser(MainConfigParser):
             help="enable stream mode",
         )
 
-        subparser_libvirt_mapper_modifier = SubConfigParser("libvirt_mapper")
+        subparser_libvirt_mapper_modifier = SubGroupConfigParsingManager("libvirt_mapper")
         subparser_libvirt_mapper_modifier.add_argument(
             "u", "uri", help="libvirt daemon uri", default=""
         )
@@ -85,7 +84,7 @@ class CommonCLIParser(MainConfigParser):
             help="Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...",
         )
 
-        subparser_mongo_input = SubConfigParser("mongodb")
+        subparser_mongo_input = SubGroupConfigParsingManager("mongodb")
         subparser_mongo_input.add_argument("u", "uri", help="specify MongoDB uri")
         subparser_mongo_input.add_argument(
             "d",
@@ -110,7 +109,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
-        subparser_socket_input = SubConfigParser("socket")
+        subparser_socket_input = SubGroupConfigParsingManager("socket")
         subparser_socket_input.add_argument(
             "p", "port", type=int, help="specify port to bind the socket"
         )
@@ -129,7 +128,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
-        subparser_csv_input = SubConfigParser("csv")
+        subparser_csv_input = SubGroupConfigParsingManager("csv")
         subparser_csv_input.add_argument(
             "f",
             "files",
@@ -152,7 +151,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
-        subparser_file_input = SubConfigParser("filedb")
+        subparser_file_input = SubGroupConfigParsingManager("filedb")
         subparser_file_input.add_argument(
             "m",
             "model",
@@ -169,7 +168,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
-        subparser_file_output = SubConfigParser("filedb")
+        subparser_file_output = SubGroupConfigParsingManager("filedb")
         subparser_file_output.add_argument(
             "m",
             "model",
@@ -186,7 +185,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
-        subparser_virtiofs_output = SubConfigParser("virtiofs")
+        subparser_virtiofs_output = SubGroupConfigParsingManager("virtiofs")
         help = "regexp used to extract vm name from report."
         help += "The regexp must match the name of the target in the HWPC-report and a group must"
         subparser_virtiofs_output.add_argument("r", "vm_name_regexp", help=help)
@@ -222,7 +221,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
-        subparser_mongo_output = SubConfigParser("mongodb")
+        subparser_mongo_output = SubGroupConfigParsingManager("mongodb")
         subparser_mongo_output.add_argument("u", "uri", help="specify MongoDB uri")
         subparser_mongo_output.add_argument(
             "d", "db", help="specify MongoDB database name"
@@ -246,7 +245,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
-        subparser_prom_output = SubConfigParser("prom")
+        subparser_prom_output = SubGroupConfigParsingManager("prom")
         subparser_prom_output.add_argument("t", "tags", help="specify report tags")
         subparser_prom_output.add_argument("u", "uri", help="specify server uri")
         subparser_prom_output.add_argument(
@@ -281,7 +280,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
-        subparser_direct_prom_output = SubConfigParser("direct_prom")
+        subparser_direct_prom_output = SubGroupConfigParsingManager("direct_prom")
         subparser_direct_prom_output.add_argument(
             "t", "tags", help="specify report tags"
         )
@@ -313,7 +312,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
-        subparser_csv_output = SubConfigParser("csv")
+        subparser_csv_output = SubGroupConfigParsingManager("csv")
         subparser_csv_output.add_argument(
             "d",
             "directory",
@@ -336,7 +335,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database outpout : --db_output database_name ARG1 ARG2 ... ",
         )
 
-        subparser_influx_output = SubConfigParser("influxdb")
+        subparser_influx_output = SubGroupConfigParsingManager("influxdb")
         subparser_influx_output.add_argument("u", "uri", help="specify InfluxDB uri")
         subparser_influx_output.add_argument("t", "tags", help="specify report tags")
         subparser_influx_output.add_argument(
@@ -360,7 +359,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
-        subparser_opentsdb_output = SubConfigParser("opentsdb")
+        subparser_opentsdb_output = SubGroupConfigParsingManager("opentsdb")
         subparser_opentsdb_output.add_argument("u", "uri", help="specify openTSDB host")
         subparser_opentsdb_output.add_argument(
             "p", "port", help="specify openTSDB connection port", type=int
@@ -384,7 +383,7 @@ class CommonCLIParser(MainConfigParser):
             help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
-        subparser_influx2_output = SubConfigParser("influxdb2")
+        subparser_influx2_output = SubGroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument("u", "uri", help="specify InfluxDB uri")
         subparser_influx2_output.add_argument("t", "tags", help="specify report tags")
         subparser_influx2_output.add_argument("k", "token", help="specify token for accessing the database")
@@ -425,7 +424,7 @@ class CommonCLIParser(MainConfigParser):
             msg = "Configuration error : " + exn.msg
             print(msg, file=sys.stderr)
 
-        except UnknowArgException as exn:
+        except UnknownArgException as exn:
             msg = "CLI error : unknow argument " + exn.argument_name
             print(msg, file=sys.stderr)
 
