@@ -44,8 +44,8 @@ class BaseConfigParsingManager:
     def __init__(self):
         self.cli_parser = None
 
-    def add_argument(self, *names, is_flag: bool=False, action: Callable=store_val, default_value: Any=None,
-                     help_text: str='', argument_type: type=str, is_mandatory: bool=False):
+    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
+                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
         """
         Add an argument to the parser and its specification
 
@@ -53,10 +53,11 @@ class BaseConfigParsingManager:
         self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
                                      help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
 
-
-    def validate(self, conf: dict)-> dict:
+    def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
         raise NotImplementedError
+
+
 class SubgroupConfigParsingManager(BaseConfigParsingManager):
     """
     Sub Parser for MainConfigParser
@@ -68,7 +69,7 @@ class SubgroupConfigParsingManager(BaseConfigParsingManager):
         self.cli_parser = SubgroupConfigParser(name)
         self.name = name
 
-    def validate(self, conf: dict)->dict:
+    def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
 
         # check types
@@ -80,7 +81,7 @@ class SubgroupConfigParsingManager(BaseConfigParsingManager):
                         raise BadTypeException(args, waited_value.type)
 
         # Check that all the mandatory arguments are precised
-        conf= self.cli_parser.validate(conf=conf)
+        conf = self.cli_parser.validate(conf=conf)
 
         return conf
 
@@ -95,7 +96,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
-    def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str= ''):
+    def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str = ''):
 
         """
         Add a Subgroup Parser to call when <name> is encountered
@@ -121,7 +122,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         conf = json.load(config_file)
         return conf
 
-    def validate(self, conf: dict)-> dict:
+    def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
 
         # check types
@@ -145,7 +146,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
                 raise UnknownArgException(current_argument_name)
 
         # Check that all the mandatory arguments are precised
-        conf= self.cli_parser.validate(conf)
+        conf = self.cli_parser.validate(conf)
 
         return conf
 
