@@ -204,8 +204,8 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
         except json.JSONDecodeError as exn:
             logging.error(
-                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + str(exn.lineno) + ' colon '
-                + str(exn.colno))
+                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + str(exn.lineno) + ' colon ' +
+                str(exn.colno))
             sys.exit(-1)
 
         except MissingArgumentException as exn:

@@ -32,7 +32,7 @@ from powerapi.cli.config_parser import BaseConfigParser, RootConfigParser, Subgr
 from powerapi.cli.config_parser import store_true
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
     BadContextException, MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
-    NoNameSpecifiedForGroupException, TooManyArgumentNamesException
+    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException
 
 
 ###############
@@ -223,7 +223,7 @@ def test_actor_subparser():
 
     check_parsing_result(parser, '-a', {'a': True})
 
-    with pytest.raises(NoNameSpecifiedForGroupException):
+    with pytest.raises(NoNameSpecifiedForSubgroupException):
         check_parsing_result(parser, '-a --sub toto -b', {})
 
     check_parsing_result(parser, '-a --sub toto -b --name titi',

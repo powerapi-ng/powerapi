@@ -32,7 +32,7 @@ from copy import deepcopy
 from typing import Any, Callable
 
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
-    MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForGroupException, \
+    MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForSubgroupException, \
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException
 from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters
@@ -386,7 +386,7 @@ class RootConfigParser(BaseConfigParser):
             args, parse_result = parser.parse(args)
 
             if 'name' not in parse_result:
-                raise NoNameSpecifiedForGroupException(subgroup_type)
+                raise NoNameSpecifiedForSubgroupException(subgroup_type)
 
             subgroup_name = parse_result['name']
             del parse_result['name']

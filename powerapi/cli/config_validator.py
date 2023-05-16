@@ -32,6 +32,8 @@ import os
 
 from typing import Dict
 
+from powerapi.exception import MissingArgumentException, NotAllowedArgumentValueException, FileDoesNotExistException
+
 
 class ConfigValidator:
     """
@@ -48,7 +50,7 @@ class ConfigValidator:
             config['stream'] = False
         if 'output' not in config:
             logging.error("no output configuration found")
-            return False
+            raise MissingArgumentException(argument_name='output')
 
         for output_type in config['output']:
             output_config = config['output'][output_type]
@@ -59,27 +61,25 @@ class ConfigValidator:
 
         if 'input' not in config:
             logging.error("no input configuration found")
-            return False
+            raise MissingArgumentException(argument_name='input')
 
         for input_id in config['input']:
             input_config = config['input'][input_id]
             if input_config['type'] == 'csv' \
                     and ('files' not in input_config or input_config['files'] is None or len(input_config['files']) == 0):
                 logging.error("no files parameter found for csv input")
-                return False
+                raise MissingArgumentException(argument_name='files')
 
             if input_config['type'] == 'csv' and config['stream']:
                 logging.error("stream mode cannot be used for csv input")
-                return False
+                raise NotAllowedArgumentValueException("Stream mode cannot be used for csv input")
 
             if 'model' not in input_config:
                 input_config['model'] = 'PowerReport'
             if 'name' not in input_config:
                 input_config['name'] = 'default_puller'
 
-        if not ConfigValidator._validate_input(config):
-            return False
-        return True
+        ConfigValidator._validate_input(config)
 
     @staticmethod
     def _validate_input(config: Dict):
@@ -93,5 +93,4 @@ class ConfigValidator:
 
                 for file_name in list_of_files:
                     if not os.access(file_name, os.R_OK):
-                        return False
-        return True
+                        raise FileDoesNotExistException(file_name=file_name)

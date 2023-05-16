@@ -26,20 +26,27 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pytest
 
 from powerapi.cli import ConfigValidator
+
+from powerapi.exception import NotAllowedArgumentValueException
 
 
 def test_invalid_config_stream_and_csv_input(invalid_csv_io_stream_config):
     """
     Test that an invalid configuration is detected by the ConfigValidator
     """
-    assert ConfigValidator.validate(invalid_csv_io_stream_config) is False
+    with pytest.raises(NotAllowedArgumentValueException):
+        ConfigValidator.validate(invalid_csv_io_stream_config)
 
 
 def test_valid_config_postmortem_csv_input(create_empty_files_from_config, csv_io_postmortem_config):
     """
-    Test that an invalid configuration is detected by the ConfigValidator when stream mode is disable.
+    Test that a valid configuration is detected by the ConfigValidator when stream mode is disable.
     """
     # pylint: disable=unused-argument
-    assert ConfigValidator.validate(csv_io_postmortem_config)
+    try:
+        ConfigValidator.validate(csv_io_postmortem_config)
+    except NotAllowedArgumentValueException:
+        assert False

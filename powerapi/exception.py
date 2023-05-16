@@ -52,9 +52,7 @@ class BadInputData(PowerAPIException):
     in the good format
     """
 
-#############
-# EXCEPTION #
-#############
+
 class ParserException(PowerAPIException):
     """
     Base Exception for parser error
@@ -64,7 +62,7 @@ class ParserException(PowerAPIException):
         self.argument_name = argument_name
 
 
-class NoNameSpecifiedForGroupException(ParserException):
+class NoNameSpecifiedForSubgroupException(ParserException):
     """
     Exception raised when attempting to parse substring thant describe a component which not contains the component name
     """
@@ -164,3 +162,18 @@ class BadContextException(ParserException):
         self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
         for main_arg_name, context_name in context_list:
             self.msg += '\n  --' + main_arg_name + ' ' + context_name
+
+
+class NotAllowedArgumentValueException(PowerAPIException):
+    """
+    This exception happens when the configuration define an argument value that is incompatible with other arguments'
+    values
+    """
+
+
+class FileDoesNotExistException(PowerAPIException):
+    """
+    This exception happens when the configuration define a input file that does not exist or is not accessible
+    """
+    def __init__(self, file_name):
+        PowerAPIException.__init__("The File " + file_name + " does not exist or is not accesible")
