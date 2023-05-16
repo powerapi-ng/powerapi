@@ -229,6 +229,7 @@ def test_actor_subparser():
     with pytest.raises(BadContextException):
         check_parsing_result(parser, '-b', None)
 
+
 def test_create_two_component():
     """
     Create two component of the same type with the following cli :
