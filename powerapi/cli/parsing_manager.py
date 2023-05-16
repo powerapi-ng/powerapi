@@ -32,7 +32,7 @@ import json
 import logging
 
 from typing import Dict, Type, Callable, Any
-from powerapi.cli.config_parser import RootConfigParser, SubGroupConfigParser, store_val, ConfigurationArgument
+from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val, ConfigurationArgument
 from powerapi.exception import AlreadyAddedArgumentException, MissingArgumentException, BadTypeException, \
     AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException
 from powerapi.utils.cli import find_longest_name
@@ -57,7 +57,7 @@ class BaseConfigParsingManager:
     def validate(self, conf: dict)-> dict:
         """ Check the parsed configuration"""
         raise NotImplementedError
-class SubGroupConfigParsingManager(BaseConfigParsingManager):
+class SubgroupConfigParsingManager(BaseConfigParsingManager):
     """
     Sub Parser for MainConfigParser
     """
@@ -65,7 +65,7 @@ class SubGroupConfigParsingManager(BaseConfigParsingManager):
     def __init__(self, name: str):
         BaseConfigParsingManager.__init__(self)
         self.subparser = {}
-        self.cli_parser = SubGroupConfigParser(name)
+        self.cli_parser = SubgroupConfigParser(name)
         self.name = name
 
     def validate(self, conf: dict)->dict:
@@ -95,22 +95,22 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
-    def add_subparser(self, name: str, subparser: SubGroupConfigParsingManager, help_text: str= ''):
+    def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str= ''):
 
         """
-        Add a SubParser to call when <name> is encountered
-        When name is encountered, the subparser such as subparser.name match conf[name].type
+        Add a Subgroup Parser to call when <name> is encountered
+        When name is encountered, the subgroup parser such as subgroup_parser.name match conf[name].type
 
         """
         if name in self.subparser:
-            if subparser.name in list(self.subparser[name]):
+            if subgroup_parser.name in list(self.subparser[name]):
                 raise AlreadyAddedSubparserException(name)
         else:
             self.subparser[name] = {}
 
-        self.subparser[name][subparser.name] = subparser
+        self.subparser[name][subgroup_parser.name] = subgroup_parser
 
-        self.cli_parser.add_actor_subparser(name, subparser.cli_parser, help_text)
+        self.cli_parser.add_subgroup_parser(name, subgroup_parser.cli_parser, help_text)
 
     def _parse_cli(self, cli_line):
         return self.cli_parser.parse(cli_line)
@@ -125,22 +125,24 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         """ Check the parsed configuration"""
 
         # check types
-        for args, value in conf.items():
+        for current_argument_name, current_argument_value in conf.items():
             is_an_arg = False
-            if args in self.subparser:
-                for _, dic_value in value.items():
-                    self.subparser[args][dic_value["type"]].validate(dic_value)
+            if current_argument_name in self.subparser:
+                for _, dic_value in current_argument_value.items():
+                    self.subparser[current_argument_name][dic_value["type"]].validate(dic_value)
                     is_an_arg = True
-
-            for _, waited_value in self.cli_parser.get_arguments().items():
-                if args in waited_value.names:
-                    is_an_arg = True
-                    # check type
-                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
-                        raise BadTypeException(args, waited_value.type)
 
             if not is_an_arg:
-                raise UnknownArgException(args)
+                for _, argument_definition in self.cli_parser.get_arguments().items():
+                    if current_argument_name in argument_definition.names:
+                        is_an_arg = True
+                        # check type
+                        if not isinstance(current_argument_value, argument_definition.type) and not argument_definition.is_flag:
+                            print('args:', current_argument_name, current_argument_value, argument_definition.type, argument_definition.names)
+                            raise BadTypeException(current_argument_name, argument_definition.type)
+
+            if not is_an_arg:
+                raise UnknownArgException(current_argument_name)
 
         # Check that all the mandatory arguments are precised
         conf= self.cli_parser.validate(conf)

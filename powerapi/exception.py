@@ -64,19 +64,19 @@ class ParserException(PowerAPIException):
         self.argument_name = argument_name
 
 
-class NoNameSpecifiedForComponentException(ParserException):
+class NoNameSpecifiedForGroupException(ParserException):
     """
     Exception raised when attempting to parse substring thant describe a component which not contains the component name
     """
 
 
-class ComponentAlreadyExistException(ParserException):
+class SubgroupAlreadyExistException(ParserException):
     """
     Exception raised when attempting to parse a substring to create a component with a name that already exist
     """
 
 
-class SubParserWithoutNameArgumentException(PowerAPIException):
+class SubgroupParserWithoutNameArgumentException(PowerAPIException):
     """
     Exception raised when a subparser without argument name is added to a parser
     """

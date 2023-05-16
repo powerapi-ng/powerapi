@@ -32,14 +32,10 @@ from copy import deepcopy
 from typing import Any, Callable, Type
 
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
-    MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForComponentException, \
-    ComponentAlreadyExistException, SubParserWithoutNameArgumentException
-from powerapi.utils.cli import find_longest_name, extract_minus, cast_argument_value
+    MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForGroupException, \
+    SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException
+from powerapi.utils.cli import find_longest_name, extract_minus
 
-
-#################
-# ARGUMENT ACTIONS#
-#################
 def store_val(arg: str, val: Any, args: list, acc: dict):
     """
     Action that stores the value of the argument on the parser result
@@ -60,39 +56,6 @@ def store_true(arg: str, _, args: list, acc: dict):
     acc[arg] = True
     return args, acc
 
-class SubParserGroup:
-    """"""
-    def __init__(self, group_name: str, help_text: str=''):
-        self.group_name = group_name
-        self.help_text = help_text
-        self.subparsers = {}
-
-    def contains(self, name: str):
-        """"""
-        return name in self.subparsers
-
-    def add_subparser(self, name: str, subparser: dict):
-        """"""
-        self.subparsers[name] = subparser
-
-    def get_subparser(self, name: str):
-        """"""
-        return self.subparsers[name]
-
-    def __iter__(self):
-        return iter(self.subparsers.items())
-
-    def get_help(self):
-        """
-        return help string
-        """
-        s = self.group_name + ' details :\n'
-        for subparser_name, subparser in self.subparsers.items():
-            s += '  --' + self.group_name + ' ' + subparser_name + ':\n'
-            s += subparser.get_help()
-            s += '\n'
-
-        return s
 
 class ConfigurationArgument:
     """
@@ -116,7 +79,7 @@ class BaseConfigParser:
         self.default_values = {}
 
     def add_argument(self, *names, is_flag: bool= False, action: Callable=store_val, default_value: Any=None,
-                     help_text: str='', argument_type: type=str):
+                     help_text: str='', argument_type: type=str, is_mandatory: bool= False):
         """add an optional argument to the parser that will activate an action
 
         :param str *names: names of the optional argument that will be bind to
@@ -139,13 +102,16 @@ class BaseConfigParser:
 
         :param type argument_type: type of the value that the argument must catch
 
+        :param bool is_mandatory: True if the argument is required
+
         :raise AlreadyAddedArgumentException: when attempting to add an
                                                argument that already have been
                                                added to this parser
 
         """
         argument = ConfigurationArgument(names= list(names), is_flag= is_flag, action= action,
-                                         default_value= default_value, help_text= help_text, argument_type= argument_type)
+                                         default_value= default_value, help_text= help_text,
+                                         argument_type= argument_type, is_mandatory=is_mandatory)
 
         for name in names:
             if name in self.arguments:
@@ -167,7 +133,7 @@ class BaseConfigParser:
     def _unknown_argument_behaviour(self, arg_name:str, val:Any, args: list, acc: dict):
         raise NotImplementedError()
 
-    def _parse(self, args: list, acc:dict):
+    def _parse(self, args: list, acc:dict)-> (list, dict):
 
         while args:
             arg, val = args.pop(0)
@@ -177,7 +143,7 @@ class BaseConfigParser:
 
             argument = self.arguments[arg]
 
-            arg_long_name = find_longest_name(argument.name_list)
+            arg_long_name = find_longest_name(argument.names)
             val = cast_argument_value(arg_long_name, val, argument)
 
             args, acc = argument.action(arg_long_name, val, args, acc)
@@ -205,7 +171,7 @@ class BaseConfigParser:
             It also defines default values if any for arguments that are not defined in the configuration
         """
         # Check that all the mandatory arguments are precised
-        mandatory_args = self._get_mandatory_args()
+        mandatory_args = self._get_mandatory_arguments()
         for arg in mandatory_args:
             if arg not in conf:
                 raise MissingArgumentException(arg)
@@ -222,8 +188,41 @@ class BaseConfigParser:
 
         return conf
 
+class SubgroupParserGroup:
+    """"""
+    def __init__(self, group_name: str, help_text: str=''):
+        self.group_name = group_name
+        self.help_text = help_text
+        self.subparsers = {}
 
-class SubGroupConfigParser(BaseConfigParser):
+    def contains(self, name: str):
+        """"""
+        return name in self.subparsers
+
+    def add_subgroup_parser(self, name: str, subparser: BaseConfigParser):
+        """"""
+        self.subparsers[name] = subparser
+
+    def get_subgroup_parser(self, name: str)->BaseConfigParser:
+        """"""
+        return self.subparsers[name]
+
+    def __iter__(self):
+        return iter(self.subparsers.items())
+
+    def get_help(self):
+        """
+        return help string
+        """
+        s = self.group_name + ' details :\n'
+        for subparser_name, subparser in self.subparsers.items():
+            s += '  --' + self.group_name + ' ' + subparser_name + ':\n'
+            s += subparser.get_help()
+            s += '\n'
+
+        return s
+
+class SubgroupConfigParser(BaseConfigParser):
     """"""
     def __init__(self, name: str):
         BaseConfigParser.__init__(self)
@@ -233,7 +232,7 @@ class SubGroupConfigParser(BaseConfigParser):
                                     acc: dict):
         return args, acc
 
-    def subparse(self, token_list: list):
+    def parse(self, token_list: list)->(list, dict):
         """
         Parse the given token list until an unknown argument is caught
 
@@ -267,7 +266,7 @@ class RootConfigParser(BaseConfigParser):
         BaseConfigParser.__init__(self)
         self.short_arg = ''
         self.long_arg = []
-        self.subparsers_group = {}
+        self.subgroup_parsers = {}
 
         self.help_arg = help_arg
         if help_arg:
@@ -281,12 +280,12 @@ class RootConfigParser(BaseConfigParser):
         s += self._get_arguments_str('  ')
         s += '\n'
 
-        for _, subparser_group in self.subparsers_group.items():
+        for _, subparser_group in self.subgroup_parsers.items():
             s += subparser_group.get_help()
 
         return s
 
-    def parse(self, args: str):
+    def parse(self, args: str)-> dict:
         """
         :param str args: string that contains the arguments and their values
 
@@ -332,7 +331,7 @@ class RootConfigParser(BaseConfigParser):
     def _unknown_argument_behaviour(self, arg_name: str, val: Any, args: list,
                                     acc: dict):
         good_contexts = []
-        for main_arg_name, subparser_group in self.subparsers_group.items():
+        for main_arg_name, subparser_group in self.subgroup_parsers.items():
             for subparser_name, subparser in subparser_group:
                 if arg_name in subparser.arguments:
                     good_contexts.append((main_arg_name, subparser_name))
@@ -358,17 +357,17 @@ class RootConfigParser(BaseConfigParser):
                 self.long_arg.append(gen_name(name))
 
     def add_argument(self, *names, is_flag: bool =False, action: Callable=store_val, default_value: Any=None,
-                     help_text: str='', argument_type:type=str):
+                     help_text: str='', argument_type:type =str, is_mandatory:bool = False):
         BaseConfigParser.add_argument(self, *names, is_flag=is_flag, action=action, default_value=default_value,
-                                      help_text=help_text, argument_type=argument_type)
+                                      help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
         self._add_argument_names(names, is_flag)
 
-    def add_component_subparser(self, component_type: str, component_subparser: SubGroupConfigParser, help_text: str= ''):
+    def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser, help_text: str= ''):
         """
-        Add a subparser that will be used by the argument *component_name*
-
-        :param str component_type: component type associated with the parser
-        :param SubGroupConfigParser component_subparser: the component subparser
+        Add a subparser that will be used by the argument *group_name*
+        The group must contain a name action
+        :param str subgroup_type: the group type
+        :param SubgroupConfigParser subgroup_parser: The subgroup parser
         :param str help_text: help text related to the parser
 
         :raise AlreadyAddedArgumentException: when attempting to add an
@@ -379,67 +378,42 @@ class RootConfigParser(BaseConfigParser):
             if arg not in acc:
                 acc[arg] = {}
 
-            subparser = self.subparsers_group[arg].get_subparser(val)
-            args, subparse_result = subparser.subparse(args)
+            parser = self.subgroup_parsers[arg].get_subgroup_parser(val)
+            args, parse_result = parser.parse(args)
 
-            acc[arg][subparser.name] = subparse_result
-            return args, acc
+            if 'name' not in parse_result:
+                raise NoNameSpecifiedForGroupException(subgroup_type)
 
-        if component_type not in self.subparsers_group:
-            self.subparsers_group[component_type] = SubParserGroup(component_type, help_text=help_text)
-            self.add_argument(component_type, action=_action, help_text=help_text)
-        else:
-            if self.subparsers_group[component_type].contains(component_subparser.name):
-                raise AlreadyAddedArgumentException(component_subparser.name)
+            subgroup_name = parse_result['name']
+            del parse_result['name']
 
-        self.subparsers_group[component_type].add_subparser(component_subparser.name, component_subparser)
+            if subgroup_name in acc[arg]:
+                raise SubgroupAlreadyExistException(subgroup_name)
 
-        for action_name, action in component_subparser.arguments.items():
-            self._add_argument_names([action_name], action.is_flag)
-
-    def add_actor_subparser(self, component_type: str, actor_subparser: SubGroupConfigParser, help_text: str= ''):
-        """
-        Add a subparser that will be used by the argument *component_name*
-        The component must contain a name action
-        :param str component_type:
-        :param SubGroupConfigParser actor_subparser:
-        :param str help_text: help text related to the parser
-
-        :raise AlreadyAddedArgumentException: when attempting to add an
-                                              argument that already have been
-                                              added to this parser
-        """
-        def _action(arg, val, args, acc):
-            if arg not in acc:
-                acc[arg] = {}
-
-            subparser = self.subparsers_group[arg].get_subparser(val)
-            args, subparse_result = subparser.subparse(args)
-
-            if 'name' not in subparse_result:
-                raise NoNameSpecifiedForComponentException(component_type)
-
-            component_name = subparse_result['name']
-            del subparse_result['name']
-
-            if component_name in acc[arg]:
-                raise ComponentAlreadyExistException(component_name)
-
-            acc[arg][component_name] = subparse_result
-            acc[arg][component_name]['type'] = subparser.name
+            acc[arg][subgroup_name] = parse_result
+            acc[arg][subgroup_name]['type'] = parser.name
 
             return args, acc
 
-        if 'name' not in actor_subparser.arguments:
-            raise SubParserWithoutNameArgumentException()
-        if component_type not in self.subparsers_group:
-            self.subparsers_group[component_type] = SubParserGroup(component_type, help_str=help_text)
-            self.add_argument(component_type, action=_action, help_text=help_text)
+        if 'name' not in subgroup_parser.arguments:
+            raise SubgroupParserWithoutNameArgumentException()
+        if subgroup_type not in self.subgroup_parsers:
+            self.subgroup_parsers[subgroup_type] = SubgroupParserGroup(subgroup_type, help_text=help_text)
+            self.add_argument(subgroup_type, action=_action, help_text=help_text)
         else:
-            if self.subparsers_group[component_type].contains(actor_subparser.name):
-                raise AlreadyAddedArgumentException(actor_subparser.name)
+            if self.subgroup_parsers[subgroup_type].contains(subgroup_parser.name):
+                raise AlreadyAddedArgumentException(subgroup_parser.name)
 
-        self.subparsers_group[component_type].add_subparser(actor_subparser.name, actor_subparser)
+        self.subgroup_parsers[subgroup_type].add_subgroup_parser(subgroup_parser.name, subgroup_parser)
 
-        for action_name, action in actor_subparser.arguments.items():
+        for action_name, action in subgroup_parser.arguments.items():
             self._add_argument_names([action_name], action.is_flag)
+
+
+def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument):
+    if not argument.is_flag:
+        try:
+            return argument.type(val)
+        except ValueError as exn:
+            raise BadTypeException(arg_name, argument.type) from exn
+    return val

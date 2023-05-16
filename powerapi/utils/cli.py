@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import Any
 
-from powerapi.cli.parsing_manager import ConfigurationArgument
 from powerapi.exception import BadTypeException
 
 
@@ -36,15 +35,6 @@ def extract_minus(arg: str):
     if len(arg) > 2:
         return arg[2:]
     return arg[1]
-
-
-def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument):
-    if not argument.is_flag:
-        try:
-            return argument.type(val)
-        except ValueError as exn:
-            raise BadTypeException(arg_name, argument.type) from exn
-    return val
 
 
 def find_longest_name(names: list):
