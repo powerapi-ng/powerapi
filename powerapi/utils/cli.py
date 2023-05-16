@@ -26,22 +26,26 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Any
 
-from powerapi.exception import BadTypeException
-
-
-def extract_minus(arg: str):
+def remove_first_characters(arg: str):
+    """
+    Remove the two first characters of arg if it has more than 2 characters, otherwise, it removes only the first one.
+    :param str arg: The string to remove the first characters
+    """
     if len(arg) > 2:
         return arg[2:]
     return arg[1]
 
 
-def find_longest_name(names: list):
+def find_longest_string_in_list(string_list: list):
+    """
+    Find the largest string contained in the given list
+    :param list string_list: List of strings
+    """
     max_len = 0
-    longest_name = ''
-    for name in names:
+    longest_string = ''
+    for name in string_list:
         if len(name) > max_len:
-            longest_name = name
+            longest_string = name
             max_len = len(name)
-    return longest_name
+    return longest_string

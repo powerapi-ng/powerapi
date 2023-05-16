@@ -26,7 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import os
+
 import pytest
+from powerapi.cli.config_parser import SubgroupConfigParser
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
@@ -62,3 +65,37 @@ def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     invalid_csv_io_stream_config["stream"] = False
     return invalid_csv_io_stream_config
+
+
+@pytest.fixture()
+def subgroup_parser():
+    """
+    A subgroup parser with one argument "-a"
+    """
+    parser = SubgroupConfigParser('test')
+    parser.add_argument('a', is_flag=True)
+    return parser
+
+
+@pytest.fixture
+def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
+    """
+    Create on the module path the files that are indicated on csv input.
+    When they are not longer required, those files are erased
+    """
+    for _, input_config in invalid_csv_io_stream_config['input'].items():
+        if input_config['type'] == 'csv':
+            list_of_files = input_config['files'].split(",")
+            for file_str in list_of_files:
+                if os.path.isfile(file_str) is False:
+                    with open(file_str, 'w') as file:
+                        file.close()
+
+    yield
+
+    for _, input_config in invalid_csv_io_stream_config['input'].items():
+        if input_config['type'] == 'csv':
+            list_of_files = input_config['files']
+            for file_str in list_of_files:
+                if os.path.isfile(file_str):
+                    os.remove(file_str)

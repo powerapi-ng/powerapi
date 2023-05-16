@@ -27,9 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
-import sys
-
-from mock import Mock, patch
 
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
@@ -41,13 +38,10 @@ from powerapi.exception import PowerAPIException
 ####################
 # PULLER GENERATOR #
 ####################
-
-class SysExitException(Exception):
-    pass
-
-
-@patch('sys.exit', side_effect=SysExitException())
-def test_generate_puller_from_empty_config_dict_call_sys_exit(mocked_sys_exit):
+def test_generate_puller_from_empty_config_dict_call_sys_exit():
+    """
+    Test that PullerGenerator raise an exception when there is no argument
+    """
     args = {}
     generator = PullerGenerator(None, [])
 
@@ -142,29 +136,17 @@ def test_generate_two_pusher():
 # DBActorGenerator Test #
 #########################
 def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
+    """ Test that an exception is raised when a model factory that does not exist is erased """
     generator = DBActorGenerator('input')
 
     with pytest.raises(ModelNameDoesNotExist):
         generator.remove_report_class('model')
 
 
-def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
-    generator = DBActorGenerator('input')
-
-    with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_report_class('model')
-
-
-def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
-    generator = DBActorGenerator('input')
-
-    with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_report_class('model')
-
-
-@patch('sys.exit', side_effect=SysExitException())
-def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_(
-        mocked_sys_exit):
+def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_must_call_sys_exit_():
+    """
+    Test that PullGenerator raises an exception when the model class is not defined
+    """
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
                                                                 'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])
@@ -173,9 +155,10 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
         _ = generator.generate(args)
 
 
-@patch('sys.exit', side_effect=SysExitException())
-def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(
-        mocked_sys_exit):
+def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_():
+    """
+    Test that PullGenerator raises an exception when a input type is not defined
+    """
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
                                                                 'db': 'tata', 'collection': 'tutu'}}}
     generator = PullerGenerator(None, [])

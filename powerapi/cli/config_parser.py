@@ -29,13 +29,13 @@
 import getopt
 import sys
 from copy import deepcopy
-from typing import Any, Callable, Type
+from typing import Any, Callable
 
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
     MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForGroupException, \
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException
-from powerapi.utils.cli import find_longest_name, extract_minus
+from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters
 
 
 def store_val(arg: str, val: Any, args: list, acc: dict):
@@ -85,7 +85,7 @@ class BaseConfigParser:
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
         """add an optional argument to the parser that will activate an action
 
-        :param str *names: names of the optional argument that will be bind to
+        :param str names: names of the optional argument that will be bind to
                            the action (could be long or short name)
 
         :param bool is_flag: True if the argument doesn't require to be followed
@@ -121,7 +121,7 @@ class BaseConfigParser:
                 raise AlreadyAddedArgumentException(name)
             self.arguments[name] = argument
 
-        argument_name = find_longest_name(names)
+        argument_name = find_longest_string_in_list(argument.names)
 
         if default_value is not None:
             self.default_values[argument_name] = default_value
@@ -146,7 +146,7 @@ class BaseConfigParser:
 
             argument = self.arguments[arg]
 
-            arg_long_name = find_longest_name(argument.names)
+            arg_long_name = find_longest_string_in_list(argument.names)
             val = cast_argument_value(arg_long_name, val, argument)
 
             args, acc = argument.action(arg_long_name, val, args, acc)
@@ -172,7 +172,7 @@ class BaseConfigParser:
             Check that mandatory arguments are present in the provided configuration.
             It also defines default values if any for arguments that are not defined in the configuration
         """
-        # Check that all the mandatory arguments are precised
+        # Check that all the mandatory arguments are present
         mandatory_args = self._get_mandatory_arguments()
         for arg in mandatory_args:
             if arg not in conf:
@@ -316,7 +316,7 @@ class RootConfigParser(BaseConfigParser):
                 raise MissingValueException(exn.opt) from exn
 
         # remove minus
-        args = list(map(lambda x: (extract_minus(x[0]), x[1]), args))
+        args = list(map(lambda x: (remove_first_characters(x[0]), x[1]), args))
 
         # verify if help argument exists in args
 
@@ -349,10 +349,10 @@ class RootConfigParser(BaseConfigParser):
         if len(names) > 1 and len(names[0]) == len(names[1]):
             raise TooManyArgumentNamesException(names[1])
 
-        def gen_name(name):
-            if len(name) == 1:
-                return name + ('' if is_flag else ':')
-            return name + ('' if is_flag else '=')
+        def gen_name(current_name):
+            if len(current_name) == 1:
+                return current_name + ('' if is_flag else ':')
+            return current_name + ('' if is_flag else '=')
 
         for name in names:
             if len(name) == 1:
@@ -364,7 +364,7 @@ class RootConfigParser(BaseConfigParser):
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
         BaseConfigParser.add_argument(self, *names, is_flag=is_flag, action=action, default_value=default_value,
                                       help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
-        self._add_argument_names(names, is_flag)
+        self._add_argument_names(list(names), is_flag)
 
     def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser, help_text: str = ''):
         """
@@ -415,6 +415,12 @@ class RootConfigParser(BaseConfigParser):
 
 
 def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument):
+    """
+    Cast the given value to argument.type
+    :param str arg_name: The argument name
+    :param Any val: Current value given to the argument
+    :argument ConfigurationAgument argument: The argument definition
+    """
     if not argument.is_flag:
         try:
             return argument.type(val)

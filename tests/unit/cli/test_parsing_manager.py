@@ -28,12 +28,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from powerapi.cli.parsing_manager import BaseConfigParsingManager, RootConfigParsingManager, \
+from powerapi.cli.parsing_manager import RootConfigParsingManager, \
     SubgroupConfigParsingManager
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
-    BadContextException, MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
+    MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
     NoNameSpecifiedForGroupException, TooManyArgumentNamesException, AlreadyAddedSubparserException
-from powerapi.cli.config_parser import store_val, store_true
+from powerapi.cli.config_parser import store_true
 
 
 ###############
@@ -107,6 +107,9 @@ def test_add_flag_long():
 
 # full parsing test #
 def check_parsing_cli_result(parser, input_str, outputs):
+    """
+    Check that input_str is correctly parsed by parser
+    """
     result = parser._parse_cli(input_str.split())
 
     assert len(result) == len(outputs)
@@ -126,7 +129,7 @@ def test_empty_parser_cli():
     ConfigParser description :
 
     - base parser arguments : None
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParsingManager()
 
@@ -158,7 +161,7 @@ def test_empty_parser_validate():
     ConfigParser description :
 
     - base parser arguments : None
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParsingManager()
     dic = {
@@ -182,7 +185,7 @@ def test_main_parser_cli():
     ConfigParser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParsingManager()
     parser.add_argument('a', is_flag=True, action=store_true)
@@ -210,7 +213,7 @@ def test_main_parser_validate():
     ConfigParser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParsingManager()
     parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
@@ -243,7 +246,7 @@ def test_actor_subparser_cli():
     ConfigParser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b and --name
+    - subparser toto bound to the argument sub with sub arguments : -b and --name
     """
     parser = RootConfigParsingManager()
     parser.add_argument('a', is_flag=True, action=store_true)
@@ -283,7 +286,7 @@ def test_actor_subparser_validate():
     ConfigParser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b and --name
+    - subparser toto bound to the argument sub with sub arguments : -b and --name
     """
     parser = RootConfigParsingManager()
     parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
@@ -444,6 +447,9 @@ def test_argument_with_val_validate():
 
 
 def test_type_cli():
+    """
+        Test that the type of an argument is correctly checked by the parser when a string is used as input
+    """
     parser = RootConfigParsingManager()
     parser.add_argument('c', argument_type=int)
 
@@ -454,6 +460,9 @@ def test_type_cli():
 
 
 def test_type_validate():
+    """
+        Test that the type of an argument is correctly validated by the parser when a dict is used as input
+    """
     parser = RootConfigParsingManager()
     parser.add_argument('c', argument_type=int)
 
@@ -490,7 +499,7 @@ def test_add_two_short_name():
         parser.add_argument('c', 'd')
 
 
-def test_add_two_short_name():
+def test_add_two_long_name():
     """
     Add an argument to a parser with two long name and test if the
     parser raise an exception TooManyArgumentNamesException
@@ -504,7 +513,7 @@ def test_add_two_short_name():
 # Type tests #
 def test_default_type():
     """
-    add an argument without specifing the type it must catch. Parse a string
+    add an argument without specifying the type it must catch. Parse a string
     that contains only this argument and test if the value contained in the
     result is a string
 
@@ -545,7 +554,7 @@ def test_cant_convert_to_type():
 
 
 # parse with Subparser tests #
-def test_add_actor_subparser_that_aldready_exists():
+def test_add_actor_subparser_that_already_exists():
     """
     Add a component_subparser that already exists to a parser and test if an
     AlreadyAddedArgumentException is raised
@@ -587,6 +596,9 @@ def test_add_component_subparser_that_already_exists2():
 
 
 def test_parse_empty_string_default_value():
+    """
+        Test that the result of parsing an empty string is a dict of arguments with their default value
+    """
     parser = RootConfigParsingManager()
     parser.add_argument('a', default_value=1)
     result = parser._parse_cli(''.split())
@@ -596,6 +608,9 @@ def test_parse_empty_string_default_value():
 
 
 def test_default_validate():
+    """
+        Test that the result of parsing an empty dict is a dict of arguments with their default value
+    """
     parser = RootConfigParsingManager()
     parser.add_argument('c', argument_type=int, default_value=1)
 

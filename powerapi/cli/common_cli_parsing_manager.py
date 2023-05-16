@@ -54,361 +54,361 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self.add_argument(
             "v",
             "verbose",
-            flag=True,
+            is_flag=True,
             action=store_true,
-            default=False,
-            help="enable verbose mode",
+            default_value=False,
+            help_text="enable verbose mode",
         )
         self.add_argument(
             "s",
             "stream",
-            flag=True,
+            is_flag=True,
             action=store_true,
-            default=False,
-            help="enable stream mode",
+            default_value=False,
+            help_text="enable stream mode",
         )
 
         subparser_libvirt_mapper_modifier = SubgroupConfigParsingManager("libvirt_mapper")
         subparser_libvirt_mapper_modifier.add_argument(
-            "u", "uri", help="libvirt daemon uri", default=""
+            "u", "uri", help_text="libvirt daemon uri", default_value=""
         )
         subparser_libvirt_mapper_modifier.add_argument(
             "d",
             "domain_regexp",
-            help="regexp used to extract domain from cgroup string",
+            help_text="regexp used to extract domain from cgroup string",
         )
-        subparser_libvirt_mapper_modifier.add_argument("n", "name", help="")
+        subparser_libvirt_mapper_modifier.add_argument("n", "name", help_text="")
         self.add_subgroup_parser(
             "report_modifier",
             subparser_libvirt_mapper_modifier,
-            help="Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...",
+            help_text="Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...",
         )
 
         subparser_mongo_input = SubgroupConfigParsingManager("mongodb")
-        subparser_mongo_input.add_argument("u", "uri", help="specify MongoDB uri")
+        subparser_mongo_input.add_argument("u", "uri", help_text="specify MongoDB uri")
         subparser_mongo_input.add_argument(
             "d",
             "db",
-            help="specify MongoDB database name",
+            help_text="specify MongoDB database name",
         )
         subparser_mongo_input.add_argument(
-            "c", "collection", help="specify MongoDB database collection"
+            "c", "collection", help_text="specify MongoDB database collection"
         )
         subparser_mongo_input.add_argument(
-            "n", "name", help="specify puller name", default="puller_mongodb"
+            "n", "name", help_text="specify puller name", default_value="puller_mongodb"
         )
         subparser_mongo_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="HWPCReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="HWPCReport",
         )
         self.add_subgroup_parser(
             "input",
             subparser_mongo_input,
-            help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
         subparser_socket_input = SubgroupConfigParsingManager("socket")
         subparser_socket_input.add_argument(
-            "p", "port", type=int, help="specify port to bind the socket"
+            "p", "port", argument_type=int, help_text="specify port to bind the socket"
         )
         subparser_socket_input.add_argument(
-            "n", "name", help="specify puller name", default="puller_socket"
+            "n", "name", help_text="specify puller name", default_value="puller_socket"
         )
         subparser_socket_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be sent through the socket",
-            default="HWPCReport",
+            help_text="specify data type that will be sent through the socket",
+            default_value="HWPCReport",
         )
         self.add_subgroup_parser(
             "input",
             subparser_socket_input,
-            help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
         subparser_csv_input = SubgroupConfigParsingManager("csv")
         subparser_csv_input.add_argument(
             "f",
             "files",
-            help="specify input csv files with this format : file1,file2,file3",
+            help_text="specify input csv files with this format : file1,file2,file3",
             action=extract_file_names,
-            default=[],
+            default_value=[],
         )
         subparser_csv_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="HWPCReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="HWPCReport",
         )
         subparser_csv_input.add_argument(
-            "n", "name", help="specify puller name", default="puller_csv"
+            "n", "name", help_text="specify puller name", default_value="puller_csv"
         )
         self.add_subgroup_parser(
             "input",
             subparser_csv_input,
-            help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
         subparser_file_input = SubgroupConfigParsingManager("filedb")
         subparser_file_input.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="HWPCReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="HWPCReport",
         )
-        subparser_file_input.add_argument("f", "filename", help="specify file name")
+        subparser_file_input.add_argument("f", "filename", help_text="specify file name")
         subparser_file_input.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_filedb"
+            "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
         )
         self.add_subgroup_parser(
             "input",
             subparser_file_input,
-            help="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
         )
 
         subparser_file_output = SubgroupConfigParsingManager("filedb")
         subparser_file_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
-        subparser_file_output.add_argument("f", "filename", help="specify file name")
+        subparser_file_output.add_argument("f", "filename", help_text="specify file name")
         subparser_file_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_filedb"
+            "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
         )
         self.add_subgroup_parser(
             "output",
             subparser_file_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
         subparser_virtiofs_output = SubgroupConfigParsingManager("virtiofs")
-        help = "regexp used to extract vm name from report."
-        help += "The regexp must match the name of the target in the HWPC-report and a group must"
-        subparser_virtiofs_output.add_argument("r", "vm_name_regexp", help=help)
+        help_text = "regexp used to extract vm name from report."
+        help_text += "The regexp must match the name of the target in the HWPC-report and a group must"
+        subparser_virtiofs_output.add_argument("r", "vm_name_regexp", help_text=help_text)
         subparser_virtiofs_output.add_argument(
             "d",
             "root_directory_name",
-            help="directory where VM directory will be stored",
+            help_text="directory where VM directory will be stored",
         )
         subparser_virtiofs_output.add_argument(
             "p",
             "vm_directory_name_prefix",
-            help="first part of the VM directory name",
-            default="",
+            help_text="first part of the VM directory name",
+            default_value="",
         )
         subparser_virtiofs_output.add_argument(
             "s",
             "vm_directory_name_suffix",
-            help="last part of the VM directory name",
-            default="",
+            help_text="last part of the VM directory name",
+            default_value="",
         )
         subparser_virtiofs_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_virtiofs_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_virtiofs"
+            "n", "name", help_text="specify pusher name", default_value="pusher_virtiofs"
         )
         self.add_subgroup_parser(
             "output",
             subparser_virtiofs_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
         subparser_mongo_output = SubgroupConfigParsingManager("mongodb")
-        subparser_mongo_output.add_argument("u", "uri", help="specify MongoDB uri")
+        subparser_mongo_output.add_argument("u", "uri", help_text="specify MongoDB uri")
         subparser_mongo_output.add_argument(
-            "d", "db", help="specify MongoDB database name"
+            "d", "db", help_text="specify MongoDB database name"
         )
         subparser_mongo_output.add_argument(
-            "c", "collection", help="specify MongoDB database collection"
+            "c", "collection", help_text="specify MongoDB database collection"
         )
 
         subparser_mongo_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_mongo_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_mongodb"
+            "n", "name", help_text="specify pusher name", default_value="pusher_mongodb"
         )
         self.add_subgroup_parser(
             "output",
             subparser_mongo_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
         subparser_prom_output = SubgroupConfigParsingManager("prom")
-        subparser_prom_output.add_argument("t", "tags", help="specify report tags")
-        subparser_prom_output.add_argument("u", "uri", help="specify server uri")
+        subparser_prom_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_prom_output.add_argument("u", "uri", help_text="specify server uri")
         subparser_prom_output.add_argument(
-            "p", "port", help="specify server port", type=int
+            "p", "port", help_text="specify server port", argument_type=int
         )
         subparser_prom_output.add_argument(
-            "M", "metric_name", help="specify metric name"
+            "M", "metric_name", help_text="specify metric name"
         )
         subparser_prom_output.add_argument(
             "d",
             "metric_description",
-            help="specify metric description",
-            default="energy consumption",
+            help_text="specify metric description",
+            default_value="energy consumption",
         )
-        help = "specify number of second for the value must be aggregated before compute statistics on them"
+        help_text = "specify number of second for the value must be aggregated before compute statistics on them"
         subparser_prom_output.add_argument(
-            "A", "aggregation_period", help=help, default=15, type=int
+            "A", "aggregation_period", help_text=help_text, default_value=15, argument_type=int
         )
 
         subparser_prom_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_prom_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_prom"
+            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
         )
         self.add_subgroup_parser(
             "output",
             subparser_prom_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
         subparser_direct_prom_output = SubgroupConfigParsingManager("direct_prom")
         subparser_direct_prom_output.add_argument(
-            "t", "tags", help="specify report tags"
+            "t", "tags", help_text="specify report tags"
         )
-        subparser_direct_prom_output.add_argument("a", "uri", help="specify server uri")
+        subparser_direct_prom_output.add_argument("a", "uri", help_text="specify server uri")
         subparser_direct_prom_output.add_argument(
-            "p", "port", help="specify server port", type=int
+            "p", "port", help_text="specify server port", argument_type=int
         )
         subparser_direct_prom_output.add_argument(
-            "M", "metric_name", help="speify metric name"
+            "M", "metric_name", help_text="specify metric name"
         )
         subparser_direct_prom_output.add_argument(
             "d",
             "metric_description",
-            help="specify metric description",
-            default="energy consumption",
+            help_text="specify metric description",
+            default_value="energy consumption",
         )
         subparser_direct_prom_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_direct_prom_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_prom"
+            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
         )
         self.add_subgroup_parser(
             "output",
             subparser_direct_prom_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
         )
 
         subparser_csv_output = SubgroupConfigParsingManager("csv")
         subparser_csv_output.add_argument(
             "d",
             "directory",
-            help="specify directory where where output  csv files will be writen",
+            help_text="specify directory where where output  csv files will be writen",
         )
         subparser_csv_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
 
-        subparser_csv_output.add_argument("t", "tags", help="specify report tags")
+        subparser_csv_output.add_argument("t", "tags", help_text="specify report tags")
         subparser_csv_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_csv"
+            "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )
         self.add_subgroup_parser(
             "output",
             subparser_csv_output,
-            help="specify a database outpout : --db_output database_name ARG1 ARG2 ... ",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
         subparser_influx_output = SubgroupConfigParsingManager("influxdb")
-        subparser_influx_output.add_argument("u", "uri", help="specify InfluxDB uri")
-        subparser_influx_output.add_argument("t", "tags", help="specify report tags")
+        subparser_influx_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
+        subparser_influx_output.add_argument("t", "tags", help_text="specify report tags")
         subparser_influx_output.add_argument(
-            "d", "db", help="specify InfluxDB database name"
+            "d", "db", help_text="specify InfluxDB database name"
         )
         subparser_influx_output.add_argument(
-            "p", "port", help="specify InfluxDB connection port", type=int
+            "p", "port", help_text="specify InfluxDB connection port", argument_type=int
         )
         subparser_influx_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be storen in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_influx_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_influxdb"
+            "n", "name", help_text="specify pusher name", default_value="pusher_influxdb"
         )
         self.add_subgroup_parser(
             "output",
             subparser_influx_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
         subparser_opentsdb_output = SubgroupConfigParsingManager("opentsdb")
-        subparser_opentsdb_output.add_argument("u", "uri", help="specify openTSDB host")
+        subparser_opentsdb_output.add_argument("u", "uri", help_text="specify openTSDB host")
         subparser_opentsdb_output.add_argument(
-            "p", "port", help="specify openTSDB connection port", type=int
+            "p", "port", help_text="specify openTSDB connection port", argument_type=int
         )
         subparser_opentsdb_output.add_argument(
-            "metric_name", help="specify metric name"
+            "metric_name", help_text="specify metric name"
         )
 
         subparser_opentsdb_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be stored in the database",
-            default="PowerReport",
+            help_text="specify data type that will be stored in the database",
+            default_value="PowerReport",
         )
         subparser_opentsdb_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_opentsdb"
+            "n", "name", help_text="specify pusher name", default_value="pusher_opentsdb"
         )
         self.add_subgroup_parser(
             "output",
             subparser_opentsdb_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
-        subparser_influx2_output.add_argument("u", "uri", help="specify InfluxDB uri")
-        subparser_influx2_output.add_argument("t", "tags", help="specify report tags")
-        subparser_influx2_output.add_argument("k", "token", help="specify token for accessing the database")
-        subparser_influx2_output.add_argument("g", "org", help="specify organisation for accessing the database")
+        subparser_influx2_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
+        subparser_influx2_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_influx2_output.add_argument("k", "token", help_text="specify token for accessing the database")
+        subparser_influx2_output.add_argument("g", "org", help_text="specify organisation for accessing the database")
 
         subparser_influx2_output.add_argument(
-            "d", "db", help="specify InfluxDB database name"
+            "d", "db", help_text="specify InfluxDB database name"
         )
         subparser_influx2_output.add_argument(
-            "p", "port", help="specify InfluxDB connection port", type=int
+            "p", "port", help_text="specify InfluxDB connection port", argument_type=int
         )
         subparser_influx2_output.add_argument(
             "m",
             "model",
-            help="specify data type that will be store in the database",
-            default="PowerReport",
+            help_text="specify data type that will be store in the database",
+            default_value="PowerReport",
         )
         subparser_influx2_output.add_argument(
-            "n", "name", help="specify pusher name", default="pusher_influxdb2"
+            "n", "name", help_text="specify pusher name", default_value="pusher_influxdb2"
         )
 
         self.add_subgroup_parser(
             "output",
             subparser_influx2_output,
-            help="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
         )
 
     def parse_argv(self):
@@ -425,7 +425,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             print(msg, file=sys.stderr)
 
         except UnknownArgException as exn:
-            msg = "CLI error : unknow argument " + exn.argument_name
+            msg = "CLI error : unknown argument " + exn.argument_name
             print(msg, file=sys.stderr)
 
         except BadContextException as exn:

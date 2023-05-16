@@ -164,5 +164,3 @@ class BadContextException(ParserException):
         self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
         for main_arg_name, context_name in context_list:
             self.msg += '\n  --' + main_arg_name + ' ' + context_name
-
-

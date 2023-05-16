@@ -100,7 +100,7 @@ def test_add_argument_long():
     Test if the argument was added to the long_arg list
     """
     parser = RootConfigParser(help_arg=False)
-    assert parser.long_arg == []
+    assert not parser.long_arg
     parser.add_argument('aaa')
     assert parser.long_arg == ['aaa=']
 
@@ -112,13 +112,16 @@ def test_add_flag_long():
     Test if the argument was added to the long_arg list
     """
     parser = RootConfigParser(help_arg=False)
-    assert parser.long_arg == []
+    assert not parser.long_arg
     parser.add_argument('aaa', is_flag=True)
     assert parser.long_arg == ['aaa']
 
 
 # full parsing test #
 def check_parsing_result(parser, input_str, outputs):
+    """
+    Check that input_str is correctly parsed by parser
+    """
     result = parser.parse(input_str.split())
 
     assert len(result) == len(outputs)
@@ -138,7 +141,7 @@ def test_empty_parser():
     Parser description :
 
     - base parser arguments : None
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParser(help_arg=False)
 
@@ -170,7 +173,7 @@ def test_main_parser():
     Parser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : None
+    - subparser toto bound to the argument sub with sub arguments : None
     """
     parser = RootConfigParser(help_arg=False)
     parser.add_argument('a', is_flag=True, action=store_true)
@@ -203,7 +206,7 @@ def test_actor_subparser():
     Parser description :
 
     - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b and --name
+    - subparser toto bound to the argument sub with sub arguments : -b and --name
     """
     parser = RootConfigParser(help_arg=False)
     parser.add_argument('a', is_flag=True, action=store_true)
@@ -335,7 +338,7 @@ def test_add_two_short_name():
         parser.add_argument('c', 'd')
 
 
-def test_add_two_short_name():
+def test_add_two_long_name():
     """
     Add an argument to a parser with two long name and test if the
     parser raise an exception TooManyArgumentNamesException
@@ -349,7 +352,7 @@ def test_add_two_short_name():
 # Type tests #
 def test_default_type():
     """
-    add an argument without specifing the type it must catch. Parse a string
+    add an argument without specifying the type it must catch. Parse a string
     that contains only this argument and test if the value contained in the
     result is a string
 
@@ -432,6 +435,9 @@ def test_add_component_subparser_that_already_exists2():
 
 
 def test_parse_empty_string_default_value():
+    """
+    Test that the result of parsing an empty string is a dict of arguments with their default value
+    """
     parser = RootConfigParser(help_arg=False)
     parser.add_argument('a', default_value=1)
     result = parser.parse(''.split())
@@ -443,16 +449,6 @@ def test_parse_empty_string_default_value():
 ############################
 # COMPONENT_SUBPARSER TEST #
 ############################
-@pytest.fixture()
-def subgroup_parser():
-    """
-    A subgroup parser with one argument "-a"
-    """
-    subgroup_parser = SubgroupConfigParser('test')
-    subgroup_parser.add_argument('a', is_flag=True)
-    return subgroup_parser
-
-
 def test_component_subparser_empty(subgroup_parser):
     """
     Test component_subparser, parse an empty token list.
@@ -468,7 +464,7 @@ def test_component_subparser_normal_token_list(subgroup_parser):
     argument [('a', '')].
 
     must return return a  dictionary {'a':''} as parse result
-    and a empty token list
+    and an empty token list
 
     """
     assert subgroup_parser.parse([('a', '')]) == ([], {'a': None})
@@ -488,6 +484,9 @@ def test_component_subparser_full_token_list(subgroup_parser):
 
 
 def test_subparser_empty_token_list_default_value():
+    """
+    Test that the result of parsing an empty string is a dict of arguments with their default value
+    """
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('a', default_value=1)
     acc, result = subparser.parse([])

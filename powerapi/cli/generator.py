@@ -285,9 +285,12 @@ class PullerGenerator(DBActorGenerator):
     Generate Puller Actor class and Puller start message from config
     """
 
-    def __init__(self, report_filter: Filter, report_modifier_list=[]):
+    def __init__(self, report_filter: Filter, report_modifier_list=None):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
+
+        if report_modifier_list is None:
+            report_modifier_list = []
         self.report_modifier_list = report_modifier_list
 
     def _actor_factory(self, actor_name: str, main_config, component_config: Dict):
@@ -306,9 +309,12 @@ class SimplePullerGenerator(SimpleGenerator):
     Generate Simple Puller Actor class and Simple Puller start message from config
     """
 
-    def __init__(self, report_filter, report_modifier_list=[]):
+    def __init__(self, report_filter, report_modifier_list=None):
         SimpleGenerator.__init__(self, 'input')
         self.report_filter = report_filter
+
+        if report_modifier_list is None:
+            report_modifier_list = []
         self.report_modifier_list = report_modifier_list
 
     def _actor_factory(self, actor_name: str, main_config: Dict, component_config: Dict):

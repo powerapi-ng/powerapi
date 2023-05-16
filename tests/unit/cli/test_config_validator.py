@@ -26,36 +26,20 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# pylint: unused-import
-import os
-import pytest
 
 from powerapi.cli import ConfigValidator
 
 
-@pytest.fixture
-def create_empty_files_from_config(invalid_csv_io_stream_config):
-    for key, input_config in invalid_csv_io_stream_config['input'].items():
-        if input_config['type'] == 'csv':
-            list_of_files = input_config['files'].split(",")
-            for file_str in list_of_files:
-                if os.path.isfile(file_str) is False:
-                    with open(file_str, 'w') as file:
-                        file.close()
-
-    yield
-
-    for key, input_config in invalid_csv_io_stream_config['input'].items():
-        if input_config['type'] == 'csv':
-            list_of_files = input_config['files']
-            for file_str in list_of_files:
-                if os.path.isfile(file_str):
-                    os.remove(file_str)
-
-
 def test_invalid_config_stream_and_csv_input(invalid_csv_io_stream_config):
+    """
+    Test that an invalid configuration is detected by the ConfigValidator
+    """
     assert ConfigValidator.validate(invalid_csv_io_stream_config) is False
 
 
 def test_valid_config_postmortem_csv_input(create_empty_files_from_config, csv_io_postmortem_config):
+    """
+    Test that an invalid configuration is detected by the ConfigValidator when stream mode is disable.
+    """
+    # pylint: disable=unused-argument
     assert ConfigValidator.validate(csv_io_postmortem_config)

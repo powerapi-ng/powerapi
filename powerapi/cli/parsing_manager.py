@@ -31,11 +31,10 @@ import sys
 import json
 import logging
 
-from typing import Dict, Type, Callable, Any
-from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val, ConfigurationArgument
-from powerapi.exception import AlreadyAddedArgumentException, MissingArgumentException, BadTypeException, \
+from typing import Callable, Any
+from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
+from powerapi.exception import MissingArgumentException, BadTypeException, \
     AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException
-from powerapi.utils.cli import find_longest_name
 
 
 class BaseConfigParsingManager:
@@ -80,7 +79,7 @@ class SubgroupConfigParsingManager(BaseConfigParsingManager):
                     if not isinstance(value, waited_value.type) and not waited_value.is_flag and args != 'files':
                         raise BadTypeException(args, waited_value.type)
 
-        # Check that all the mandatory arguments are precised
+        # Check that all the mandatory arguments are present
         conf = self.cli_parser.validate(conf=conf)
 
         return conf
@@ -145,7 +144,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
             if not is_an_arg:
                 raise UnknownArgException(current_argument_name)
 
-        # Check that all the mandatory arguments are precised
+        # Check that all the mandatory arguments are present
         conf = self.cli_parser.validate(conf)
 
         return conf
@@ -153,7 +152,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
     def parse(self, args=None):
         """
         Find the configuration method (CLI or config file)
-        Call the method to produce a configuration dictionnary
+        Call the method to produce a configuration dictionary
         check the configuration
         """
 
@@ -187,7 +186,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
             sys.exit(-1)
 
         except UnknownArgException as exn:
-            msg = 'Configuration error: unknow argument ' + exn.argument_name
+            msg = 'Configuration error: unknown argument ' + exn.argument_name
             logging.error(msg)
             sys.exit(-1)
 
@@ -205,7 +204,8 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
         except json.JSONDecodeError as exn:
             logging.error(
-                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + exn.lineno + ' colomn ' + exn.colno)
+                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + str(exn.lineno) + ' colon '
+                + str(exn.colno))
             sys.exit(-1)
 
         except MissingArgumentException as exn:
