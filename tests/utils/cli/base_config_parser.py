@@ -26,27 +26,33 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import pytest
 
-from powerapi.cli import ConfigValidator
+import json
 
-from powerapi.exception import NotAllowedArgumentValueException
+import tests.utils.cli as parent_module
 
 
-def test_invalid_config_stream_and_csv_input(invalid_csv_io_stream_config):
+def load_configuration_from_json_file(file_name: str) -> dict:
     """
-    Test that an invalid configuration is detected by the ConfigValidator
+    Load a json dictionary contained in the given file
+    :param str file_name: The file name with extension and without '/' at the begining
     """
-    with pytest.raises(NotAllowedArgumentValueException):
-        ConfigValidator.validate(invalid_csv_io_stream_config)
+    path = parent_module.__path__[0]
+    json_file = open(path + '/' + file_name, 'r')
+    configuration = json.load(json_file)
+    json_file.close()
+    return configuration
 
 
-def test_valid_config_postmortem_csv_input(create_empty_files_from_config, csv_io_postmortem_config):
+def generate_list_of_tuples_of_configuration_from_json_file(file_name: str) -> list:
     """
-    Test that a valid configuration is detected by the ConfigValidator when stream mode is disabled.
+    Generate a list of tuples <argumebnt_name,value> from a dictionary created from a given file
+    :param str file_name: The file name with extension and without '/' at the begining
     """
-    # pylint: disable=unused-argument
-    try:
-        ConfigValidator.validate(csv_io_postmortem_config)
-    except NotAllowedArgumentValueException:
-        assert False
+    arguments = []
+    conf = load_configuration_from_json_file(file_name)
+
+    for argument_name, value in conf.items():
+        arguments.append((argument_name, value))
+
+    return arguments

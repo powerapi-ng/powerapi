@@ -157,7 +157,7 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
 
 def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_():
     """
-    Test that PullGenerator raises an exception when a input type is not defined
+    Test that PullGenerator raises an exception when an input type is not defined
     """
     args = {'verbose': True, 'stream': True, 'input': {'toto': {'model': 'HWPCReport', 'type': 'mongodb', 'uri': 'titi',
                                                                 'db': 'tata', 'collection': 'tutu'}}}

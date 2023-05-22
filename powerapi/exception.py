@@ -118,7 +118,7 @@ class MissingArgumentException(ParserException):
 
     def __init__(self, argument_name):
         ParserException.__init__(self, argument_name)
-        self.msg = 'Argument ' + argument_name + ' is missing'
+        self.msg = 'Argument with name(s) ' + argument_name + ' is missing'
 
 
 class MissingValueException(ParserException):

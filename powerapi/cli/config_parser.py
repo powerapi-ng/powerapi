@@ -64,7 +64,7 @@ class ConfigurationArgument:
     Argument provided by a formula configuration.
     """
 
-    def __init__(self, names: list, is_flag: bool, default_value, help_text: str, argument_type: type,
+    def __init__(self, names: list, is_flag: bool, default_value: Any, help_text: str, argument_type: type,
                  is_mandatory: bool, action: Callable = None):
         self.names = names
         self.is_flag = is_flag
@@ -73,6 +73,16 @@ class ConfigurationArgument:
         self.type = argument_type
         self.is_mandatory = is_mandatory
         self.action = action
+
+    def __eq__(self, arg):
+        names_ok = True
+
+        for current_name in self.names:
+            names_ok = current_name in arg.names
+
+        return names_ok and len(self.names) == len(arg.names) and self.is_flag == arg.is_flag and \
+            self.type == arg.type and self.default_value == arg.default_value and \
+            self.help_text == arg.help_text and self.is_mandatory == arg.is_mandatory
 
 
 class BaseConfigParser:
@@ -127,10 +137,13 @@ class BaseConfigParser:
             self.default_values[argument_name] = default_value
 
     def _get_arguments_str(self, indent: str) -> str:
+        already_added_argument = []
         s = ''
-        for _, argument in self.arguments:
-            s += indent + ', '.join(map(lambda x: '-' + x if len(x) == 1 else '--' + x, argument.names))
-            s += ' : ' + argument.help_text + '\n'
+        for _, argument in self.arguments.items():
+            if argument not in already_added_argument:
+                s += indent + ', '.join(map(lambda x: '-' + x if len(x) == 1 else '--' + x, argument.names))
+                s += ' : ' + argument.help_text + '\n'
+                already_added_argument.append(argument)
         return s
 
     def _unknown_argument_behaviour(self, arg_name: str, val: Any, args: list, acc: dict):
@@ -153,14 +166,14 @@ class BaseConfigParser:
 
         return args, acc
 
-    def _get_mandatory_arguments(self):
+    def _get_mandatory_arguments(self) -> list:
         """
         Return the list of mandatory arguments
         """
         mand_args = []
-        for name, argument in self.arguments.items():
-            if argument.is_mandatory:
-                mand_args.append(name)
+        for _, argument in self.arguments.items():
+            if argument.is_mandatory and argument not in mand_args:
+                mand_args.append(argument)
         return mand_args
 
     def get_arguments(self):
@@ -175,18 +188,23 @@ class BaseConfigParser:
         # Check that all the mandatory arguments are present
         mandatory_args = self._get_mandatory_arguments()
         for arg in mandatory_args:
-            if arg not in conf:
-                raise MissingArgumentException(arg)
-
-        # Define default values for no defined arguments
-        for args, value in self.arguments.items():
-            is_precised = False
-            for name in value.names:
-                if name in conf:
-                    is_precised = True
+            is_present = False
+            for arg_name in arg.names:
+                if arg_name in conf:
+                    is_present = True
                     break
-            if not is_precised and value.default_value is not None:
-                conf[args] = value.default_value
+            if not is_present:
+                raise MissingArgumentException(str(arg.names))
+
+        # Define default values for no defined arguments if they are specified
+        for argument_name, argument_definition in self.arguments.items():
+            is_defined = False
+            for name in argument_definition.names:
+                if name in conf:
+                    is_defined = True
+                    break
+            if not is_defined and argument_definition.default_value is not None:
+                conf[argument_name] = argument_definition.default_value
 
         return conf
 

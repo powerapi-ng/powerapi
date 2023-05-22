@@ -29,7 +29,7 @@
 import os
 
 import pytest
-from powerapi.cli.config_parser import SubgroupConfigParser
+from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
@@ -81,7 +81,7 @@ def subgroup_parser():
 def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
     """
     Create on the module path the files that are indicated on csv input.
-    When they are not longer required, those files are erased
+    When they are no longer required, those files are erased
     """
     for _, input_config in invalid_csv_io_stream_config['input'].items():
         if input_config['type'] == 'csv':
@@ -99,3 +99,48 @@ def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
             for file_str in list_of_files:
                 if os.path.isfile(file_str):
                     os.remove(file_str)
+
+
+@pytest.fixture
+def base_config_parser():
+
+    parser = BaseConfigParser()
+
+    parser.add_argument('arg1', 'argument1', 'argumento1', default_value=3, argument_type=int, is_mandatory=False)
+
+    parser.add_argument('argumento2', 'arg2', argument_type=str, is_mandatory=True)
+
+    parser.add_argument('arg3', 'argument3', argument_type=bool, is_mandatory=False)
+
+    parser.add_argument('dded', 'arg4', argument_type=float, is_mandatory=True)
+
+    parser.add_argument('arg5', '5', default_value='default value', argument_type=str, help_text='help 5')
+
+    return parser
+
+
+@pytest.fixture
+def base_config_parser_no_mandatory_arguments():
+
+    parser = BaseConfigParser()
+
+    parser.add_argument('arg1', default_value=4, argument_type=int)
+
+    parser.add_argument('arg2', argument_type=str)
+
+    parser.add_argument('arg3', argument_type=bool)
+
+    parser.add_argument('arg4', argument_type=int)
+
+    parser.add_argument('arg5', argument_type=int)
+
+    return parser
+
+
+@pytest.fixture
+def base_config_parser_str_representation():
+    return ' --arg1, --argument1, --argumento1 : \n' + \
+        ' --argumento2, --arg2 : \n' + \
+        ' --arg3, --argument3 : \n' + \
+        ' --dded, --arg4 : \n' + \
+        ' --arg5, -5 : help 5\n'

@@ -28,11 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from powerapi.cli.config_parser import BaseConfigParser, RootConfigParser, SubgroupConfigParser
-from powerapi.cli.config_parser import store_true
+from powerapi.cli.config_parser import ConfigurationArgument, BaseConfigParser, RootConfigParser, SubgroupConfigParser
+from powerapi.cli.config_parser import store_true, store_val
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
     BadContextException, MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
-    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException
+    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, MissingArgumentException
+
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
+    generate_list_of_tuples_of_configuration_from_json_file
 
 
 ###############
@@ -40,26 +43,197 @@ from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, 
 ###############
 def test_add_argument_that_already_exists():
     """
-    Add an argument that already exists to a BaseParser and test if an
-    AlreadyAddedArgumentException is raised
+    Test if an AlreadyAddedArgumentException is raised when an argument that already exists is added to a
+    BaseConfigParser
     """
 
     parser = BaseConfigParser()
     parser.add_argument('a')
+    parser.add_argument('bb', 'bbb', 'b', 'bbbbbb')
 
     with pytest.raises(AlreadyAddedArgumentException):
         parser.add_argument('a')
 
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('bbb')
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('bbbbbb')
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('ccc', 'a')
+
+
+def test_get_arguments_returns_all_stored_arguments():
+    """
+    Test if all the arguments are correctly stored by BasePaserConfig
+    """
+    longest_name_arg_a = 'aaa'
+    name_arg_a_1 = 'a'
+    name_arg_a_2 = 'ab'
+    expected_argument_a = ConfigurationArgument(names=[name_arg_a_1, longest_name_arg_a, name_arg_a_2],
+                                                argument_type=bool, default_value=False,
+                                                help_text='This a parameter', is_mandatory=False, is_flag=True)
+
+    longest_name_arg_xx = 'XXXX'
+    name_arg_xx_1 = 'xx'
+    name_arg_xx_2 = 'xax'
+    expected_argument_xx = ConfigurationArgument(names=[name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2],
+                                                 argument_type=str, default_value='Hi',
+                                                 help_text='This is another parameter', is_mandatory=True,
+                                                 is_flag=False, action=store_val)
+
+    parser = BaseConfigParser()
+    parser.add_argument(name_arg_a_1, longest_name_arg_a, name_arg_a_2, is_mandatory=expected_argument_a.is_mandatory, is_flag=expected_argument_a.is_flag,
+                        argument_type=expected_argument_a.type, help_text=expected_argument_a.help_text,
+                        default_value=expected_argument_a.default_value)
+
+    parser.add_argument(name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2, is_mandatory=expected_argument_xx.is_mandatory, is_flag=expected_argument_xx.is_flag,
+                        argument_type=expected_argument_xx.type, help_text=expected_argument_xx.help_text,
+                        default_value=expected_argument_xx.default_value)
+
+    arguments = parser.get_arguments()
+
+    assert len(arguments) == 6
+
+    assert longest_name_arg_a in arguments.keys()
+
+    assert longest_name_arg_xx in arguments.keys()
+
+    assert expected_argument_a == arguments.get(longest_name_arg_a)
+
+    assert expected_argument_xx == arguments.get(longest_name_arg_xx)
+
+
+def test_get_mandatory_arguments_return_all_mandatory_argument(base_config_parser):
+
+    """
+    Test that all the mandatory arguments are identified by the paser
+    """
+    expected_mandatory_args_names = ['arg2', 'arg4']
+
+    mandatory_args = base_config_parser._get_mandatory_arguments()
+
+    assert len(mandatory_args) == len(expected_mandatory_args_names)
+
+    for expected_mandatory_args_name in expected_mandatory_args_names:
+        is_present = False
+        for mandatory_arg in mandatory_args:
+            if expected_mandatory_args_name in mandatory_arg.names:
+                is_present = True
+                break
+        assert is_present
+
+
+def test_get_mandatory_arguments_return_empty_list_with_no_mandatory_args(base_config_parser_no_mandatory_arguments):
+
+    """
+    Test that mandatory arguments list is empty if parser does not have mandatory arguments
+    """
+    mandatory_args = base_config_parser_no_mandatory_arguments._get_mandatory_arguments()
+
+    assert not mandatory_args
+
+
+def test_validate_check_mandatory_arguments_on_configuration(base_config_parser):
+    """
+    Test if mandatory arguments are verified by the parser
+    """
+    conf = load_configuration_from_json_file('basic_configuration.json')
+    conf_without_mandatory_arguments = \
+        load_configuration_from_json_file('basic_configuration_without_mandatory_arguments.json')
+
+    try:
+        validated_config = base_config_parser.validate(conf)
+        assert validated_config == conf
+
+    except MissingArgumentException:
+        assert False
+
+    with pytest.raises(MissingArgumentException):
+        _ = base_config_parser.validate(conf_without_mandatory_arguments)
+
+
+def test_validate_accepts_configuration_when_no_mandatory_arguments_exist(base_config_parser_no_mandatory_arguments):
+    """
+    Test if a configuration passes the validation if there is no mandatory argument
+    """
+    conf = load_configuration_from_json_file('basic_configuration_without_mandatory_arguments.json')
+
+    try:
+        validated_config = base_config_parser_no_mandatory_arguments.validate(conf)
+        assert validated_config == conf
+
+    except MissingArgumentException:
+        assert False
+
+
+def test_validate_adds_defaults_for_no_arguments_defined_in_configuration_that_have_one(base_config_parser):
+    """
+    Test if parser add default values for arguments that are not in configuration and that have one
+    """
+    conf = load_configuration_from_json_file('basic_configuration_without_arguments_with_default_values.json')
+
+    expected_conf = conf.copy()
+    expected_conf['arg1'] = 3
+    expected_conf['arg5'] = 'default value'
+
+    validated_config = base_config_parser.validate(conf)
+    assert validated_config == expected_conf
+
+
+def test_get_arguments_str_return_str_with_all_information(base_config_parser, base_config_parser_str_representation):
+    """
+    Test that the parser is able to return a string with all the information related to it in a correct format
+    """
+
+    arguments_str = base_config_parser._get_arguments_str(' ')
+
+    assert arguments_str == base_config_parser_str_representation
+
+
+def test_parser_return_correct_values_for_each_argument(base_config_parser):
+
+    """
+    Test that the _parser method return correct values for different arguments in configuration
+    """
+
+    args = generate_list_of_tuples_of_configuration_from_json_file('basic_configuration.json')
+    acc = {}
+
+    expected_acc = {'argumento1': 5,
+                    "argumento2": "this a mandatory argument",
+                    "argument3": False,
+                    "dded": 10.5}
+
+    args, acc = base_config_parser._parse(args, acc)
+
+    assert not args
+    assert acc == expected_acc
+
+
+def test_parser_raise_an_exception_with_an_unkown_argument(base_config_parser):
+
+    """
+    Test that the _parser method return correct values for different arguments in configuration
+    """
+
+    args = generate_list_of_tuples_of_configuration_from_json_file('basic_configuration.json')
+    args.append(('unknown_arg', 'This is a new argument'))
+    acc = {}
+
+    with pytest.raises(NotImplementedError):
+        _, _ = base_config_parser._parse(args, acc)
 
 #####################
-# MAIN PARSER TESTS #
+# ROOT PARSER TESTS #
 #####################
 # Test add_argument optargs #
+
+
 def test_add_argument_short():
     """
-    Add a short argument to the parser
-
-    Test if the argument was added to the short_arg string
+    Test if a short argument is added to the short_arg string
     """
     parser = RootConfigParser(help_arg=False)
     assert parser.short_arg == ''
