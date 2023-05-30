@@ -44,10 +44,10 @@ def load_configuration_from_json_file(file_name: str) -> dict:
     return configuration
 
 
-def generate_list_of_tuples_of_configuration_from_json_file(file_name: str) -> list:
+def generate_configuration_tuples_from_json_file(file_name: str) -> list:
     """
-    Generate a list of tuples <argumebnt_name,value> from a dictionary created from a given file
-    :param str file_name: The file name with extension and without '/' at the begining
+    Generate a list of tuples <argument_name,value> from a dictionary created from a given file
+    :param str file_name: The file name with extension and without '/' at the beginning
     """
     arguments = []
     conf = load_configuration_from_json_file(file_name)

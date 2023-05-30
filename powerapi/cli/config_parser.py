@@ -34,7 +34,7 @@ from typing import Any, Callable
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
     MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForSubgroupException, \
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
-    MissingArgumentException
+    MissingArgumentException, SameLengthArgumentNamesException
 from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters
 
 
@@ -89,7 +89,6 @@ class BaseConfigParser:
     """"""
     def __init__(self):
         self.arguments = {}
-        self.default_values = {}
 
     def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
@@ -122,29 +121,36 @@ class BaseConfigParser:
                                                added to this parser
 
         """
+        for name in names:
+            if name in self.arguments:
+                raise AlreadyAddedArgumentException(name)
+
         argument = ConfigurationArgument(names=list(names), is_flag=is_flag, action=action,
                                          default_value=default_value, help_text=help_text,
                                          argument_type=argument_type, is_mandatory=is_mandatory)
 
         for name in names:
-            if name in self.arguments:
-                raise AlreadyAddedArgumentException(name)
             self.arguments[name] = argument
 
-        argument_name = find_longest_string_in_list(argument.names)
+    def _get_default_arguments_values(self):
+        default_values = {}
+        for _, argument in self.arguments.items():
+            if argument.default_value is not None:
+                argument_name = find_longest_string_in_list(argument.names)
+                if argument_name not in default_values:
+                    default_values[argument_name] = argument.default_value
 
-        if default_value is not None:
-            self.default_values[argument_name] = default_value
+        return default_values
 
     def _get_arguments_str(self, indent: str) -> str:
         already_added_argument = []
-        s = ''
+        arguments_str_representation = ''
         for _, argument in self.arguments.items():
             if argument not in already_added_argument:
-                s += indent + ', '.join(map(lambda x: '-' + x if len(x) == 1 else '--' + x, argument.names))
-                s += ' : ' + argument.help_text + '\n'
+                arguments_str_representation += indent + ', '.join(map(lambda x: '-' + x if len(x) == 1 else '--' + x, argument.names))
+                arguments_str_representation += ' : ' + argument.help_text + '\n'
                 already_added_argument.append(argument)
-        return s
+        return arguments_str_representation
 
     def _unknown_argument_behaviour(self, arg_name: str, val: Any, args: list, acc: dict):
         raise NotImplementedError()
@@ -231,17 +237,17 @@ class SubgroupParserGroup:
     def __iter__(self):
         return iter(self.subparsers.items())
 
-    def get_help(self):
+    def get_help(self) -> str:
         """
         return help string
         """
-        s = self.group_name + ' details :\n'
+        help_str = self.group_name + ' details :\n'
         for subparser_name, subparser in self.subparsers.items():
-            s += '  --' + self.group_name + ' ' + subparser_name + ':\n'
-            s += subparser.get_help()
-            s += '\n'
+            help_str += '  --' + self.group_name + ' ' + subparser_name + ':\n'
+            help_str += subparser.get_help()
+            help_str += '\n'
 
-        return s
+        return help_str
 
 
 class SubgroupConfigParser(BaseConfigParser):
@@ -266,7 +272,7 @@ class SubgroupConfigParser(BaseConfigParser):
                               parsed argument and the result of the parsing
 
         """
-        local_result = deepcopy(self.default_values)
+        local_result = self._get_default_arguments_values()
         if not token_list:
             return token_list, local_result
 
@@ -307,11 +313,11 @@ class RootConfigParser(BaseConfigParser):
 
         return s
 
-    def parse(self, args: str) -> dict:
+    def parse(self, args: list) -> dict:
         """
-        :param str args: string that contains the arguments and their values
+        :param list args: list that contains the arguments and their values
 
-        :return dict:
+        :return dict: Dictionary that contains the arguments with its associated values extracted from args
 
         :raise UnknownArgException: when the parser catch an argument that
                                    this parser can't handle
@@ -337,14 +343,13 @@ class RootConfigParser(BaseConfigParser):
         args = list(map(lambda x: (remove_first_characters(x[0]), x[1]), args))
 
         # verify if help argument exists in args
-
         if self.help_arg:
             for arg_name, _ in args:
                 if arg_name in ('h', 'help'):
                     print(self.get_help())
                     sys.exit(0)
 
-        acc = deepcopy(self.default_values)
+        acc = self._get_default_arguments_values()
 
         args, acc = self._parse(args, acc)
 
@@ -365,24 +370,25 @@ class RootConfigParser(BaseConfigParser):
             raise TooManyArgumentNamesException(names[2])
 
         if len(names) > 1 and len(names[0]) == len(names[1]):
-            raise TooManyArgumentNamesException(names[1])
+            raise SameLengthArgumentNamesException(names[1])
 
-        def gen_name(current_name):
+        def add_suffix_to_argument_name_if_required(current_name):
             if len(current_name) == 1:
                 return current_name + ('' if is_flag else ':')
             return current_name + ('' if is_flag else '=')
 
         for name in names:
             if len(name) == 1:
-                self.short_arg += gen_name(name)
+                self.short_arg += add_suffix_to_argument_name_if_required(name)
             else:
-                self.long_arg.append(gen_name(name))
+                self.long_arg.append(add_suffix_to_argument_name_if_required(name))
 
     def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
+        self._add_argument_names(list(names), is_flag)
         BaseConfigParser.add_argument(self, *names, is_flag=is_flag, action=action, default_value=default_value,
                                       help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
-        self._add_argument_names(list(names), is_flag)
+
 
     def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser, help_text: str = ''):
         """
