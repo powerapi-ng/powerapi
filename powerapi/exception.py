@@ -178,6 +178,7 @@ class FileDoesNotExistException(PowerAPIException):
     def __init__(self, file_name):
         PowerAPIException.__init__("The File " + file_name + " does not exist or is not accesible")
 
+
 class SameLengthArgumentNamesException(ParserException):
     """
     Exception raised when attemtping to add an argument with names that have the same length

@@ -103,6 +103,9 @@ def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
 
 @pytest.fixture
 def base_config_parser():
+    """
+    Return a BaseConfigParser with mandatory and optional arguments
+    """
 
     parser = BaseConfigParser()
 
@@ -121,7 +124,9 @@ def base_config_parser():
 
 @pytest.fixture
 def base_config_parser_no_mandatory_arguments():
-
+    """
+    Return a BaseConfigParser without mandatory arguments
+    """
     parser = BaseConfigParser()
 
     parser.add_argument('arg1', default_value=4, argument_type=int)
@@ -139,6 +144,9 @@ def base_config_parser_no_mandatory_arguments():
 
 @pytest.fixture
 def base_config_parser_str_representation():
+    """
+    Return expected representation for a BaseConfigParser used in unit tests
+    """
     return ' --arg1, --argument1, --argumento1 : \n' + \
         ' --argumento2, --arg2 : \n' + \
         ' --arg3, --argument3 : \n' + \

@@ -67,7 +67,6 @@ def test_add_argument_that_already_exists():
     assert len(parser.arguments) == 5
 
 
-
 def test_get_arguments_returns_all_stored_arguments():
     """
     Test if all the arguments are correctly stored by BasePaserConfig
@@ -100,9 +99,9 @@ def test_get_arguments_returns_all_stored_arguments():
 
     assert len(arguments) == 6
 
-    assert longest_name_arg_a in arguments.keys()
+    assert longest_name_arg_a in arguments
 
-    assert longest_name_arg_xx in arguments.keys()
+    assert longest_name_arg_xx in arguments
 
     assert expected_argument_a == arguments.get(longest_name_arg_a)
 
@@ -244,6 +243,7 @@ def test_add_short_argument():
 
     assert len(parser.arguments) == 1
 
+
 def test_add_flag_argument_with_short_name():
     """
     Test if a flag argument with a short name was added to the short_arg string
@@ -277,6 +277,7 @@ def test_add_several_arguments_with_short_names():
 
     assert len(parser.arguments) == 7
 
+
 def test_add_argument_with_two_short_names_raise_an_exception():
     """
     Test if adding an argument with two short names raises a SameLengthArgumentNamesException
@@ -288,6 +289,8 @@ def test_add_argument_with_two_short_names_raise_an_exception():
 
     assert parser.short_arg == ''
     assert not parser.arguments
+
+
 def test_add_argument_with_long_name():
     """
     Test if an argument with a long name is added to the long_arg list
@@ -297,7 +300,7 @@ def test_add_argument_with_long_name():
     parser.add_argument('aaa')
     assert parser.long_arg == ['aaa=']
 
-    assert  len(parser.arguments) == 1
+    assert len(parser.arguments) == 1
 
 
 def test_add_flag_argument_with_long():
@@ -310,6 +313,7 @@ def test_add_flag_argument_with_long():
     assert parser.long_arg == ['aaa']
 
     assert len(parser.arguments) == 1
+
 
 def test_add_argument_with_more_than_two_names_raise_an_exception():
     """
@@ -326,7 +330,9 @@ def test_add_argument_with_more_than_two_names_raise_an_exception():
     assert not parser.long_arg
     assert not parser.arguments
 
+
 # full parsing test #
+
 def check_parsing_result(parser, input_str, outputs):
     """
     Check that input_str is correctly parsed by parser
@@ -466,7 +472,6 @@ def test_parsing_of_config_with_several_subgroups_with_the_same_name_in_a_parser
                                   'tata': {'type': 'toto'}}})
 
 
-
 def test_parsing_of_several_subgroups_with_different_name_in_a_parser_with_several_subgroup_parsers():
     """
     Test the parsing of several subgroups with different name. The result is:
@@ -558,6 +563,7 @@ def test_parsing_of_argument_with_long_short_names_and_val():
 
     check_parsing_result(parser, '-c 1', {'coco': '1'})
 
+
 def test_add_argument_with_two_long_names_with_same_length_raise_an_exception():
     """
     Test if the parser raise an exception SameLengthArgumentNamesException when a
@@ -586,7 +592,7 @@ def test_parsing_arguments_with_val_has_correct_default_type():
     """
     parser = RootConfigParser(help_arg=False)
     parser.add_argument('a')
-    parser.add_argument('b','bb')
+    parser.add_argument('b', 'bb')
     parser.add_argument('c', 'cc')
     result = parser.parse('-a 1 --bb string -c string_again'.split())
     assert len(result) == 3
@@ -680,12 +686,13 @@ def test_add_subgroup_parser_with_argument_name_work():
     subparser.add_argument('n', 'name')
     parser.add_subgroup_parser('sub', subparser)
 
-    assert  len(parser.subgroup_parsers) == 1
+    assert len(parser.subgroup_parsers) == 1
     assert len(parser.subgroup_parsers['sub'].subparsers['titi'].arguments) == 4
     assert 'a' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
     assert 'aaa' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
     assert 'n' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
     assert 'name' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
+
 
 def test_add_subgroup_parser_without_argument_name_raise_an_exception():
     """
@@ -721,7 +728,7 @@ def test_parsing_empty_string_return_default_value_of_arguments():
     assert 'a' in result
     assert 'b' in result
     assert result['a'] == 1
-    assert result['b'] == False
+    assert result['b'] is False
 
 
 ############################
@@ -773,5 +780,5 @@ def test_subgroup_parser_parsing_empty_argument_list_return_default_values():
     assert 'a' in result
     assert 'x' in result
     assert result['a'] == 1
-    assert result['x'] == False
+    assert result['x'] is False
     assert acc == []

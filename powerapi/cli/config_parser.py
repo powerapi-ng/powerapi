@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import getopt
 import sys
-from copy import deepcopy
 from typing import Any, Callable
 
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
@@ -388,7 +387,6 @@ class RootConfigParser(BaseConfigParser):
         self._add_argument_names(list(names), is_flag)
         BaseConfigParser.add_argument(self, *names, is_flag=is_flag, action=action, default_value=default_value,
                                       help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
-
 
     def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser, help_text: str = ''):
         """
