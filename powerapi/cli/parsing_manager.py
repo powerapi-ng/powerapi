@@ -43,7 +43,7 @@ class BaseConfigParsingManager:
     def __init__(self):
         self.cli_parser = None
 
-    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
+    def add_argument_to_cli_parser(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
         """
         Add an argument to the parser and its specification
@@ -115,11 +115,12 @@ class RootConfigParsingManager(BaseConfigParsingManager):
     def _parse_cli(self, cli_line):
         return self.cli_parser.parse(cli_line)
 
-    @staticmethod
-    def _parse_file(filename):
+    def _parse_config_from_json_file(self, filename):
         config_file = open(filename, 'r')
         conf = json.load(config_file)
-        return conf
+
+        # Select for each argument, le long version
+        return self.cli_parser.parse_config_dict(conf)
 
     def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
@@ -149,28 +150,28 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
         return conf
 
-    def parse(self, args=None):
+    def parse(self, args: list=None) -> dict:
         """
         Find the configuration method (CLI or config file)
         Call the method to produce a configuration dictionary
         check the configuration
         """
 
-        if args is None:
+        if not args:
             args = sys.argv
-        i = 0
+        current_position = 0
         filename = None
-        for s in args:
-            if s == '--config-file':
-                if i + 1 == len(args):
+        for current_arg in args:
+            if current_arg == '--config-file':
+                if current_position + 1 == len(args):
                     logging.error("CLI Error: config file path needed with argument --config-file")
                     sys.exit(-1)
-                filename = args[i + 1]
-            i += 1
+                filename = args[current_position + 1]
+            current_position += 1
 
         try:
-            if filename is not None:
-                conf = self._parse_file(filename)
+            if filename:
+                conf = self._parse_config_from_json_file(filename)
             else:
                 conf = self._parse_cli(args[1:])
             conf = self.validate(conf)
