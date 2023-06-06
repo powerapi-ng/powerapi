@@ -59,7 +59,7 @@ def test_add_argument_to_cli_parser_that_already_exist_raise_an_exception():
     with pytest.raises(AlreadyAddedArgumentException):
         parser_manager.add_argument_to_cli_parser('help')
 
-    assert len(parser_manager.cli_parser.arguments) == 3 # help argument + a argument
+    assert len(parser_manager.cli_parser.arguments) == 3  # help argument + a argument
 
 
 #####################
@@ -90,7 +90,7 @@ def test_add_flag_arguments_and_no_flag_arguments_with_short_name_to_cli_parser(
     parser_manager.add_argument_to_cli_parser('c', is_flag=True)
     assert parser_manager.cli_parser.short_arg == 'hab:c'
 
-    assert len(parser_manager.cli_parser.long_arg) == 1 # Only help is arg argument
+    assert len(parser_manager.cli_parser.long_arg) == 1  # Only help is arg argument
 
     assert parser_manager.cli_parser.long_arg == ["help"]  # Only help is arg argument
 
@@ -192,7 +192,7 @@ def test_arguments_dict_validation_with_empty_parsing_manager():
 
     dic_a_sub = {
         "a": 10,
-        "sub" : {
+        "sub": {
             "type": "toto",
             "b": True
         }
@@ -240,7 +240,7 @@ def test_arguments_dict_validation_with_parsing_manager(root_config_parsing_mana
 
     dic_a_sub = {
         "a": True,
-        "sub" : {
+        "sub": {
             "type": "toto",
             "b": True
         }
@@ -536,10 +536,11 @@ def test_add_arguments_with_two_short_names_raise_an_exception_in_parsing_manage
     with pytest.raises(SameLengthArgumentNamesException):
         root_config_parsing_manager.add_argument_to_cli_parser('t', 's')
 
-    assert len(root_config_parsing_manager.cli_parser.arguments) == 3 # --help and -h
+    assert len(root_config_parsing_manager.cli_parser.arguments) == 3  # --help and -h
 
     assert root_config_parsing_manager.cli_parser.long_arg == ['help']
     assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
+
 
 def test_add_arguments_with_two_long_names_raise_an_exception_in_parsing_manager(root_config_parsing_manager):
     """
@@ -552,7 +553,7 @@ def test_add_arguments_with_two_long_names_raise_an_exception_in_parsing_manager
     with pytest.raises(SameLengthArgumentNamesException):
         root_config_parsing_manager.add_argument_to_cli_parser('ddddd', 'plplp')
 
-    assert len(root_config_parsing_manager.cli_parser.arguments) == 3 # -a, --help and -h
+    assert len(root_config_parsing_manager.cli_parser.arguments) == 3  # -a, --help and -h
 
     assert root_config_parsing_manager.cli_parser.long_arg == ['help']
     assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
@@ -608,7 +609,6 @@ def test_parsing_of_arguments_string_with_wrong_type_raise_an_exception_in_parsi
         parser_manager._parse_cli('-a a'.split())
 
 
-
 # parse with Subparser tests #
 def test_add_subgroup_parser_that_already_exists_raises_an_exception_in_parsing_manager():
     """
@@ -638,10 +638,7 @@ def test_parsing_of_arguments_string_with_subgroup_parser_with_long_and_short_ar
     subparser.add_argument_to_cli_parser('c', 'ttt', is_flag=False, action=store_val, argument_type=int)
     subparser.add_argument_to_cli_parser('n', 'name')
     parser_manager.add_subgroup_parser('sub', subparser)
-    check_parse_cli_result(parser_manager, '--sub titi -a --name tutu -c 15', {'sub': {'tutu':
-                                                                                      {'aaa': True,
-                                                                                       'type': 'titi',
-                                                                                       'ttt': 15}}})
+    check_parse_cli_result(parser_manager, '--sub titi -a --name tutu -c 15', {'sub': {'tutu': {'aaa': True, 'type': 'titi', 'ttt': 15}}})
 
 
 def test_add_subgroup_parser_without_name_argument_raise_an_exception_in_parsing_manager():
@@ -686,20 +683,21 @@ def test_validate_empty_dict_return_default_values_of_arguments_in_parsing_manag
 
 
 def test_parsing_configuration_file_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a json file containing a configuration is correctly parsed
     """
     config_file = 'root_manager_basic_configuration.json'
     expected_dict = load_configuration_from_json_file(config_file)
 
-    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
-                                                                    '/' + config_file).split())
-    assert  result == expected_dict
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
+                                                                                           test_files_path +
+                                                                                           '/' + config_file).split())
+    assert result == expected_dict
 
 
 def test_parsing_configuration_file_with_long_and_short_names_for_arguments_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a json file containing a configuration with long and short names for arguments is correctly parsed
     """
@@ -708,13 +706,14 @@ def test_parsing_configuration_file_with_long_and_short_names_for_arguments_in_p
     expected_dict['argumento2'] = expected_dict.pop('2')
     expected_dict['arg5'] = expected_dict.pop('5')
 
-    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
-                                                                    '/' + config_file).split())
-    assert  result == expected_dict
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
+                                                                                           test_files_path +
+                                                                                           '/' + config_file).split())
+    assert result == expected_dict
 
 
 def test_parsing_configuration_file_with_no_argument_with_default_value_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a json file containing a configuration with no values for arguments with default values
     is correctly parsed
@@ -722,13 +721,15 @@ def test_parsing_configuration_file_with_no_argument_with_default_value_in_parsi
     config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict['arg5'] = 'default value'
-    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
-                                                                    '/' + config_file).split())
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
+                                                                                           test_files_path + '/' +
+                                                                                           config_file).split())
 
-    assert  result == expected_dict
+    assert result == expected_dict
+
 
 def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a json file containing a configuration with unknown arguments stops execution of the application
     """
@@ -736,15 +737,16 @@ def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in
 
     result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
-                                                                    '/' + config_file).split())
+        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
+                                                                                          test_files_path + '/' +
+                                                                                          config_file).split())
 
     assert result.type == SystemExit
     assert result.value.code == -1
 
 
 def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a json file containing a configuration with unknown arguments stops execution of the application
     """
@@ -752,13 +754,15 @@ def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_p
 
     result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
-                                                                    '/' + config_file).split())
+        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
+                                                                                          test_files_path +
+                                                                                          '/' + config_file).split())
 
     assert result.type == SystemExit
     assert result.value.code == -1
 
-def test_parsing_cli_configuration_in_parsing_manager(root_config_parsing_manager_with_mandatory_arguments):
+
+def test_parsing_cli_configuration_in_parsing_manager(root_config_parsing_manager_with_mandatory_and_optional_arguments):
     """
     Test that a list of strings containing a configuration is correctly parsed
     """
@@ -766,12 +770,12 @@ def test_parsing_cli_configuration_in_parsing_manager(root_config_parsing_manage
     sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
     expected_dict = load_configuration_from_json_file(config_file)
 
-    result = root_config_parsing_manager_with_mandatory_arguments.parse()
-    assert  result == expected_dict
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
+    assert result == expected_dict
 
 
 def test_parsing_cli_configuration_with_long_and_short_names_for_arguments_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments):
     """
     Test that a list of strings containing a configuration with long and short names for arguments is correctly parsed
     """
@@ -781,27 +785,29 @@ def test_parsing_cli_configuration_with_long_and_short_names_for_arguments_in_pa
     expected_dict['argumento2'] = expected_dict.pop('2')
     expected_dict['arg5'] = expected_dict.pop('5')
 
-    result = root_config_parsing_manager_with_mandatory_arguments.parse()
-    assert  result == expected_dict
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
+    assert result == expected_dict
+
 
 def test_parsing_cli_configuration_with_no_argument_with_default_value_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments):
     """
     Test that a list of strings containing a configuration with no values for arguments with default values
     is correctly parsed
     """
     config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
-    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file) #['test', '--argument1', '5', '-2', 'this is a mandatory argument', '--argument3', 'false', '--arg4', '10.5']
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
 
     expected_dict = load_configuration_from_json_file(config_file)
 
     expected_dict['arg5'] = 'default value'
-    result = root_config_parsing_manager_with_mandatory_arguments.parse()
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
-    assert  result == expected_dict
+    assert result == expected_dict
+
 
 def test_parsing_cli_configuration_with_unknown_argument_terminate_execution_in_parsing_manager(
-        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a list of strings containing a configuration with unknown arguments stops execution of the application
     """
@@ -810,7 +816,7 @@ def test_parsing_cli_configuration_with_unknown_argument_terminate_execution_in_
 
     result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_arguments.parse()
+        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
     assert result.type == SystemExit
     assert result.value.code == -1

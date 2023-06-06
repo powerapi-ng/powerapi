@@ -194,7 +194,6 @@ def test_get_arguments_str_return_str_with_all_information(base_config_parser, b
 
 
 def test_parser_return_correct_values_for_each_argument(base_config_parser):
-
     """
     Test that the _parser method return correct values for different arguments in configuration
     """
@@ -729,6 +728,28 @@ def test_parsing_empty_string_return_default_value_of_arguments():
     assert 'b' in result
     assert result['a'] == 1
     assert result['b'] is False
+
+
+def test_parsing_dict_return_configuration_with_arguments_long_name(
+        root_config_parser_with_mandatory_and_optional_arguments):
+    """
+    Test that the result of parsing a dictionary configuration with long and short names for arguments
+    returns a dictionary configuration only with long names for arguments
+
+    Parser description:
+
+    - root parser arguments: -a, -1 --argument1, -2 --argumento2, --arg3 --argument3, -d --arg4, --arg5 -5
+
+    """
+    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
+    config = load_configuration_from_json_file(config_file)
+    expected_result = load_configuration_from_json_file(config_file)
+    expected_result['argumento2'] = expected_result.pop('2')
+    expected_result['arg5'] = expected_result.pop('5')
+
+    result = root_config_parser_with_mandatory_and_optional_arguments.parse_config_dict(conf=config)
+
+    assert result == expected_result
 
 
 ############################

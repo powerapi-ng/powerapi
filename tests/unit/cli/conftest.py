@@ -30,7 +30,7 @@ import os
 
 import pytest
 import tests.utils.cli as test_files_module
-from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true
+from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
 from powerapi.cli.parsing_manager import RootConfigParsingManager
 
 
@@ -125,6 +125,30 @@ def base_config_parser():
 
 
 @pytest.fixture
+def root_config_parser_with_mandatory_and_optional_arguments():
+    """
+    Return a RootConfigParser with mandatory and optional arguments
+    """
+
+    parser = RootConfigParser()
+
+    parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
+
+    parser.add_argument('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
+
+    parser.add_argument('argumento2', '2', argument_type=str, is_mandatory=True)
+
+    parser.add_argument('arg3', 'argument3', argument_type=bool, is_mandatory=False)
+
+    parser.add_argument('d', 'arg4', argument_type=float, is_mandatory=True)
+
+    parser.add_argument('arg5', '5', default_value='default value', argument_type=str,
+                        help_text='help 5')
+
+    return parser
+
+
+@pytest.fixture
 def base_config_parser_no_mandatory_arguments():
     """
     Return a BaseConfigParser without mandatory arguments
@@ -155,6 +179,7 @@ def base_config_parser_str_representation():
         ' --dded, --arg4 : \n' + \
         ' --arg5, -5 : help 5\n'
 
+
 @pytest.fixture
 def root_config_parsing_manager():
     """
@@ -165,8 +190,9 @@ def root_config_parsing_manager():
 
     return parser_manager
 
+
 @pytest.fixture
-def root_config_parsing_manager_with_mandatory_arguments():
+def root_config_parsing_manager_with_mandatory_and_optional_arguments():
     """
     Return a RootConfigParsingManager with several arguments, some of them are mandatory
     """
@@ -184,6 +210,7 @@ def root_config_parsing_manager_with_mandatory_arguments():
 
     parser_manager.add_argument_to_cli_parser('arg5', '5', default_value='default value', argument_type=str, help_text='help 5')
     return parser_manager
+
 
 @pytest.fixture
 def test_files_path():

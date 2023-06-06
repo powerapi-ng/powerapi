@@ -171,7 +171,6 @@ class BaseConfigParser:
 
         return args, acc
 
-
     def _get_mandatory_arguments(self) -> list:
         """
         Return the list of mandatory arguments
@@ -363,7 +362,7 @@ class RootConfigParser(BaseConfigParser):
         conf_with_long_names = {}
 
         for current_argument_name in conf:
-            if not current_argument_name in self.arguments:
+            if current_argument_name not in self.arguments:
                 raise UnknownArgException(current_argument_name)
             current_argument = self.arguments[current_argument_name]
             longest_argument_name = find_longest_string_in_list(current_argument.names)
@@ -463,7 +462,7 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
     """
     if not argument.is_flag:
         try:
-            if argument.type is bool:
+            if argument.type is bool and isinstance(val, str):
                 return string_to_bool(val)
             return argument.type(val)
         except ValueError as exn:

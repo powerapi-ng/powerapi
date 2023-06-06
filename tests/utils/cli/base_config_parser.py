@@ -73,7 +73,7 @@ def generate_cli_configuration_from_json_file(file_name: str) -> list:
         prefix = '--'
         if len(argument_name) == 1:
             prefix = '-'
-        conf_as_list.append(prefix+argument_name)
+        conf_as_list.append(prefix + argument_name)
         conf_as_list.append(str(argument_value))
 
     return conf_as_list

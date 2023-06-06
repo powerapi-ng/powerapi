@@ -43,8 +43,9 @@ class BaseConfigParsingManager:
     def __init__(self):
         self.cli_parser = None
 
-    def add_argument_to_cli_parser(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
-                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False):
+    def add_argument_to_cli_parser(self, *names, is_flag: bool = False, action: Callable = store_val,
+                                   default_value: Any = None, help_text: str = '', argument_type: type = str,
+                                   is_mandatory: bool = False):
         """
         Add an argument to the parser and its specification
 
@@ -150,7 +151,7 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
         return conf
 
-    def parse(self, args: list=None) -> dict:
+    def parse(self, args: list = None) -> dict:
         """
         Find the configuration method (CLI or config file)
         Call the method to produce a configuration dictionary

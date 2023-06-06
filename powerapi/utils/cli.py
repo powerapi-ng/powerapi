@@ -52,4 +52,4 @@ def find_longest_string_in_list(string_list: list):
 
 
 def string_to_bool(bool_value: str):
-  return bool_value.lower() in ("yes", "true", "t", "1")
+    return bool_value.lower() in ("yes", "true", "t", "1")
