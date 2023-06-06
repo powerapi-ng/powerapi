@@ -34,7 +34,7 @@ from powerapi.exception import AlreadyAddedArgumentException, UnknownArgExceptio
     MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForSubgroupException, \
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException, SameLengthArgumentNamesException
-from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters
+from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters, string_to_bool
 
 
 def store_val(arg: str, val: Any, args: list, acc: dict):
@@ -170,6 +170,7 @@ class BaseConfigParser:
             args, acc = argument.action(arg_long_name, val, args, acc)
 
         return args, acc
+
 
     def _get_mandatory_arguments(self) -> list:
         """
@@ -354,6 +355,23 @@ class RootConfigParser(BaseConfigParser):
 
         return acc
 
+    def parse_config_dict(self, conf: dict) -> dict:
+        """
+        Return a configuration dict that has all the arguments' names in the long form.
+        If an argument does not exist, a UnknownArgException is raised
+        """
+        conf_with_long_names = {}
+
+        for current_argument_name in conf:
+            if not current_argument_name in self.arguments:
+                raise UnknownArgException(current_argument_name)
+            current_argument = self.arguments[current_argument_name]
+            longest_argument_name = find_longest_string_in_list(current_argument.names)
+
+            conf_with_long_names[longest_argument_name] = conf[current_argument_name]
+
+        return conf_with_long_names
+
     def _unknown_argument_behaviour(self, arg_name: str, val: Any, args: list,
                                     acc: dict):
         good_contexts = []
@@ -445,6 +463,8 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
     """
     if not argument.is_flag:
         try:
+            if argument.type is bool:
+                return string_to_bool(val)
             return argument.type(val)
         except ValueError as exn:
             raise BadTypeException(arg_name, argument.type) from exn
