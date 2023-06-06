@@ -1,6 +1,7 @@
 # Copyright (c) 2021, INRIA
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
+import sys
 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -27,98 +28,117 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
+import tests
 
 from powerapi.cli.parsing_manager import RootConfigParsingManager, \
     SubgroupConfigParsingManager
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
     MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
-    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, AlreadyAddedSubparserException
-from powerapi.cli.config_parser import store_true
+    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, AlreadyAddedSubparserException, \
+    SameLengthArgumentNamesException, BadContextException
+from powerapi.cli.config_parser import store_true, store_val
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
+    generate_cli_configuration_from_json_file
 
 
 ###############
 # PARSER TEST #
 ###############
-def test_add_argument_that_already_exists():
+def test_add_argument_to_cli_parser_that_already_exist_raise_an_exception():
     """
-    Add an argument that already exists to a parser and test if an
-    AlreadyAddedArgumentException is raised
+    Tests if adding an argument that already exists to a parser raises an
+    AlreadyAddedArgumentException
     """
 
-    parser = RootConfigParsingManager()
-    parser.add_argument('a')
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a')
 
     with pytest.raises(AlreadyAddedArgumentException):
-        parser.add_argument('a')
+        parser_manager.add_argument_to_cli_parser('a')
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser_manager.add_argument_to_cli_parser('help')
+
+    assert len(parser_manager.cli_parser.arguments) == 3 # help argument + a argument
 
 
 #####################
 # MAIN PARSER TESTS #
 #####################
-def test_add_argument_flag():
+def test_add_flag_arguments_with_short_name_to_cli_parser():
     """
-    Add a short flag to the parser
-
-    Test if the argument was added to the short_arg string
+    Test that adding flag arguments with a short name to cli parser modified short_arg string
     """
-    parser = RootConfigParsingManager()
-    assert parser.cli_parser.short_arg == 'h'
-    parser.add_argument('a', is_flag=True)
-    assert parser.cli_parser.short_arg == 'ha'
+    parser_manager = RootConfigParsingManager()
+    assert parser_manager.cli_parser.short_arg == 'h'
+    parser_manager.add_argument_to_cli_parser('a', is_flag=True)
+    parser_manager.add_argument_to_cli_parser('x', is_flag=True)
+    assert parser_manager.cli_parser.short_arg == 'hax'
 
 
-def test_add_argument_2_short():
+def test_add_flag_arguments_and_no_flag_arguments_with_short_name_to_cli_parser():
     """
-    Add two short argument (an argument and a flag) to the parser
-
-    Test if the arguments was added to the short_arg string
+    Test if adding arguments (flag and no flag) to the parser modified short_arg string.
+    long_arg list is not changed
     """
-    parser = RootConfigParsingManager()
-    assert parser.cli_parser.short_arg == 'h'
-    parser.add_argument('a', is_flag=True)
-    assert parser.cli_parser.short_arg == 'ha'
-    parser.add_argument('b')
-    assert parser.cli_parser.short_arg == 'hab:'
+    parser_manager = RootConfigParsingManager()
+    assert parser_manager.cli_parser.short_arg == 'h'
+    parser_manager.add_argument_to_cli_parser('a', is_flag=True)
+    assert parser_manager.cli_parser.short_arg == 'ha'
+    parser_manager.add_argument_to_cli_parser('b')
+    assert parser_manager.cli_parser.short_arg == 'hab:'
+    parser_manager.add_argument_to_cli_parser('c', is_flag=True)
+    assert parser_manager.cli_parser.short_arg == 'hab:c'
+
+    assert len(parser_manager.cli_parser.long_arg) == 1 # Only help is arg argument
+
+    assert parser_manager.cli_parser.long_arg == ["help"]  # Only help is arg argument
 
 
-def test_add_argument_long():
+def test_add_arguments_with_long_name_to_cli_parser():
     """
-    Add a long argument to the parser
-
-    Test if the argument was added to the long_arg list
+    Test if adding arguments with long name to cli parser modifies long_arg list.
+    short_arg string is not changed
     """
-    parser = RootConfigParsingManager()
-    assert parser.cli_parser.long_arg == ['help']
-    parser.add_argument('aaa')
-    assert parser.cli_parser.long_arg == ['help', 'aaa=']
+    parser_manager = RootConfigParsingManager()
+    assert parser_manager.cli_parser.long_arg == ['help']
+    parser_manager.add_argument_to_cli_parser('aaa')
+    assert parser_manager.cli_parser.long_arg == ['help', 'aaa=']
+    parser_manager.add_argument_to_cli_parser('xx')
+    assert parser_manager.cli_parser.long_arg == ['help', 'aaa=', 'xx=']
+
+    assert parser_manager.cli_parser.short_arg == 'h'
 
 
-def test_add_flag_long():
+def test_add_flag_arguments_with_long_name_to_cli_parser():
     """
-    Add a long argument to the parser
-
-    Test if the argument was added to the long_arg list
+    Test if adding a flag arguments with long to the parser modifies the long_arg list.
+    short_arg string is not changed
     """
-    parser = RootConfigParsingManager()
-    assert parser.cli_parser.long_arg == ['help']
-    parser.add_argument('aaa', is_flag=True)
-    assert parser.cli_parser.long_arg == ['help', 'aaa']
+    parser_manager = RootConfigParsingManager()
+    assert parser_manager.cli_parser.long_arg == ['help']
+    parser_manager.add_argument_to_cli_parser('aaa', is_flag=True)
+    assert parser_manager.cli_parser.long_arg == ['help', 'aaa']
+    parser_manager.add_argument_to_cli_parser('tttt', is_flag=True)
+    assert parser_manager.cli_parser.long_arg == ['help', 'aaa', 'tttt']
+
+    assert parser_manager.cli_parser.short_arg == 'h'
 
 
 # full parsing test #
-def check_parsing_cli_result(parser, input_str, outputs):
+def check_parse_cli_result(parser_manager: RootConfigParsingManager, input_str: str, outputs: dict):
     """
     Check that input_str is correctly parsed by parser
     """
-    result = parser._parse_cli(input_str.split())
+    result = parser_manager._parse_cli(input_str.split())
 
     assert len(result) == len(outputs)
     assert result == outputs
 
 
-def test_empty_parser_cli():
+def test_arguments_string_parsing_with_empty_parsing_manager():
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test to parse arguments provided as string with a parsing parser and retrieve the following results :
 
     - "" : {}
     - "-z" : UnknownArgException(z)
@@ -126,55 +146,78 @@ def test_empty_parser_cli():
     - "-a --sub toto -b" : UnknownArgException(a)
     - "-b" : UnknownArgException(b)
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
     - base parser arguments : None
-    - subparser toto bound to the argument sub with sub arguments : None
     """
-    parser = RootConfigParsingManager()
+    parser_manager = RootConfigParsingManager()
 
-    check_parsing_cli_result(parser, '', {})
-
-    with pytest.raises(UnknownArgException):
-        check_parsing_cli_result(parser, '-z', None)
+    check_parse_cli_result(parser_manager, '', {})
 
     with pytest.raises(UnknownArgException):
-        check_parsing_cli_result(parser, '-a', None)
+        check_parse_cli_result(parser_manager, '-z', None)
 
     with pytest.raises(UnknownArgException):
-        check_parsing_cli_result(parser, '-a --sub toto -b', None)
+        check_parse_cli_result(parser_manager, '-a', None)
 
     with pytest.raises(UnknownArgException):
-        check_parsing_cli_result(parser, '-b', None)
+        check_parse_cli_result(parser_manager, '-a --sub toto -b', None)
+
+    with pytest.raises(UnknownArgException):
+        check_parse_cli_result(parser_manager, '-b', None)
 
 
-def test_empty_parser_validate():
+def test_arguments_dict_validation_with_empty_parsing_manager():
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test validation of arguments dictionary with a parsing manager and retrieve the following results:
 
     - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : UnknownArgException(a)
-    - "-a --sub toto -b" : UnknownArgException(a)
+    - "-z value" : UnknownArgException(z)
+    - "-a 10 " : UnknownArgException(a)
+    - "-a 10 --sub toto -b" : UnknownArgException(a)
     - "-b" : UnknownArgException(b)
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
     - base parser arguments : None
-    - subparser toto bound to the argument sub with sub arguments : None
     """
-    parser = RootConfigParsingManager()
-    dic = {
+    parser_manager = RootConfigParsingManager()
+    dic_z = {
         "z": "value"
     }
 
+    dic_a = {
+        "a": 10
+    }
+
+    dic_a_sub = {
+        "a": 10,
+        "sub" : {
+            "type": "toto",
+            "b": True
+        }
+    }
+
+    dic_b = {
+        "b": True
+    }
+
     with pytest.raises(UnknownArgException):
-        parser.validate(dic)
+        parser_manager.validate(dic_z)
+
+    with pytest.raises(UnknownArgException):
+        parser_manager.validate(dic_a)
+
+    with pytest.raises(UnknownArgException):
+        parser_manager.validate(dic_a_sub)
+
+    with pytest.raises(UnknownArgException):
+        parser_manager.validate(dic_b)
 
 
-def test_main_parser_cli():
+def test_arguments_dict_validation_with_parsing_manager(root_config_parsing_manager):
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test validation of arguments dictionary with a parsing manager and retrieve the following results:
 
     - "" : {}
     - "-z" : UnknownArgException(z)
@@ -182,128 +225,116 @@ def test_main_parser_cli():
     - "-a --sub toto -b" : UnknownArgException(sub)
     - "-b" : UnknownArgException(b)
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
     - base parser arguments : -a
-    - subparser toto bound to the argument sub with sub arguments : None
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', is_flag=True, action=store_true)
 
-    dic = {
+    dic_z = {
         "z": True
     }
 
-    with pytest.raises(UnknownArgException):
-        parser.validate(dic)
-
-    check_parsing_cli_result(parser, '-a', {'a': True})
-
-
-def test_main_parser_validate():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : UnknownArgException(sub)
-    - "-b" : UnknownArgException(b)
-
-    ConfigParser description :
-
-    - base parser arguments : -a
-    - subparser toto bound to the argument sub with sub arguments : None
-    """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
-
-    dic = {
-        "z": True
-    }
-
-    right_dic = {
+    dic_a = {
         "a": True
     }
 
+    dic_a_sub = {
+        "a": True,
+        "sub" : {
+            "type": "toto",
+            "b": True
+        }
+    }
+
+    dic_b = {
+        "b": True
+    }
+
     with pytest.raises(UnknownArgException):
-        parser.validate(dic)
+        root_config_parsing_manager.validate(dic_z)
 
-    assert parser.validate(right_dic) == right_dic
+    assert root_config_parsing_manager.validate(dic_a) == dic_a
+
+    with pytest.raises(UnknownArgException):
+        root_config_parsing_manager.validate(dic_a_sub)
+
+    with pytest.raises(UnknownArgException):
+        root_config_parsing_manager.validate(dic_b)
 
 
-def test_actor_subparser_cli():
+def test_arguments_string_parsing_with_subgroup_parser_in_parsing_manager(root_config_parsing_manager):
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test to parse arguments with a parsing manager containing a subgroup parser. It must retrieve the following
+    results :
 
     - "" : {}
     - "-z" : UnknownArgException(z)
     - "-a" : {a: True}
-    - "-a --sub toto -b" : NoNameSpecifiedForComponentException
+    - "-a --sub toto -b" : NoNameSpecifiedForSubgroupException
     - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
     - "-b" : BadContextException(b, [toto])
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
-    - base parser arguments : -a
-    - subparser toto bound to the argument sub with sub arguments : -b and --name
+    - base parser arguments: -a
+    - subgroup parser toto bound to the argument sub with sub arguments: -b and --name
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', is_flag=True, action=store_true)
 
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
-    dic = {
-        "z": True
-    }
+    check_parse_cli_result(root_config_parsing_manager, "", {})
 
     with pytest.raises(UnknownArgException):
-        parser.validate(dic)
+        check_parse_cli_result(root_config_parsing_manager, "-z", {})
 
-    check_parsing_cli_result(parser, '-a', {'a': True})
+    check_parse_cli_result(root_config_parsing_manager, '-a', {'a': True})
 
     with pytest.raises(NoNameSpecifiedForSubgroupException):
-        check_parsing_cli_result(parser, '-a --sub toto -b', {})
+        check_parse_cli_result(root_config_parsing_manager, '-a --sub toto -b', {})
 
-    check_parsing_cli_result(parser, '-a --sub toto -b --name titi',
-                             {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+    check_parse_cli_result(root_config_parsing_manager, '-a --sub toto -b --name titi',
+                           {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+
+    with pytest.raises(BadContextException):
+        check_parse_cli_result(root_config_parsing_manager, "-b", {})
 
 
-def test_actor_subparser_validate():
+def test_arguments_dict_validation_with_subgroup_parser_in_parsing_manager(root_config_parsing_manager):
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test to validate arguments with a parsing manager containing a subgroup parser. It must retrieve the following
+    results:
 
     - "" : {}
     - "-z" : UnknownArgException(z)
     - "-a" : {a: True}
-    - "-a --sub toto -b" : NoNameSpecifiedForComponentException
     - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
-    - "-b" : BadContextException(b, [toto])
+    - "-b" : UnknownArgException(b)
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
     - base parser arguments : -a
     - subparser toto bound to the argument sub with sub arguments : -b and --name
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
-
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('type', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
+    subparser.add_argument_to_cli_parser('type', is_flag=True, action=store_true)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
-    a_dic = {'a': True}
+    dic_a = {'a': True}
 
-    dic = {
+    dic_z = {
         "z": True
     }
 
-    right_dic = {
+    dic_b = {
+        'b': "type"
+    }
+
+    dic_a_sub = {
         'a': True,
         'sub': {
             'titi':
@@ -315,278 +346,308 @@ def test_actor_subparser_validate():
     }
 
     with pytest.raises(UnknownArgException):
-        parser.validate(dic)
+        root_config_parsing_manager.validate(dic_z)
 
-    assert parser.validate(a_dic) == a_dic
+    with pytest.raises(UnknownArgException):
+        root_config_parsing_manager.validate(dic_b)
 
-    assert parser.validate(right_dic) == right_dic
+    assert root_config_parsing_manager.validate(dic_a) == dic_a
+
+    assert root_config_parsing_manager.validate(dic_a_sub) == dic_a_sub
+
+    assert root_config_parsing_manager.validate({}) == {}
 
 
-def test_create_two_component_cli():
+def test_parsing_of_two_subgroups_of_the_same_type_with_parsing_manager(root_config_parsing_manager):
     """
-    Create two component of the same type with the following cli :
+    Test the parsing of two subgroups of the same type created with the following cli:
     --sub toto --name titi --sub toto -b --name tutu
 
-    test if the result is :
+    The result must be:
     {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
 
     """
-
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', is_flag=True, action=store_true)
-
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub toto -b --name tutu',
-                             {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
+    check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub toto -b --name tutu',
+                           {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
 
 
-def test_create_two_component_validate():
+def test_validation_of_two_subgroups_of_the_same_type_in_parsing_manager(root_config_parsing_manager):
     """
-    Create two component of the same type with the following cli :
+    Test the validation of two subgroups of the same type created with the following cli:
     --sub toto --name titi --sub toto -b --name tutu
 
-    test if the result is :
+    The result must be:
     {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
 
     """
-
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', is_flag=True, action=store_true)
-
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('type')
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('type')
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
-    dic = {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}}
-    assert parser.validate(dic) == dic
+    expected_dic = {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}}
+    assert root_config_parsing_manager.validate(expected_dic) == expected_dic
 
 
-def test_create_two_with_different_type_component():
+def test_parsing_of_two_subgroups_of_different_type_in_parsing_manager(root_config_parsing_manager):
     """
+    Test the validation of two subgroups of different type created with the following cli:
     Create two component with different type with the following cli :
     --sub toto --name titi --sub tutu --name tete
 
-    test if the result is :
+    The result must be:
     {sub:{'titi' : {'type': 'toto'}, 'tete': {'type': 'tutu'}}}
 
     """
-    parser = RootConfigParsingManager()
-
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     subparser = SubgroupConfigParsingManager('tutu')
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub tutu --name tete',
-                             {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
+    check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub tutu --name tete',
+                           {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
 
 
-def test_create_component_that_already_exist_cli():
+def test_parsing_of_repeated_subgroups_in_parsing_manager_raise_an_exception(root_config_parsing_manager):
     """
-    Create two component with the same name with the following cli
+    Test the parsing of two subgroups with same type and name created with the following cli:
     --sub toto --name titi --sub toto --name titi
 
-    test if an ComponentAlreadyExistException is raised
+    SubgroupAlreadyExistException must be raised
     """
-    parser = RootConfigParsingManager()
 
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     with pytest.raises(SubgroupAlreadyExistException):
-        check_parsing_cli_result(parser, '--sub toto --name titi --sub toto --name titi', None)
+        check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub toto --name titi', None)
 
 
-def test_argument_with_val_cli():
+def test_arguments_string_parsing_with_and_without_val_in_parsing_manager(root_config_parsing_manager):
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test to parse arguments with and without value. The expected results are:
 
     - "-c" : MissingValue(c)
+    - "-d" : MissingValue(d)
     - "-c 1" : {c : 1}
+    - "-d 10" : {d : 10}
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
-    - base parser arguments : -c (not flag)
+    - base parser arguments: -a (flag), -c (no flag), -d (int)
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c')
+
+    root_config_parsing_manager.add_argument_to_cli_parser('c')
+
+    root_config_parsing_manager.add_argument_to_cli_parser('d', argument_type=int)
 
     with pytest.raises(MissingValueException):
-        check_parsing_cli_result(parser, '-c', None)
+        check_parse_cli_result(root_config_parsing_manager, '-c', None)
 
-    check_parsing_cli_result(parser, '-c 1', {'c': '1'})
+    with pytest.raises(MissingValueException):
+        check_parse_cli_result(root_config_parsing_manager, '-d', None)
+
+    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'c': '1'})
+
+    check_parse_cli_result(root_config_parsing_manager, '-d 10', {'d': 10})
 
 
-def test_argument_with_val_validate():
+def test_validation_of_arguments_dict_parsing_with_val_in_parsing_manager(root_config_parsing_manager):
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test the validation of arguments with value. The expected results are:
 
-    - "-c" : MissingValue(c)
     - "-c 1" : {c : 1}
+    - "-d 89" : {d : 89}
 
-    ConfigParser description :
+    ConfigParsingManager description:
 
-    - base parser arguments : -c (not flag)
+    - base parser arguments: -a (flag), -c (not flag), -d (int)
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c')
+    root_config_parsing_manager.add_argument_to_cli_parser('c')
 
-    dic = {'c': '1'}
+    root_config_parsing_manager.add_argument_to_cli_parser('d', argument_type=int)
 
-    assert parser.validate(dic) == dic
+    dic_c = {'c': '1'}
+    dic_d = {'d': 89}
+
+    assert root_config_parsing_manager.validate(dic_c) == dic_c
+
+    assert root_config_parsing_manager.validate(dic_d) == dic_d
 
 
-def test_type_cli():
+def test_arguments_string_parsing_type_checking_in_parsing_manager(root_config_parsing_manager):
     """
-        Test that the type of an argument is correctly checked by the parser when a string is used as input
+    Test that the type of argument is correctly checked by the parsing manager when a string is used as input
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c', argument_type=int)
+    root_config_parsing_manager.add_argument_to_cli_parser('c', argument_type=int)
 
     with pytest.raises(BadTypeException):
-        check_parsing_cli_result(parser, '-c string', {'c': 'string'})
+        check_parse_cli_result(root_config_parsing_manager, '-c string', {'c': 'string'})
 
-    check_parsing_cli_result(parser, '-c 1', {'c': 1})
+    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'c': 1})
 
 
-def test_type_validate():
+def test_validation_of_arguments_dict_type_checking_in_parsing_manager(root_config_parsing_manager):
     """
         Test that the type of an argument is correctly validated by the parser when a dict is used as input
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c', argument_type=int)
+    root_config_parsing_manager.add_argument_to_cli_parser('c', argument_type=int)
 
     str_dic = {'c': 'string'}
     int_dic = {'c': 42}
 
     with pytest.raises(BadTypeException):
-        parser.validate(str_dic)
+        root_config_parsing_manager.validate(str_dic)
 
-    assert parser.validate(int_dic) == int_dic
+    assert root_config_parsing_manager.validate(int_dic) == int_dic
 
 
 # multi name tests #
-def test_short_and_long_name_val():
+def test_arguments_string_parsing_with_long_and_short_names_in_parsing_manager(root_config_parsing_manager):
     """
-    Add an argument to a parser with two name long and short and test if the
-    value is only bind to the long name in the parsing result
-
+    Test that arguments parsing only relates parsing result to long name in arguments with long and short names
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c', 'coco')
+    root_config_parsing_manager.add_argument_to_cli_parser('c', 'coco')
+    root_config_parsing_manager.add_argument_to_cli_parser('d', 'xx', argument_type=int)
 
-    check_parsing_cli_result(parser, '-c 1', {'coco': '1'})
+    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'coco': '1'})
+
+    check_parse_cli_result(root_config_parsing_manager, '-d 555', {'xx': 555})
 
 
-def test_add_two_short_name():
+def test_add_arguments_with_two_short_names_raise_an_exception_in_parsing_manager(root_config_parsing_manager):
     """
-    Add an argument to a parser with two short name and test if the
-    parser raise an exception TooManyArgumentNamesException
-
+    Test if adding arguments to a parser with two short names raise a SameLengthArgumentNamesException
+    The arguments are not added
     """
-    parser = RootConfigParsingManager()
-    with pytest.raises(TooManyArgumentNamesException):
-        parser.add_argument('c', 'd')
+    with pytest.raises(SameLengthArgumentNamesException):
+        root_config_parsing_manager.add_argument_to_cli_parser('c', 'd')
 
+    with pytest.raises(SameLengthArgumentNamesException):
+        root_config_parsing_manager.add_argument_to_cli_parser('t', 's')
 
-def test_add_two_long_name():
+    assert len(root_config_parsing_manager.cli_parser.arguments) == 3 # --help and -h
+
+    assert root_config_parsing_manager.cli_parser.long_arg == ['help']
+    assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
+
+def test_add_arguments_with_two_long_names_raise_an_exception_in_parsing_manager(root_config_parsing_manager):
     """
-    Add an argument to a parser with two long name and test if the
-    parser raise an exception TooManyArgumentNamesException
-
+    Test if adding arguments to a parser with long names raise a SameLengthArgumentNamesException.
+    The arguments are not added
     """
-    parser = RootConfigParsingManager()
-    with pytest.raises(TooManyArgumentNamesException):
-        parser.add_argument('coco', 'dodo')
+    with pytest.raises(SameLengthArgumentNamesException):
+        root_config_parsing_manager.add_argument_to_cli_parser('coco', 'dodo')
+
+    with pytest.raises(SameLengthArgumentNamesException):
+        root_config_parsing_manager.add_argument_to_cli_parser('ddddd', 'plplp')
+
+    assert len(root_config_parsing_manager.cli_parser.arguments) == 3 # -a, --help and -h
+
+    assert root_config_parsing_manager.cli_parser.long_arg == ['help']
+    assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
 
 
 # Type tests #
-def test_default_type():
+def test_add_argument_with_default_type_in_parsing_manager():
     """
-    add an argument without specifying the type it must catch. Parse a string
-    that contains only this argument and test if the value contained in the
-    result is a string
+    Test if adding arguments without type has string (default type) as type
+    """
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a')
+    parser_manager.add_argument_to_cli_parser('b')
+    result_a = parser_manager.parse('python -a 1'.split())
+    result_b = parser_manager.parse('python3 -b string'.split())
+    assert len(result_a) == 1
+    assert 'a' in result_a
+    assert isinstance(result_a['a'], str)
+
+    assert len(result_b) == 1
+    assert 'b' in result_b
+    assert isinstance(result_b['b'], str)
+
+
+def test_add_argument_with_type_in_parsing_manager():
+    """
+    Test if adding arguments with a type have currently this type
 
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a')
-    result = parser.parse('python -a 1'.split())
-    assert len(result) == 1
-    assert 'a' in result
-    assert isinstance(result['a'], str)
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a', argument_type=int)
+    parser_manager.add_argument_to_cli_parser('b', argument_type=bool)
 
-
-def test_other_type():
-    """
-    add an argument that must catch an int value, Parse a string that
-    contains only this argument and test if the value contained in the result is
-    an int
-
-    """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', argument_type=int)
-    result = parser.parse('python -a 1'.split())
+    result = parser_manager.parse('python -a 1'.split())
     assert len(result) == 1
     assert 'a' in result
     assert isinstance(result['a'], int)
 
+    result = parser_manager.parse('python3 -b false'.split())
+    assert len(result) == 1
+    assert 'b' in result
+    assert isinstance(result['b'], bool)
 
-def test_cant_convert_to_type():
+
+def test_parsing_of_arguments_string_with_wrong_type_raise_an_exception_in_parsing_manager():
     """
-    add an argument that must catch an int value, Parse a string that
-    contains only this argument with a value that is not an int test if an
+    Test that parsing arguments with a wront value type raises a BadTypeException
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', argument_type=int)
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a', argument_type=int)
 
     with pytest.raises(BadTypeException):
-        parser._parse_cli('-a a'.split())
+        parser_manager._parse_cli('-a a'.split())
+
 
 
 # parse with Subparser tests #
-def test_add_actor_subparser_that_already_exists():
+def test_add_subgroup_parser_that_already_exists_raises_an_exception_in_parsing_manager():
     """
-    Add a component_subparser that already exists to a parser and test if an
-    AlreadyAddedArgumentException is raised
+    Test that adding a subgroup parser that already exists raises an
+    AlreadyAddedSubparserException
     """
-    parser = RootConfigParsingManager()
+    parser_manager = RootConfigParsingManager()
     subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('toto', subparser)
-    subparser2 = SubgroupConfigParsingManager('titi')
-    subparser2.add_argument('n', 'name')
+    subparser.add_argument_to_cli_parser('n', 'name')
+    parser_manager.add_subgroup_parser('toto', subparser)
+
+    repeated_subparser = SubgroupConfigParsingManager('titi')
+    repeated_subparser.add_argument_to_cli_parser('n', 'name')
 
     with pytest.raises(AlreadyAddedSubparserException):
-        parser.add_subgroup_parser('toto', subparser2)
+        parser_manager.add_subgroup_parser('toto', repeated_subparser)
 
 
-def test_add_actor_subparser_with_two_name():
+def test_parsing_of_arguments_string_with_subgroup_parser_with_long_and_short_arguments_names_in_parsing_manager():
     """
-    add a component subparser with one short name and one long name
-    parse a string and test if the value is only bind to the long name
+    Tests that parsing arguments of a subgroup parser with long and short names arguments
+    only binds parser results to the long name
     """
-    parser = RootConfigParsingManager()
+    parser_manager = RootConfigParsingManager()
     subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument('a', 'aaa', is_flag=True, action=store_true, default_value=False)
-    subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
-    check_parsing_cli_result(parser, '--sub titi -a --name tutu', {'sub': {'tutu': {'aaa': True, 'type': 'titi'}}})
+    subparser.add_argument_to_cli_parser('a', 'aaa', is_flag=True, action=store_true, default_value=False)
+    subparser.add_argument_to_cli_parser('c', 'ttt', is_flag=False, action=store_val, argument_type=int)
+    subparser.add_argument_to_cli_parser('n', 'name')
+    parser_manager.add_subgroup_parser('sub', subparser)
+    check_parse_cli_result(parser_manager, '--sub titi -a --name tutu -c 15', {'sub': {'tutu':
+                                                                                      {'aaa': True,
+                                                                                       'type': 'titi',
+                                                                                       'ttt': 15}}})
 
 
-def test_add_component_subparser_that_already_exists2():
+def test_add_subgroup_parser_without_name_argument_raise_an_exception_in_parsing_manager():
     """
-    Add a component_subparser with no argument 'name'
-    test if a SubConfigParserWithoutNameArgumentException is raised
+    Test that adding a subgroup parser with no argument 'name' raises a
+    SubgroupParserWithoutNameArgumentException
     """
     parser = RootConfigParsingManager()
     subparser = SubgroupConfigParsingManager('titi')
@@ -595,26 +656,161 @@ def test_add_component_subparser_that_already_exists2():
         parser.add_subgroup_parser('toto', subparser)
 
 
-def test_parse_empty_string_default_value():
+def test_parsing_empty_string_return_default_values_of_arguments_in_parsing_manager():
     """
-        Test that the result of parsing an empty string is a dict of arguments with their default value
+    Test that the result of parsing an empty string is a dict of arguments with their default value
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('a', default_value=1)
-    result = parser._parse_cli(''.split())
-    assert len(result) == 1
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a', default_value=1)
+    parser_manager.add_argument_to_cli_parser('xxx', default_value='val')
+    result = parser_manager._parse_cli(''.split())
+    assert len(result) == 2
     assert 'a' in result
+    assert 'xxx' in result
     assert result['a'] == 1
+    assert result['xxx'] == 'val'
 
 
-def test_default_validate():
+def test_validate_empty_dict_return_default_values_of_arguments_in_parsing_manager():
     """
-        Test that the result of parsing an empty dict is a dict of arguments with their default value
+    Test that the result of parsing an empty dict is a dict of arguments with their default value
     """
-    parser = RootConfigParsingManager()
-    parser.add_argument('c', argument_type=int, default_value=1)
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('c', argument_type=int, default_value=1)
+    parser_manager.add_argument_to_cli_parser('hello', argument_type=str, default_value="world")
 
     default_dic = {}
-    one_dic = {'c': 1}
+    expected_dic = {'c': 1, 'hello': 'world'}
 
-    assert parser.validate(default_dic) == one_dic
+    assert parser_manager.validate(default_dic) == expected_dic
+
+
+def test_parsing_configuration_file_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a json file containing a configuration is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration.json'
+    expected_dict = load_configuration_from_json_file(config_file)
+
+    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
+                                                                    '/' + config_file).split())
+    assert  result == expected_dict
+
+
+def test_parsing_configuration_file_with_long_and_short_names_for_arguments_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a json file containing a configuration with long and short names for arguments is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
+    expected_dict = load_configuration_from_json_file(config_file)
+    expected_dict['argumento2'] = expected_dict.pop('2')
+    expected_dict['arg5'] = expected_dict.pop('5')
+
+    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
+                                                                    '/' + config_file).split())
+    assert  result == expected_dict
+
+
+def test_parsing_configuration_file_with_no_argument_with_default_value_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a json file containing a configuration with no values for arguments with default values
+    is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
+    expected_dict = load_configuration_from_json_file(config_file)
+    expected_dict['arg5'] = 'default value'
+    result = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
+                                                                    '/' + config_file).split())
+
+    assert  result == expected_dict
+
+def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a json file containing a configuration with unknown arguments stops execution of the application
+    """
+    config_file = 'root_manager_basic_configuration_with_unknown_argument.json'
+
+    result = None
+    with pytest.raises(SystemExit) as result:
+        _ = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
+                                                                    '/' + config_file).split())
+
+    assert result.type == SystemExit
+    assert result.value.code == -1
+
+
+def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a json file containing a configuration with unknown arguments stops execution of the application
+    """
+    config_file = 'root_manager_basic_configuration_with_argument_type_value.json'
+
+    result = None
+    with pytest.raises(SystemExit) as result:
+        _ = root_config_parsing_manager_with_mandatory_arguments.parse(args=('--config-file ' + test_files_path +
+                                                                    '/' + config_file).split())
+
+    assert result.type == SystemExit
+    assert result.value.code == -1
+
+def test_parsing_cli_configuration_in_parsing_manager(root_config_parsing_manager_with_mandatory_arguments):
+    """
+    Test that a list of strings containing a configuration is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration.json'
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
+    expected_dict = load_configuration_from_json_file(config_file)
+
+    result = root_config_parsing_manager_with_mandatory_arguments.parse()
+    assert  result == expected_dict
+
+
+def test_parsing_cli_configuration_with_long_and_short_names_for_arguments_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments):
+    """
+    Test that a list of strings containing a configuration with long and short names for arguments is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
+    expected_dict = load_configuration_from_json_file(config_file)
+    expected_dict['argumento2'] = expected_dict.pop('2')
+    expected_dict['arg5'] = expected_dict.pop('5')
+
+    result = root_config_parsing_manager_with_mandatory_arguments.parse()
+    assert  result == expected_dict
+
+def test_parsing_cli_configuration_with_no_argument_with_default_value_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments):
+    """
+    Test that a list of strings containing a configuration with no values for arguments with default values
+    is correctly parsed
+    """
+    config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file) #['test', '--argument1', '5', '-2', 'this is a mandatory argument', '--argument3', 'false', '--arg4', '10.5']
+
+    expected_dict = load_configuration_from_json_file(config_file)
+
+    expected_dict['arg5'] = 'default value'
+    result = root_config_parsing_manager_with_mandatory_arguments.parse()
+
+    assert  result == expected_dict
+
+def test_parsing_cli_configuration_with_unknown_argument_terminate_execution_in_parsing_manager(
+        root_config_parsing_manager_with_mandatory_arguments, test_files_path):
+    """
+    Test that a list of strings containing a configuration with unknown arguments stops execution of the application
+    """
+    config_file = 'root_manager_basic_configuration_with_unknown_argument.json'
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
+
+    result = None
+    with pytest.raises(SystemExit) as result:
+        _ = root_config_parsing_manager_with_mandatory_arguments.parse()
+
+    assert result.type == SystemExit
+    assert result.value.code == -1

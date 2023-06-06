@@ -56,3 +56,24 @@ def generate_configuration_tuples_from_json_file(file_name: str) -> list:
         arguments.append((argument_name, value))
 
     return arguments
+
+
+def generate_cli_configuration_from_json_file(file_name: str) -> list:
+    """
+    Generate a list with arguments defined in a json file. The list always has a 'test' string
+    as first element followed by --arg1_name, arg1_value, -arg2_name, arg2_value... Each
+    argument name has as prefix '-' if it is short (its length == 1) or '--' if it is long (its length>1)
+    :param str file_name: The file name with extension and without '/' at the beginning
+    """
+
+    conf = load_configuration_from_json_file(file_name)
+    conf_as_list = ['test']
+
+    for argument_name, argument_value in conf.items():
+        prefix = '--'
+        if len(argument_name) == 1:
+            prefix = '-'
+        conf_as_list.append(prefix+argument_name)
+        conf_as_list.append(str(argument_value))
+
+    return conf_as_list

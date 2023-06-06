@@ -29,7 +29,9 @@
 import os
 
 import pytest
-from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser
+import tests.utils.cli as test_files_module
+from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true
+from powerapi.cli.parsing_manager import RootConfigParsingManager
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
@@ -152,3 +154,37 @@ def base_config_parser_str_representation():
         ' --arg3, --argument3 : \n' + \
         ' --dded, --arg4 : \n' + \
         ' --arg5, -5 : help 5\n'
+
+@pytest.fixture
+def root_config_parsing_manager():
+    """
+    Return a RootConfigParsingManager with a flag argument 'a'
+    """
+    parser_manager = RootConfigParsingManager()
+    parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
+
+    return parser_manager
+
+@pytest.fixture
+def root_config_parsing_manager_with_mandatory_arguments():
+    """
+    Return a RootConfigParsingManager with several arguments, some of them are mandatory
+    """
+    parser_manager = RootConfigParsingManager()
+
+    parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
+
+    parser_manager.add_argument_to_cli_parser('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
+
+    parser_manager.add_argument_to_cli_parser('argumento2', '2', argument_type=str, is_mandatory=True)
+
+    parser_manager.add_argument_to_cli_parser('arg3', 'argument3', argument_type=bool, is_mandatory=False)
+
+    parser_manager.add_argument_to_cli_parser('d', 'arg4', argument_type=float, is_mandatory=True)
+
+    parser_manager.add_argument_to_cli_parser('arg5', '5', default_value='default value', argument_type=str, help_text='help 5')
+    return parser_manager
+
+@pytest.fixture
+def test_files_path():
+    return test_files_module.__path__[0]
