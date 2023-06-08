@@ -30,6 +30,7 @@ import os
 
 import pytest
 import tests.utils.cli as test_files_module
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file
 from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
 from powerapi.cli.parsing_manager import RootConfigParsingManager
 
@@ -39,34 +40,56 @@ def csv_io_stream_config():
     """
      Invalid configuration with csv as input and output and stream mode enabled
     """
-    return {
-        "verbose": True,
-        "stream": True,
-        "input": {
-            "puller": {
-                "model": "HWPCReport",
-                "type": "csv",
-                "files": "/tmp/rapl.csv,/tmp/msr.csv"
-            }
-        },
-        "output": {
-            "pusher_power": {
-                "type": "csv",
-                "model": "PowerReport",
-                "directory": "/tmp/formula_results"
-
-            }
-        },
-    }
+    return load_configuration_from_json_file(file_name='csv_input_output_stream_mode_enabled_configuration.json')
 
 
 @pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
-     Valid configuration with csv as input and output and stream mode disabled
+    Valid configuration with csv as input and output and stream mode disabled
     """
     invalid_csv_io_stream_config["stream"] = False
     return invalid_csv_io_stream_config
+
+
+@pytest.fixture
+def csv_io_postmortem_config_without_optional_arguments(csv_io_postmortem_config):
+    """
+    Valid configuration with csv as input and output without optional arguments, i.e.,
+    stream, verbose, and name model for inputs and outputs
+    """
+    csv_io_postmortem_config.pop('stream')
+    csv_io_postmortem_config.pop('verbose')
+
+    for current_input_name in csv_io_postmortem_config['input']:
+        csv_io_postmortem_config['input'][current_input_name].pop('model')
+        csv_io_postmortem_config['input'][current_input_name].pop('name')
+
+    for current_ouput_name in csv_io_postmortem_config['output']:
+        csv_io_postmortem_config['output'][current_ouput_name].pop('model')
+        csv_io_postmortem_config['output'][current_ouput_name].pop('name')
+
+    return csv_io_postmortem_config
+
+
+@pytest.fixture
+def config_without_input(csv_io_postmortem_config):
+    """
+    Invalid configuration without inputs
+    """
+    csv_io_postmortem_config.pop('input')
+
+    return csv_io_postmortem_config
+
+
+@pytest.fixture
+def config_without_output(csv_io_postmortem_config):
+    """
+    Invalid configuration without inputs
+    """
+    csv_io_postmortem_config.pop('output')
+
+    return csv_io_postmortem_config
 
 
 @pytest.fixture()

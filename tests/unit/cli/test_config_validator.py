@@ -29,24 +29,85 @@
 import pytest
 
 from powerapi.cli import ConfigValidator
+from powerapi.exception import NotAllowedArgumentValueException, MissingArgumentException, FileDoesNotExistException
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file
 
-from powerapi.exception import NotAllowedArgumentValueException
 
-
-def test_invalid_config_stream_and_csv_input(invalid_csv_io_stream_config):
+def test_config_in_stream_mode_with_csv_input_raise_an_exception(invalid_csv_io_stream_config):
     """
-    Test that an invalid configuration is detected by the ConfigValidator
+    Test that an invalid configuration with stream mode enabled and csv as input is detected by the ConfigValidator
     """
     with pytest.raises(NotAllowedArgumentValueException):
         ConfigValidator.validate(invalid_csv_io_stream_config)
 
 
-def test_valid_config_postmortem_csv_input(create_empty_files_from_config, csv_io_postmortem_config):
+def test_config_in_postmortem_mode_with_csv_input_is_validated(create_empty_files_from_config, csv_io_postmortem_config):
     """
     Test that a valid configuration is detected by the ConfigValidator when stream mode is disabled.
+    The files list for the input has to be transformed into a list
     """
-    # pylint: disable=unused-argument
     try:
+        expected_result = load_configuration_from_json_file(file_name='csv_input_output_stream_mode_enabled_configuration.json')
+        for current_input in expected_result['input']:
+            if expected_result['input'][current_input]['type'] == 'csv':
+                expected_result['input'][current_input]['files'] = (expected_result['input'][current_input]['files']).split(',')
+
+        expected_result['stream'] = False
+
         ConfigValidator.validate(csv_io_postmortem_config)
+
+        assert csv_io_postmortem_config == expected_result
+
     except NotAllowedArgumentValueException:
         assert False
+
+
+def test_valid_config_postmortem_csv_input_without_optional_arguments_is_validated(create_empty_files_from_config,
+                                                                                   csv_io_postmortem_config_without_optional_arguments):
+    """
+    Test that a valid configuration is detected by the ConfigValidator when stream mode is disabled.
+    Default values has to be defined and the files list for the input has to be transformed into a list
+    """
+    expected_result = csv_io_postmortem_config_without_optional_arguments.copy()
+    for current_input in expected_result['input']:
+        if expected_result['input'][current_input]['type'] == 'csv':
+            expected_result['input'][current_input]['files'] = (expected_result['input'][current_input]['files']).split(',')
+        expected_result['input'][current_input]['name'] = 'default_puller'
+        expected_result['input'][current_input]['model'] = 'HWPCReport'
+    expected_result['stream'] = False
+    expected_result['verbose'] = False
+
+    ConfigValidator.validate(csv_io_postmortem_config_without_optional_arguments)
+
+    assert csv_io_postmortem_config_without_optional_arguments == expected_result
+
+
+def test_config_with_csv_input_with_files_that_do_not_exist_raise_an_exception(csv_io_postmortem_config):
+    """
+    Test that validation of a configuration indicating files that do not exist in csv as input raises a
+    FileDoesNotExistException
+    """
+    with pytest.raises(FileDoesNotExistException) as raised_exception:
+        ConfigValidator.validate(csv_io_postmortem_config)
+
+    assert raised_exception.value.file_name == '/tmp/rapl.csv'
+
+
+def test_config_without_inputs_raise_an_exception(config_without_input):
+    """
+    Test that validation of an invalid configuration without inputs raises a MissingArgumentException
+    """
+    with pytest.raises(MissingArgumentException) as raised_exception:
+        ConfigValidator.validate(config_without_input)
+
+    assert raised_exception.value.argument_name == 'input'
+
+
+def test_config_without_outputs_raise_an_exception(config_without_output):
+    """
+    Test that validation of an invalid configuration without outputs raises a MissingArgumentException
+    """
+    with pytest.raises(MissingArgumentException) as raised_exception:
+        ConfigValidator.validate(config_without_output)
+
+    assert raised_exception.value.argument_name == 'output'

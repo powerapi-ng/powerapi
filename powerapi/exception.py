@@ -139,7 +139,7 @@ class UnknownArgException(ParserException):
     """
     def __init__(self, argument_name):
         ParserException.__init__(self, argument_name)
-        self.msg = 'Unknow argument ' + argument_name
+        self.msg = 'Unknown argument ' + argument_name
 
 
 class BadTypeException(ParserException):
@@ -176,7 +176,9 @@ class FileDoesNotExistException(PowerAPIException):
     This exception happens when the configuration define a input file that does not exist or is not accessible
     """
     def __init__(self, file_name):
-        PowerAPIException.__init__("The File " + file_name + " does not exist or is not accesible")
+        PowerAPIException.__init__(self)
+        self.file_name = file_name
+        self.msg = "The File " + self.file_name + " does not exist or is not accessible"
 
 
 class SameLengthArgumentNamesException(ParserException):
