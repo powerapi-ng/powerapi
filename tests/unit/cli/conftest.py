@@ -36,11 +36,148 @@ from powerapi.cli.parsing_manager import RootConfigParsingManager
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
-def csv_io_stream_config():
+def csv_input_output_stream_config():
     """
      Invalid configuration with csv as input and output and stream mode enabled
     """
     return load_configuration_from_json_file(file_name='csv_input_output_stream_mode_enabled_configuration.json')
+
+
+@pytest.fixture
+def mongodb_input_output_stream_config():
+    """
+    Configuration with mongodb as input and output and stream mode enabled
+    """
+    return load_configuration_from_json_file(file_name='mongo_input_output_stream_mode_enabled_configuration.json')
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_config():
+    """
+    Configuration with several inputs and outputs and stream mode enabled
+    """
+    return load_configuration_from_json_file(file_name='several_inputs_outputs_stream_mode_enabled_configuration.json')
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_mongo_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of mongo input/output are removed
+    """
+    for _, current_input in several_inputs_outputs_stream_config["input"].items():
+        if current_input['type'] == 'mongodb':
+            current_input.pop('uri')
+            current_input.pop('db')
+
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'mongodb':
+            current_output.pop('uri')
+            current_output.pop('db')
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_socket_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of socket input are removed
+    """
+    for _, current_input in several_inputs_outputs_stream_config["input"].items():
+        if current_input['type'] == 'socket':
+            current_input.pop('port')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_csv_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of csv input/output are removed
+    """
+    for _, current_input in several_inputs_outputs_stream_config["input"].items():
+        if current_input['type'] == 'csv':
+            current_input.pop('files')
+
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'csv':
+            current_output.pop('directory')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_influx_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of influxdb output are removed
+    """
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'influxdb':
+            current_output.pop('port')
+            current_output.pop('db')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_prometheus_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of prometheus output are removed
+    """
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'prom':
+            current_output.pop('metric_name')
+            current_output.pop('metric_description')
+            current_output.pop('aggregation_period')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_opentsdb_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of opentsdb output are removed
+    """
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'opentsdb':
+            current_output.pop('metric_name')
+            current_output.pop('port')
+            current_output.pop('uri')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_virtiofs_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of virtiofs output are removed
+    """
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'virtiofs':
+            current_output.pop('vm_name_regexp')
+            current_output.pop('root_directory_name')
+            current_output.pop('vm_directory_name_prefix')
+            current_output.pop('vm_directory_name_suffix')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
+def several_inputs_outputs_stream_filedb_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of filedb output are removed
+    """
+    for _, current_output in several_inputs_outputs_stream_config["output"].items():
+        if current_output['type'] == 'filedb':
+            current_output.pop('filename')
+
+    return several_inputs_outputs_stream_config
 
 
 @pytest.fixture

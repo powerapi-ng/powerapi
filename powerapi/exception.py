@@ -188,3 +188,47 @@ class SameLengthArgumentNamesException(ParserException):
     """
     def __init__(self, argument_name):
         ParserException.__init__(self, argument_name)
+
+
+class ModelNameAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a DBActorGenerator a model factory with a name already bound to another
+    model factory in the DBActorGenerator
+    """
+
+    def __init__(self, model_name):
+        PowerAPIException.__init__(self)
+        self.model_name = model_name
+
+
+class DatabaseNameDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a DBActorGenerator a database factory with a name that is not bound to
+    another database factory in the DBActorGenerator
+    """
+
+    def __init__(self, database_name):
+        PowerAPIException.__init__(self)
+        self.database_name = database_name
+
+
+class DatabaseNameAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a DBActorGenerator a database factory with a name already bound to
+    another database factory in the DBActorGenerator
+    """
+
+    def __init__(self, database_name):
+        PowerAPIException.__init__(self)
+        self.database_name = database_name
+
+
+class ModelNameDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a DBActorGenerator a model factory with a name that is not bound to
+    another model factory in the DBActorGenerator
+    """
+
+    def __init__(self, model_name):
+        PowerAPIException.__init__(self)
+        self.model_name = model_name
