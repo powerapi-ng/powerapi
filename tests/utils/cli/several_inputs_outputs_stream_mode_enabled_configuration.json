@@ -1,0 +1,88 @@
+{
+  "verbose": true,
+  "stream": true,
+  "input": {
+      "puller1": {
+          "model": "HWPCReport",
+          "type": "mongodb",
+          "uri": "one_uri",
+          "db": "my_db",
+          "collection": "my_collection",
+          "name": "puller1"
+      },
+      "puller2": {
+          "model": "HWPCReport",
+          "type": "csv",
+          "files": "/tmp/rapl.csv,/tmp/msr.csv",
+          "name": "puller2"
+      },
+      "puller3": {
+          "model": "HWPCReport",
+          "type": "socket",
+          "port": 1111,
+          "name": "puller3"
+      }
+  },
+  "output": {
+      "one_pusher": {
+          "type": "mongodb",
+          "model": "PowerReport",
+          "uri": "second_uri",
+          "db": "my_db_result",
+          "collection": "my_collection_result"
+      },
+      "second_pusher": {
+          "type": "influxdb",
+          "model": "PowerReport",
+          "uri": "127.0.0.1",
+          "port": 1111,
+          "db": "my_db_result_2"
+      },
+      "third_pusher": {
+          "type": "prom",
+          "model": "PowerReport",
+          "uri": "127.0.0.1",
+          "port": 2222,
+          "metric_name": "my_metric",
+          "metric_description": "a description",
+          "aggregation_period": 11
+      },
+      "fourth_pusher": {
+          "type": "csv",
+          "model": "PowerReport",
+          "directory": "my_dir"
+      },
+      "fifth_pusher": {
+          "type": "influxdb2",
+          "model": "PowerReport",
+          "uri": "127.0.0.1",
+          "port": 1111,
+          "db": "my_db_result_5",
+          "token": "my_token",
+          "org": "my_org",
+          "tags": "t1,t2,t3"
+      },
+      "sixth": {
+          "type": "opentsdb",
+          "model": "PowerReport",
+          "uri": "127.0.0.1",
+          "port": 1111,
+          "metric_name": "my metric opentsdb"
+      },
+      "seventh": {
+          "type": "virtiofs",
+          "model": "PowerReport",
+          "vm_name_regexp": "vm_name$",
+          "root_directory_name": "my_dir",
+          "vm_directory_name_prefix": "prefix_1",
+          "vm_directory_name_suffix": "suffix_1"
+      },
+      "eighth": {
+          "type": "filedb",
+          "model": "PowerReport",
+          "filename": "myname.txt"
+      }
+  }
+}
+
+

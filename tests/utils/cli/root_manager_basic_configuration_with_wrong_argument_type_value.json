@@ -1,0 +1,6 @@
+{ "argument1": 5,
+  "2": "this is a mandatory argument",
+  "argument3": "wrong value",
+  "arg4": 98.0,
+  "5" : "this is a value"
+}

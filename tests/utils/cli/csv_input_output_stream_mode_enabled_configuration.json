@@ -1,0 +1,20 @@
+{
+  "verbose": true,
+  "stream": true,
+  "input": {
+      "puller": {
+          "model": "HWPCReport",
+          "type": "csv",
+          "files": "/tmp/rapl.csv,/tmp/msr.csv",
+          "name": "my_puller"
+      }
+  },
+  "output": {
+      "pusher_power": {
+          "type": "csv",
+          "model": "PowerReport",
+          "directory": "/tmp/formula_results",
+          "name": "my_pusher"
+      }
+  }
+}

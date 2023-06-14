@@ -1,0 +1,5 @@
+{ "argument1": 5,
+  "argumento2": "this is a mandatory argument",
+  "argument3": false,
+  "arg4": 10.5
+}

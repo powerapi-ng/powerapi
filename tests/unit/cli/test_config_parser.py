@@ -28,14 +28,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
-from powerapi.cli.config_parser import ConfigParser, MainConfigParser, SubConfigParser
-from powerapi.cli.parser import AlreadyAddedArgumentException, BadTypeException
-from powerapi.cli.parser import UnknowArgException, BadContextException, MissingValueException, \
-    ComponentAlreadyExistException
-from powerapi.cli.parser import SubParserWithoutNameArgumentException, NoNameSpecifiedForComponentException
-from powerapi.cli.parser import TooManyArgumentNamesException
-from powerapi.cli.parser import store_val, store_true
-from powerapi.cli.config_parser import AlreadyAddedSubparserException
+from powerapi.cli.config_parser import ConfigurationArgument, BaseConfigParser, RootConfigParser, SubgroupConfigParser
+from powerapi.cli.config_parser import store_true, store_val
+from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
+    BadContextException, MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
+    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, MissingArgumentException, \
+    SameLengthArgumentNamesException
+
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
+    generate_configuration_tuples_from_json_file
 
 
 ###############
@@ -43,565 +44,762 @@ from powerapi.cli.config_parser import AlreadyAddedSubparserException
 ###############
 def test_add_argument_that_already_exists():
     """
-    Add an argument that already exists to a parser and test if an
-    AlreadyAddedArgumentException is raised
+    Test if an AlreadyAddedArgumentException is raised when an argument that already exists is added to a
+    BaseConfigParser
     """
 
-    parser = MainConfigParser()
+    parser = BaseConfigParser()
     parser.add_argument('a')
+    parser.add_argument('bb', 'bbb', 'b', 'bbbbbb')
 
     with pytest.raises(AlreadyAddedArgumentException):
         parser.add_argument('a')
 
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('bbb')
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('bbbbbb')
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_argument('ccc', 'a')
+
+    assert len(parser.arguments) == 5
+
+
+def test_get_arguments_returns_all_stored_arguments():
+    """
+    Test if all the arguments are correctly stored by BasePaserConfig
+    """
+    longest_name_arg_a = 'aaa'
+    name_arg_a_1 = 'a'
+    name_arg_a_2 = 'ab'
+    expected_argument_a = ConfigurationArgument(names=[name_arg_a_1, longest_name_arg_a, name_arg_a_2],
+                                                argument_type=bool, default_value=False,
+                                                help_text='This a parameter', is_mandatory=False, is_flag=True)
+
+    longest_name_arg_xx = 'XXXX'
+    name_arg_xx_1 = 'xx'
+    name_arg_xx_2 = 'xax'
+    expected_argument_xx = ConfigurationArgument(names=[name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2],
+                                                 argument_type=str, default_value='Hi',
+                                                 help_text='This is another parameter', is_mandatory=True,
+                                                 is_flag=False, action=store_val)
+
+    parser = BaseConfigParser()
+    parser.add_argument(name_arg_a_1, longest_name_arg_a, name_arg_a_2, is_mandatory=expected_argument_a.is_mandatory, is_flag=expected_argument_a.is_flag,
+                        argument_type=expected_argument_a.type, help_text=expected_argument_a.help_text,
+                        default_value=expected_argument_a.default_value)
+
+    parser.add_argument(name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2, is_mandatory=expected_argument_xx.is_mandatory, is_flag=expected_argument_xx.is_flag,
+                        argument_type=expected_argument_xx.type, help_text=expected_argument_xx.help_text,
+                        default_value=expected_argument_xx.default_value)
+
+    arguments = parser.get_arguments()
+
+    assert len(arguments) == 6
+
+    assert longest_name_arg_a in arguments
+
+    assert longest_name_arg_xx in arguments
+
+    assert expected_argument_a == arguments.get(longest_name_arg_a)
+
+    assert expected_argument_xx == arguments.get(longest_name_arg_xx)
+
+
+def test_get_mandatory_arguments_return_all_mandatory_argument(base_config_parser):
+    """
+    Test that all the mandatory arguments are identified by the paser
+    """
+    expected_mandatory_args_names = ['arg2', 'arg4']
+
+    mandatory_args = base_config_parser._get_mandatory_arguments()
+
+    assert len(mandatory_args) == len(expected_mandatory_args_names)
+
+    for expected_mandatory_args_name in expected_mandatory_args_names:
+        is_present = False
+        for mandatory_arg in mandatory_args:
+            if expected_mandatory_args_name in mandatory_arg.names:
+                is_present = True
+                break
+        assert is_present
+
+
+def test_get_mandatory_arguments_return_empty_list_with_no_mandatory_args(base_config_parser_no_mandatory_arguments):
+    """
+    Test that mandatory arguments list is empty if parser does not have mandatory arguments
+    """
+    mandatory_args = base_config_parser_no_mandatory_arguments._get_mandatory_arguments()
+
+    assert not mandatory_args
+
+
+def test_validate_check_mandatory_arguments_on_configuration(base_config_parser):
+    """
+    Test if mandatory arguments are verified by the parser
+    """
+    conf = load_configuration_from_json_file('basic_configuration.json')
+    conf_without_mandatory_arguments = \
+        load_configuration_from_json_file('basic_configuration_without_mandatory_arguments.json')
+
+    try:
+        validated_config = base_config_parser.validate(conf)
+        assert validated_config == conf
+
+    except MissingArgumentException:
+        assert False
+
+    with pytest.raises(MissingArgumentException):
+        _ = base_config_parser.validate(conf_without_mandatory_arguments)
+
+
+def test_validate_accept_configuration_when_no_mandatory_arguments_exist(base_config_parser_no_mandatory_arguments):
+    """
+    Test if a configuration passes the validation if there is no mandatory argument
+    """
+    conf = load_configuration_from_json_file('basic_configuration_without_mandatory_arguments.json')
+
+    try:
+        validated_config = base_config_parser_no_mandatory_arguments.validate(conf)
+        assert validated_config == conf
+
+    except MissingArgumentException:
+        assert False
+
+
+def test_validate_adds_default_values_for_no_arguments_defined_in_configuration_that_have_one(base_config_parser):
+    """
+    Test if parser add default values for arguments that are not in configuration and that have one
+    """
+    conf = load_configuration_from_json_file('basic_configuration_without_arguments_with_default_values.json')
+
+    expected_conf = conf.copy()
+    expected_conf['arg1'] = 3
+    expected_conf['arg5'] = 'default value'
+
+    validated_config = base_config_parser.validate(conf)
+    assert validated_config == expected_conf
+
+
+def test_get_arguments_str_return_str_with_all_information(base_config_parser, base_config_parser_str_representation):
+    """
+    Test that the parser is able to return a string with all the information related to it in a correct format
+    """
+
+    arguments_str = base_config_parser._get_arguments_str(' ')
+
+    assert arguments_str == base_config_parser_str_representation
+
+
+def test_parser_return_correct_values_for_each_argument(base_config_parser):
+    """
+    Test that the _parser method return correct values for different arguments in configuration
+    """
+
+    args = generate_configuration_tuples_from_json_file('basic_configuration.json')
+    acc = {}
+
+    expected_acc = {'argumento1': 5,
+                    "argumento2": "this a mandatory argument",
+                    "argument3": False,
+                    "dded": 10.5}
+
+    args, acc = base_config_parser._parse(args, acc)
+
+    assert not args
+    assert acc == expected_acc
+
+
+def test_parser_raise_an_exception_with_an_unknown_argument(base_config_parser):
+
+    """
+    Test that the _parser method return correct values for different arguments in configuration
+    """
+
+    args = generate_configuration_tuples_from_json_file('basic_configuration.json')
+    args.append(('unknown_arg', 'This is a new argument'))
+    acc = {}
+
+    with pytest.raises(NotImplementedError):
+        _, _ = base_config_parser._parse(args, acc)
 
 #####################
-# MAIN PARSER TESTS #
+# ROOT PARSER TESTS #
 #####################
-def test_add_argument_flag():
+# Test add_argument optargs #
+
+
+def test_add_short_argument():
     """
-    Add a short flag to the parser
-
-    Test if the argument was added to the short_arg string
+    Test if an argument when a short name is added to the short_arg string
     """
-    parser = MainConfigParser()
-    assert parser.cli_parser.short_arg == 'h'
-    parser.add_argument('a', flag=True)
-    assert parser.cli_parser.short_arg == 'ha'
+    parser = RootConfigParser(help_arg=False)
+    assert parser.short_arg == ''
+    parser.add_argument('a')
+    assert parser.short_arg == 'a:'
+
+    assert len(parser.arguments) == 1
 
 
-def test_add_argument_2_short():
+def test_add_flag_argument_with_short_name():
     """
-    Add two short argument (an argument and a flag) to the parser
-
-    Test if the arguments was added to the short_arg string
+    Test if a flag argument with a short name was added to the short_arg string
     """
-    parser = MainConfigParser()
-    assert parser.cli_parser.short_arg == 'h'
-    parser.add_argument('a', flag=True)
-    assert parser.cli_parser.short_arg == 'ha'
-    parser.add_argument('b')
-    assert parser.cli_parser.short_arg == 'hab:'
+    parser = RootConfigParser(help_arg=False)
+    assert parser.short_arg == ''
+    parser.add_argument('a', is_flag=True)
+    assert parser.short_arg == 'a'
+
+    assert len(parser.arguments) == 1
 
 
-def test_add_argument_long():
+def test_add_several_arguments_with_short_names():
     """
-    Add a long argument to the parser
-
-    Test if the argument was added to the long_arg list
+    Test if the arguments were added to the short_arg string
     """
-    parser = MainConfigParser()
-    assert parser.cli_parser.long_arg == ['help']
+    parser = RootConfigParser(help_arg=False)
+    assert parser.short_arg == ''
+    parser.add_argument('a', is_flag=True)
+    assert parser.short_arg == 'a'
+    parser.add_argument('b', is_flag=True)
+    assert parser.short_arg == 'ab'
+    parser.add_argument('c')
+    assert parser.short_arg == 'abc:'
+    parser.add_argument('d')
+    assert parser.short_arg == 'abc:d:'
+    parser.add_argument('e')
+    parser.add_argument('f')
+    parser.add_argument('g')
+    assert parser.short_arg == 'abc:d:e:f:g:'
+
+    assert len(parser.arguments) == 7
+
+
+def test_add_argument_with_two_short_names_raise_an_exception():
+    """
+    Test if adding an argument with two short names raises a SameLengthArgumentNamesException
+    """
+    parser = RootConfigParser(help_arg=False)
+
+    with pytest.raises(SameLengthArgumentNamesException):
+        parser.add_argument('a', 'b')
+
+    assert parser.short_arg == ''
+    assert not parser.arguments
+
+
+def test_add_argument_with_long_name():
+    """
+    Test if an argument with a long name is added to the long_arg list
+    """
+    parser = RootConfigParser(help_arg=False)
+    assert not parser.long_arg
     parser.add_argument('aaa')
-    assert parser.cli_parser.long_arg == ['help', 'aaa=']
+    assert parser.long_arg == ['aaa=']
+
+    assert len(parser.arguments) == 1
 
 
-def test_add_flag_long():
+def test_add_flag_argument_with_long():
     """
-    Add a long argument to the parser
-
-    Test if the argument was added to the long_arg list
+    Test if a flag argument with a long name is added to the long_arg list
     """
-    parser = MainConfigParser()
-    assert parser.cli_parser.long_arg == ['help']
-    parser.add_argument('aaa', flag=True)
-    assert parser.cli_parser.long_arg == ['help', 'aaa']
+    parser = RootConfigParser(help_arg=False)
+    assert not parser.long_arg
+    parser.add_argument('aaa', is_flag=True)
+    assert parser.long_arg == ['aaa']
+
+    assert len(parser.arguments) == 1
+
+
+def test_add_argument_with_more_than_two_names_raise_an_exception():
+    """
+    Test if adding an argument with more than two names raises a TooManyArgumentNamesException
+    """
+    parser = RootConfigParser(help_arg=False)
+    assert not parser.long_arg
+    with pytest.raises(TooManyArgumentNamesException):
+        parser.add_argument('aaa', 'bbb', 'ccc', is_flag=True)
+
+    with pytest.raises(TooManyArgumentNamesException):
+        parser.add_argument('aaa', 'b', 'c')
+
+    assert not parser.long_arg
+    assert not parser.arguments
 
 
 # full parsing test #
-def check_parsing_cli_result(parser, input_str, outputs):
-    result = parser._parse_cli(input_str.split())
+
+def check_parsing_result(parser, input_str, outputs):
+    """
+    Check that input_str is correctly parsed by parser
+    """
+    result = parser.parse(input_str.split())
 
     assert len(result) == len(outputs)
     assert result == outputs
 
 
-def test_empty_parser_cli():
+def test_parsing_of_config_of_empty_parser():
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test the parsing of strings with an empty base parser and retrieve the following results:
+
+    - "": {}
+    - "-z": UnknownArgException(z)
+    - "-a": UnknownArgException(a)
+    - "-a --sub toto -b": UnknownArgException(a)
+    - "-b": UnknownArgException(b)
+
+    Parser description:
+
+    - root parser arguments: None
+    """
+    parser = RootConfigParser(help_arg=False)
+
+    check_parsing_result(parser, '', {})
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-z', None)
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-a', None)
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-a --sub toto -b', None)
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-b', None)
+
+
+def test_parsing_of_config_of_a_parser():
+    """
+    Test the parsing of strings with a not empty root parser and retrieve the following results:
+
+    - "": {}
+    - "-z": UnknownArgException(z)
+    - "-a": {a: True}
+    - "-a --sub toto -b": UnknownArgException(sub)
+    - "-b": UnknownArgException(b)
+
+    Parser description:
+
+    - root parser arguments: -a
+    """
+    parser = RootConfigParser(help_arg=False)
+    parser.add_argument('a', is_flag=True, action=store_true)
+
+    check_parsing_result(parser, '', {})
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-z', None)
+
+    check_parsing_result(parser, '-a', {'a': True})
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-a --sub toto -b', None)
+
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-b', None)
+
+
+def test_parsing_of_config_of_a_parser_with_a_subgroup_parser():
+    """
+    Test the parsing of strings with a not empty rooy parser and retrieve the following results:
 
     - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : UnknowArgException(a)
-    - "-a --sub toto -b" : UnknowArgException(a)
-    - "-b" : UnknowArgException(b)
-
-    ConfigParser description :
-
-    - base parser arguments : None
-    - subparser toto binded to the argument sub with sub arguments : None
-    """
-    parser = MainConfigParser()
-
-    check_parsing_cli_result(parser, '', {})
-
-    with pytest.raises(UnknowArgException):
-        check_parsing_cli_result(parser, '-z', None)
-
-    with pytest.raises(UnknowArgException):
-        check_parsing_cli_result(parser, '-a', None)
-
-    with pytest.raises(UnknowArgException):
-        check_parsing_cli_result(parser, '-a --sub toto -b', None)
-
-    with pytest.raises(UnknowArgException):
-        check_parsing_cli_result(parser, '-b', None)
-
-
-def test_empty_parser_validate():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : UnknowArgException(a)
-    - "-a --sub toto -b" : UnknowArgException(a)
-    - "-b" : UnknowArgException(b)
-
-    ConfigParser description :
-
-    - base parser arguments : None
-    - subparser toto binded to the argument sub with sub arguments : None
-    """
-    parser = MainConfigParser()
-    dic = {
-        "z": "value"
-    }
-
-    with pytest.raises(UnknowArgException):
-        parser._validate(dic)
-
-
-def test_main_parser_cli():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : UnknowArgException(sub)
-    - "-b" : UnknowArgException(b)
-
-    ConfigParser description :
-
-    - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : None
-    """
-    parser = MainConfigParser()
-    parser.add_argument('a', flag=True, action=store_true)
-
-    dic = {
-        "z": True
-    }
-
-    with pytest.raises(UnknowArgException):
-        parser._validate(dic)
-
-    check_parsing_cli_result(parser, '-a', {'a': True})
-
-
-def test_main_parser_validate():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : UnknowArgException(sub)
-    - "-b" : UnknowArgException(b)
-
-    ConfigParser description :
-
-    - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : None
-    """
-    parser = MainConfigParser()
-    parser.add_argument('a', type=bool, flag=True, action=store_true)
-
-    dic = {
-        "z": True
-    }
-
-    right_dic = {
-        "a": True
-    }
-
-    with pytest.raises(UnknowArgException):
-        parser._validate(dic)
-
-    assert parser._validate(right_dic) == right_dic
-
-
-def test_actor_subparser_cli():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : NoNameSpecifiedForComponentException
+    - "-z": UnknownArgException(z)
+    - "-a": {a: True}
+    - "-a --sub toto -b": NoNameSpecifiedForSubgroupException
     - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
-    - "-b" : BadContextException(b, [toto])
+    - "-b": BadContextException(b, [toto])
 
-    ConfigParser description :
+    Parser description:
 
-    - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b and --name
+    - root parser arguments: -a
+    - subparser toto bound to the argument sub with sub arguments: -b and --name
     """
-    parser = MainConfigParser()
-    parser.add_argument('a', flag=True, action=store_true)
+    parser = RootConfigParser(help_arg=False)
+    parser.add_argument('a', is_flag=True, action=store_true)
 
-    subparser = SubConfigParser('toto')
-    subparser.add_argument('b', flag=True, action=store_true)
+    subparser = SubgroupConfigParser('toto')
+    subparser.add_argument('b', is_flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
+    parser.add_subgroup_parser('sub', subparser)
 
-    dic = {
-        "z": True
-    }
+    check_parsing_result(parser, '', {})
 
-    with pytest.raises(UnknowArgException):
-        parser._validate(dic)
+    with pytest.raises(UnknownArgException):
+        check_parsing_result(parser, '-z', None)
 
-    check_parsing_cli_result(parser, '-a', {'a': True})
+    check_parsing_result(parser, '-a', {'a': True})
 
-    with pytest.raises(NoNameSpecifiedForComponentException):
-        check_parsing_cli_result(parser, '-a --sub toto -b', {})
+    with pytest.raises(NoNameSpecifiedForSubgroupException):
+        check_parsing_result(parser, '-a --sub toto -b', {})
 
-    check_parsing_cli_result(parser, '-a --sub toto -b --name titi',
-                             {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+    check_parsing_result(parser, '-a --sub toto -b --name titi',
+                         {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
+
+    with pytest.raises(BadContextException):
+        check_parsing_result(parser, '-b', None)
 
 
-def test_actor_subparser_validate():
+def test_parsing_of_config_with_several_subgroups_with_the_same_name_in_a_parser_with_a_subgroup_parser():
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test the parsing of several subgroups with the same name. The result is:
+    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}, 'tata': {'type': 'toto'}}}
 
-    - "" : {}
-    - "-z" : UnknowArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : NoNameSpecifiedForComponentException
-    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
-    - "-b" : BadContextException(b, [toto])
+    The subgroups are created with the following cli:
+    --sub toto --name titi --sub toto -b --name tutu --sub toto --name tata
 
-    ConfigParser description :
+    Parser description:
 
-    - base parser arguments : -a
-    - subparser toto binded to the argument sub with sub arguments : -b and --name
+    - root parser arguments: None
+    - subparser toto bound to the argument sub with sub arguments: -b and -n --name
+
     """
-    parser = MainConfigParser()
-    parser.add_argument('a', type=bool, flag=True, action=store_true)
+    parser = RootConfigParser(help_arg=False)
 
-    subparser = SubConfigParser('toto')
-    subparser.add_argument('b', flag=True, action=store_true)
-    subparser.add_argument('type', flag=True, action=store_true)
+    subparser = SubgroupConfigParser('toto')
+    subparser.add_argument('b', is_flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
+    parser.add_subgroup_parser('sub', subparser)
 
-    a_dic = {'a': True}
-
-    dic = {
-        "z": True
-    }
-
-    right_dic = {
-        'a': True,
-        'sub': {
-            'titi':
-                {
-                    'type': 'toto',
-                    'b': "type"
-                }
-        }
-    }
-
-    with pytest.raises(UnknowArgException):
-        parser._validate(dic)
-
-    assert parser._validate(a_dic) == a_dic
-
-    assert parser._validate(right_dic) == right_dic
+    check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu --sub toto --name tata',
+                         {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True},
+                                  'tata': {'type': 'toto'}}})
 
 
-def test_create_two_component_cli():
+def test_parsing_of_several_subgroups_with_different_name_in_a_parser_with_several_subgroup_parsers():
     """
-    Create two component of the same type with the following cli :
-    --sub toto --name titi --sub toto -b --name tutu
-
-    test if the result is :
-    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
-
-    """
-
-    parser = MainConfigParser()
-    parser.add_argument('a', flag=True, action=store_true)
-
-    subparser = SubConfigParser('toto')
-    subparser.add_argument('b', flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
-
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub toto -b --name tutu',
-                             {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
-
-
-def test_create_two_component_validate():
-    """
-    Create two component of the same type with the following cli :
-    --sub toto --name titi --sub toto -b --name tutu
-
-    test if the result is :
-    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
-
-    """
-
-    parser = MainConfigParser()
-    parser.add_argument('a', flag=True, action=store_true)
-
-    subparser = SubConfigParser('toto')
-    subparser.add_argument('type')
-    subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
-
-    dic = {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}}
-    assert parser._validate(dic) == dic
-
-
-def test_create_two_with_different_type_component():
-    """
-    Create two component with different type with the following cli :
-    --sub toto --name titi --sub tutu --name tete
-
-    test if the result is :
+    Test the parsing of several subgroups with different name. The result is:
     {sub:{'titi' : {'type': 'toto'}, 'tete': {'type': 'tutu'}}}
 
+    The subgroups are created with the following cli:
+    --sub toto --name titi --sub tutu --name tete --sub tata --name tate
+
+    Parser description:
+
+    - root parser arguments: None
+    - subparser toto bound to the argument sub with sub argument: -n --name
+    - subparser tutu bound to the argument sub with sub argument: -n --name
+    - subparser tata bound to the argument sub with sub argument: -n --name
     """
-    parser = MainConfigParser()
+    parser = RootConfigParser(help_arg=False)
 
-    subparser = SubConfigParser('toto')
+    subparser = SubgroupConfigParser('toto')
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
+    parser.add_subgroup_parser('sub', subparser)
 
-    subparser = SubConfigParser('tutu')
+    subparser = SubgroupConfigParser('tutu')
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
+    parser.add_subgroup_parser('sub', subparser)
 
-    check_parsing_cli_result(parser, '--sub toto --name titi --sub tutu --name tete',
-                             {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
+    subparser = SubgroupConfigParser('tata')
+    subparser.add_argument('n', 'name')
+    parser.add_subgroup_parser('sub', subparser)
+
+    check_parsing_result(parser, '--sub toto --name titi --sub tutu --name tete --sub tata --name tate',
+                         {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}, 'tate': {'type': 'tata'}}})
 
 
-def test_create_component_that_already_exist_cli():
+def test_parsing_of_config_with_repeated_subgroups_names_raise_an_exception():
     """
-    Create two component with the same name with the following cli
+    Test if an SubgroupAlreadyExistException is raised with two subgroups of the same name.
+    The subgroups are created with the following cli:
     --sub toto --name titi --sub toto --name titi
 
-    test if an ComponentAlreadyExistException is raised
-    """
-    parser = MainConfigParser()
+    Parser description:
 
-    subparser = SubConfigParser('toto')
-    subparser.add_argument('b', flag=True, action=store_true)
+    - root parser arguments: None
+    - subparser toto bound to the argument sub with sub arguments: -b (flag) and -n --name
+    """
+    parser = RootConfigParser(help_arg=False)
+
+    subparser = SubgroupConfigParser('toto')
+    subparser.add_argument('b', is_flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
+    parser.add_subgroup_parser('sub', subparser)
 
-    with pytest.raises(ComponentAlreadyExistException):
-        check_parsing_cli_result(parser, '--sub toto --name titi --sub toto --name titi', None)
+    with pytest.raises(SubgroupAlreadyExistException):
+        check_parsing_result(parser, '--sub toto --name titi --sub toto --name titi', None)
 
 
-def test_argument_with_val_cli():
+def test_parsing_of_argument_with_val():
     """
-    test to parse strings with a parser and retrieve the following results :
+    Test the parsing of strings with a root parser and retrieve the following results :
 
     - "-c" : MissingValue(c)
     - "-c 1" : {c : 1}
 
-    ConfigParser description :
+    Parser description :
 
-    - base parser arguments : -c (not flag)
+    - root parser arguments : -c (not flag)
     """
-    parser = MainConfigParser()
+    parser = RootConfigParser(help_arg=False)
     parser.add_argument('c')
 
     with pytest.raises(MissingValueException):
-        check_parsing_cli_result(parser, '-c', None)
+        check_parsing_result(parser, '-c', None)
 
-    check_parsing_cli_result(parser, '-c 1', {'c': '1'})
-
-
-def test_argument_with_val_validate():
-    """
-    test to parse strings with a parser and retrieve the following results :
-
-    - "-c" : MissingValue(c)
-    - "-c 1" : {c : 1}
-
-    ConfigParser description :
-
-    - base parser arguments : -c (not flag)
-    """
-    parser = MainConfigParser()
-    parser.add_argument('c')
-
-    dic = {'c': '1'}
-
-    assert parser._validate(dic) == dic
-
-
-def test_type_cli():
-    parser = MainConfigParser()
-    parser.add_argument('c', type=int)
-
-    with pytest.raises(BadTypeException):
-        check_parsing_cli_result(parser, '-c string', {'c': 'string'})
-
-    check_parsing_cli_result(parser, '-c 1', {'c': 1})
-
-
-def test_type_validate():
-    parser = MainConfigParser()
-    parser.add_argument('c', type=int)
-
-    str_dic = {'c': 'string'}
-    int_dic = {'c': 42}
-
-    with pytest.raises(BadTypeException):
-        parser._validate(str_dic)
-
-    assert parser._validate(int_dic) == int_dic
+    check_parsing_result(parser, '-c 1', {'c': '1'})
 
 
 # multi name tests #
-def test_short_and_long_name_val():
+def test_parsing_of_argument_with_long_short_names_and_val():
     """
-    Add an argument to a parser with two name long and short and test if the
-    value is only bind to the long name in the parsing result
+    Test if the parsing of an argument with long and short names and a value works correctly.
+    The value is only bound to the long name in the parsing result.
+
+    Parser description:
+
+    - root parser arguments: -c --coco
 
     """
-    parser = MainConfigParser()
+    parser = RootConfigParser(help_arg=False)
     parser.add_argument('c', 'coco')
 
-    check_parsing_cli_result(parser, '-c 1', {'coco': '1'})
+    check_parsing_result(parser, '-c 1', {'coco': '1'})
 
 
-def test_add_two_short_name():
+def test_add_argument_with_two_long_names_with_same_length_raise_an_exception():
     """
-    Add an argument to a parser with two short name and test if the
-    parser raise an exception TooManyArgumentNamesException
+    Test if the parser raise an exception SameLengthArgumentNamesException when a
+    long argument with the same length is added. No subgroup parse must be added
 
-    """
-    parser = MainConfigParser()
-    with pytest.raises(TooManyArgumentNamesException):
-        parser.add_argument('c', 'd')
+    Parser description:
 
-
-def test_add_two_short_name():
-    """
-    Add an argument to a parser with two long name and test if the
-    parser raise an exception TooManyArgumentNamesException
+    - root parser arguments: None
 
     """
-    parser = MainConfigParser()
-    with pytest.raises(TooManyArgumentNamesException):
+    parser = RootConfigParser(help_arg=False)
+    with pytest.raises(SameLengthArgumentNamesException):
         parser.add_argument('coco', 'dodo')
+
+    assert len(parser.arguments) == 0
 
 
 # Type tests #
-def test_default_type():
+def test_parsing_arguments_with_val_has_correct_default_type():
     """
-    add an argument without specifing the type it must catch. Parse a string
-    that contains only this argument and test if the value contained in the
-    result is a string
+    Test if parsing arguments created with default type have default type in the parsing result.
 
+    Parser description:
+
+    - root parser arguments: -a, -b --bb, -c --cc
     """
-    parser = MainConfigParser()
+    parser = RootConfigParser(help_arg=False)
     parser.add_argument('a')
-    result = parser.parse('python -a 1'.split())
-    assert len(result) == 1
+    parser.add_argument('b', 'bb')
+    parser.add_argument('c', 'cc')
+    result = parser.parse('-a 1 --bb string -c string_again'.split())
+    assert len(result) == 3
     assert 'a' in result
     assert isinstance(result['a'], str)
+    assert result['a'] == '1'
+
+    assert 'bb' in result
+    assert isinstance(result['bb'], str)
+    assert result['bb'] == 'string'
+
+    assert 'cc' in result
+    assert isinstance(result['cc'], str)
+    assert result['cc'] == 'string_again'
 
 
-def test_other_type():
+def test_parsing_arguments_with_val_has_correct_type():
     """
-    add an argument that must catch an int value, Parse a string that
-    contains only this argument and test if the value contained in the result is
-    an int
+    Test if parsing arguments created with no default type have correct type in the parsing result.
+
+    Parser description:
+
+    - root parser arguments: -a, -b --bb, -c --cc
 
     """
-    parser = MainConfigParser()
-    parser.add_argument('a', type=int)
-    result = parser.parse('python -a 1'.split())
+    parser = RootConfigParser(help_arg=False)
+    parser.add_argument('a', argument_type=int)
+    result = parser.parse('-a 1'.split())
     assert len(result) == 1
     assert 'a' in result
     assert isinstance(result['a'], int)
 
 
-def test_cant_convert_to_type():
+def test_parsing_argument_with_wrong_type_raise_an_exception():
     """
-    add an argument that must catch an int value, Parse a string that
-    contains only this argument with a value that is not an int test if an
+    Test if parsing arguments with a given value that can be parsed to the defined type raises an exception
+
+    Parser description:
+
+    - root parser arguments: -a --xx
     """
-    parser = MainConfigParser()
-    parser.add_argument('a', type=int)
+    parser = RootConfigParser(help_arg=False)
+    parser.add_argument('a', 'xx', argument_type=int)
 
     with pytest.raises(BadTypeException):
-        parser._parse_cli('-a a'.split())
+        parser.parse('-a a'.split())
+
+    with pytest.raises(BadTypeException):
+        parser.parse('--xx toto'.split())
 
 
-# parse with Subparser tests #
-def test_add_actor_subparser_that_aldready_exists():
+# parse with ComponentSubparser tests #
+def test_add_subgroup_parser_that_already_exist_raise_an_exception():
     """
-    Add a component_subparser that already exists to a parser and test if an
-    AlreadyAddedArgumentException is raised
+    Test if adding a subgroup parser that already exists raises an AlreadyAddedArgumentException.
+    The subgroup parsers of root parser must not be affected
+
+    Parser description:
+
+    - root parser arguments: None
+    - subparser titi bound to the argument toto with sub arguments: -n
     """
-    parser = MainConfigParser()
-    subparser = SubConfigParser('titi')
+    parser = RootConfigParser(help_arg=False)
+    subparser = SubgroupConfigParser('titi')
     subparser.add_argument('n', 'name')
-    parser.add_subparser('toto', subparser)
-    subparser2 = SubConfigParser('titi')
-    subparser2.add_argument('n', 'name')
 
-    with pytest.raises(AlreadyAddedSubparserException):
-        parser.add_subparser('toto', subparser2)
+    repeated_subparser = SubgroupConfigParser('titi')
+    repeated_subparser.add_argument('n', 'name')
+    repeated_subparser.add_argument('arg2', 'a')
+
+    parser.add_subgroup_parser('toto', subparser)
+
+    with pytest.raises(AlreadyAddedArgumentException):
+        parser.add_subgroup_parser('toto', repeated_subparser)
+
+    assert len(parser.subgroup_parsers) == 1
+    assert len(parser.subgroup_parsers['toto'].subparsers['titi'].arguments) == 2
 
 
-def test_add_actor_subparser_with_two_name():
+def test_add_subgroup_parser_with_argument_name_work():
     """
-    add a component subparser with one short name and one long name
-    parse a string and test if the value is only bind to the long name
+    Test if adding a subgroup parser with a name argument works
+    Parser description:
+
+    - root parser arguments: None
+    - subparser titi bound to the argument sub with sub arguments: -a --aaa, -n --name
     """
-    parser = MainConfigParser()
-    subparser = SubConfigParser('titi')
-    subparser.add_argument('a', 'aaa', flag=True, action=store_true, default=False)
+    parser = RootConfigParser(help_arg=False)
+    subparser = SubgroupConfigParser('titi')
+    subparser.add_argument('a', 'aaa', is_flag=True, action=store_true, default_value=False)
     subparser.add_argument('n', 'name')
-    parser.add_subparser('sub', subparser)
-    check_parsing_cli_result(parser, '--sub titi -a --name tutu', {'sub': {'tutu': {'aaa': True, 'type': 'titi'}}})
+    parser.add_subgroup_parser('sub', subparser)
+
+    assert len(parser.subgroup_parsers) == 1
+    assert len(parser.subgroup_parsers['sub'].subparsers['titi'].arguments) == 4
+    assert 'a' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
+    assert 'aaa' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
+    assert 'n' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
+    assert 'name' in parser.subgroup_parsers['sub'].subparsers['titi'].arguments
 
 
-def test_add_component_subparser_that_already_exists2():
+def test_add_subgroup_parser_without_argument_name_raise_an_exception():
     """
-    Add a component_subparser with no argument 'name'
-    test if a SubConfigParserWithoutNameArgumentException is raised
+    Test if adding a subgroup parser with no argument 'name' raises a
+    SubgroupParserWithoutNameArgumentException
+    Parser description:
+
+    - root parser arguments: None
     """
-    parser = MainConfigParser()
-    subparser = SubConfigParser('titi')
+    parser = RootConfigParser(help_arg=False)
+    subparser = SubgroupConfigParser('titi')
 
-    with pytest.raises(SubParserWithoutNameArgumentException):
-        parser.add_subparser('toto', subparser)
+    with pytest.raises(SubgroupParserWithoutNameArgumentException):
+        parser.add_subgroup_parser('toto', subparser)
+
+    assert len(parser.subgroup_parsers) == 0
 
 
-def test_parse_empty_string_default_value():
-    parser = MainConfigParser()
-    parser.add_argument('a', default=1)
-    result = parser._parse_cli(''.split())
-    assert len(result) == 1
+def test_parsing_empty_string_return_default_value_of_arguments():
+    """
+    Test that the result of parsing an empty string is a dict of arguments with their default value
+
+    Parser description:
+
+    - root parser arguments: -a, -b
+
+    """
+    parser = RootConfigParser(help_arg=False)
+    parser.add_argument('a', default_value=1)
+    parser.add_argument('b', default_value=False, argument_type=bool)
+    result = parser.parse(''.split())
+    assert len(result) == 2
     assert 'a' in result
+    assert 'b' in result
     assert result['a'] == 1
+    assert result['b'] is False
 
 
-def test_default_validate():
-    parser = MainConfigParser()
-    parser.add_argument('c', type=int, default=1)
+def test_parsing_dict_return_configuration_with_arguments_long_name(
+        root_config_parser_with_mandatory_and_optional_arguments):
+    """
+    Test that the result of parsing a dictionary configuration with long and short names for arguments
+    returns a dictionary configuration only with long names for arguments
 
-    default_dic = {}
-    one_dic = {'c': 1}
+    Parser description:
 
-    assert parser._validate(default_dic) == one_dic
+    - root parser arguments: -a, -1 --argument1, -2 --argumento2, --arg3 --argument3, -d --arg4, --arg5 -5
+
+    """
+    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
+    config = load_configuration_from_json_file(config_file)
+    expected_result = load_configuration_from_json_file(config_file)
+    expected_result['argumento2'] = expected_result.pop('2')
+    expected_result['arg5'] = expected_result.pop('5')
+
+    result = root_config_parser_with_mandatory_and_optional_arguments.parse_config_dict(conf=config)
+
+    assert result == expected_result
+
+
+############################
+# SUBGROUP_PARSER TEST     #
+############################
+def test_subgroup_parser_empty(subgroup_parser):
+    """
+    Test subgroup parser on an empty token list.
+    Must return an empty dictionary as parse result and an empty token
+    list
+    """
+    assert subgroup_parser.parse([]) == ([], {})
+
+
+def test_subgroup_parser_parsing_an_argument(subgroup_parser):
+    """
+    Test component_subparser, parse a token list which contain only subparser
+    argument [('a', '')].
+
+    must return return a  dictionary {'a':''} as parse result
+    and an empty token list
+
+    """
+    assert subgroup_parser.parse([('a', '')]) == ([], {'a': None})
+
+
+def test_subgroup_parsing_parser_several_arguments(subgroup_parser):
+    """
+    Test subgroup parser parses a token list which contains subparser
+    argument and arguments from other parser[('a', ''), ('b', '')].
+
+    must return a dictionary {'a':''} as parse result
+    and a token list that contains the unparsed arguments : [('b', '')].
+
+    """
+    assert subgroup_parser.parse([('a', ''), ('b', '')]) == ([('b', '')],
+                                                             {'a': None})
+
+
+def test_subgroup_parser_parsing_empty_argument_list_return_default_values():
+    """
+    Test that the result of parsing an empty string is a dict of arguments with their default value
+    """
+    subparser = SubgroupConfigParser('toto')
+    subparser.add_argument('a', default_value=1)
+    subparser.add_argument('x', default_value=False)
+    acc, result = subparser.parse([])
+    assert len(result) == 2
+    assert 'a' in result
+    assert 'x' in result
+    assert result['a'] == 1
+    assert result['x'] is False
+    assert acc == []
