@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,15 +26,33 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.database.base_db import BaseDB, IterDB, DBError
-from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
-from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
-from powerapi.database.mongodb import MongoDB, MongoBadDBError
-from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
-from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
-from powerapi.database.influxdb2 import InfluxDB2
-from powerapi.database.prometheus_db import PrometheusDB
-from powerapi.database.virtiofs_db import VirtioFSDB
-from powerapi.database.direct_prometheus_db import DirectPrometheusDB
-from powerapi.database.socket_db import SocketDB
-from powerapi.database.file_db import FileDB
+
+def remove_first_characters(arg: str):
+    """
+    Remove the two first characters of arg if it has more than 2 characters, otherwise, it removes only the first one.
+    :param str arg: The string to remove the first characters
+    """
+    if len(arg) > 2:
+        return arg[2:]
+    return arg[1]
+
+
+def find_longest_string_in_list(string_list: list):
+    """
+    Find the largest string contained in the given list
+    :param list string_list: List of strings
+    """
+    max_len = 0
+    longest_string = ''
+    for name in string_list:
+        if len(name) > max_len:
+            longest_string = name
+            max_len = len(name)
+    return longest_string
+
+
+def string_to_bool(bool_value: str):
+    """
+    Transforms a str to bool according to their content
+    """
+    return bool_value.lower() in ("yes", "true", "t", "1")

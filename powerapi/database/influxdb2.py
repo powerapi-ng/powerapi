@@ -37,6 +37,7 @@ except ImportError:
     logging.getLogger().info("influx-client2 is not installed.")
 
 from powerapi.report import Report
+from powerapi.exception import MissingArgumentException
 from .base_db import BaseDB, DBError
 
 
@@ -48,7 +49,7 @@ class CantConnectToInfluxDBException(DBError):
 
 class InfluxDB2(BaseDB):
     """
-        InfluxDB2 class herited from BaseDB
+        InfluxDB2 class is a subclass of BaseDB
 
         Allow to handle a InfluxDB database in reading or writing.
     """
@@ -72,6 +73,8 @@ class InfluxDB2(BaseDB):
         parsed_url = urlparse(url)
         if parsed_url.port is None and port is not None:
             self.uri += ':' + port.__str__()
+        elif parsed_url.port is None and port is None:
+            raise MissingArgumentException('port')
 
         self.org = org
         self.token = token
