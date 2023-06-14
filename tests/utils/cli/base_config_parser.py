@@ -37,10 +37,10 @@ def load_configuration_from_json_file(file_name: str) -> dict:
     Load a json dictionary contained in the given file
     :param str file_name: The file name with extension and without '/' at the begining
     """
+    configuration = {}
     path = parent_module.__path__[0]
-    json_file = open(path + '/' + file_name, 'r')
-    configuration = json.load(json_file)
-    json_file.close()
+    with open(path + '/' + file_name, 'r') as json_file:
+        configuration = json.load(json_file)
     return configuration
 
 
