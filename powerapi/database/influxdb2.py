@@ -41,7 +41,6 @@ from powerapi.exception import MissingArgumentException
 from .base_db import BaseDB, DBError
 
 
-
 class CantConnectToInfluxDBException(DBError):
     """
         Exception raised to notify that connection to the influx database is impossible
