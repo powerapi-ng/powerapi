@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3-slim
 
 RUN useradd -d /opt/powerapi -m powerapi
 WORKDIR /opt/powerapi
