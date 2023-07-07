@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: ["master"]
 
-permissions:
-  contents: read
-
 jobs:
   build-and-test:
     name: Build project and run tests
