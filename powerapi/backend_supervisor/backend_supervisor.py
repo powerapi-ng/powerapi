@@ -83,19 +83,10 @@ class BackendSupervisor(Supervisor):
         3. If still alive, send SIGKILL
         4. Join
         """
-        def kill_behaviour(the_actor):
-            the_actor.terminate()
-            the_actor.join(5)
-            if the_actor.is_alive():
-                the_actor.kill()
-                the_actor.join()
-
         for actor in self.supervised_actors:
             if not actor.is_alive():
                 self.kill_actors()
                 return
-            else:
-                kill_behaviour(actor)
 
         actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
 
