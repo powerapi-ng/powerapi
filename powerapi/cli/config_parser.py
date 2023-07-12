@@ -145,6 +145,21 @@ class BaseConfigParser:
 
         return default_values
 
+    def _get_default_argument_value(self, argument_name: str) -> dict:
+        """
+        Return a dict containing the default value for the given argument or an empty dict
+        if it does not have one or if it does not exist.
+        :param str argument_name : The name of the argument
+        """
+        default_values_dict = {}
+        if argument_name in self.arguments:
+            argument = self.arguments[argument_name]
+            if argument.default_value is not None:
+                longest_argument_name = find_longest_string_in_list(argument.names)
+                default_values_dict[longest_argument_name] = argument.default_value
+
+        return default_values_dict
+
     def _get_arguments_str(self, indent: str) -> str:
         already_added_argument = []
         arguments_str_representation = ''
@@ -350,7 +365,7 @@ class SubgroupConfigParser(BaseConfigParser):
         :return dict: the result of the parsing
 
         """
-        local_result = {}
+        local_result = BaseConfigParser._get_default_argument_value(self, argument_name='name')
         if not token_list:
             return token_list, local_result
 
