@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import json
+import os
 
 import tests.utils.cli as parent_module
 
@@ -67,13 +68,89 @@ def generate_cli_configuration_from_json_file(file_name: str) -> list:
     """
 
     conf = load_configuration_from_json_file(file_name)
+
     conf_as_list = ['test']
 
-    for argument_name, argument_value in conf.items():
+    conf_as_list.extend(generate_cli_configuration_from_dictionary(configuration=conf))
+
+    return conf_as_list
+
+
+def generate_cli_configuration_from_dictionary(configuration: dict, group_name: str = '') -> list:
+    """
+    Generate a list with arguments defined in dictionary. The list always has arguments --arg1_name, arg1_value,
+    -arg2_name, arg2_value... Each
+    argument name has as prefix '-' if it is short (its length == 1) or '--' if it is long (its length>1)
+    :param str configuration: The dictionary with the configuration
+    :param str group_name: The name of the group that is currently being created
+    """
+    conf_as_list = []
+
+    for argument_name, argument_value in configuration.items():
         prefix = '--'
         if len(argument_name) == 1:
             prefix = '-'
-        conf_as_list.append(prefix + argument_name)
-        conf_as_list.append(str(argument_value))
+
+        if not isinstance(argument_value, dict):
+            conf_as_list.append(prefix + argument_name)
+            conf_as_list.append(str(argument_value))
+
+        else:
+
+            if 'type' in argument_value:
+                conf_as_list.append(group_name)
+                conf_as_list.append(argument_value['type'])
+                argument_value.pop('type')
+                conf_as_list.append('--name')
+                conf_as_list.append(argument_name)
+            else:
+                group_name = prefix + argument_name
+
+            conf_as_list.extend(generate_cli_configuration_from_dictionary(configuration=argument_value,
+                                                                           group_name=group_name))
 
     return conf_as_list
+
+
+def define_environment_variables_configuration_from_json_file(file_name: str, simple_argument_prefix: str,
+                                                              group_arguments_prefix: list) -> list:
+    """
+    Define a configuration on os.environ by using the given configuration file and prefix.
+    Return a list with the name of created variables
+    :param str file_name: The file name with extension and without '/' at the beginning
+    :param str simple_argument_prefix: Prefix for the arguments with simple values
+    :param list group_arguments_prefix: List of prefix for arguments related to groups
+    """
+
+    created_variables = []
+    conf = load_configuration_from_json_file(file_name)
+
+    for argument_name, argument_value in conf.items():
+        if not isinstance(argument_value, dict):
+            var_name = (simple_argument_prefix + argument_name).upper()
+            os.environ[var_name] = str(argument_value)
+            created_variables.append(var_name)
+        else:
+            environ_var_prefix = ''
+            for group_argument_prefix in group_arguments_prefix:
+                if group_argument_prefix.lower().endswith((argument_name + '_').lower()):
+                    environ_var_prefix = group_argument_prefix
+                    break
+            for subgroup_argument_name, subgroup_arguments in argument_value.items():
+                for current_subgroup_argument_name, current_subgroup_argument_value in subgroup_arguments.items():
+                    var_name = (environ_var_prefix + subgroup_argument_name + '_' +
+                                current_subgroup_argument_name).upper()
+                    os.environ[var_name] = str(current_subgroup_argument_value)
+                    created_variables.append(var_name)
+
+    return created_variables
+
+
+def remove_environment_variables_configuration(variables_names: list):
+    """
+    Remove a configuration on os.environ by using the given name list
+    :param str variables_names: The list of variables to be removed
+    """
+    for variable_name in variables_names:
+        if variable_name in os.environ:
+            os.environ.pop(variable_name)

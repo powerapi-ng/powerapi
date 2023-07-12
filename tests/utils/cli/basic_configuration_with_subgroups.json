@@ -1,0 +1,29 @@
+{ "arg1": 5,
+  "argumento2": "this a mandatory argument",
+  "arg3": false,
+  "arg4": 10.5,
+  "5": "arg5 value",
+  "g1": {
+    "g1_sg1": {
+      "type": "type1",
+      "a1": 5,
+      "a2": true,
+      "a3": 569
+    },
+    "g1_sg2": {
+      "type": "type1",
+      "a1": 10,
+      "a2": false,
+      "a3": "a value again"
+    }
+  },
+  "g2": {
+      "g2_sg1": {
+      "type": "type2",
+      "a1": 5,
+      "a3": "a value",
+        "4": "a value"
+    }
+
+  }
+}

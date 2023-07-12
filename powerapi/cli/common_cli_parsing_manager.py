@@ -34,6 +34,18 @@ from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
+POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
+POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'OUTPUT_'
+POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
+POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'REPORT_MODIFIER_'
+POWERAPI_INPUT_ARGUMENTS_NAMES = ['uri', 'db', 'collection', 'name', 'model', 'port', 'files', 'filename', 'type']
+POWERAPI_OUTPUT_ARGUMENTS_NAMES = ['filename', 'uri', 'db', 'collection', 'name', 'model', 'port', 'tags', 'token',
+                                   'org', 'directory', 'filename', 'metric_name', 'metric_description',
+                                   'aggregation_period', 'type', 'root_directory_name', 'vm_directory_name_prefix',
+                                   'vm_directory_name_suffix']
+
+POWERAPI_REPORT_MODIFIER_ARGUMENTS_NAMES = ['u', 'uri', 'd', 'domain_regexp', 'n', 'name']
+
 
 def extract_file_names(arg, val, args, acc):
     """
@@ -50,6 +62,19 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
     def __init__(self):
         RootConfigParsingManager.__init__(self)
+
+        # Environment variables prefix
+
+        self.add_simple_argument_prefix_to_cli_parser(argument_prefix=POWERAPI_ENVIRONMENT_VARIABLE_PREFIX)
+        self.add_group_argument_prefix_to_cli_parser(group_argument_prefix=POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX,
+                                                     sub_arguments_names=POWERAPI_INPUT_ARGUMENTS_NAMES)
+        self.add_group_argument_prefix_to_cli_parser(group_argument_prefix=POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX,
+                                                     sub_arguments_names=POWERAPI_OUTPUT_ARGUMENTS_NAMES)
+        self.add_group_argument_prefix_to_cli_parser(
+            group_argument_prefix=POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX,
+            sub_arguments_names=POWERAPI_REPORT_MODIFIER_ARGUMENTS_NAMES)
+
+        # Parsers
 
         self.add_argument_to_cli_parser(
             "v",
@@ -386,8 +411,10 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument_to_cli_parser("u", "uri", help_text="specify InfluxDB uri")
         subparser_influx2_output.add_argument_to_cli_parser("t", "tags", help_text="specify report tags")
-        subparser_influx2_output.add_argument_to_cli_parser("k", "token", help_text="specify token for accessing the database")
-        subparser_influx2_output.add_argument_to_cli_parser("g", "org", help_text="specify organisation for accessing the database")
+        subparser_influx2_output.add_argument_to_cli_parser("k", "token",
+                                                            help_text="specify token for accessing the database")
+        subparser_influx2_output.add_argument_to_cli_parser("g", "org",
+                                                            help_text="specify organisation for accessing the database")
 
         subparser_influx2_output.add_argument_to_cli_parser(
             "d", "db", help_text="specify InfluxDB database name"

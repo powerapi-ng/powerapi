@@ -27,12 +27,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+import sys
 
 import pytest
 import tests.utils.cli as test_files_module
-from tests.utils.cli.base_config_parser import load_configuration_from_json_file
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
+    generate_cli_configuration_from_json_file
 from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
-from powerapi.cli.parsing_manager import RootConfigParsingManager
+from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
@@ -294,7 +296,7 @@ def root_config_parser_with_mandatory_and_optional_arguments():
 
     parser.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
 
-    parser.add_argument('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
+    parser.add_argument('argument1', 'arg1', default_value=3, argument_type=int, is_mandatory=False)
 
     parser.add_argument('argumento2', '2', argument_type=str, is_mandatory=True)
 
@@ -306,6 +308,51 @@ def root_config_parser_with_mandatory_and_optional_arguments():
                         help_text='help 5')
 
     return parser
+
+
+@pytest.fixture
+def root_config_parser_with_subgroups(root_config_parser_with_mandatory_and_optional_arguments):
+    """
+     Return a RootConfigParser with subgroups
+    """
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_simple_argument_prefix(argument_prefix='TEST_')
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_group_argument_prefix(group_argument_prefix='TEST_G1_',
+                                                                                       sub_arguments_names=['1', 'a1',
+                                                                                                            '2', 'a2',
+                                                                                                            '3', 'a3',
+                                                                                                            'type',
+                                                                                                            'n', 'name']
+                                                                                       )
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_group_argument_prefix(group_argument_prefix='TEST_G2_',
+                                                                                       sub_arguments_names=['1', 'a1',
+                                                                                                            '2', 'a2',
+                                                                                                            '3', 'a3',
+                                                                                                            '4', 'a4',
+                                                                                                            'type',
+                                                                                                            'n', 'name']
+                                                                                       )
+
+    subgroup_parser_g1 = SubgroupConfigParser(name='type1')
+    subgroup_parser_g1.add_argument('1', 'a1', argument_type=str, is_mandatory=True)
+    subgroup_parser_g1.add_argument('2', 'a2', argument_type=bool, default_value=True)
+    subgroup_parser_g1.add_argument('3', 'a3', argument_type=str, default_value=69)
+    subgroup_parser_g1.add_argument('n', 'name', argument_type=str)
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup_parser(subgroup_type='g1',
+                                                                                 subgroup_parser=subgroup_parser_g1)
+
+    subgroup_parser_g2 = SubgroupConfigParser(name='type2')
+    subgroup_parser_g2.add_argument('1', 'a1', argument_type=float, is_mandatory=False)
+    subgroup_parser_g2.add_argument('2', 'a2', argument_type=str)
+    subgroup_parser_g2.add_argument('3', 'a3', argument_type=str)
+    subgroup_parser_g2.add_argument('4', 'a4', argument_type=str)
+    subgroup_parser_g2.add_argument('n', 'name', argument_type=str)
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup_parser(subgroup_type='g2',
+                                                                                 subgroup_parser=subgroup_parser_g2)
+
+    return root_config_parser_with_mandatory_and_optional_arguments
 
 
 @pytest.fixture
@@ -358,6 +405,25 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
     """
     parser_manager = RootConfigParsingManager()
 
+    parser_manager.add_simple_argument_prefix_to_cli_parser(argument_prefix='TEST_')
+
+    parser_manager.add_group_argument_prefix_to_cli_parser(group_argument_prefix='TEST_INPUT_',
+                                                           sub_arguments_names=['model', 'm', 'type', 'uri', 'db', 'd',
+                                                                                'collection', 'c', 'name', 'n',
+                                                                                'files', 'port', 'p'])
+
+    parser_manager.add_group_argument_prefix_to_cli_parser(group_argument_prefix='TEST_OUTPUT_',
+                                                           sub_arguments_names=['model', 'm', 'type', 'uri', 'db', 'd',
+                                                                                'collection', 'c', 'name', 'n',
+                                                                                'port', 'metric_name',
+                                                                                'metric_description',
+                                                                                'aggregation_period', 'directory',
+                                                                                'token', 'org', 'tags',
+                                                                                'vm_name_regexp', 'root_directory_name',
+                                                                                'filename',
+                                                                                'vm_directory_name_prefix',
+                                                                                'vm_directory_name_suffix'])
+
     parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
 
     parser_manager.add_argument_to_cli_parser('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
@@ -368,10 +434,61 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
 
     parser_manager.add_argument_to_cli_parser('d', 'arg4', argument_type=float, is_mandatory=True)
 
-    parser_manager.add_argument_to_cli_parser('arg5', '5', default_value='default value', argument_type=str, help_text='help 5')
+    parser_manager.add_argument_to_cli_parser('arg5', '5', default_value='default value', argument_type=str,
+                                              help_text='help 5')
+
+    i1_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="i1_type")
+    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
+    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
+    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('port', 'p', argument_type=int, is_mandatory=False)
+    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
+                                                               default_value='my_i1_instance')
+
+    parser_manager.add_subgroup_parser(name="input", subgroup_parser=i1_type_subgroup_parser_manager)
+
+    o1_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o1_type")
+    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
+    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
+    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
+                                                               default_value='my_o1_instance')
+    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
+
+    parser_manager.add_subgroup_parser(name="output", subgroup_parser=o1_type_subgroup_parser_manager)
+
+    o2_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o2_type")
+    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
+    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
+    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
+                                                               default_value='my_o2_instance')
+    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
+
+    parser_manager.add_subgroup_parser(name="output", subgroup_parser=o2_type_subgroup_parser_manager)
+
     return parser_manager
 
 
 @pytest.fixture
 def test_files_path():
     return test_files_module.__path__[0]
+
+
+@pytest.fixture()
+def cli_configuration(config_file: str):
+    """
+    Load in sys.argv a configuration with arguments extracted from a json file
+    """
+    # config_file = 'root_manager_basic_configuration.json'
+    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
+
+    yield None
+
+    sys.argv = []
+
+
+@pytest.fixture()
+def empty_cli_configuration():
+    sys.argv = []
+
+    yield None
+
+    sys.argv = []

@@ -27,16 +27,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
+from samba.dcerpc.preg import file
 
 from powerapi.cli.config_parser import ConfigurationArgument, BaseConfigParser, RootConfigParser, SubgroupConfigParser
 from powerapi.cli.config_parser import store_true, store_val
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
-    BadContextException, MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
+    BadContextException, MissingValueException, SubgroupAlreadyExistException, \
+    SubgroupParserWithoutNameArgumentException, \
     NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, MissingArgumentException, \
     SameLengthArgumentNamesException
 
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
-    generate_configuration_tuples_from_json_file
+    generate_configuration_tuples_from_json_file, define_environment_variables_configuration_from_json_file, \
+    remove_environment_variables_configuration
 
 
 ###############
@@ -87,11 +90,13 @@ def test_get_arguments_returns_all_stored_arguments():
                                                  is_flag=False, action=store_val)
 
     parser = BaseConfigParser()
-    parser.add_argument(name_arg_a_1, longest_name_arg_a, name_arg_a_2, is_mandatory=expected_argument_a.is_mandatory, is_flag=expected_argument_a.is_flag,
+    parser.add_argument(name_arg_a_1, longest_name_arg_a, name_arg_a_2, is_mandatory=expected_argument_a.is_mandatory,
+                        is_flag=expected_argument_a.is_flag,
                         argument_type=expected_argument_a.type, help_text=expected_argument_a.help_text,
                         default_value=expected_argument_a.default_value)
 
-    parser.add_argument(name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2, is_mandatory=expected_argument_xx.is_mandatory, is_flag=expected_argument_xx.is_flag,
+    parser.add_argument(name_arg_xx_1, longest_name_arg_xx, name_arg_xx_2,
+                        is_mandatory=expected_argument_xx.is_mandatory, is_flag=expected_argument_xx.is_flag,
                         argument_type=expected_argument_xx.type, help_text=expected_argument_xx.help_text,
                         default_value=expected_argument_xx.default_value)
 
@@ -213,7 +218,6 @@ def test_parser_return_correct_values_for_each_argument(base_config_parser):
 
 
 def test_parser_raise_an_exception_with_an_unknown_argument(base_config_parser):
-
     """
     Test that the _parser method return correct values for different arguments in configuration
     """
@@ -224,6 +228,7 @@ def test_parser_raise_an_exception_with_an_unknown_argument(base_config_parser):
 
     with pytest.raises(NotImplementedError):
         _, _ = base_config_parser._parse(args, acc)
+
 
 #####################
 # ROOT PARSER TESTS #
@@ -710,9 +715,9 @@ def test_add_subgroup_parser_without_argument_name_raise_an_exception():
     assert len(parser.subgroup_parsers) == 0
 
 
-def test_parsing_empty_string_return_default_value_of_arguments():
+def test_parsing_empty_string_return_an_empty_dict():
     """
-    Test that the result of parsing an empty string is a dict of arguments with their default value
+    Test that the result of parsing an empty string is an empty dict
 
     Parser description:
 
@@ -723,15 +728,12 @@ def test_parsing_empty_string_return_default_value_of_arguments():
     parser.add_argument('a', default_value=1)
     parser.add_argument('b', default_value=False, argument_type=bool)
     result = parser.parse(''.split())
-    assert len(result) == 2
-    assert 'a' in result
-    assert 'b' in result
-    assert result['a'] == 1
-    assert result['b'] is False
+    assert len(result) == 0
 
 
 def test_parsing_dict_return_configuration_with_arguments_long_name(
-        root_config_parser_with_mandatory_and_optional_arguments):
+        root_config_parser_with_mandatory_and_optional_arguments,
+        test_files_path):
     """
     Test that the result of parsing a dictionary configuration with long and short names for arguments
     returns a dictionary configuration only with long names for arguments
@@ -742,13 +744,12 @@ def test_parsing_dict_return_configuration_with_arguments_long_name(
 
     """
     config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
-    config = load_configuration_from_json_file(config_file)
     expected_result = load_configuration_from_json_file(config_file)
     expected_result['argumento2'] = expected_result.pop('2')
     expected_result['arg5'] = expected_result.pop('5')
 
-    result = root_config_parser_with_mandatory_and_optional_arguments.parse_config_dict(conf=config)
-
+    result = root_config_parser_with_mandatory_and_optional_arguments.parse_config_dict(
+        file_name=test_files_path + '/' + config_file)
     assert result == expected_result
 
 
@@ -789,17 +790,106 @@ def test_subgroup_parsing_parser_several_arguments(subgroup_parser):
                                                              {'a': None})
 
 
-def test_subgroup_parser_parsing_empty_argument_list_return_default_values():
+def test_subgroup_parser_parsing_empty_argument_list_return_an_empty_dict():
     """
-    Test that the result of parsing an empty string is a dict of arguments with their default value
+    Test that the result of parsing an empty string is an empty dict
     """
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('a', default_value=1)
     subparser.add_argument('x', default_value=False)
     acc, result = subparser.parse([])
-    assert len(result) == 2
-    assert 'a' in result
-    assert 'x' in result
-    assert result['a'] == 1
-    assert result['x'] is False
-    assert acc == []
+    assert len(result) == 0
+
+
+def test_normalize_configuration_dict_select_long_names_for_every_argument_in_config(base_config_parser):
+    """
+    Test that every argument in a configuration has at the end its long name after the normalization
+    """
+    conf = load_configuration_from_json_file(file_name='basic_configuration_with_long_and_short_names.json')
+    expected_conf = load_configuration_from_json_file(file_name='basic_configuration.json')
+    expected_conf['argumento1'] = expected_conf.pop('arg1')
+    expected_conf['arg5'] = conf['5']
+    expected_conf['dded'] = expected_conf.pop('arg4')
+
+    result = base_config_parser.normalize_configuration(conf=conf)
+
+    assert result == expected_conf
+
+
+def test_normalize_configuration_dict_select_long_names_for_every_argument_in_config_for_root_config_parser(
+        root_config_parser_with_mandatory_and_optional_arguments):
+    """
+    Test that every argument in a configuration has at the end its long name after the normalization
+    """
+    conf = load_configuration_from_json_file(file_name='basic_configuration_with_long_and_short_names.json')
+    expected_conf = load_configuration_from_json_file(file_name='basic_configuration.json')
+    expected_conf['argument1'] = expected_conf.pop('arg1')
+    expected_conf['arg5'] = conf['5']
+
+    result = root_config_parser_with_mandatory_and_optional_arguments.normalize_configuration(conf=conf)
+
+    assert result == expected_conf
+
+
+def test_normalize_config_dict_select_long_names_for_every_argument_in_config_with_subgroups_for_root_config_parser(
+        root_config_parser_with_subgroups):
+    """
+    Test that every argument in a configuration has at the end its long name after the normalization
+    """
+    conf_file = 'basic_configuration_with_subgroups.json'
+    conf = load_configuration_from_json_file(file_name=conf_file)
+    expected_conf = load_configuration_from_json_file(file_name=conf_file)
+    expected_conf['argument1'] = expected_conf.pop('arg1')
+    expected_conf['argument3'] = expected_conf.pop('arg3')
+    expected_conf['arg5'] = expected_conf.pop('5')
+    expected_conf['g2']['g2_sg1']['a4'] = expected_conf['g2']['g2_sg1'].pop('4')
+
+    result = root_config_parser_with_subgroups.normalize_configuration(conf=conf)
+
+    assert result == expected_conf
+
+
+def test_parse_config_environment_variables_return_correct_configuration(root_config_parser_with_subgroups):
+    """
+    Test that the parsing of environment variables works correctly
+    """
+    conf_file = 'basic_configuration_with_subgroups.json'
+
+    created_environment_variables = define_environment_variables_configuration_from_json_file(
+        file_name=conf_file,
+        simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
+        group_arguments_prefix=root_config_parser_with_subgroups.group_arguments_prefix.keys())
+
+    expected_conf = load_configuration_from_json_file(file_name=conf_file)
+
+    expected_conf['g1']['g1_sg1']['a1'] = str(expected_conf['g1']['g1_sg1']['a1'])
+    expected_conf['g1']['g1_sg1']['a3'] = str(expected_conf['g1']['g1_sg1']['a3'])
+    expected_conf['g1']['g1_sg2']['a1'] = str(expected_conf['g1']['g1_sg2']['a1'])
+    expected_conf['argument1'] = expected_conf.pop('arg1')
+    expected_conf['argument3'] = expected_conf.pop('arg3')
+    expected_conf['arg5'] = expected_conf.pop('5')
+    expected_conf['g2']['g2_sg1']['a4'] = expected_conf['g2']['g2_sg1'].pop('4')
+
+    result = root_config_parser_with_subgroups.parse_config_environment_variables()
+
+    assert result == expected_conf
+
+    remove_environment_variables_configuration(variables_names=created_environment_variables)
+
+
+def test_parse_config_environment_variables_with_wrong_argument_raise_an_exception(
+        root_config_parser_with_subgroups):
+    """
+    Test that the parsing of environment variables raises a BadTypeException with wrong types
+    """
+    conf_file = 'basic_configuration_with_subgroups_wrong_argument_type_value.json'
+
+    created_environment_variables = define_environment_variables_configuration_from_json_file(
+        file_name=conf_file,
+        simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
+        group_arguments_prefix=root_config_parser_with_subgroups.group_arguments_prefix.keys())
+
+    with pytest.raises(BadTypeException):
+        _ = root_config_parser_with_subgroups.parse_config_environment_variables()
+
+    remove_environment_variables_configuration(variables_names=created_environment_variables)

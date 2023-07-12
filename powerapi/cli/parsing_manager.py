@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import sys
 import json
 import logging
@@ -34,7 +33,9 @@ import logging
 from typing import Callable, Any
 from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
 from powerapi.exception import MissingArgumentException, BadTypeException, \
-    AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException
+    AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException, \
+    RepeatedArgumentException
+from powerapi.utils.cli import merge_dictionaries
 
 
 class BaseConfigParsingManager:
@@ -96,6 +97,22 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
+    def add_simple_argument_prefix_to_cli_parser(self, argument_prefix: str):
+        """
+        Add a simple argument prefix to the cli_parser
+        :param argument_prefix: a new argument prefix to be added
+        """
+        self.cli_parser.add_simple_argument_prefix(argument_prefix=argument_prefix)
+
+    def add_group_argument_prefix_to_cli_parser(self, group_argument_prefix: str, sub_arguments_names: list):
+        """
+        Add a group argument prefix to the cli_parser
+        :param group_argument_prefix: a new argument prefix to be added
+        :param sub_arguments_names: List of arguments related to the group
+        """
+        self.cli_parser.add_group_argument_prefix(group_argument_prefix=group_argument_prefix,
+                                                  sub_arguments_names=sub_arguments_names)
+
     def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str = ''):
 
         """
@@ -113,15 +130,25 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
         self.cli_parser.add_subgroup_parser(name, subgroup_parser.cli_parser, help_text)
 
-    def _parse_cli(self, cli_line):
+    def _parse_cli(self, cli_line: list) -> dict:
         return self.cli_parser.parse(cli_line)
 
-    def _parse_config_from_json_file(self, filename):
-        config_file = open(filename, 'r')
-        conf = json.load(config_file)
+    def _parse_config_from_json_file(self, file_name: str, current_conf: dict) -> dict:
 
-        # Select for each argument, le long version
-        return self.cli_parser.parse_config_dict(conf)
+        # Select for each argument, le long version name
+        conf = self.cli_parser.parse_config_dict(file_name=file_name)
+
+        conf = merge_dictionaries(source=current_conf, destination=conf)
+
+        return conf
+
+    def _parse_config_from_environment_variables(self, current_conf: dict) -> dict:
+
+        conf = self.cli_parser.parse_config_environment_variables()
+
+        conf = merge_dictionaries(source=current_conf, destination=conf)
+
+        return conf
 
     def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
@@ -139,8 +166,8 @@ class RootConfigParsingManager(BaseConfigParsingManager):
                     if current_argument_name in argument_definition.names:
                         is_an_arg = True
                         # check type
-                        if not isinstance(current_argument_value, argument_definition.type) and not argument_definition.is_flag:
-                            print('args:', current_argument_name, current_argument_value, argument_definition.type, argument_definition.names)
+                        if not isinstance(current_argument_value,
+                                          argument_definition.type) and not argument_definition.is_flag:
                             raise BadTypeException(current_argument_name, argument_definition.type)
 
             if not is_an_arg:
@@ -153,13 +180,19 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
     def parse(self, args: list = None) -> dict:
         """
-        Find the configuration method (CLI or config file)
+        Parse the configurations defined via le CLI, Environment Variables and configuration file.
+        The priority of defined values is the following:
+        1. CLI
+        2. Environment Variables
+        3. Configuration File
+
         Call the method to produce a configuration dictionary
         check the configuration
         """
 
         if not args:
             args = sys.argv
+
         current_position = 0
         filename = None
         for current_arg in args:
@@ -168,13 +201,22 @@ class RootConfigParsingManager(BaseConfigParsingManager):
                     logging.error("CLI Error: config file path needed with argument --config-file")
                     sys.exit(-1)
                 filename = args[current_position + 1]
+                args.pop(current_position + 1)
+                args.pop(current_position)
+                break
             current_position += 1
 
         try:
-            if filename:
-                conf = self._parse_config_from_json_file(filename)
-            else:
+
+            if len(args) > 1:
                 conf = self._parse_cli(args[1:])
+            else:
+                conf = {}
+            conf = self._parse_config_from_environment_variables(current_conf=conf)
+            if filename:
+                conf = self._parse_config_from_json_file(file_name=filename, current_conf=conf)
+
+            # We validate the conf
             conf = self.validate(conf)
 
         except MissingValueException as exn:
@@ -211,6 +253,10 @@ class RootConfigParsingManager(BaseConfigParsingManager):
             sys.exit(-1)
 
         except MissingArgumentException as exn:
+            logging.error("Configuration Error: " + exn.msg)
+            sys.exit(-1)
+
+        except RepeatedArgumentException as exn:
             logging.error("Configuration Error: " + exn.msg)
             sys.exit(-1)
 
