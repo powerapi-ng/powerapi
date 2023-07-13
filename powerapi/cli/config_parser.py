@@ -716,11 +716,11 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
     :param Any val: Current value given to the argument
     :param ConfigurationAgument argument: The argument definition
     """
-    if not argument.is_flag:
-        try:
-            if argument.type is bool and isinstance(val, str):
-                return string_to_bool(val)
-            return argument.type(val)
-        except ValueError as exn:
-            raise BadTypeException(arg_name, argument.type) from exn
+    try:
+        if argument.type is bool and val is not None and isinstance(val, str):
+            print('value', string_to_bool(val))
+            return string_to_bool(val)
+        return argument.type(val)
+    except ValueError as exn:
+        raise BadTypeException(arg_name, argument.type) from exn
     return val

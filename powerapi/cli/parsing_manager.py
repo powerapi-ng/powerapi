@@ -52,7 +52,8 @@ class BaseConfigParsingManager:
 
         """
         self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
-                                     help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
+                                     help_text=help_text, argument_type=bool if is_flag else argument_type,
+                                     is_mandatory=is_mandatory)
 
     def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
