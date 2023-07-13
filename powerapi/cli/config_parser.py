@@ -381,10 +381,11 @@ class SubgroupConfigParser(BaseConfigParser):
 class RootConfigParser(BaseConfigParser):
     """"""
 
-    def __init__(self, help_arg: bool = True, separator_env_vars_names: str = '_'):
+    def __init__(self, help_arg: bool = True, separator_env_vars_names: str = '_', separator_args_names: str = '-'):
         """
         :param bool help_arg: if True, add a -h/--help argument that display help
         :param str separator_env_vars_names: separator for the environment variables names
+        :param str separator_args_names: separator for arguments with composed names
         """
         BaseConfigParser.__init__(self)
         self.short_arg = ''
@@ -394,6 +395,7 @@ class RootConfigParser(BaseConfigParser):
         self.simple_arguments_prefix = []
         self.group_arguments_prefix = {}
         self.default_separator_env_vars_names = separator_env_vars_names
+        self.default_separator_args_names = separator_args_names
 
         self.help_arg = help_arg
         if help_arg:
@@ -603,7 +605,7 @@ class RootConfigParser(BaseConfigParser):
         conf = {}
 
         for current_environment_var_prefix in self.simple_arguments_prefix:
-            conf = extract_simple_environment_variables_with_prefix(
+            conf = self._extract_simple_environment_variables_with_prefix(
                 simple_variables_prefix=current_environment_var_prefix,
                 groups_variables_prefix=self.group_arguments_prefix.keys())
             # We normalize the arguments names
@@ -617,8 +619,9 @@ class RootConfigParser(BaseConfigParser):
 
             group_name = self._extract_group_name_from_prefix(prefix=current_environment_var_prefix)
 
-            group_conf = extract_group_environment_variables_with_prefix(group_prefix=current_environment_var_prefix,
-                                                                         subgroups_variables_names=sub_arguments_names)
+            group_conf = self._extract_group_environment_variables_with_prefix(
+                group_prefix=current_environment_var_prefix,
+                subgroups_variables_names=sub_arguments_names)
             if len(group_conf) > 0:
                 conf[group_name] = group_conf
                 groups_names.append(group_name)
@@ -647,6 +650,64 @@ class RootConfigParser(BaseConfigParser):
         # prefix.split = ['<prefix-begining>', '<group-name>', '']
         return prefix.split(self.default_separator_env_vars_names)[1].lower()
 
+    def _extract_simple_environment_variables_with_prefix(self, simple_variables_prefix: str,
+                                                          groups_variables_prefix: list) -> dict:
+        """
+        Extract from environment variables the ones starting with prefix and that do not belong to groups.
+        The returned dictionary contains the variables names as keys without prefix and in lower case
+        :param str simple_variables_prefix: Prefix to extract the simple environment variables
+        :param list groups_variables_prefix: List of group prefix for identifying simple variables
+        """
+        simple_variables_with_prefix = {}
+        for var_name in os.environ:
+            is_group_variable = False
+            for group_variable_prefix in groups_variables_prefix:
+                if var_name.startswith(group_variable_prefix):
+                    is_group_variable = True
+                    break
+            if not is_group_variable and var_name.startswith(simple_variables_prefix):
+                var_name_without_prefix = var_name[len(simple_variables_prefix) - len(var_name):]. \
+                    lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
+                simple_variables_with_prefix[var_name_without_prefix] = os.environ[var_name]
+        return simple_variables_with_prefix
+
+    def _extract_group_environment_variables_with_prefix(self, group_prefix: str,
+                                                         subgroups_variables_names: list) -> dict:
+        """
+        Extract from environment variables the ones starting with group_prefix.
+        The returned dictionary contains the variables names as keys without prefix and in lower case
+        :param str group_prefix: Prefix to extract the group environment variables
+        :param list subgroups_variables_names: List of variables names related to the group
+        """
+        group_variables_with_prefix = {}
+        for environ_var_name in os.environ:
+            if environ_var_name.startswith(group_prefix):
+                # We remove the prefix and put the name in lower case
+                suffix_environ_var_name = environ_var_name[len(group_prefix) - len(environ_var_name):]. \
+                    lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
+                for group_variable_name in subgroups_variables_names:
+                    group_variable_name_lower_case = group_variable_name. \
+                        lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
+
+                    # The group_variable_name_lower_case has to be at the end of the suffix
+                    if suffix_environ_var_name.endswith(group_variable_name_lower_case) and \
+                            suffix_environ_var_name[
+                                suffix_environ_var_name.rfind(group_variable_name_lower_case) - 1] == \
+                            self.default_separator_args_names:
+                        # The subgroup's name is at the beginning of the suffix
+                        subgroup_name = suffix_environ_var_name[0:
+                                                                suffix_environ_var_name.rfind(
+                                                                    group_variable_name_lower_case) - 1]
+
+                        if subgroup_name not in group_variables_with_prefix:
+                            group_variables_with_prefix[subgroup_name] = {}
+                        group_variables_with_prefix[subgroup_name][group_variable_name_lower_case] = os.environ[
+                            environ_var_name]
+
+                        break
+
+        return group_variables_with_prefix
+
 
 def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument):
     """
@@ -663,57 +724,3 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
         except ValueError as exn:
             raise BadTypeException(arg_name, argument.type) from exn
     return val
-
-
-def extract_simple_environment_variables_with_prefix(simple_variables_prefix: str,
-                                                     groups_variables_prefix: list) -> dict:
-    """
-    Extract from environment variables the ones starting with prefix and that do not belong to groups.
-    The returned dictionary contains the variables names as keys without prefix and in lower case
-    :param str simple_variables_prefix: Prefix to extract the simple environment variables
-    :param list groups_variables_prefix: List of group prefix for identifying simple variables
-    """
-    simple_variables_with_prefix = {}
-    for var_name in os.environ:
-        is_group_variable = False
-        for group_variable_prefix in groups_variables_prefix:
-            if var_name.startswith(group_variable_prefix):
-                is_group_variable = True
-        if not is_group_variable and var_name.startswith(simple_variables_prefix):
-            var_name_without_prefix = var_name[len(simple_variables_prefix) - len(var_name):].lower()
-            simple_variables_with_prefix[var_name_without_prefix] = os.environ[var_name]
-    return simple_variables_with_prefix
-
-
-def extract_group_environment_variables_with_prefix(group_prefix: str, subgroups_variables_names: list) -> dict:
-    """
-    Extract from environment variables the ones starting with group_prefix.
-    The returned dictionary contains the variables names as keys without prefix and in lower case
-    :param str group_prefix: Prefix to extract the group environment variables
-    :param list subgroups_variables_names: List of variables names related to the group
-    """
-    group_variables_with_prefix = {}
-    for environ_var_name in os.environ:
-        if environ_var_name.startswith(group_prefix):
-            # We remove the prefix and put the name in lower case
-            suffix_environ_var_name = environ_var_name[len(group_prefix) - len(environ_var_name):].lower()
-            for group_variable_name in subgroups_variables_names:
-                group_variable_name_lower_case = group_variable_name.lower()
-
-                # The group_variable_name_lower_case has to be at the end of the suffix
-                if suffix_environ_var_name.endswith(group_variable_name_lower_case) and \
-                        suffix_environ_var_name[suffix_environ_var_name.rfind(group_variable_name_lower_case) - 1] == \
-                        '_':
-                    # The subgroup's name is at the beginning of the suffix
-                    subgroup_name = suffix_environ_var_name[0:
-                                                            suffix_environ_var_name.rfind(
-                                                                group_variable_name_lower_case) - 1]
-
-                    if subgroup_name not in group_variables_with_prefix:
-                        group_variables_with_prefix[subgroup_name] = {}
-                    group_variables_with_prefix[subgroup_name][group_variable_name_lower_case] = os.environ[
-                        environ_var_name]
-
-                    break
-
-    return group_variables_with_prefix

@@ -862,13 +862,31 @@ def test_parse_config_environment_variables_return_correct_configuration(root_co
 
     expected_conf = load_configuration_from_json_file(file_name=conf_file)
 
-    expected_conf['g1']['g1_sg1']['a1'] = str(expected_conf['g1']['g1_sg1']['a1'])
-    expected_conf['g1']['g1_sg1']['a3'] = str(expected_conf['g1']['g1_sg1']['a3'])
-    expected_conf['g1']['g1_sg2']['a1'] = str(expected_conf['g1']['g1_sg2']['a1'])
+    expected_conf['g1']['g1-sg1'] = {}
+    expected_conf['g1']['g1-sg2'] = {}
+    expected_conf['g2']['g2-sg1'] = {}
+    g1_sg1 = expected_conf['g1'].pop('g1_sg1')
+    g1_sg2 = expected_conf['g1'].pop('g1_sg2')
+    g2_sg1 = expected_conf['g2'].pop('g2_sg1')
+
+    expected_conf['g1']['g1-sg1']['a1'] = str(g1_sg1['a1'])
+    expected_conf['g1']['g1-sg1']['a2'] = bool(g1_sg1['a2'])
+    expected_conf['g1']['g1-sg1']['a3'] = str(g1_sg1['a3'])
+    expected_conf['g1']['g1-sg1']['type'] = str(g1_sg1['type'])
+
+    expected_conf['g1']['g1-sg2']['a1'] = str(g1_sg2['a1'])
+    expected_conf['g1']['g1-sg2']['a2'] = g1_sg2['a2']
+    expected_conf['g1']['g1-sg2']['a3'] = g1_sg2['a3']
+    expected_conf['g1']['g1-sg2']['type'] = g1_sg2['type']
+
     expected_conf['argument1'] = expected_conf.pop('arg1')
     expected_conf['argument3'] = expected_conf.pop('arg3')
     expected_conf['arg5'] = expected_conf.pop('5')
-    expected_conf['g2']['g2_sg1']['a4'] = expected_conf['g2']['g2_sg1'].pop('4')
+
+    expected_conf['g2']['g2-sg1']['a1'] = float(g2_sg1['a1'])
+    expected_conf['g2']['g2-sg1']['a3'] = g2_sg1['a3']
+    expected_conf['g2']['g2-sg1']['a4'] = g2_sg1['4']
+    expected_conf['g2']['g2-sg1']['type'] = g2_sg1['type']
 
     result = root_config_parser_with_subgroups.parse_config_environment_variables()
 
