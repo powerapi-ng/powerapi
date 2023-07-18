@@ -44,9 +44,9 @@ class BaseConfigParsingManager:
     def __init__(self):
         self.cli_parser = None
 
-    def add_argument_to_cli_parser(self, *names, is_flag: bool = False, action: Callable = store_val,
-                                   default_value: Any = None, help_text: str = '', argument_type: type = str,
-                                   is_mandatory: bool = False):
+    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val,
+                     default_value: Any = None, help_text: str = '', argument_type: type = str,
+                     is_mandatory: bool = False):
         """
         Add an argument to the parser and its specification
 
@@ -98,14 +98,14 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
-    def add_simple_argument_prefix_to_cli_parser(self, argument_prefix: str):
+    def add_argument_prefix(self, argument_prefix: str):
         """
         Add a simple argument prefix to the cli_parser
         :param argument_prefix: a new argument prefix to be added
         """
-        self.cli_parser.add_simple_argument_prefix(argument_prefix=argument_prefix)
+        self.cli_parser.add_argument_prefix(argument_prefix=argument_prefix)
 
-    def add_subgroup_to_cli_parser(self, name: str, help_text: str = '', prefix: str = ''):
+    def add_subgroup(self, name: str, help_text: str = '', prefix: str = ''):
         """
         Add a group to the cli_parser
         :param name: the group's name

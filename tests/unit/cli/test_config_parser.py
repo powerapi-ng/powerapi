@@ -863,7 +863,7 @@ def test_parse_config_environment_variables_return_correct_configuration(root_co
 
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=conf_file,
-        simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
+        simple_argument_prefix=root_config_parser_with_subgroups.arguments_prefix[0],
         group_arguments_prefix=root_config_parser_with_subgroups.get_groups_prefixes())
 
     expected_conf = load_configuration_from_json_file(file_name=conf_file)
@@ -910,7 +910,7 @@ def test_parse_config_environment_variables_with_wrong_argument_raise_an_excepti
 
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=conf_file,
-        simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
+        simple_argument_prefix=root_config_parser_with_subgroups.arguments_prefix[0],
         group_arguments_prefix=root_config_parser_with_subgroups.get_groups_prefixes())
 
     with pytest.raises(BadTypeException):

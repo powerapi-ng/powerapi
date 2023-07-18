@@ -53,13 +53,13 @@ def test_add_argument_to_cli_parser_that_already_exist_raise_an_exception():
     """
 
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a')
+    parser_manager.add_argument('a')
 
     with pytest.raises(AlreadyAddedArgumentException):
-        parser_manager.add_argument_to_cli_parser('a')
+        parser_manager.add_argument('a')
 
     with pytest.raises(AlreadyAddedArgumentException):
-        parser_manager.add_argument_to_cli_parser('help')
+        parser_manager.add_argument('help')
 
     assert len(parser_manager.cli_parser.arguments) == 3  # help argument + a argument
 
@@ -73,8 +73,8 @@ def test_add_flag_arguments_with_short_name_to_cli_parser():
     """
     parser_manager = RootConfigParsingManager()
     assert parser_manager.cli_parser.short_arg == 'h'
-    parser_manager.add_argument_to_cli_parser('a', is_flag=True)
-    parser_manager.add_argument_to_cli_parser('x', is_flag=True)
+    parser_manager.add_argument('a', is_flag=True)
+    parser_manager.add_argument('x', is_flag=True)
     assert parser_manager.cli_parser.short_arg == 'hax'
 
 
@@ -85,11 +85,11 @@ def test_add_flag_arguments_and_no_flag_arguments_with_short_name_to_cli_parser(
     """
     parser_manager = RootConfigParsingManager()
     assert parser_manager.cli_parser.short_arg == 'h'
-    parser_manager.add_argument_to_cli_parser('a', is_flag=True)
+    parser_manager.add_argument('a', is_flag=True)
     assert parser_manager.cli_parser.short_arg == 'ha'
-    parser_manager.add_argument_to_cli_parser('b')
+    parser_manager.add_argument('b')
     assert parser_manager.cli_parser.short_arg == 'hab:'
-    parser_manager.add_argument_to_cli_parser('c', is_flag=True)
+    parser_manager.add_argument('c', is_flag=True)
     assert parser_manager.cli_parser.short_arg == 'hab:c'
 
     assert len(parser_manager.cli_parser.long_arg) == 1  # Only help is arg argument
@@ -104,9 +104,9 @@ def test_add_arguments_with_long_name_to_cli_parser():
     """
     parser_manager = RootConfigParsingManager()
     assert parser_manager.cli_parser.long_arg == ['help']
-    parser_manager.add_argument_to_cli_parser('aaa')
+    parser_manager.add_argument('aaa')
     assert parser_manager.cli_parser.long_arg == ['help', 'aaa=']
-    parser_manager.add_argument_to_cli_parser('xx')
+    parser_manager.add_argument('xx')
     assert parser_manager.cli_parser.long_arg == ['help', 'aaa=', 'xx=']
 
     assert parser_manager.cli_parser.short_arg == 'h'
@@ -119,9 +119,9 @@ def test_add_flag_arguments_with_long_name_to_cli_parser():
     """
     parser_manager = RootConfigParsingManager()
     assert parser_manager.cli_parser.long_arg == ['help']
-    parser_manager.add_argument_to_cli_parser('aaa', is_flag=True)
+    parser_manager.add_argument('aaa', is_flag=True)
     assert parser_manager.cli_parser.long_arg == ['help', 'aaa']
-    parser_manager.add_argument_to_cli_parser('tttt', is_flag=True)
+    parser_manager.add_argument('tttt', is_flag=True)
     assert parser_manager.cli_parser.long_arg == ['help', 'aaa', 'tttt']
 
     assert parser_manager.cli_parser.short_arg == 'h'
@@ -283,8 +283,8 @@ def test_arguments_string_parsing_with_subgroup_parser_in_subgroup_parsing_manag
     """
 
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('b', is_flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     check_parse_cli_result(root_config_parsing_manager, "", {})
@@ -321,9 +321,9 @@ def test_arguments_dict_validation_with_subgroup_parser_in_subgroup_parsing_mana
     - subparser toto bound to the argument sub with sub arguments : -b and --name
     """
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
-    subparser.add_argument_to_cli_parser('type', is_flag=True, action=store_true)
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('b', is_flag=True, action=store_true)
+    subparser.add_argument('type', is_flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     dic_a = {'a': True}
@@ -370,8 +370,8 @@ def test_parsing_of_two_subgroups_of_the_same_type_with_subgroup_parsing_manager
 
     """
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('b', is_flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub toto -b --name tutu',
@@ -388,8 +388,8 @@ def test_validation_of_two_subgroups_of_the_same_type_in_subgroup_parsing_manage
 
     """
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('type')
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('type')
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     expected_dic = {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'n': 'my_name'}}}
@@ -407,11 +407,11 @@ def test_parsing_of_two_subgroups_of_different_type_in_subgroup_parsing_manager(
 
     """
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     subparser = SubgroupConfigParsingManager('tutu')
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub tutu --name tete',
@@ -427,8 +427,8 @@ def test_parsing_of_repeated_subgroups_in_subgroup_parsing_manager_raise_an_exce
     """
 
     subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument_to_cli_parser('b', is_flag=True, action=store_true)
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('b', is_flag=True, action=store_true)
+    subparser.add_argument('n', 'name')
     root_config_parsing_manager.add_subgroup_parser('sub', subparser)
 
     with pytest.raises(SubgroupAlreadyExistException):
@@ -449,9 +449,9 @@ def test_arguments_string_parsing_with_and_without_val_in_root_parsing_manager(r
     - base parser arguments: -a (flag), -c (no flag), -d (int)
     """
 
-    root_config_parsing_manager.add_argument_to_cli_parser('c')
+    root_config_parsing_manager.add_argument('c')
 
-    root_config_parsing_manager.add_argument_to_cli_parser('d', argument_type=int)
+    root_config_parsing_manager.add_argument('d', argument_type=int)
 
     with pytest.raises(MissingValueException):
         check_parse_cli_result(root_config_parsing_manager, '-c', None)
@@ -475,9 +475,9 @@ def test_validation_of_arguments_dict_parsing_with_val_in_root_parsing_manager(r
 
     - base parser arguments: -a (flag), -c (not flag), -d (int)
     """
-    root_config_parsing_manager.add_argument_to_cli_parser('c')
+    root_config_parsing_manager.add_argument('c')
 
-    root_config_parsing_manager.add_argument_to_cli_parser('d', argument_type=int)
+    root_config_parsing_manager.add_argument('d', argument_type=int)
 
     dic_c = {'c': '1'}
     dic_d = {'d': 89}
@@ -491,7 +491,7 @@ def test_arguments_string_parsing_type_checking_in_root_parsing_manager(root_con
     """
     Test that the type of argument is correctly checked by the parsing manager when a string is used as input
     """
-    root_config_parsing_manager.add_argument_to_cli_parser('c', argument_type=int)
+    root_config_parsing_manager.add_argument('c', argument_type=int)
 
     with pytest.raises(BadTypeException):
         check_parse_cli_result(root_config_parsing_manager, '-c string', {'c': 'string'})
@@ -503,7 +503,7 @@ def test_validation_of_arguments_dict_type_checking_in_root_parsing_manager(root
     """
         Test that the argument type is correctly validated by the parser when a dict is used as input
     """
-    root_config_parsing_manager.add_argument_to_cli_parser('c', argument_type=int)
+    root_config_parsing_manager.add_argument('c', argument_type=int)
 
     str_dic = {'c': 'string'}
     int_dic = {'c': 42}
@@ -519,8 +519,8 @@ def test_arguments_string_parsing_with_long_and_short_names_in_root_parsing_mana
     """
     Test that arguments parsing only relates parsing result to long name in arguments with long and short names
     """
-    root_config_parsing_manager.add_argument_to_cli_parser('c', 'coco')
-    root_config_parsing_manager.add_argument_to_cli_parser('d', 'xx', argument_type=int)
+    root_config_parsing_manager.add_argument('c', 'coco')
+    root_config_parsing_manager.add_argument('d', 'xx', argument_type=int)
 
     check_parse_cli_result(root_config_parsing_manager, '-c 1', {'coco': '1'})
 
@@ -533,10 +533,10 @@ def test_add_arguments_with_two_short_names_raise_an_exception_in_root_parsing_m
     The arguments are not added
     """
     with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument_to_cli_parser('c', 'd')
+        root_config_parsing_manager.add_argument('c', 'd')
 
     with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument_to_cli_parser('t', 's')
+        root_config_parsing_manager.add_argument('t', 's')
 
     assert len(root_config_parsing_manager.cli_parser.arguments) == 4  # --help, -h and sub
 
@@ -550,10 +550,10 @@ def test_add_arguments_with_two_long_names_raise_an_exception_in_root_parsing_ma
     The arguments are not added
     """
     with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument_to_cli_parser('coco', 'dodo')
+        root_config_parsing_manager.add_argument('coco', 'dodo')
 
     with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument_to_cli_parser('ddddd', 'plplp')
+        root_config_parsing_manager.add_argument('ddddd', 'plplp')
 
     assert len(root_config_parsing_manager.cli_parser.arguments) == 4  # -a, --help, -h and sub
 
@@ -567,8 +567,8 @@ def test_add_argument_with_default_type_in_root_parsing_manager():
     Test if adding arguments without type has string (default type) as type
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a')
-    parser_manager.add_argument_to_cli_parser('b')
+    parser_manager.add_argument('a')
+    parser_manager.add_argument('b')
     result_a = parser_manager.parse('python -a 1'.split())
     result_b = parser_manager.parse('python3 -b string'.split())
     assert len(result_a) == 1
@@ -586,8 +586,8 @@ def test_add_argument_with_type_in_root_parsing_manager():
 
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a', argument_type=int)
-    parser_manager.add_argument_to_cli_parser('b', argument_type=bool)
+    parser_manager.add_argument('a', argument_type=int)
+    parser_manager.add_argument('b', argument_type=bool)
 
     result = parser_manager.parse('python -a 1'.split())
     assert len(result) == 1
@@ -605,7 +605,7 @@ def test_parsing_of_arguments_string_with_wrong_type_raise_an_exception_in_root_
     Test that parsing arguments with a wrong value type raises a BadTypeException
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a', argument_type=int)
+    parser_manager.add_argument('a', argument_type=int)
 
     with pytest.raises(BadTypeException):
         parser_manager._parse_cli('-a a'.split())
@@ -618,13 +618,13 @@ def test_add_subgroup_parser_that_already_exists_raises_an_exception_in_root_par
     AlreadyAddedSubparserException
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_subgroup_to_cli_parser(name='toto')
+    parser_manager.add_subgroup(name='toto')
     subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('n', 'name')
     parser_manager.add_subgroup_parser('toto', subparser)
 
     repeated_subparser = SubgroupConfigParsingManager('titi')
-    repeated_subparser.add_argument_to_cli_parser('n', 'name')
+    repeated_subparser.add_argument('n', 'name')
 
     with pytest.raises(AlreadyAddedSubparserException):
         parser_manager.add_subgroup_parser('toto', repeated_subparser)
@@ -636,11 +636,11 @@ def test_parsing_of_arguments_string_with_subgroup_parser_with_long_and_short_ar
     only binds parser results to the long name
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_subgroup_to_cli_parser(name='sub')
+    parser_manager.add_subgroup(name='sub')
     subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument_to_cli_parser('a', 'aaa', is_flag=True, action=store_true, default_value=False)
-    subparser.add_argument_to_cli_parser('c', 'ttt', is_flag=False, action=store_val, argument_type=int)
-    subparser.add_argument_to_cli_parser('n', 'name')
+    subparser.add_argument('a', 'aaa', is_flag=True, action=store_true, default_value=False)
+    subparser.add_argument('c', 'ttt', is_flag=False, action=store_val, argument_type=int)
+    subparser.add_argument('n', 'name')
     parser_manager.add_subgroup_parser('sub', subparser)
     check_parse_cli_result(parser_manager, '--sub titi -a --name tutu -c 15',
                            {'sub': {'tutu': {'aaa': True, 'type': 'titi', 'ttt': 15}}})
@@ -663,8 +663,8 @@ def test_parsing_empty_string_return_empty_configuration_in_root_parsing_manager
     Test that the result of parsing an empty string is a empty dict
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a', default_value=1)
-    parser_manager.add_argument_to_cli_parser('xxx', default_value='val')
+    parser_manager.add_argument('a', default_value=1)
+    parser_manager.add_argument('xxx', default_value='val')
     result = parser_manager._parse_cli(''.split())
     assert len(result) == 0
 
@@ -674,8 +674,8 @@ def test_validate_empty_dict_return_default_values_of_arguments_in_root_parsing_
     Test that the result of parsing an empty dict is a dict of arguments with their default value
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('c', argument_type=int, default_value=1)
-    parser_manager.add_argument_to_cli_parser('hello', argument_type=str, default_value="world")
+    parser_manager.add_argument('c', argument_type=int, default_value=1)
+    parser_manager.add_argument('hello', argument_type=str, default_value="world")
 
     default_dic = {}
     expected_dic = {'c': 1, 'hello': 'world'}
@@ -834,7 +834,7 @@ def test_parsing_environment_variables_configuration_in_root_parsing_manager(
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -856,7 +856,7 @@ def test_parsing_environment_variables_with_unknown_argument_terminate_execution
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -880,7 +880,7 @@ def test_parsing_environment_variables_with_long_and_short_names_for_arguments_i
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -905,7 +905,7 @@ def test_parsing_environment_variables_with_no_argument_with_default_value_in_ro
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -930,7 +930,7 @@ def test_configuration_priority_between_cli_and_environment_variables_in_root_pa
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -974,7 +974,7 @@ def test_configuration_priority_between_environment_variables_and_configuration_
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1009,7 +1009,7 @@ def test_configuration_priority_between_cli_environment_variables_and_configurat
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1037,7 +1037,7 @@ def test_parsing_environment_variables_with_subgroups_in_root_parsing_manager(
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1059,7 +1059,7 @@ def test_parsing_environment_variables_with_subgroups_and_long_and_short_names_i
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1084,7 +1084,7 @@ def test_parsing_environment_variables_with_subgroups_and_unknown_arguments_term
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1108,7 +1108,7 @@ def test_parsing_environment_variables_with_subgroups_and_no_arguments_with_defa
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1134,7 +1134,7 @@ def test_parsing_environment_variables_with_subgroups_and_wrong_type_terminate_e
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1164,7 +1164,7 @@ def test_config_priority_between_cli_environ_variables_and_configuration_file_wi
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1199,7 +1199,7 @@ def test_config_priority_between_cli_and_environ_variables_with_subgroups_in_roo
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1253,7 +1253,7 @@ def test_config_priority_between_environ_variables_and_configuration_file_with_s
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=config_file_environment_variables,
         simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        simple_arguments_prefix[0],
+        arguments_prefix[0],
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
@@ -1283,15 +1283,15 @@ def test_add_subgroup_in_root_parsing_manager():
 
     assert len(parser_manager.cli_parser.subgroup_parsers) == 0
 
-    parser_manager.add_subgroup_to_cli_parser(name='sub')
+    parser_manager.add_subgroup(name='sub')
 
     assert len(parser_manager.cli_parser.subgroup_parsers) == 1
 
-    parser_manager.add_subgroup_to_cli_parser(name='sub1')
+    parser_manager.add_subgroup(name='sub1')
 
     assert len(parser_manager.cli_parser.subgroup_parsers) == 2
 
-    parser_manager.add_subgroup_to_cli_parser(name='sub3')
+    parser_manager.add_subgroup(name='sub3')
 
     assert len(parser_manager.cli_parser.subgroup_parsers) == 3
 
@@ -1302,7 +1302,7 @@ def test_add_repeated_subgroup_terminate_execution_in_root_parsing_manager(root_
     """
     result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager.add_subgroup_to_cli_parser(name='sub')
+        _ = root_config_parsing_manager.add_subgroup(name='sub')
 
     assert result.type == SystemExit
     assert result.value.code == -1

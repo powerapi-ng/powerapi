@@ -428,7 +428,7 @@ class RootConfigParser(BaseConfigParser):
         self.long_arg = []
         self.subgroup_parsers = {}
 
-        self.simple_arguments_prefix = []
+        self.arguments_prefix = []
         self.default_separator_env_vars_names = separator_env_vars_names
         self.default_separator_args_names = separator_args_names
 
@@ -620,18 +620,18 @@ class RootConfigParser(BaseConfigParser):
         else:
             raise AlreadyAddedSubgroupException(subgroup_type)
 
-    def add_simple_argument_prefix(self, argument_prefix: str):
+    def add_argument_prefix(self, argument_prefix: str):
         """
         Add a simple argument prefix to the list if argument_prefix is no prefix of an existing argument prefix or
         vice-versa. Otherwise, it raises an InvalidPrefixException
         :param argument_prefix: a new argument prefix to be added
         """
-        for existing_argument_prefix in self.simple_arguments_prefix:
+        for existing_argument_prefix in self.arguments_prefix:
             if argument_prefix.startswith(existing_argument_prefix) or \
                     existing_argument_prefix.startswith(argument_prefix):
                 raise InvalidPrefixException(existing_prefix=existing_argument_prefix, new_prefix=argument_prefix)
 
-        self.simple_arguments_prefix.append(argument_prefix)
+        self.arguments_prefix.append(argument_prefix)
 
     def parse_config_environment_variables(self) -> dict:
         """
@@ -642,7 +642,7 @@ class RootConfigParser(BaseConfigParser):
 
         conf = {}
 
-        for current_environment_var_prefix in self.simple_arguments_prefix:
+        for current_environment_var_prefix in self.arguments_prefix:
             conf = self._extract_simple_environment_variables_with_prefix(
                 simple_variables_prefix=current_environment_var_prefix,
                 groups_variables_prefix=self.get_groups_prefixes())

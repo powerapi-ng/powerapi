@@ -316,7 +316,7 @@ def root_config_parser_with_subgroups(root_config_parser_with_mandatory_and_opti
      Return a RootConfigParser with subgroups
     """
 
-    root_config_parser_with_mandatory_and_optional_arguments.add_simple_argument_prefix(argument_prefix='TEST_')
+    root_config_parser_with_mandatory_and_optional_arguments.add_argument_prefix(argument_prefix='TEST_')
 
     root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='g1', prefix='TEST_G1_')
 
@@ -380,8 +380,8 @@ def root_config_parsing_manager():
     Return a RootConfigParsingManager with a flag argument 'a'
     """
     parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
-    parser_manager.add_subgroup_to_cli_parser(name='sub')
+    parser_manager.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
+    parser_manager.add_subgroup(name='sub')
 
     return parser_manager
 
@@ -393,49 +393,49 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
     """
     parser_manager = RootConfigParsingManager()
 
-    parser_manager.add_simple_argument_prefix_to_cli_parser(argument_prefix='TEST_')
+    parser_manager.add_argument_prefix(argument_prefix='TEST_')
 
-    parser_manager.add_subgroup_to_cli_parser(name='input', prefix='TEST_INPUT_')
+    parser_manager.add_subgroup(name='input', prefix='TEST_INPUT_')
 
-    parser_manager.add_subgroup_to_cli_parser(name='output', prefix='TEST_OUTPUT_')
+    parser_manager.add_subgroup(name='output', prefix='TEST_OUTPUT_')
 
-    parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
+    parser_manager.add_argument('a', argument_type=bool, is_flag=True, action=store_true)
 
-    parser_manager.add_argument_to_cli_parser('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
+    parser_manager.add_argument('1', 'argument1', default_value=3, argument_type=int, is_mandatory=False)
 
-    parser_manager.add_argument_to_cli_parser('argumento2', '2', argument_type=str, is_mandatory=True)
+    parser_manager.add_argument('argumento2', '2', argument_type=str, is_mandatory=True)
 
-    parser_manager.add_argument_to_cli_parser('arg3', 'argument3', argument_type=bool, is_mandatory=False)
+    parser_manager.add_argument('arg3', 'argument3', argument_type=bool, is_mandatory=False)
 
-    parser_manager.add_argument_to_cli_parser('d', 'arg4', argument_type=float, is_mandatory=True)
+    parser_manager.add_argument('d', 'arg4', argument_type=float, is_mandatory=True)
 
-    parser_manager.add_argument_to_cli_parser('arg5', '5', default_value='default value', argument_type=str,
-                                              help_text='help 5')
+    parser_manager.add_argument('arg5', '5', default_value='default value', argument_type=str,
+                                help_text='help 5')
 
     i1_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="i1_type")
-    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
-    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
-    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('port', 'p', argument_type=int, is_mandatory=False)
-    i1_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
-                                                               default_value='my_i1_instance')
+    i1_type_subgroup_parser_manager.add_argument('model', 'm', argument_type=str, is_mandatory=True)
+    i1_type_subgroup_parser_manager.add_argument('db', 'd', argument_type=str, is_mandatory=False)
+    i1_type_subgroup_parser_manager.add_argument('port', 'p', argument_type=int, is_mandatory=False)
+    i1_type_subgroup_parser_manager.add_argument('name', 'n', argument_type=str, is_mandatory=False,
+                                                 default_value='my_i1_instance')
 
     parser_manager.add_subgroup_parser(subgroup_name="input", subgroup_parser=i1_type_subgroup_parser_manager)
 
     o1_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o1_type")
-    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
-    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
-    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
-                                                               default_value='my_o1_instance')
-    o1_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
+    o1_type_subgroup_parser_manager.add_argument('model', 'm', argument_type=str, is_mandatory=True)
+    o1_type_subgroup_parser_manager.add_argument('db', 'd', argument_type=str, is_mandatory=False)
+    o1_type_subgroup_parser_manager.add_argument('name', 'n', argument_type=str, is_mandatory=False,
+                                                 default_value='my_o1_instance')
+    o1_type_subgroup_parser_manager.add_argument('collection', 'c', argument_type=str)
 
     parser_manager.add_subgroup_parser(subgroup_name="output", subgroup_parser=o1_type_subgroup_parser_manager)
 
     o2_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o2_type")
-    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
-    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('db', 'd', argument_type=str, is_mandatory=False)
-    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
-                                                               default_value='my_o2_instance')
-    o2_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
+    o2_type_subgroup_parser_manager.add_argument('model', 'm', argument_type=str, is_mandatory=True)
+    o2_type_subgroup_parser_manager.add_argument('db', 'd', argument_type=str, is_mandatory=False)
+    o2_type_subgroup_parser_manager.add_argument('name', 'n', argument_type=str, is_mandatory=False,
+                                                 default_value='my_o2_instance')
+    o2_type_subgroup_parser_manager.add_argument('collection', 'c', argument_type=str)
 
     parser_manager.add_subgroup_parser(subgroup_name="output", subgroup_parser=o2_type_subgroup_parser_manager)
 
