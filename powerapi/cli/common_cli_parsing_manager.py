@@ -70,7 +70,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self.add_subgroup(name='report_modifier',
                           prefix=POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX,
                           help_text="Specify a report modifier to change input report values : "
-                                                  "--report_modifier ARG1 ARG2 ...")
+                                    "--report_modifier ARG1 ARG2 ...")
 
         self.add_subgroup(name='input',
                           prefix=POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX,
