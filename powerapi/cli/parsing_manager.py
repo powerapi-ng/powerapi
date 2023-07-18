@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import sys
 import json
 import logging
@@ -34,7 +33,9 @@ import logging
 from typing import Callable, Any
 from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
 from powerapi.exception import MissingArgumentException, BadTypeException, \
-    AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException
+    AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException, \
+    RepeatedArgumentException, AlreadyAddedSubgroupException
+from powerapi.utils.cli import merge_dictionaries
 
 
 class BaseConfigParsingManager:
@@ -51,7 +52,8 @@ class BaseConfigParsingManager:
 
         """
         self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
-                                     help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
+                                     help_text=help_text, argument_type=bool if is_flag else argument_type,
+                                     is_mandatory=is_mandatory)
 
     def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
@@ -96,32 +98,63 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
-    def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str = ''):
+    def add_simple_argument_prefix_to_cli_parser(self, argument_prefix: str):
+        """
+        Add a simple argument prefix to the cli_parser
+        :param argument_prefix: a new argument prefix to be added
+        """
+        self.cli_parser.add_simple_argument_prefix(argument_prefix=argument_prefix)
+
+    def add_subgroup_to_cli_parser(self, name: str, help_text: str = '', prefix: str = ''):
+        """
+        Add a group to the cli_parser
+        :param name: the group's name
+        :param help_text: a help text for the subgroup
+        :param prefix: a prefix related to the subgroup
+        """
+        try:
+            self.cli_parser.add_subgroup(subgroup_type=name, help_text=help_text, prefix=prefix)
+        except AlreadyAddedSubgroupException as exn:
+            msg = "Configuration error: " + exn.msg
+            logging.error(msg)
+            sys.exit(-1)
+
+    def add_subgroup_parser(self, subgroup_name: str, subgroup_parser: SubgroupConfigParsingManager):
 
         """
         Add a Subgroup Parser to call when <name> is encountered
         When name is encountered, the subgroup parser such as subgroup_parser.name match conf[name].type
 
         """
-        if name in self.subparser:
-            if subgroup_parser.name in list(self.subparser[name]):
-                raise AlreadyAddedSubparserException(name)
+        if subgroup_name in self.subparser:
+            if subgroup_parser.name in list(self.subparser[subgroup_name]):
+                raise AlreadyAddedSubparserException(subgroup_name)
         else:
-            self.subparser[name] = {}
+            self.subparser[subgroup_name] = {}
 
-        self.subparser[name][subgroup_parser.name] = subgroup_parser
+        self.subparser[subgroup_name][subgroup_parser.name] = subgroup_parser
 
-        self.cli_parser.add_subgroup_parser(name, subgroup_parser.cli_parser, help_text)
+        self.cli_parser.add_subgroup_parser(subgroup_type=subgroup_name, subgroup_parser=subgroup_parser.cli_parser)
 
-    def _parse_cli(self, cli_line):
+    def _parse_cli(self, cli_line: list) -> dict:
         return self.cli_parser.parse(cli_line)
 
-    def _parse_config_from_json_file(self, filename):
-        config_file = open(filename, 'r')
-        conf = json.load(config_file)
+    def _parse_config_from_json_file(self, file_name: str, current_conf: dict) -> dict:
 
-        # Select for each argument, le long version
-        return self.cli_parser.parse_config_dict(conf)
+        # Select for each argument, le long version name
+        conf = self.cli_parser.parse_config_dict(file_name=file_name)
+
+        conf = merge_dictionaries(source=current_conf, destination=conf)
+
+        return conf
+
+    def _parse_config_from_environment_variables(self, current_conf: dict) -> dict:
+
+        conf = self.cli_parser.parse_config_environment_variables()
+
+        conf = merge_dictionaries(source=current_conf, destination=conf)
+
+        return conf
 
     def validate(self, conf: dict) -> dict:
         """ Check the parsed configuration"""
@@ -139,8 +172,8 @@ class RootConfigParsingManager(BaseConfigParsingManager):
                     if current_argument_name in argument_definition.names:
                         is_an_arg = True
                         # check type
-                        if not isinstance(current_argument_value, argument_definition.type) and not argument_definition.is_flag:
-                            print('args:', current_argument_name, current_argument_value, argument_definition.type, argument_definition.names)
+                        if not isinstance(current_argument_value,
+                                          argument_definition.type) and not argument_definition.is_flag:
                             raise BadTypeException(current_argument_name, argument_definition.type)
 
             if not is_an_arg:
@@ -153,13 +186,19 @@ class RootConfigParsingManager(BaseConfigParsingManager):
 
     def parse(self, args: list = None) -> dict:
         """
-        Find the configuration method (CLI or config file)
+        Parse the configurations defined via le CLI, Environment Variables and configuration file.
+        The priority of defined values is the following:
+        1. CLI
+        2. Environment Variables
+        3. Configuration File
+
         Call the method to produce a configuration dictionary
         check the configuration
         """
 
         if not args:
             args = sys.argv
+
         current_position = 0
         filename = None
         for current_arg in args:
@@ -168,13 +207,22 @@ class RootConfigParsingManager(BaseConfigParsingManager):
                     logging.error("CLI Error: config file path needed with argument --config-file")
                     sys.exit(-1)
                 filename = args[current_position + 1]
+                args.pop(current_position + 1)
+                args.pop(current_position)
+                break
             current_position += 1
 
         try:
-            if filename:
-                conf = self._parse_config_from_json_file(filename)
-            else:
+
+            if len(args) > 1:
                 conf = self._parse_cli(args[1:])
+            else:
+                conf = {}
+            conf = self._parse_config_from_environment_variables(current_conf=conf)
+            if filename:
+                conf = self._parse_config_from_json_file(file_name=filename, current_conf=conf)
+
+            # We validate the conf
             conf = self.validate(conf)
 
         except MissingValueException as exn:
@@ -211,6 +259,10 @@ class RootConfigParsingManager(BaseConfigParsingManager):
             sys.exit(-1)
 
         except MissingArgumentException as exn:
+            logging.error("Configuration Error: " + exn.msg)
+            sys.exit(-1)
+
+        except RepeatedArgumentException as exn:
             logging.error("Configuration Error: " + exn.msg)
             sys.exit(-1)
 

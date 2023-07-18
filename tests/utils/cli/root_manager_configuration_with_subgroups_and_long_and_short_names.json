@@ -1,0 +1,30 @@
+{ "argument1": 5,
+  "2": "this is a mandatory argument",
+  "argument3": false,
+  "arg4": 98.0,
+  "5" : "this is a value",
+  "input": {
+    "in1": {
+      "model": "i1_model",
+      "type": "i1_type",
+      "db": "i1_db",
+      "name": "i1_name"
+    }
+  },
+  "output": {
+    "o1": {
+      "model": "o1_model_x",
+      "type": "o1_type",
+      "db": "o1_db",
+      "collection": "o1_col",
+       "name": "o1_name"
+    },
+    "o2": {
+      "model": "o2_model",
+      "type": "o2_type",
+      "db": "o2_db",
+      "collection": "o2_col",
+       "name": "o2_name"
+    }
+  }
+}

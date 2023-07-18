@@ -32,6 +32,7 @@ class PowerAPIException(Exception):
     """
     PowerAPIException base class
     """
+
     def __init__(self, *args: object):
         Exception.__init__(self, args)
 
@@ -57,7 +58,8 @@ class ParserException(PowerAPIException):
     """
     Base Exception for parser error
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         PowerAPIException.__init__(self)
         self.argument_name = argument_name
 
@@ -74,6 +76,12 @@ class SubgroupAlreadyExistException(ParserException):
     """
 
 
+class SubgroupDoesNotExistException(ParserException):
+    """
+    Exception raised when attempting to add arguments to a subgroup that does not exist
+    """
+
+
 class SubgroupParserWithoutNameArgumentException(PowerAPIException):
     """
     Exception raised when a subparser without argument name is added to a parser
@@ -85,7 +93,8 @@ class TooManyArgumentNamesException(ParserException):
     Exception raised when attemtping to add an argument with too much names
 
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
 
 
@@ -95,20 +104,28 @@ class AlreadyAddedArgumentException(ParserException):
     have this argument
 
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
         self.msg = 'Parser already contain an argument ' + argument_name
 
 
 class AlreadyAddedSubparserException(ParserException):
     """
-    Exception raised when attempting to add an argument to a parser that already
-    have this argument
+    Exception raised when attempting to add a parser that already exists    """
 
+    def __init__(self, parser_name: str):
+        ParserException.__init__(self, parser_name)
+        self.msg = 'Parser already contain SubParser with name ' + parser_name
+
+
+class AlreadyAddedSubgroupException(ParserException):
     """
-    def __init__(self, argument_name):
-        ParserException.__init__(self, argument_name)
-        self.msg = 'Parser already contain SubParser with name ' + argument_name
+    Exception raised when attempting to add a subgroup that already exists    """
+
+    def __init__(self, subgroup_name: str):
+        ParserException.__init__(self, subgroup_name)
+        self.msg = 'Parser already contain Subgroup with name ' + subgroup_name
 
 
 class MissingArgumentException(ParserException):
@@ -116,9 +133,19 @@ class MissingArgumentException(ParserException):
     Exception raised when a mandatory argument is missing
     """
 
-    def __init__(self, argument_name):
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
         self.msg = 'Argument with name(s) ' + argument_name + ' is missing'
+
+
+class RepeatedArgumentException(ParserException):
+    """
+    Exception raised when an argument is repeated several times in a configuration
+    """
+
+    def __init__(self, argument_name: str):
+        ParserException.__init__(self, argument_name)
+        self.msg = 'Argument with name(s) ' + argument_name + ' is repeated'
 
 
 class MissingValueException(ParserException):
@@ -127,7 +154,8 @@ class MissingValueException(ParserException):
     its value
 
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
         self.msg = 'Argument ' + argument_name + ' require a value'
 
@@ -137,7 +165,8 @@ class UnknownArgException(ParserException):
     Exception raised when the parser catch an argument that it can't handle
 
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
         self.msg = 'Unknown argument ' + argument_name
 
@@ -146,7 +175,8 @@ class BadTypeException(ParserException):
     """
     Exception raised when an argument is parsed with a value of an incorrect type
     """
-    def __init__(self, argument_name, arg_type):
+
+    def __init__(self, argument_name: str, arg_type: type):
         ParserException.__init__(self, argument_name)
         self.msg = argument_name + " expect " + arg_type.__name__
 
@@ -156,7 +186,8 @@ class BadContextException(ParserException):
     Exception raised when the parser catch an argument that it can't handle in
     the current context
     """
-    def __init__(self, argument_name, context_list):
+
+    def __init__(self, argument_name: str, context_list: list):
         ParserException.__init__(self, argument_name)
         self.context_list = context_list
         self.msg = 'argument ' + argument_name + 'not used in the correct context\nUse it with the following arguments :'
@@ -175,7 +206,8 @@ class FileDoesNotExistException(PowerAPIException):
     """
     This exception happens when the configuration define a input file that does not exist or is not accessible
     """
-    def __init__(self, file_name):
+
+    def __init__(self, file_name: str):
         PowerAPIException.__init__(self)
         self.file_name = file_name
         self.msg = "The File " + self.file_name + " does not exist or is not accessible"
@@ -183,10 +215,11 @@ class FileDoesNotExistException(PowerAPIException):
 
 class SameLengthArgumentNamesException(ParserException):
     """
-    Exception raised when attemtping to add an argument with names that have the same length
+    Exception raised when attempting to add an argument with names that have the same length
 
     """
-    def __init__(self, argument_name):
+
+    def __init__(self, argument_name: str):
         ParserException.__init__(self, argument_name)
 
 
@@ -196,7 +229,7 @@ class ModelNameAlreadyUsed(PowerAPIException):
     model factory in the DBActorGenerator
     """
 
-    def __init__(self, model_name):
+    def __init__(self, model_name: str):
         PowerAPIException.__init__(self)
         self.model_name = model_name
 
@@ -207,7 +240,7 @@ class DatabaseNameDoesNotExist(PowerAPIException):
     another database factory in the DBActorGenerator
     """
 
-    def __init__(self, database_name):
+    def __init__(self, database_name: str):
         PowerAPIException.__init__(self)
         self.database_name = database_name
 
@@ -218,7 +251,7 @@ class DatabaseNameAlreadyUsed(PowerAPIException):
     another database factory in the DBActorGenerator
     """
 
-    def __init__(self, database_name):
+    def __init__(self, database_name: str):
         PowerAPIException.__init__(self)
         self.database_name = database_name
 
@@ -229,6 +262,20 @@ class ModelNameDoesNotExist(PowerAPIException):
     another model factory in the DBActorGenerator
     """
 
-    def __init__(self, model_name):
+    def __init__(self, model_name: str):
         PowerAPIException.__init__(self)
         self.model_name = model_name
+
+
+class InvalidPrefixException(PowerAPIException):
+    """
+    Exception raised when attempting to add a new prefix that is a prefix of a existing one or
+    vice-versa
+    """
+
+    def __init__(self, existing_prefix: str, new_prefix: str):
+        PowerAPIException.__init__(self)
+        self.new_prefix = new_prefix
+        self.existing_prefix = existing_prefix
+        self.msg = "The new prefix " + self.new_prefix + " has a conflict with the existing prefix " \
+                   + self.existing_prefix

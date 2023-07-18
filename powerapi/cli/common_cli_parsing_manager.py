@@ -34,6 +34,18 @@ from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
+POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
+POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'OUTPUT_'
+POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
+POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'REPORT_MODIFIER_'
+POWERAPI_INPUT_ARGUMENTS_NAMES = ['uri', 'db', 'collection', 'name', 'model', 'port', 'files', 'filename', 'type']
+POWERAPI_OUTPUT_ARGUMENTS_NAMES = ['filename', 'uri', 'db', 'collection', 'name', 'model', 'port', 'tags', 'token',
+                                   'org', 'directory', 'filename', 'metric_name', 'metric_description',
+                                   'aggregation_period', 'type', 'root_directory_name', 'vm_directory_name_prefix',
+                                   'vm_directory_name_suffix']
+
+POWERAPI_REPORT_MODIFIER_ARGUMENTS_NAMES = ['u', 'uri', 'd', 'domain_regexp', 'n', 'name']
+
 
 def extract_file_names(arg, val, args, acc):
     """
@@ -50,6 +62,25 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
     def __init__(self):
         RootConfigParsingManager.__init__(self)
+
+        # Environment variables prefix
+
+        self.add_simple_argument_prefix_to_cli_parser(argument_prefix=POWERAPI_ENVIRONMENT_VARIABLE_PREFIX)
+        # Subgroups
+        self.add_subgroup_to_cli_parser(name='report_modifier',
+                                        prefix=POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX,
+                                        help_text="Specify a report modifier to change input report values : "
+                                                  "--report_modifier ARG1 ARG2 ...")
+
+        self.add_subgroup_to_cli_parser(name='input',
+                                        prefix=POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX,
+                                        help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ")
+
+        self.add_subgroup_to_cli_parser(name='output',
+                                        prefix=POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX,
+                                        help_text="specify a database output : --db_output database_name ARG1 ARG2 ...")
+
+        # Parsers
 
         self.add_argument_to_cli_parser(
             "v",
@@ -79,9 +110,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
         subparser_libvirt_mapper_modifier.add_argument_to_cli_parser("n", "name", help_text="")
         self.add_subgroup_parser(
-            "report_modifier",
-            subparser_libvirt_mapper_modifier,
-            help_text="Specify a report modifier to change input report values : --report_modifier ARG1 ARG2 ...",
+            subgroup_name="report_modifier",
+            subgroup_parser=subparser_libvirt_mapper_modifier
         )
 
         subparser_mongo_input = SubgroupConfigParsingManager("mongodb")
@@ -104,9 +134,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="HWPCReport",
         )
         self.add_subgroup_parser(
-            "input",
-            subparser_mongo_input,
-            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            subgroup_name="input",
+            subgroup_parser=subparser_mongo_input
         )
 
         subparser_socket_input = SubgroupConfigParsingManager("socket")
@@ -123,9 +152,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="HWPCReport",
         )
         self.add_subgroup_parser(
-            "input",
-            subparser_socket_input,
-            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            subgroup_name="input",
+            subgroup_parser=subparser_socket_input
         )
 
         subparser_csv_input = SubgroupConfigParsingManager("csv")
@@ -146,9 +174,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify puller name", default_value="puller_csv"
         )
         self.add_subgroup_parser(
-            "input",
-            subparser_csv_input,
-            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            subgroup_name="input",
+            subgroup_parser=subparser_csv_input
         )
 
         subparser_file_input = SubgroupConfigParsingManager("filedb")
@@ -163,9 +190,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
         )
         self.add_subgroup_parser(
-            "input",
-            subparser_file_input,
-            help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ",
+            subgroup_name="input",
+            subgroup_parser=subparser_file_input
         )
 
         subparser_file_output = SubgroupConfigParsingManager("filedb")
@@ -180,9 +206,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_file_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            subgroup_name="output",
+            subgroup_parser=subparser_file_output
         )
 
         subparser_virtiofs_output = SubgroupConfigParsingManager("virtiofs")
@@ -216,9 +241,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_virtiofs"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_virtiofs_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            subgroup_name="output",
+            subgroup_parser=subparser_virtiofs_output
         )
 
         subparser_mongo_output = SubgroupConfigParsingManager("mongodb")
@@ -240,9 +264,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_mongodb"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_mongo_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            subgroup_name="output",
+            subgroup_parser=subparser_mongo_output
         )
 
         subparser_prom_output = SubgroupConfigParsingManager("prom")
@@ -275,9 +298,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_prom"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_prom_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            subgroup_name="output",
+            subgroup_parser=subparser_prom_output
         )
 
         subparser_direct_prom_output = SubgroupConfigParsingManager("direct_prom")
@@ -307,9 +329,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_prom"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_direct_prom_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ...",
+            subgroup_name="output",
+            subgroup_parser=subparser_direct_prom_output
         )
 
         subparser_csv_output = SubgroupConfigParsingManager("csv")
@@ -330,9 +351,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_csv_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            subgroup_name="output",
+            subgroup_parser=subparser_csv_output
         )
 
         subparser_influx_output = SubgroupConfigParsingManager("influxdb")
@@ -354,9 +374,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_influxdb"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_influx_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            subgroup_name="output",
+            subgroup_parser=subparser_influx_output
         )
 
         subparser_opentsdb_output = SubgroupConfigParsingManager("opentsdb")
@@ -378,16 +397,17 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "n", "name", help_text="specify pusher name", default_value="pusher_opentsdb"
         )
         self.add_subgroup_parser(
-            "output",
-            subparser_opentsdb_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            subgroup_name="output",
+            subgroup_parser=subparser_opentsdb_output
         )
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument_to_cli_parser("u", "uri", help_text="specify InfluxDB uri")
         subparser_influx2_output.add_argument_to_cli_parser("t", "tags", help_text="specify report tags")
-        subparser_influx2_output.add_argument_to_cli_parser("k", "token", help_text="specify token for accessing the database")
-        subparser_influx2_output.add_argument_to_cli_parser("g", "org", help_text="specify organisation for accessing the database")
+        subparser_influx2_output.add_argument_to_cli_parser("k", "token",
+                                                            help_text="specify token for accessing the database")
+        subparser_influx2_output.add_argument_to_cli_parser("g", "org",
+                                                            help_text="specify organisation for accessing the database")
 
         subparser_influx2_output.add_argument_to_cli_parser(
             "d", "db", help_text="specify InfluxDB database name"
@@ -406,9 +426,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         self.add_subgroup_parser(
-            "output",
-            subparser_influx2_output,
-            help_text="specify a database output : --db_output database_name ARG1 ARG2 ... ",
+            subgroup_name="output",
+            subgroup_parser=subparser_influx2_output
         )
 
     def parse_argv(self):
