@@ -34,7 +34,7 @@ from typing import Callable, Any
 from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
 from powerapi.exception import MissingArgumentException, BadTypeException, \
     AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException, \
-    RepeatedArgumentException
+    RepeatedArgumentException, AlreadyAddedSubgroupException
 from powerapi.utils.cli import merge_dictionaries
 
 
@@ -105,31 +105,36 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         """
         self.cli_parser.add_simple_argument_prefix(argument_prefix=argument_prefix)
 
-    def add_group_argument_prefix_to_cli_parser(self, group_argument_prefix: str, sub_arguments_names: list):
+    def add_subgroup_to_cli_parser(self, name: str, help_text: str = '', prefix: str = ''):
         """
-        Add a group argument prefix to the cli_parser
-        :param group_argument_prefix: a new argument prefix to be added
-        :param sub_arguments_names: List of arguments related to the group
+        Add a group to the cli_parser
+        :param name: the group's name
+        :param help_text: a help text for the subgroup
+        :param prefix: a prefix related to the subgroup
         """
-        self.cli_parser.add_group_argument_prefix(group_argument_prefix=group_argument_prefix,
-                                                  sub_arguments_names=sub_arguments_names)
+        try:
+            self.cli_parser.add_subgroup(subgroup_type=name, help_text=help_text, prefix=prefix)
+        except AlreadyAddedSubgroupException as exn:
+            msg = "Configuration error: " + exn.msg
+            logging.error(msg)
+            sys.exit(-1)
 
-    def add_subgroup_parser(self, name: str, subgroup_parser: SubgroupConfigParsingManager, help_text: str = ''):
+    def add_subgroup_parser(self, subgroup_name: str, subgroup_parser: SubgroupConfigParsingManager):
 
         """
         Add a Subgroup Parser to call when <name> is encountered
         When name is encountered, the subgroup parser such as subgroup_parser.name match conf[name].type
 
         """
-        if name in self.subparser:
-            if subgroup_parser.name in list(self.subparser[name]):
-                raise AlreadyAddedSubparserException(name)
+        if subgroup_name in self.subparser:
+            if subgroup_parser.name in list(self.subparser[subgroup_name]):
+                raise AlreadyAddedSubparserException(subgroup_name)
         else:
-            self.subparser[name] = {}
+            self.subparser[subgroup_name] = {}
 
-        self.subparser[name][subgroup_parser.name] = subgroup_parser
+        self.subparser[subgroup_name][subgroup_parser.name] = subgroup_parser
 
-        self.cli_parser.add_subgroup_parser(name, subgroup_parser.cli_parser, help_text)
+        self.cli_parser.add_subgroup_parser(subgroup_type=subgroup_name, subgroup_parser=subgroup_parser.cli_parser)
 
     def _parse_cli(self, cli_line: list) -> dict:
         return self.cli_parser.parse(cli_line)

@@ -37,10 +37,10 @@ def remove_first_characters(arg: str):
     return arg[1]
 
 
-def find_longest_string_in_list(string_list: list):
+def find_longest_string_in_list(string_list: list) -> str:
     """
     Find the largest string contained in the given list
-    :param list string_list: List of strings
+    :param list string_list: list of strings
     """
     max_len = 0
     longest_string = ''

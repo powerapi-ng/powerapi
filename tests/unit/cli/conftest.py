@@ -318,22 +318,9 @@ def root_config_parser_with_subgroups(root_config_parser_with_mandatory_and_opti
 
     root_config_parser_with_mandatory_and_optional_arguments.add_simple_argument_prefix(argument_prefix='TEST_')
 
-    root_config_parser_with_mandatory_and_optional_arguments.add_group_argument_prefix(group_argument_prefix='TEST_G1_',
-                                                                                       sub_arguments_names=['1', 'a1',
-                                                                                                            '2', 'a2',
-                                                                                                            '3', 'a3',
-                                                                                                            'type',
-                                                                                                            'n', 'name']
-                                                                                       )
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='g1', prefix='TEST_G1_')
 
-    root_config_parser_with_mandatory_and_optional_arguments.add_group_argument_prefix(group_argument_prefix='TEST_G2_',
-                                                                                       sub_arguments_names=['1', 'a1',
-                                                                                                            '2', 'a2',
-                                                                                                            '3', 'a3',
-                                                                                                            '4', 'a4',
-                                                                                                            'type',
-                                                                                                            'n', 'name']
-                                                                                       )
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='g2', prefix='TEST_G2_')
 
     subgroup_parser_g1 = SubgroupConfigParser(name='type1')
     subgroup_parser_g1.add_argument('1', 'a1', argument_type=str, is_mandatory=True)
@@ -394,6 +381,7 @@ def root_config_parsing_manager():
     """
     parser_manager = RootConfigParsingManager()
     parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
+    parser_manager.add_subgroup_to_cli_parser(name='sub')
 
     return parser_manager
 
@@ -407,22 +395,9 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
 
     parser_manager.add_simple_argument_prefix_to_cli_parser(argument_prefix='TEST_')
 
-    parser_manager.add_group_argument_prefix_to_cli_parser(group_argument_prefix='TEST_INPUT_',
-                                                           sub_arguments_names=['model', 'm', 'type', 'uri', 'db', 'd',
-                                                                                'collection', 'c', 'name', 'n',
-                                                                                'files', 'port', 'p'])
+    parser_manager.add_subgroup_to_cli_parser(name='input', prefix='TEST_INPUT_')
 
-    parser_manager.add_group_argument_prefix_to_cli_parser(group_argument_prefix='TEST_OUTPUT_',
-                                                           sub_arguments_names=['model', 'm', 'type', 'uri', 'db', 'd',
-                                                                                'collection', 'c', 'name', 'n',
-                                                                                'port', 'metric_name',
-                                                                                'metric_description',
-                                                                                'aggregation_period', 'directory',
-                                                                                'token', 'org', 'tags',
-                                                                                'vm_name_regexp', 'root_directory_name',
-                                                                                'filename',
-                                                                                'vm_directory_name_prefix',
-                                                                                'vm_directory_name_suffix'])
+    parser_manager.add_subgroup_to_cli_parser(name='output', prefix='TEST_OUTPUT_')
 
     parser_manager.add_argument_to_cli_parser('a', argument_type=bool, is_flag=True, action=store_true)
 
@@ -444,7 +419,7 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
     i1_type_subgroup_parser_manager.add_argument_to_cli_parser('name', 'n', argument_type=str, is_mandatory=False,
                                                                default_value='my_i1_instance')
 
-    parser_manager.add_subgroup_parser(name="input", subgroup_parser=i1_type_subgroup_parser_manager)
+    parser_manager.add_subgroup_parser(subgroup_name="input", subgroup_parser=i1_type_subgroup_parser_manager)
 
     o1_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o1_type")
     o1_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
@@ -453,7 +428,7 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
                                                                default_value='my_o1_instance')
     o1_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
 
-    parser_manager.add_subgroup_parser(name="output", subgroup_parser=o1_type_subgroup_parser_manager)
+    parser_manager.add_subgroup_parser(subgroup_name="output", subgroup_parser=o1_type_subgroup_parser_manager)
 
     o2_type_subgroup_parser_manager = SubgroupConfigParsingManager(name="o2_type")
     o2_type_subgroup_parser_manager.add_argument_to_cli_parser('model', 'm', argument_type=str, is_mandatory=True)
@@ -462,7 +437,7 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
                                                                default_value='my_o2_instance')
     o2_type_subgroup_parser_manager.add_argument_to_cli_parser('collection', 'c', argument_type=str)
 
-    parser_manager.add_subgroup_parser(name="output", subgroup_parser=o2_type_subgroup_parser_manager)
+    parser_manager.add_subgroup_parser(subgroup_name="output", subgroup_parser=o2_type_subgroup_parser_manager)
 
     return parser_manager
 

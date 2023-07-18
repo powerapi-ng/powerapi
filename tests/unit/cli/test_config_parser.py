@@ -35,7 +35,7 @@ from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, 
     BadContextException, MissingValueException, SubgroupAlreadyExistException, \
     SubgroupParserWithoutNameArgumentException, \
     NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, MissingArgumentException, \
-    SameLengthArgumentNamesException
+    SameLengthArgumentNamesException, AlreadyAddedSubgroupException
 
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
     generate_configuration_tuples_from_json_file, define_environment_variables_configuration_from_json_file, \
@@ -427,11 +427,12 @@ def test_parsing_of_config_of_a_parser_with_a_subgroup_parser():
     """
     parser = RootConfigParser(help_arg=False)
     parser.add_argument('a', is_flag=True, action=store_true)
+    parser.add_subgroup(subgroup_type='sub')
 
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('b', is_flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    parser.add_subgroup_parser(subgroup_type='sub', subgroup_parser=subparser)
 
     check_parsing_result(parser, '', {})
 
@@ -465,11 +466,12 @@ def test_parsing_of_config_with_several_subgroups_with_the_same_name_in_a_parser
 
     """
     parser = RootConfigParser(help_arg=False)
+    parser.add_subgroup(subgroup_type='sub')
 
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('b', is_flag=True, action=store_true)
     subparser.add_argument('n', 'name')
-    parser.add_subgroup_parser('sub', subparser)
+    parser.add_subgroup_parser(subgroup_type='sub', subgroup_parser=subparser)
 
     check_parsing_result(parser, '--sub toto --name titi --sub toto -b --name tutu --sub toto --name tata',
                          {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True},
@@ -492,6 +494,8 @@ def test_parsing_of_several_subgroups_with_different_name_in_a_parser_with_sever
     - subparser tata bound to the argument sub with sub argument: -n --name
     """
     parser = RootConfigParser(help_arg=False)
+
+    parser.add_subgroup(subgroup_type='sub')
 
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('n', 'name')
@@ -521,6 +525,7 @@ def test_parsing_of_config_with_repeated_subgroups_names_raise_an_exception():
     - subparser toto bound to the argument sub with sub arguments: -b (flag) and -n --name
     """
     parser = RootConfigParser(help_arg=False)
+    parser.add_subgroup(subgroup_type='sub')
 
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('b', is_flag=True, action=store_true)
@@ -660,6 +665,7 @@ def test_add_subgroup_parser_that_already_exist_raise_an_exception():
     - subparser titi bound to the argument toto with sub arguments: -n
     """
     parser = RootConfigParser(help_arg=False)
+    parser.add_subgroup(subgroup_type='toto')
     subparser = SubgroupConfigParser('titi')
     subparser.add_argument('n', 'name')
 
@@ -685,6 +691,7 @@ def test_add_subgroup_parser_with_argument_name_work():
     - subparser titi bound to the argument sub with sub arguments: -a --aaa, -n --name
     """
     parser = RootConfigParser(help_arg=False)
+    parser.add_subgroup(subgroup_type='sub')
     subparser = SubgroupConfigParser('titi')
     subparser.add_argument('a', 'aaa', is_flag=True, action=store_true, default_value=False)
     subparser.add_argument('n', 'name')
@@ -842,7 +849,7 @@ def test_normalize_config_dict_select_long_names_for_every_argument_in_config_wi
     expected_conf['argument1'] = expected_conf.pop('arg1')
     expected_conf['argument3'] = expected_conf.pop('arg3')
     expected_conf['arg5'] = expected_conf.pop('5')
-    expected_conf['g2']['g2_sg1']['a4'] = expected_conf['g2']['g2_sg1'].pop('4')
+    expected_conf['g2']['g2_sg1']['a4'] = expected_conf['g2']['g2_sg1'].pop('a4')
 
     result = root_config_parser_with_subgroups.normalize_configuration(conf=conf)
 
@@ -858,7 +865,7 @@ def test_parse_config_environment_variables_return_correct_configuration(root_co
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=conf_file,
         simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
-        group_arguments_prefix=root_config_parser_with_subgroups.group_arguments_prefix.keys())
+        group_arguments_prefix=root_config_parser_with_subgroups.get_groups_prefixes())
 
     expected_conf = load_configuration_from_json_file(file_name=conf_file)
 
@@ -885,7 +892,7 @@ def test_parse_config_environment_variables_return_correct_configuration(root_co
 
     expected_conf['g2']['g2-sg1']['a1'] = float(g2_sg1['a1'])
     expected_conf['g2']['g2-sg1']['a3'] = g2_sg1['a3']
-    expected_conf['g2']['g2-sg1']['a4'] = g2_sg1['4']
+    expected_conf['g2']['g2-sg1']['a4'] = g2_sg1['a4']
     expected_conf['g2']['g2-sg1']['type'] = g2_sg1['type']
 
     result = root_config_parser_with_subgroups.parse_config_environment_variables()
@@ -905,9 +912,66 @@ def test_parse_config_environment_variables_with_wrong_argument_raise_an_excepti
     created_environment_variables = define_environment_variables_configuration_from_json_file(
         file_name=conf_file,
         simple_argument_prefix=root_config_parser_with_subgroups.simple_arguments_prefix[0],
-        group_arguments_prefix=root_config_parser_with_subgroups.group_arguments_prefix.keys())
+        group_arguments_prefix=root_config_parser_with_subgroups.get_groups_prefixes())
 
     with pytest.raises(BadTypeException):
         _ = root_config_parser_with_subgroups.parse_config_environment_variables()
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
+
+
+def test_add_subgroup(root_config_parser_with_mandatory_and_optional_arguments):
+    """
+    Test that a subgroup is correctly added
+    """
+    assert len(root_config_parser_with_mandatory_and_optional_arguments.subgroup_parsers) == 0
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='sub')
+
+    assert len(root_config_parser_with_mandatory_and_optional_arguments.subgroup_parsers) == 1
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='sub1')
+
+    assert len(root_config_parser_with_mandatory_and_optional_arguments.subgroup_parsers) == 2
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='sub2')
+
+    assert len(root_config_parser_with_mandatory_and_optional_arguments.subgroup_parsers) == 3
+
+    root_config_parser_with_mandatory_and_optional_arguments.add_subgroup(subgroup_type='sub3')
+
+    assert len(root_config_parser_with_mandatory_and_optional_arguments.subgroup_parsers) == 4
+
+
+def test_add_repeated_subgroup_raise_an_exception(root_config_parser_with_subgroups):
+    """
+    Test that adding a repeated subgroup raises an AlreadyAddedSubgroupException
+    """
+    assert len(root_config_parser_with_subgroups.subgroup_parsers) == 2
+
+    with pytest.raises(AlreadyAddedSubgroupException):
+        root_config_parser_with_subgroups.add_subgroup(subgroup_type='g2')
+
+    assert len(root_config_parser_with_subgroups.subgroup_parsers) == 2
+
+
+def test_get_subgroups_prefix(root_config_parser_with_subgroups):
+    """
+    Test that all the subgroups prefixes are returned
+    """
+    expected_prefixes = ['TEST_G1_', 'TEST_G2_']
+
+    result = root_config_parser_with_subgroups.get_groups_prefixes()
+    assert len(result) == len(expected_prefixes)
+    assert result == expected_prefixes
+
+
+def test_get_longest_arguments_names(root_config_parser_with_subgroups):
+    """
+    Test that all the arguments of the parser are returned
+    """
+    expected_arguments_names = ['help', 'a', 'argument1', 'argumento2', 'argument3', 'arg4', 'arg5', 'g1', 'g2']
+
+    result = root_config_parser_with_subgroups.get_longest_arguments_names()
+    assert len(result) == len(expected_arguments_names)
+    assert result == expected_arguments_names

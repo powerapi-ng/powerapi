@@ -35,7 +35,8 @@ from typing import Any, Callable
 from powerapi.exception import AlreadyAddedArgumentException, UnknownArgException, \
     MissingValueException, BadContextException, TooManyArgumentNamesException, NoNameSpecifiedForSubgroupException, \
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
-    MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException
+    MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException, \
+    SubgroupDoesNotExistException, AlreadyAddedSubgroupException
 from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters, string_to_bool
 
 
@@ -206,6 +207,18 @@ class BaseConfigParser:
         """ Get the parser arguments """
         return self.arguments
 
+    def get_longest_arguments_names(self) -> list:
+        """
+        Return a list with the longest names of the different arguments
+        """
+        long_arguments_names = []
+        for _, argument in self.arguments.items():
+            longest_name = find_longest_string_in_list(argument.names)
+            if longest_name not in long_arguments_names:
+                long_arguments_names.append(longest_name)
+
+        return long_arguments_names
+
     def validate(self, conf: dict) -> dict:
         """
         Check that mandatory arguments are present in the provided configuration.
@@ -291,15 +304,23 @@ class SubgroupParserGroup:
     Group of subgroup parsers stored in a dictionary. Each subgroup has a name
     """
 
-    def __init__(self, group_name: str, help_text: str = ''):
+    def __init__(self, group_name: str, help_text: str = '', prefix: str = ''):
         """
         Create a group of subgroup parsers
         :param str group_name: name of the subgroup
         :param str help_text: Help text related to the subgroup
+        :param str prefix: Prefix related to the group for parsing environment variables
         """
         self.group_name = group_name
         self.help_text = help_text
         self.subparsers = {}
+        self.prefix = prefix
+
+    def get_prefix(self) -> str:
+        """
+        Return the group's prefix
+        """
+        return self.prefix
 
     def contains(self, name: str):
         """
@@ -337,6 +358,21 @@ class SubgroupParserGroup:
             help_str += '\n'
 
         return help_str
+
+    def get_longest_arguments_names(self) -> list:
+        """
+        Return a list of arguments names from the different parsers that are part of the group
+        """
+        arguments_names = []
+        for _, subparser in self.subparsers.items():
+            arguments_names.extend(subparser.get_longest_arguments_names())
+        return list(set(arguments_names))
+
+    def get_group_name(self) -> str:
+        """
+        Return the name of the group
+        """
+        return self.group_name
 
 
 class SubgroupConfigParser(BaseConfigParser):
@@ -393,7 +429,6 @@ class RootConfigParser(BaseConfigParser):
         self.subgroup_parsers = {}
 
         self.simple_arguments_prefix = []
-        self.group_arguments_prefix = {}
         self.default_separator_env_vars_names = separator_env_vars_names
         self.default_separator_args_names = separator_args_names
 
@@ -518,7 +553,7 @@ class RootConfigParser(BaseConfigParser):
         BaseConfigParser.add_argument(self, *names, is_flag=is_flag, action=action, default_value=default_value,
                                       help_text=help_text, argument_type=argument_type, is_mandatory=is_mandatory)
 
-    def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser, help_text: str = ''):
+    def add_subgroup_parser(self, subgroup_type: str, subgroup_parser: SubgroupConfigParser):
         """
         Add a subparser that will be used by the argument *group_name*
         The group must contain a name action
@@ -529,6 +564,31 @@ class RootConfigParser(BaseConfigParser):
         :raise AlreadyAddedArgumentException: when attempting to add an
                                               argument that already have been
                                               added to this parser
+        :raise SubgroupDoesNotExistException If the group related to the paser does not exist
+        """
+
+        if 'name' not in subgroup_parser.arguments:
+            raise SubgroupParserWithoutNameArgumentException()
+        if subgroup_type not in self.subgroup_parsers:
+            raise SubgroupDoesNotExistException(argument_name=subgroup_type)
+        else:
+            if self.subgroup_parsers[subgroup_type].contains(subgroup_parser.name):
+                raise AlreadyAddedArgumentException(subgroup_parser.name)
+
+        self.subgroup_parsers[subgroup_type].add_subgroup_parser(subgroup_parser.name, subgroup_parser)
+
+        for action_name, action in subgroup_parser.arguments.items():
+            self._add_argument_names([action_name], action.is_flag)
+
+    def add_subgroup(self, subgroup_type: str, help_text: str = '', prefix: str = ''):
+        """
+        Add a subgroup that will be used by the argument *group_name*
+        The group must contain a name action
+        :param str subgroup_type: the subgroup type
+        :param str help_text: help text related to the subgroup
+        :param str prefix: the prefix related to the subgroup
+
+        :raise AlreadyAddedSubgroupException is the subgroup already exists
         """
 
         def _action(argument_name: str, val: Any, args: list, configuration: dict):
@@ -552,19 +612,13 @@ class RootConfigParser(BaseConfigParser):
 
             return args, configuration
 
-        if 'name' not in subgroup_parser.arguments:
-            raise SubgroupParserWithoutNameArgumentException()
         if subgroup_type not in self.subgroup_parsers:
-            self.subgroup_parsers[subgroup_type] = SubgroupParserGroup(subgroup_type, help_text=help_text)
+            self.subgroup_parsers[subgroup_type] = SubgroupParserGroup(subgroup_type, help_text=help_text,
+                                                                       prefix=prefix)
             self.add_argument(subgroup_type, action=_action, help_text=help_text)
+
         else:
-            if self.subgroup_parsers[subgroup_type].contains(subgroup_parser.name):
-                raise AlreadyAddedArgumentException(subgroup_parser.name)
-
-        self.subgroup_parsers[subgroup_type].add_subgroup_parser(subgroup_parser.name, subgroup_parser)
-
-        for action_name, action in subgroup_parser.arguments.items():
-            self._add_argument_names([action_name], action.is_flag)
+            raise AlreadyAddedSubgroupException(subgroup_type)
 
     def add_simple_argument_prefix(self, argument_prefix: str):
         """
@@ -579,22 +633,6 @@ class RootConfigParser(BaseConfigParser):
 
         self.simple_arguments_prefix.append(argument_prefix)
 
-    def add_group_argument_prefix(self, group_argument_prefix: str, sub_arguments_names: list):
-        """
-        Add a group argument prefix et its related variables names to the dictionary if group_argument_prefix is no
-        prefix of an existing group argument prefix  or
-        vice-versa. Otherwise, it raises an InvalidPrefixException
-        :param group_argument_prefix: a new argument prefix to be added
-        :param sub_arguments_names: List of arguments related to the group
-        """
-        for existing_group_argument_prefix in self.group_arguments_prefix:
-            if existing_group_argument_prefix.startswith(group_argument_prefix) or \
-                    group_argument_prefix.startswith(existing_group_argument_prefix):
-                raise InvalidPrefixException(existing_prefix=existing_group_argument_prefix,
-                                             new_prefix=group_argument_prefix)
-
-        self.group_arguments_prefix[group_argument_prefix] = sub_arguments_names
-
     def parse_config_environment_variables(self) -> dict:
         """
         Parse environment variables to extract a configuration. Then merges the extracted configution with the one
@@ -607,7 +645,7 @@ class RootConfigParser(BaseConfigParser):
         for current_environment_var_prefix in self.simple_arguments_prefix:
             conf = self._extract_simple_environment_variables_with_prefix(
                 simple_variables_prefix=current_environment_var_prefix,
-                groups_variables_prefix=self.group_arguments_prefix.keys())
+                groups_variables_prefix=self.get_groups_prefixes())
             # We normalize the arguments names
             conf = self.normalize_configuration(conf=conf)
 
@@ -615,13 +653,10 @@ class RootConfigParser(BaseConfigParser):
             conf = self.cast_arguments_values(arguments=conf)
 
         groups_names = []
-        for current_environment_var_prefix, sub_arguments_names in self.group_arguments_prefix.items():
+        for _, group in self.subgroup_parsers.items():
 
-            group_name = self._extract_group_name_from_prefix(prefix=current_environment_var_prefix)
-
-            group_conf = self._extract_group_environment_variables_with_prefix(
-                group_prefix=current_environment_var_prefix,
-                subgroups_variables_names=sub_arguments_names)
+            group_name = group.get_group_name()
+            group_conf = self._extract_group_environment_variables(group=group)
             if len(group_conf) > 0:
                 conf[group_name] = group_conf
                 groups_names.append(group_name)
@@ -640,6 +675,16 @@ class RootConfigParser(BaseConfigParser):
                 conf[group_name][subgroup_name] = subgroup_arguments
 
         return conf
+
+    def get_groups_prefixes(self) -> list:
+        """
+        Return a list with the prefixes of different groups
+        """
+        prefixes = []
+        for _, subgroup in self.subgroup_parsers.items():
+            prefixes.append(subgroup.get_prefix())
+
+        return prefixes
 
     def _extract_group_name_from_prefix(self, prefix: str) -> str:
         """
@@ -671,8 +716,7 @@ class RootConfigParser(BaseConfigParser):
                 simple_variables_with_prefix[var_name_without_prefix] = os.environ[var_name]
         return simple_variables_with_prefix
 
-    def _extract_group_environment_variables_with_prefix(self, group_prefix: str,
-                                                         subgroups_variables_names: list) -> dict:
+    def _extract_group_environment_variables(self, group: SubgroupParserGroup) -> dict:
         """
         Extract from environment variables the ones starting with group_prefix.
         The returned dictionary contains the variables names as keys without prefix and in lower case
@@ -680,12 +724,15 @@ class RootConfigParser(BaseConfigParser):
         :param list subgroups_variables_names: List of variables names related to the group
         """
         group_variables_with_prefix = {}
+        group_prefix = group.get_prefix()
+        subgroups_arguments_names = group.get_longest_arguments_names()
+        subgroups_arguments_names.append('type')
         for environ_var_name in os.environ:
             if environ_var_name.startswith(group_prefix):
                 # We remove the prefix and put the name in lower case
                 suffix_environ_var_name = environ_var_name[len(group_prefix) - len(environ_var_name):]. \
                     lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
-                for group_variable_name in subgroups_variables_names:
+                for group_variable_name in subgroups_arguments_names:
                     group_variable_name_lower_case = group_variable_name. \
                         lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
 
@@ -703,7 +750,6 @@ class RootConfigParser(BaseConfigParser):
                             group_variables_with_prefix[subgroup_name] = {}
                         group_variables_with_prefix[subgroup_name][group_variable_name_lower_case] = os.environ[
                             environ_var_name]
-
                         break
 
         return group_variables_with_prefix
@@ -718,7 +764,6 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
     """
     try:
         if argument.type is bool and val is not None and isinstance(val, str):
-            print('value', string_to_bool(val))
             return string_to_bool(val)
         return argument.type(val)
     except ValueError as exn:

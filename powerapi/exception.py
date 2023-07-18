@@ -76,6 +76,12 @@ class SubgroupAlreadyExistException(ParserException):
     """
 
 
+class SubgroupDoesNotExistException(ParserException):
+    """
+    Exception raised when attempting to add arguments to a subgroup that does not exist
+    """
+
+
 class SubgroupParserWithoutNameArgumentException(PowerAPIException):
     """
     Exception raised when a subparser without argument name is added to a parser
@@ -106,14 +112,20 @@ class AlreadyAddedArgumentException(ParserException):
 
 class AlreadyAddedSubparserException(ParserException):
     """
-    Exception raised when attempting to add an argument to a parser that already
-    have this argument
+    Exception raised when attempting to add a parser that already exists    """
 
+    def __init__(self, parser_name: str):
+        ParserException.__init__(self, parser_name)
+        self.msg = 'Parser already contain SubParser with name ' + parser_name
+
+
+class AlreadyAddedSubgroupException(ParserException):
     """
+    Exception raised when attempting to add a subgroup that already exists    """
 
-    def __init__(self, argument_name: str):
-        ParserException.__init__(self, argument_name)
-        self.msg = 'Parser already contain SubParser with name ' + argument_name
+    def __init__(self, subgroup_name: str):
+        ParserException.__init__(self, subgroup_name)
+        self.msg = 'Parser already contain Subgroup with name ' + subgroup_name
 
 
 class MissingArgumentException(ParserException):

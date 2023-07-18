@@ -5,26 +5,26 @@
   "5" : "this is a value",
   "input": {
     "in1": {
-      "m": "i1_model",
+      "model": "i1_model",
       "type": "i1_type",
-      "d": "i1_db",
-      "n": "i1_name"
+      "db": "i1_db",
+      "name": "i1_name"
     }
   },
   "output": {
     "o1": {
-      "m": "o1_model_x",
+      "model": "o1_model_x",
       "type": "o1_type",
       "db": "o1_db",
-      "c": "o1_col",
-       "n": "o1_name"
+      "collection": "o1_col",
+       "name": "o1_name"
     },
     "o2": {
-      "m": "o2_model",
+      "model": "o2_model",
       "type": "o2_type",
-      "d": "o2_db",
-      "c": "o2_col",
-       "n": "o2_name"
+      "db": "o2_db",
+      "collection": "o2_col",
+       "name": "o2_name"
     }
   }
 }
