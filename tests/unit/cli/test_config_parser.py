@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
-from samba.dcerpc.preg import file
 
 from powerapi.cli.config_parser import ConfigurationArgument, BaseConfigParser, RootConfigParser, SubgroupConfigParser
 from powerapi.cli.config_parser import store_true, store_val
