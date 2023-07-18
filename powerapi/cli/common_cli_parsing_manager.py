@@ -38,13 +38,6 @@ POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
 POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'OUTPUT_'
 POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
 POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'REPORT_MODIFIER_'
-POWERAPI_INPUT_ARGUMENTS_NAMES = ['uri', 'db', 'collection', 'name', 'model', 'port', 'files', 'filename', 'type']
-POWERAPI_OUTPUT_ARGUMENTS_NAMES = ['filename', 'uri', 'db', 'collection', 'name', 'model', 'port', 'tags', 'token',
-                                   'org', 'directory', 'filename', 'metric_name', 'metric_description',
-                                   'aggregation_period', 'type', 'root_directory_name', 'vm_directory_name_prefix',
-                                   'vm_directory_name_suffix']
-
-POWERAPI_REPORT_MODIFIER_ARGUMENTS_NAMES = ['u', 'uri', 'd', 'domain_regexp', 'n', 'name']
 
 
 def extract_file_names(arg, val, args, acc):
