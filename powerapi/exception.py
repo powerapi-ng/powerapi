@@ -279,3 +279,43 @@ class InvalidPrefixException(PowerAPIException):
         self.existing_prefix = existing_prefix
         self.msg = "The new prefix " + self.new_prefix + " has a conflict with the existing prefix " \
                    + self.existing_prefix
+
+
+class LibvirtException(PowerAPIException):
+    """
+    Exception raised when there are issues regarding the import of LibvirtException
+    """
+    def __init__(self, _):
+        PowerAPIException.__init__(self)
+
+
+class ProcessorTypeDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a ProcessorActorGenerator a processor factory with a type that is not
+    bound to a processor factory
+    """
+
+    def __init__(self, processor_type: str):
+        PowerAPIException.__init__(self)
+        self.processor_type = processor_type
+
+
+class ProcessorTypeAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a ProcessorActorGenerator a processor factory with a type already bound
+    to another processor factory
+    """
+
+    def __init__(self, processor_type: str):
+        PowerAPIException.__init__(self)
+        self.processor_type = processor_type
+
+
+class UnsupportedActorTypeException(ParserException):
+    """
+    Exception raised when the binding manager do not support an actor type
+    """
+
+    def __init__(self, actor_type: str):
+        ParserException.__init__(self, argument_name=actor_type)
+        self.msg = 'Unsupported Actor Type ' + actor_type

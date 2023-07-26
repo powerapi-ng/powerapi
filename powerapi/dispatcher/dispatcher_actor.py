@@ -140,6 +140,13 @@ class DispatcherState(State):
         """
         return self.formula_dict.items()
 
+    def set_formula_factory(self, formula_factory: Callable):
+        """
+        Set the formula_factory function
+        :param Callable formula_factory: The new formula_factory
+        """
+        self.formula_factory = formula_factory
+
 
 class DispatcherActor(Actor):
     """
@@ -163,6 +170,8 @@ class DispatcherActor(Actor):
 
         # (func): Function for creating Formula
         self.formula_init_function = formula_init_function
+
+        self.pushers = pushers
 
         # (powerapi.DispatcherState): Actor state
         self.state = DispatcherState(self, self._create_factory(pushers), route_table)
@@ -195,3 +204,9 @@ class DispatcherActor(Actor):
             return formula
 
         return factory
+
+    def update_state_formula_factory(self):
+        """
+        Update the formula_factory function of the state by using the pusher list
+        """
+        self.state.set_formula_factory(self._create_factory(self.pushers))

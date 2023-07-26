@@ -30,13 +30,14 @@
 import logging
 import os
 import sys
-from typing import Dict, Type
+from typing import Dict, Type, Callable
 
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
-    DatabaseNameAlreadyUsed
+    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
+from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
     VirtioFSDB, FileDB
@@ -52,7 +53,12 @@ COMPONENT_MODEL_KEY = 'model'
 COMPONENT_DB_NAME_KEY = 'db'
 COMPONENT_DB_COLLECTION_KEY = 'collection'
 COMPONENT_DB_MANAGER_KEY = 'db_manager'
-COMPONENT_DB_MAX_BUFFER_SIZE = 'max_buffer_size'
+COMPONENT_DB_MAX_BUFFER_SIZE_KEY = 'max_buffer_size'
+COMPONENT_URI_KEY = 'uri'
+
+ACTOR_NAME_KEY = 'actor_name'
+TARGET_ACTORS_KEY = 'target_actors'
+REGEXP_KEY = 'regexp'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
@@ -301,7 +307,7 @@ class PusherGenerator(DBActorGenerator):
         if 'max_buffer_size' in component_config.keys():
             return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                                database=component_config[COMPONENT_DB_MANAGER_KEY],
-                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE])
+                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE_KEY])
 
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                            database=component_config[COMPONENT_DB_MANAGER_KEY],
@@ -340,3 +346,51 @@ class ReportModifierGenerator:
             report_modifier = self.factory[report_modifier_name](config['report_modifier'][report_modifier_name])
             report_modifier_list.append(report_modifier)
         return report_modifier_list
+
+
+class ProcessorGenerator(Generator):
+    """
+    Generator that initialises the processor from config
+    """
+
+    def __init__(self):
+        Generator.__init__(self, component_group_name='processor')
+
+        self.processor_factory = {
+            'libvirt': lambda processor_config: LibvirtProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                                      uri=processor_config[COMPONENT_URI_KEY],
+                                                                      regexp=processor_config[REGEXP_KEY])
+
+        }
+
+    def remove_processor_factory(self, processor_type: str):
+        """
+        remove a processor from generator
+        """
+        if processor_type not in self.processor_factory:
+            raise ProcessorTypeDoesNotExist(processor_type=processor_type)
+        del self.processor_factory[processor_type]
+
+    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable):
+        """
+        add a processor to generator
+        """
+        if processor_type in self.processor_factory:
+            raise ProcessorTypeAlreadyUsed(processor_type=processor_type)
+        self.processor_factory[processor_type] = processor_factory_function
+
+    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+
+        return self._actor_factory(actor_name, main_config, component_config)
+
+    def _actor_factory(self, actor_name: str, _, component_config: dict):
+
+        processor_actor_type = component_config[COMPONENT_TYPE_KEY]
+
+        if processor_actor_type not in self.processor_factory:
+            msg = 'Configuration error : processor actor type ' + processor_actor_type + ' unknown'
+            print(msg, file=sys.stderr)
+            raise PowerAPIException(msg)
+        else:
+            component_config[ACTOR_NAME_KEY] = actor_name
+            return self.processor_factory[processor_actor_type](component_config)

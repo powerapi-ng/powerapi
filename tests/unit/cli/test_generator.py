@@ -1,8 +1,6 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, University of Lille
 # All rights reserved.
-import os
-import re
 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,10 +26,17 @@ import re
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import os
+import re
+from re import Pattern
+
 import pytest
 
-from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator
+from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
+from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
+from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.database import MongoDB, CsvDB, SocketDB, InfluxDB, PrometheusDB, InfluxDB2
@@ -110,7 +115,8 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
             assert False
 
 
-def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(several_inputs_outputs_stream_mongo_without_some_arguments_config):
+def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
+        several_inputs_outputs_stream_mongo_without_some_arguments_config):
     """
     Test that PullerGenerator raise a PowerAPIException when some arguments are missing for mongo input
     """
@@ -120,7 +126,8 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(s
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
 
 
-def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_actors(several_inputs_outputs_stream_csv_without_some_arguments_config):
+def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_actors(
+        several_inputs_outputs_stream_csv_without_some_arguments_config):
     """
     Test that PullerGenerator generates the csv related actors even if there are some missing arguments
     """
@@ -130,7 +137,8 @@ def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_ac
 
     assert len(pullers) == len(several_inputs_outputs_stream_csv_without_some_arguments_config['input'])
 
-    for puller_name, current_puller_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['input'].items():
+    for puller_name, current_puller_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['input'].\
+            items():
 
         if current_puller_infos['type'] == 'csv':
             assert puller_name in pullers
@@ -171,7 +179,8 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
     assert len(generator.report_classes) == 5
 
 
-def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_raise_an_exception(mongodb_input_output_stream_config):
+def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_report_model_raise_an_exception(
+        mongodb_input_output_stream_config):
     """
     Test that PullGenerator raises PowerAPIException when the model class is not defined
     """
@@ -181,7 +190,8 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
         _ = generator.generate(mongodb_input_output_stream_config)
 
 
-def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(mongodb_input_output_stream_config):
+def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(
+        mongodb_input_output_stream_config):
     """
     Test that PullGenerator raises a PowerAPIException when an input type is not defined
     """
@@ -291,7 +301,8 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert False
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(several_inputs_outputs_stream_mongo_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(
+        several_inputs_outputs_stream_mongo_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for mongo output
     """
@@ -301,7 +312,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_influx_output(several_inputs_outputs_stream_influx_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_influx_output(
+        several_inputs_outputs_stream_influx_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for influx output
     """
@@ -311,7 +323,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_influx_output
         generator.generate(several_inputs_outputs_stream_influx_without_some_arguments_config)
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_prometheus_output(several_inputs_outputs_stream_prometheus_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_prometheus_output(
+        several_inputs_outputs_stream_prometheus_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for prometheus output
     """
@@ -321,7 +334,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_prometheus_ou
         generator.generate(several_inputs_outputs_stream_prometheus_without_some_arguments_config)
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_output(several_inputs_outputs_stream_opentsdb_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_output(
+        several_inputs_outputs_stream_opentsdb_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for opentsdb output
     """
@@ -331,7 +345,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_outp
         generator.generate(several_inputs_outputs_stream_opentsdb_without_some_arguments_config)
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_virtiofs_output(several_inputs_outputs_stream_virtiofs_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_virtiofs_output(
+        several_inputs_outputs_stream_virtiofs_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for virtiofs output
     """
@@ -341,7 +356,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_virtiofs_outp
         generator.generate(several_inputs_outputs_stream_virtiofs_without_some_arguments_config)
 
 
-def test_generate_pusher_raise_exception_when_missing_arguments_in_filedb_output(several_inputs_outputs_stream_filedb_without_some_arguments_config):
+def test_generate_pusher_raise_exception_when_missing_arguments_in_filedb_output(
+        several_inputs_outputs_stream_filedb_without_some_arguments_config):
     """
     Test that PusherGenerator raises a PowerAPIException when some arguments are missing for filedb output
     """
@@ -351,7 +367,8 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_filedb_output
         generator.generate(several_inputs_outputs_stream_filedb_without_some_arguments_config)
 
 
-def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_actors(several_inputs_outputs_stream_csv_without_some_arguments_config):
+def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_actors(
+        several_inputs_outputs_stream_csv_without_some_arguments_config):
     """
     Test that PusherGenerator generates the csv related actors even if there are some missing arguments
     """
@@ -362,7 +379,8 @@ def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_a
 
     assert len(pushers) == len(several_inputs_outputs_stream_csv_without_some_arguments_config['output'])
 
-    for pusher_name, current_pusher_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['output'].items():
+    for pusher_name, current_pusher_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['output'].\
+            items():
         pusher_type = current_pusher_infos['type']
         if pusher_type == 'csv':
             assert pusher_name in pushers
@@ -376,3 +394,64 @@ def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_a
             generation_checked = True
 
     assert generation_checked
+
+
+################################
+# ProcessorActorGenerator Test #
+################################
+def test_generate_processor_from_empty_config_dict_raise_an_exception():
+    """
+    Test that ProcessGenerator raise an exception when there is no processor argument
+    """
+    conf = {}
+    generator = ProcessorGenerator()
+
+    with pytest.raises(PowerAPIException):
+        generator.generate(conf)
+
+
+def test_generate_processor_from_libvirt_config(libvirt_processor_config):
+    """
+    Test that generation for libvirt processor from a config works correctly
+    """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(libvirt_processor_config)
+
+    assert len(processors) == len(libvirt_processor_config)
+    assert 'my_processor' in processors
+    processor = processors['my_processor']
+
+    assert isinstance(processor, LibvirtProcessorActor)
+
+    assert processor.state.daemon_uri is None
+    assert isinstance(processor.state.regexp, Pattern)
+
+
+def test_generate_several_libvirt_processors_from_config(several_libvirt_processors_config):
+    """
+    Test that several libvirt processors are correctly generated
+    """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(several_libvirt_processors_config)
+
+    assert len(processors) == len(several_libvirt_processors_config['processor'])
+
+    for processor_name, current_processor_infos in several_libvirt_processors_config['processor'].items():
+        assert processor_name in processors
+        assert isinstance(processors[processor_name], LibvirtProcessorActor)
+
+        assert processors[processor_name].state.daemon_uri is None
+        assert isinstance(processors[processor_name].state.regexp, Pattern)
+
+
+def test_generate_libvirt_processor_raise_exception_when_missing_arguments(
+        several_libvirt_processors_without_some_arguments_config):
+    """
+     Test that ProcessorGenerator raises a PowerAPIException when some arguments are missing for libvirt processor
+     """
+    generator = ProcessorGenerator()
+
+    with pytest.raises(PowerAPIException):
+        generator.generate(several_libvirt_processors_without_some_arguments_config)

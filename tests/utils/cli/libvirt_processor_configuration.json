@@ -1,0 +1,9 @@
+{
+  "processor": {
+    "my_processor": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "processor": {
+    "my_processor_1": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_1"
+    },
+    "my_processor_2": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_2"
+    },
+    "my_processor_3": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_3"
+    },
+    "my_processor_4": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_4"
+    },
+    "my_processor_5": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_5"
+    },
+    "my_processor_6": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_6"
+    }
+  }
+}

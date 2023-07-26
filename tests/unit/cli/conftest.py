@@ -31,6 +31,10 @@ import sys
 
 import pytest
 import tests.utils.cli as test_files_module
+from powerapi.cli.binding_manager import INPUT_GROUP, OUTPUT_GROUP, PROCESSOR_GROUP, ProcessorBindingManager
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, ProcessorGenerator
+from powerapi.dispatcher import DispatcherActor, RouteTable
+from powerapi.filter import Filter
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
     generate_cli_configuration_from_json_file
 from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
@@ -183,6 +187,23 @@ def several_inputs_outputs_stream_filedb_without_some_arguments_config(several_i
 
 
 @pytest.fixture
+def several_libvirt_processors_config():
+    """
+    Configuration with several libvirt processors
+    """
+    return load_configuration_from_json_file(file_name='several_libvirt_processors_configuration.json')
+
+
+@pytest.fixture
+def several_libvirt_processors_without_some_arguments_config():
+    """
+    Configuration with several libvirt processors
+    """
+    return load_configuration_from_json_file(
+        file_name='several_libvirt_processors_without_some_arguments_configuration.json')
+
+
+@pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     Valid configuration with csv as input and output and stream mode disabled
@@ -229,6 +250,14 @@ def config_without_output(csv_io_postmortem_config):
     csv_io_postmortem_config.pop('output')
 
     return csv_io_postmortem_config
+
+
+@pytest.fixture
+def libvirt_processor_config():
+    """
+    Configuration with libvirt as processor
+    """
+    return load_configuration_from_json_file(file_name='libvirt_processor_configuration.json')
 
 
 @pytest.fixture()
@@ -444,6 +473,9 @@ def root_config_parsing_manager_with_mandatory_and_optional_arguments():
 
 @pytest.fixture
 def test_files_path():
+    """
+    Return the path of directory containing tests files
+    """
     return test_files_module.__path__[0]
 
 
@@ -462,8 +494,101 @@ def cli_configuration(config_file: str):
 
 @pytest.fixture()
 def empty_cli_configuration():
+    """
+    Clean the CLI arguments
+    """
     sys.argv = []
 
     yield None
 
     sys.argv = []
+
+
+@pytest.fixture
+def puller_to_libvirt_processor_binding_configuration():
+    """
+    Return a dictionary containing bindings with a libvirt processor
+    """
+    return load_configuration_from_json_file(file_name='puller_to_libvirt_processor_binding_configuration.json')
+
+
+@pytest.fixture
+def pusher_to_libvirt_processor_wrong_binding_configuration():
+    """
+    Return a dictionary containing bindings with a libvirt processor with a bind to a pusher
+    """
+    return load_configuration_from_json_file(file_name='pusher_to_libvirt_processor_wrong_binding_configuration.json')
+
+
+@pytest.fixture
+def non_existent_puller_to_libvirt_processor_configuration():
+    """
+    Return a dictionary containing bindings with a libvirt processor with a bind to a pusher
+    """
+    return load_configuration_from_json_file(
+        file_name='libvirt_processor_binding_with_non_existent_puller_configuration.json')
+
+
+@pytest.fixture
+def libvirt_processor_binding_actors_and_dictionary(puller_to_libvirt_processor_binding_configuration):
+    """
+    Return a list of dictionary which contains actors as well as the expected unified dictionary related to the actor
+    list
+    """
+    actors = []
+    expected_actors_dictionary = {INPUT_GROUP: {}, OUTPUT_GROUP: {}, PROCESSOR_GROUP: {}}
+
+    report_filter = Filter()
+    puller_generator = PullerGenerator(report_filter=report_filter)
+    pullers = puller_generator.generate(main_config=puller_to_libvirt_processor_binding_configuration)
+    actors.append(pullers)
+
+    expected_actors_dictionary[INPUT_GROUP].update(pullers)
+
+    pusher_generator = PusherGenerator()
+    pushers = pusher_generator.generate(main_config=puller_to_libvirt_processor_binding_configuration)
+    actors.append(pushers)
+
+    expected_actors_dictionary[OUTPUT_GROUP].update(pushers)
+
+    route_table = RouteTable()
+
+    dispatcher = DispatcherActor(name='dispatcher', formula_init_function=None, pushers=pushers,
+                                 route_table=route_table)
+
+    report_filter.filter(lambda msg: True, dispatcher)
+
+    processor_generator = ProcessorGenerator()
+    processors = processor_generator.generate(main_config=puller_to_libvirt_processor_binding_configuration)
+    actors.append(processors)
+
+    expected_actors_dictionary[PROCESSOR_GROUP].update(processors)
+
+    return actors, expected_actors_dictionary
+
+
+@pytest.fixture
+def dispatcher_actor_in_dictionary():
+    """
+    Return a DistpatcherActor in a dictionary
+    """
+
+    route_table = RouteTable()
+
+    dispatcher = DispatcherActor(name='dispatcher', formula_init_function=None, pushers=None,
+                                 route_table=route_table)
+
+    return {dispatcher.name: dispatcher}
+
+
+@pytest.fixture
+def libvirt_processor_binding_manager(libvirt_processor_binding_actors_and_dictionary):
+    """
+    Return a ProcessorBindingManager with a libvirt Processor
+    """
+    actors = {}
+
+    for current_actors in libvirt_processor_binding_actors_and_dictionary[0]:
+        actors.update(current_actors)
+
+    return ProcessorBindingManager(actors=actors)
