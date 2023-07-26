@@ -64,7 +64,7 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def started_fake_dispatcher(self, dummy_pipe_in):
         """
-            Return a started DummyActor. When the test is finished, the actor is stopped
+        Return a started DummyActor. When the test is finished, the actor is stopped
         """
         dispatcher = DummyActor(DISPATCHER_NAME, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
         dispatcher.start()
@@ -75,7 +75,7 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def fake_filter(self, started_fake_dispatcher):
         """
-            Return a fake filter for a started dispatcher. The use rule always returns True
+        Return a fake filter for a started dispatcher. The use rule always returns True
         """
         fake_filter = Filter()
         fake_filter.filter(filter_rule, started_fake_dispatcher)
@@ -84,7 +84,7 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def empty_filter(self):
         """
-            Return a filter withour rules
+        Return a filter withour rules
         """
         fake_filter = Filter()
         return fake_filter
@@ -97,7 +97,7 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def actor_without_rules(self, empty_filter):
         """
-            Return a SimplePullerActor with a empty filter
+        Return a SimplePullerActor with a empty filter
         """
         return SimplePullerActor(name=ACTOR_NAME, number_of_reports_to_send=NUMBER_OF_REPORTS_TO_SEND,
                                  report_type_to_send=REPORT_TYPE_TO_BE_SENT, report_filter=empty_filter)
@@ -105,8 +105,8 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def init_actor_without_rules(self, actor_without_rules):
         """
-            Return an initialized actor, i.e., started and with data and control sockets connected. At the end of the
-            test, the actor is stopped
+        Return an initialized actor, i.e., started and with data and control sockets connected. At the end of the
+        test, the actor is stopped
         """
         actor_without_rules.start()
         actor_without_rules.connect_data()
@@ -119,7 +119,7 @@ class TestSimplePuller(AbstractTestActor):
     @pytest.fixture
     def init_actor_without_terminate(self, actor):
         """
-            Return an initialized actor, i.e., started and with data and control sockets connected
+        Return an initialized actor, i.e., started and with data and control sockets connected
         """
         actor.start()
         actor.connect_data()
@@ -128,7 +128,7 @@ class TestSimplePuller(AbstractTestActor):
 
     def test_create_simple_puller_without_rules_is_no_initialized(self, init_actor_without_rules, shutdown_system):
         """
-            Check that a SimplePuller without rules is no initialized
+        Check that a SimplePuller without rules is no initialized
         """
         init_actor_without_rules.send_control(StartMessage('system'))
 
@@ -141,7 +141,7 @@ class TestSimplePuller(AbstractTestActor):
                                                     shutdown_system):
 
         """
-            Check that a SimplePuller sends reports to dispatcher
+        Check that a SimplePuller sends reports to dispatcher
         """
         count = 0
         report = REPORT_TYPE_TO_BE_SENT.create_empty_report()
@@ -158,7 +158,7 @@ class TestSimplePuller(AbstractTestActor):
                                                                             shutdown_system):
 
         """
-            Check that a SimplePuller stops when it receives a PoisonPillMessage
+        Check that a SimplePuller stops when it receives a PoisonPillMessage
         """
         init_actor_without_terminate.send_control(PoisonPillMessage('simple-test-simple-puller'))
         assert not is_actor_alive(init_actor_without_terminate)

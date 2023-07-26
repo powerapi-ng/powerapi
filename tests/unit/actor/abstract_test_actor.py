@@ -316,8 +316,6 @@ class AbstractTestActor:
     def test_send_StartMessage_answer_OkMessage(self, init_actor):
         init_actor.send_control(StartMessage(SENDER_NAME))
         msg = init_actor.receive_control(2000)
-        print('Message....')
-        print(msg)
         assert isinstance(msg, OKMessage)
 
     def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, started_actor):
