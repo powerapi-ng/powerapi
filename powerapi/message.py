@@ -171,8 +171,3 @@ class PoisonPillMessage(Message):
             return other.is_soft == self.is_soft and other.is_hard == self.is_hard
         return False
 
-
-class UnknownMessageTypeException(PowerAPIException):
-    """
-    Exception happen when we don't know the message type
-    """

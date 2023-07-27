@@ -48,7 +48,7 @@ except ImportError:
 
 class LibvirtProcessorState(ProcessorState):
     """
-
+    State related to a LibvirtProcssorActor
     """
 
     def __init__(self, actor: Actor, uri: str, regexp: str, target_actors: list):

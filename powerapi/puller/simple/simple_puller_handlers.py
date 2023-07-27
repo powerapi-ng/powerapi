@@ -29,7 +29,8 @@
 
 from powerapi.actor import State
 from powerapi.handler import Handler, StartHandler
-from powerapi.message import Message, SimplePullerSendReportsMessage, UnknownMessageTypeException
+from powerapi.message import Message, SimplePullerSendReportsMessage
+from powerapi.exception import UnknownMessageTypeException
 from powerapi.puller.handlers import PullerInitializationException
 
 

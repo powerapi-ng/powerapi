@@ -319,3 +319,9 @@ class UnsupportedActorTypeException(ParserException):
     def __init__(self, actor_type: str):
         ParserException.__init__(self, argument_name=actor_type)
         self.msg = 'Unsupported Actor Type ' + actor_type
+
+
+class UnknownMessageTypeException(PowerAPIException):
+    """
+    Exception happen when we don't know the message type
+    """
