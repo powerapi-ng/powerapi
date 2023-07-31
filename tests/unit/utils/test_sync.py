@@ -47,12 +47,12 @@ class Report2(Report):
 
 def type1(t):
     """ Identificator of type1"""
-    return type(t) == Report1
+    return isinstance(t, Report1)
 
 
 def type2(t):
     """ Identificator of type2"""
-    return type(t) == Report2
+    return isinstance(t, Report2)
 
 
 def test_request_while_no_pair_available_return_None():
