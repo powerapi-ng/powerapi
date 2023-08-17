@@ -26,18 +26,37 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.handler import InitHandler
-from powerapi.report import Report
+from threading import Thread
+
+from powerapi.actor import State
+from powerapi.handler import StartHandler, PoisonPillMessageHandler
 
 
-class ProcessorReportHandler(InitHandler):
+class K8sMonitorAgentStartMessageHandler(StartHandler):
     """
-    Processor the report by modifying it in some way and then send the modified report to targets actos
+    Start the K8sMonitorAgent
     """
 
-    def _send_report(self, report: Report):
-        """
-        Send the report to the actor target
-        """
-        for target in self.state.target_actors:
-            target.send_data(report)
+    def __init__(self, state: State):
+        StartHandler.__init__(self, state=state)
+
+    def initialization(self):
+        self.state.active_monitoring = True
+        self.state.listener_agent.connect_data()
+        monitoring_thread = Thread(target=self.state.actor.query_k8s)
+        monitoring_thread.start()
+        self.state.monitor_thread = monitoring_thread
+
+
+class K8sMonitorAgentPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Stop the K8sMonitorAgent
+    """
+
+    def __init__(self, state: State):
+        PoisonPillMessageHandler.__init__(self, state=state)
+
+    def teardown(self, soft=False):
+        self.state.actor.logger.debug('teardown monitor')
+        self.state.active_monitoring = False
+        self.state.monitor_thread.join(10)

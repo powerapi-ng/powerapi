@@ -31,7 +31,7 @@ import re
 
 from powerapi.actor import State
 from powerapi.exception import LibvirtException
-from powerapi.processor.handlers import ReportHandler
+from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.handler import StartHandler
 from powerapi.report import Report
 
@@ -43,13 +43,13 @@ except ImportError:
     libvirtError = LibvirtException
 
 
-class LibvirtProcessorReportHandler(ReportHandler):
+class LibvirtProcessorReportHandler(ProcessorReportHandler):
     """
     Modify reports by replacing libvirt id by open stak uuid
     """
 
     def __init__(self, state):
-        ReportHandler.__init__(self, state=state)
+        ProcessorReportHandler.__init__(self, state=state)
 
     def handle(self, report: Report):
         """

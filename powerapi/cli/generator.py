@@ -37,6 +37,8 @@ from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
+from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
+    TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
@@ -59,6 +61,9 @@ COMPONENT_URI_KEY = 'uri'
 ACTOR_NAME_KEY = 'actor_name'
 TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
+K8S_API_MODE_KEY = 'ks8_api_mode'
+TIME_INTERVAL_KEY = 'time_interval'
+TIMEOUT_QUERY_KEY = 'time_interval'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
@@ -359,7 +364,18 @@ class ProcessorGenerator(Generator):
         self.processor_factory = {
             'libvirt': lambda processor_config: LibvirtProcessorActor(name=processor_config[ACTOR_NAME_KEY],
                                                                       uri=processor_config[COMPONENT_URI_KEY],
-                                                                      regexp=processor_config[REGEXP_KEY])
+                                                                      regexp=processor_config[REGEXP_KEY]),
+            'k8s': lambda processor_config: K8sProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                              ks8_api_mode=None if
+                                                              K8S_API_MODE_KEY not in processor_config else
+                                                              processor_config[K8S_API_MODE_KEY],
+                                                              time_interval=TIME_INTERVAL_DEFAULT_VALUE if
+                                                              TIME_INTERVAL_KEY not in processor_config else
+                                                              processor_config[TIME_INTERVAL_KEY],
+                                                              timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
+                                                              TIMEOUT_QUERY_KEY not in processor_config
+                                                              else processor_config[TIMEOUT_QUERY_KEY]
+                                                              )
 
         }
 

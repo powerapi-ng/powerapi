@@ -26,8 +26,30 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+"""
+This module provides two k8s specific actors
+* `K8sProcessorActor`, which add k8s metadata to reports and forward them to another actor.
+* `K8sMonitorAgent`, which monitors the k8s API and sends messages when pod are created, removed or modified.
+"""
+import logging
+
+from typing import Tuple, Dict
+
 from powerapi.actor import Actor
-from powerapi.processor.processor_actor import ProcessorState
+from powerapi.message import K8sPodUpdateMessage, StartMessage, PoisonPillMessage
+from powerapi.processor.k8s.k8s_monitor_actor import ADDED_EVENT, DELETED_EVENT, MODIFIED_EVENT
+from powerapi.processor.k8s.k8s_processor_handlers import K8sProcessorActorHWPCReportHandler, \
+    K8sProcessorActorK8sPodUpdateMessageHandler, K8sProcessorActorStartMessageHandler, \
+    K8sProcessorActorPoisonPillMessageHandler
+from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
+from powerapi.report import HWPCReport
+
+DEFAULT_K8S_CACHE_NAME = 'k8s_cache'
+DEFAULT_K8S_MONITOR_NAME = 'k8s_monitor'
+
+TIME_INTERVAL_DEFAULT_VALUE = 10
+TIMEOUT_QUERY_DEFAULT_VALUE = 5
 
 
 class K8sMetadataCache:
@@ -36,10 +58,14 @@ class K8sMetadataCache:
     (namespace, labels and id of associated containers)
     """
 
-    def __init__(self):
-        self.pod_labels = dict()  # (ns, pod) => [labels]
-        self.containers_pod = dict()  # container_id => (ns, pod)
-        self.pod_containers = dict()  # (ns, pod) => [container_ids]
+    def __init__(self, name: str = DEFAULT_K8S_CACHE_NAME, level_logger: int = logging.WARNING):
+
+        self.pod_labels = {}  # (ns, pod) => [labels]
+        self.containers_pod = {}  # container_id => (ns, pod)
+        self.pod_containers = {}  # (ns, pod) => [container_ids]
+
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(level_logger)
 
     def update_cache(self, message: K8sPodUpdateMessage):
         """
@@ -47,7 +73,7 @@ class K8sMetadataCache:
 
         Register this function as a callback for K8sMonitorAgent messages.
         """
-        if message.event == "ADDED":
+        if message.event == ADDED_EVENT:
             self.pod_labels[(message.namespace, message.pod)] = message.labels
             self.pod_containers[
                 (message.namespace, message.pod)
@@ -55,12 +81,8 @@ class K8sMetadataCache:
             for container_id in message.containers_id:
                 self.containers_pod[container_id] = \
                     (message.namespace, message.pod)
-            # logger.debug(
-            #     "Pod added  %s %s - mdt: %s",
-            #     message.namespace, message.pod, message.containers_id
-            # )
 
-        elif message.event == "DELETED":
+        elif message.event == DELETED_EVENT:
             self.pod_labels.pop((message.namespace, message.pod), None)
             for container_id in self.pod_containers.pop(
                     (message.namespace, message.pod), []
@@ -68,7 +90,7 @@ class K8sMetadataCache:
                 self.containers_pod.pop(container_id, None)
             # logger.debug("Pod removed %s %s", message.namespace, message.pod)
 
-        elif message.event == "MODIFIED":
+        elif message.event == MODIFIED_EVENT:
             self.pod_labels[(message.namespace, message.pod)] = message.labels
             for prev_container_id in self.pod_containers.pop(
                     (message.namespace, message.pod), []
@@ -81,18 +103,14 @@ class K8sMetadataCache:
                 self.containers_pod[container_id] = \
                     (message.namespace, message.pod)
 
-            # logger.debug(
-            #     "Pod modified %s %s , mdt: %s",
-            #     message.namespace, message.pod, message.containers_id
-            # )
         else:
-            logger.error("Error : unknown event type %s ", message.event)
+            self.logger.error("Error : unknown event type %s ", message.event)
 
-    def get_container_pod(self, container_id) -> Tuple[str, str]:
+    def get_container_pod(self, container_id: str) -> Tuple[str, str]:
         """
         Get the pod for a container_id.
 
-        :param container_id
+        :param str container_id: Id of the container
         :return a tuple (namespace, pod_name) of (None, None) if no pod
                 could be found for this container
         """
@@ -105,8 +123,8 @@ class K8sMetadataCache:
         """
         Get labels for a pod.
 
-        :param namespace
-        :param
+        :param str namespace: The namespace related to the pod
+        :param str pod_name: The name of the pod
         :return a dict {label_name, label_value}
         """
         return self.pod_labels.get((namespace, pod_name), dict)
@@ -117,30 +135,41 @@ class K8sProcessorState(ProcessorState):
     State related to a K8SProcessorActor
     """
 
-    def __init__(self, actor: Actor, uri: str, regexp: str, target_actors: list):
+    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list,
+                 monitor_agent_name: str, k8s_api_mode: str, time_interval: int, timeout_query: int):
         ProcessorState.__init__(self, actor=actor, target_actors=target_actors)
-        self.regexp = re.compile(regexp)
-        self.daemon_uri = None if uri == '' else uri
-        print('used openReadOnly', str(type(openReadOnly)))
-        self.libvirt = openReadOnly(self.daemon_uri)
+        self.metadata_cache = metadata_cache
+        self.monitor_agent = None
+        self.monitor_agent_name = monitor_agent_name
+        self.k8s_api_mode = k8s_api_mode
+        self.time_interval = time_interval
+        self.timeout_query = timeout_query
 
 
 class K8sProcessorActor(ProcessorActor):
     """
-    Processor Actor that modifies reports by replacing libvirt id by open stak uuid
+    Processor Actor that modifies reports by adding K8s related metadata
     """
 
-    def __init__(self, name: str, uri: str, regexp: str, target_actors: list = None,
-                 level_logger: int = logging.WARNING,
-                 timeout: int = 5000):
+    def __init__(self, name: str, ks8_api_mode: str, target_actors: list = None, level_logger: int = logging.WARNING,
+                 timeout: int = 5000, time_interval: int = TIME_INTERVAL_DEFAULT_VALUE,
+                 timeout_query: int = TIMEOUT_QUERY_DEFAULT_VALUE):
         ProcessorActor.__init__(self, name=name, target_actors=target_actors, level_logger=level_logger,
                                 timeout=timeout)
-        self.state = LibvirtProcessorState(actor=self, uri=uri, regexp=regexp, target_actors=target_actors)
+
+        self.state = K8sProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
+                                       monitor_agent_name=DEFAULT_K8S_MONITOR_NAME, target_actors=target_actors,
+                                       k8s_api_mode=ks8_api_mode, time_interval=time_interval,
+                                       timeout_query=timeout_query)
 
     def setup(self):
         """
-        Define ReportMessage handler and StartMessage handler
+        Define HWPCReportMessage handler, StartMessage handler and PoisonPillMessage Handler
         """
         ProcessorActor.setup(self)
-        self.add_handler(message_type=StartMessage, handler=LibvirtProcessorStartHandler(state=self.state))
-        self.add_handler(message_type=Report, handler=LibvirtProcessorReportHandler(state=self.state))
+        self.add_handler(message_type=StartMessage, handler=K8sProcessorActorStartMessageHandler(state=self.state))
+        self.add_handler(message_type=HWPCReport, handler=K8sProcessorActorHWPCReportHandler(state=self.state))
+        self.add_handler(message_type=PoisonPillMessage,
+                         handler=K8sProcessorActorPoisonPillMessageHandler(state=self.state))
+        self.add_handler(message_type=K8sPodUpdateMessage,
+                         handler=K8sProcessorActorK8sPodUpdateMessageHandler(state=self.state))

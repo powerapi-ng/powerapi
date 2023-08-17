@@ -57,7 +57,7 @@ class ProcessorActor(Actor):
     """
     ProcessorActor class
 
-    A processor modifies a report and sends the modified report to a list of target
+    A processor modifies a report and sends the modified report to a list of targets
     actor.
     """
 
@@ -73,10 +73,9 @@ class ProcessorActor(Actor):
 
     def setup(self):
         """
-        Define StartMessage handler and PoisonPillMessage handler and ReportMessage handler
+        Define PoisonPillMessage handler
         """
         self.add_handler(message_type=PoisonPillMessage, handler=PoisonPillMessageHandler(state=self.state))
-        # self.add_handler(message_type=StartMessage, handler=StartHandler(state=self.state))
 
     def add_target_actor(self, actor: Actor):
         """

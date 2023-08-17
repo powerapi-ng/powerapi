@@ -48,4 +48,4 @@ class DummyHandler(Handler):
         :param Object msg: the message received by the actor
         """
         self.state.pipe.send((self.state.actor.name, msg))
-        logging.debug('receive : ' + str(msg), extra={'actor_name': self.state.actor.name})
+        logging.debug('received : ' + str(msg), extra={'actor_name': self.state.actor.name})

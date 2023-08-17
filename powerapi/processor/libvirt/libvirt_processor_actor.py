@@ -55,7 +55,6 @@ class LibvirtProcessorState(ProcessorState):
         ProcessorState.__init__(self, actor=actor, target_actors=target_actors)
         self.regexp = re.compile(regexp)
         self.daemon_uri = None if uri == '' else uri
-        print('used openReadOnly', str(type(openReadOnly)))
         self.libvirt = openReadOnly(self.daemon_uri)
 
 

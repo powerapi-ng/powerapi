@@ -26,3 +26,123 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from powerapi.actor import State
+from powerapi.handler import Handler, StartHandler, PoisonPillMessageHandler
+from powerapi.message import Message
+from powerapi.processor.handlers import ProcessorReportHandler
+
+POD_NAMESPACE_METADATA_KEY = 'pod_namespace'
+POD_NAME_METADATA_KEY = 'pod_name'
+
+
+class K8sProcessorActorStartMessageHandler(StartHandler):
+    """
+    Start the K8sProcessorActor
+    """
+
+    def __init__(self, state: State):
+        StartHandler.__init__(self, state=state)
+
+    #
+    def initialization(self):
+        for actor in self.state.target_actors:
+            actor.connect_data()
+
+
+class K8sProcessorActorHWPCReportHandler(ProcessorReportHandler):
+    """
+    Process the HWPC Reports
+    """
+
+    def __init__(self, state: State):
+        ProcessorReportHandler.__init__(self, state=state)
+
+    def handle(self, message: Message):
+
+        # Add pod name, namespace and labels to the report
+        c_id = clean_up_container_id(message.target)
+
+        print('c_id', c_id)
+        print('containers pods', str(self.state.metadata_cache.containers_pod))
+        namespace, pod = self.state.metadata_cache.get_container_pod(c_id)
+        if namespace is None or pod is None:
+            self.state.actor.logger.warning(
+                f"Container with no associated pod : {message.target}, {c_id}, {namespace}, {pod}"
+            )
+        else:
+            message.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
+            message.metadata[POD_NAME_METADATA_KEY] = pod
+            self.state.actor.logger.debug(
+                f"K8sMdtModifierActor add metadata to report {c_id}, {namespace}, {pod}"
+            )
+
+            labels = self.state.metadata_cache.get_pod_labels(namespace, pod)
+            for label_key, label_value in labels.items():
+                message.metadata[f"label_{label_key}"] = label_value
+
+        self._send_report(report=message)
+
+
+class K8sProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+     Stop the K8sProcessorActor
+     """
+
+    def __init__(self, state: State):
+        PoisonPillMessageHandler.__init__(self, state=state)
+
+    def teardown(self, soft=False):
+        for actor in self.state.target_actors:
+            actor.close()
+
+
+#         self.state.actor.logger.debug('Killing monitor actor..')
+#         self.state.monitor_agent.active_monitoring = False
+#         self.state.monitor_agent.send_data(PoisonPillMessage(soft=soft, sender_name=self.state.actor.name))
+#         if self.state.monitor_agent.is_alive():
+#             self.state.monitor_agent.terminate()
+#         self.state.monitor_agent.socket_interface.close()
+#         self.state.monitor_agent.join(timeout=10)
+#         self.state.actor.logger.debug('teardown finished..')
+
+
+class K8sProcessorActorK8sPodUpdateMessageHandler(Handler):
+    """
+    Process the K8sPodUpdateMessage
+    """
+
+    def __init__(self, state: State):
+        Handler.__init__(self, state=state)
+
+    def handle(self, message: Message):
+        self.state.actor.logger.debug(f"received K8sPodUpdateMessage message {message}")
+        self.state.metadata_cache.update_cache(message)
+
+
+def clean_up_container_id(c_id):
+    """
+    On some system, we receive a container id that requires some cleanup to match
+    the id returned by the k8s api
+    k8s creates cgroup directories, which is what we get as id from the sensor,
+    according to this pattern:
+         /kubepods/<qos>/pod<pod-id>/<containerId>
+    depending on the container engine, we need to clean up the <containerId> part
+    """
+
+    if "/docker-" in c_id:
+        # for path like :
+        # /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod435532e3_546d_45e2_8862_d3c7b320d2d9.slice/
+        # docker-68aa4b590997e0e81257ac4a4543d5b278d70b4c279b4615605bb48812c9944a.scope
+        # where we actually only want the end of that path :
+        # 68aa4b590997e0e81257ac4a4543d5b278d70b4c279b4615605bb48812c9944a
+        try:
+            return c_id[c_id.rindex("/docker-") + 8: -6]
+        except ValueError:
+            return c_id
+    else:
+        # /kubepods/besteffort/pod42006d2c-cad7-4575-bfa3-91848a558743/ba28184d18d3fc143d5878c7adbefd7d1651db70ca2787f40385907d3304e7f5
+        try:
+            return c_id[c_id.rindex("/") + 1:]
+        except ValueError:
+            return c_id
