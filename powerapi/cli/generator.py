@@ -63,7 +63,7 @@ TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
 K8S_API_MODE_KEY = 'ks8_api_mode'
 TIME_INTERVAL_KEY = 'time_interval'
-TIMEOUT_QUERY_KEY = 'time_interval'
+TIMEOUT_QUERY_KEY = 'timeout_query'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'

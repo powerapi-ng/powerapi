@@ -35,6 +35,8 @@ import pytest
 
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
+from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
+    TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
@@ -455,3 +457,64 @@ def test_generate_libvirt_processor_raise_exception_when_missing_arguments(
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_libvirt_processors_without_some_arguments_config)
+
+
+def test_generate_processor_from_k8s_config(k8s_processor_config):
+    """
+    Test that generation for k8s processor from a config works correctly
+    """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(k8s_processor_config)
+
+    assert len(processors) == len(k8s_processor_config)
+    assert 'my_processor' in processors
+    processor = processors['my_processor']
+
+    assert isinstance(processor, K8sProcessorActor)
+
+    assert processor.state.monitor_agent is None
+    assert processor.state.k8s_api_mode == k8s_processor_config["processor"]["my_processor"]["ks8_api_mode"]
+    assert processor.state.time_interval == k8s_processor_config["processor"]["my_processor"]["time_interval"]
+    assert processor.state.timeout_query == k8s_processor_config["processor"]["my_processor"]["timeout_query"]
+
+
+def test_generate_several_k8s_processors_from_config(several_k8s_processors_config):
+    """
+    Test that several k8s processors are correctly generated
+    """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(several_k8s_processors_config)
+
+    assert len(processors) == len(several_k8s_processors_config['processor'])
+
+    for processor_name, current_processor_infos in several_k8s_processors_config['processor'].items():
+        assert processor_name in processors
+        assert isinstance(processors[processor_name], K8sProcessorActor)
+
+        assert processors[processor_name].state.monitor_agent is None
+        assert processors[processor_name].state.k8s_api_mode == current_processor_infos["ks8_api_mode"]
+        assert processors[processor_name].state.time_interval == current_processor_infos["time_interval"]
+        assert processors[processor_name].state.timeout_query == current_processor_infos["timeout_query"]
+
+
+def test_generate_k8s_processor_uses_default_values_with_missing_arguments(
+        several_k8s_processors_without_some_arguments_config):
+    """
+     Test that ProcessorGenerator generates a processor with default values when arguments are not defined
+     """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(several_k8s_processors_without_some_arguments_config)
+
+    assert len(processors) == len(several_k8s_processors_without_some_arguments_config['processor'])
+
+    for processor_name, current_processor_infos in several_k8s_processors_without_some_arguments_config['processor'].items():
+        assert processor_name in processors
+        assert isinstance(processors[processor_name], K8sProcessorActor)
+
+        assert processors[processor_name].state.monitor_agent is None
+        assert processors[processor_name].state.k8s_api_mode is None
+        assert processors[processor_name].state.time_interval == TIME_INTERVAL_DEFAULT_VALUE
+        assert processors[processor_name].state.timeout_query == TIMEOUT_QUERY_DEFAULT_VALUE

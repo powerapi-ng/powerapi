@@ -204,6 +204,23 @@ def several_libvirt_processors_without_some_arguments_config():
 
 
 @pytest.fixture
+def several_k8s_processors_config():
+    """
+    Configuration with several k8s processors
+    """
+    return load_configuration_from_json_file(file_name='several_k8s_processors_configuration.json')
+
+
+@pytest.fixture
+def several_k8s_processors_without_some_arguments_config():
+    """
+    Configuration with several k8s processors
+    """
+    return load_configuration_from_json_file(
+        file_name='several_k8s_processors_without_some_arguments_configuration.json')
+
+
+@pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     Valid configuration with csv as input and output and stream mode disabled
@@ -258,6 +275,14 @@ def libvirt_processor_config():
     Configuration with libvirt as processor
     """
     return load_configuration_from_json_file(file_name='libvirt_processor_configuration.json')
+
+
+@pytest.fixture
+def k8s_processor_config():
+    """
+    Configuration with k8s as processor
+    """
+    return load_configuration_from_json_file(file_name='k8s_processor_configuration.json')
 
 
 @pytest.fixture()
