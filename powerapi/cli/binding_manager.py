@@ -108,7 +108,7 @@ class ProcessorBindingManager(BindingManager):
         the "<from_actor_path>" and "to": "<to_actor_path>" follow the convention "<subgroup_name>.<actor_name>"
         according to the configuration, e.g., "input.my_puller" and "processor.my_libvirt_processor"
 
-        One of the actors in the binding hs to be a processor. If the "to" actor is the processor, the "from" has to be
+        One of the actors in the binding has to be a processor. If the "to" actor is the processor, the "from" has to be
         a puller. If the "from" actor is a processor, the "to" actor has to be a pusher.
         :param bindings: The bindings to be processed.
         """

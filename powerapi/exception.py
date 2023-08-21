@@ -285,6 +285,7 @@ class LibvirtException(PowerAPIException):
     """
     Exception raised when there are issues regarding the import of LibvirtException
     """
+
     def __init__(self, _):
         PowerAPIException.__init__(self)
 
@@ -325,3 +326,14 @@ class UnknownMessageTypeException(PowerAPIException):
     """
     Exception happen when we don't know the message type
     """
+
+
+class MonitorTypeDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a MonitorGenerator a monitor factory with a type that is not
+    bound to a monitor factory
+    """
+
+    def __init__(self, monitor_type: str):
+        PowerAPIException.__init__(self)
+        self.monitor_type = monitor_type

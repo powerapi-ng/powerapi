@@ -135,12 +135,10 @@ class K8sProcessorState(ProcessorState):
     State related to a K8SProcessorActor
     """
 
-    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list,
-                 monitor_agent_name: str, k8s_api_mode: str, time_interval: int, timeout_query: int):
+    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list, k8s_api_mode: str,
+                 time_interval: int, timeout_query: int):
         ProcessorState.__init__(self, actor=actor, target_actors=target_actors)
         self.metadata_cache = metadata_cache
-        self.monitor_agent = None
-        self.monitor_agent_name = monitor_agent_name
         self.k8s_api_mode = k8s_api_mode
         self.time_interval = time_interval
         self.timeout_query = timeout_query
@@ -158,7 +156,7 @@ class K8sProcessorActor(ProcessorActor):
                                 timeout=timeout)
 
         self.state = K8sProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
-                                       monitor_agent_name=DEFAULT_K8S_MONITOR_NAME, target_actors=target_actors,
+                                       target_actors=target_actors,
                                        k8s_api_mode=ks8_api_mode, time_interval=time_interval,
                                        timeout_query=timeout_query)
 

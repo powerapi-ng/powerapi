@@ -33,8 +33,10 @@ from re import Pattern
 
 import pytest
 
-from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator
+from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator, \
+    MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY
 from powerapi.cli.generator import ModelNameDoesNotExist
+from powerapi.processor.k8s.k8s_monitor_actor import K8sMonitorAgentActor
 from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
@@ -139,7 +141,7 @@ def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_ac
 
     assert len(pullers) == len(several_inputs_outputs_stream_csv_without_some_arguments_config['input'])
 
-    for puller_name, current_puller_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['input'].\
+    for puller_name, current_puller_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['input']. \
             items():
 
         if current_puller_infos['type'] == 'csv':
@@ -381,7 +383,7 @@ def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_a
 
     assert len(pushers) == len(several_inputs_outputs_stream_csv_without_some_arguments_config['output'])
 
-    for pusher_name, current_pusher_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['output'].\
+    for pusher_name, current_pusher_infos in several_inputs_outputs_stream_csv_without_some_arguments_config['output']. \
             items():
         pusher_type = current_pusher_infos['type']
         if pusher_type == 'csv':
@@ -459,24 +461,33 @@ def test_generate_libvirt_processor_raise_exception_when_missing_arguments(
         generator.generate(several_libvirt_processors_without_some_arguments_config)
 
 
+def check_k8s_processor_infos(processor: K8sProcessorActor, expected_processor_info: dict):
+    """
+    Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
+    """
+    assert isinstance(processor, K8sProcessorActor)
+
+    assert processor.state.k8s_api_mode == expected_processor_info["ks8_api_mode"]
+    assert processor.state.time_interval == expected_processor_info["time_interval"]
+    assert processor.state.timeout_query == expected_processor_info["timeout_query"]
+
+
 def test_generate_processor_from_k8s_config(k8s_processor_config):
     """
     Test that generation for k8s processor from a config works correctly
     """
     generator = ProcessorGenerator()
+    processor_name = 'my_processor'
 
     processors = generator.generate(k8s_processor_config)
 
     assert len(processors) == len(k8s_processor_config)
-    assert 'my_processor' in processors
-    processor = processors['my_processor']
+    assert processor_name in processors
 
-    assert isinstance(processor, K8sProcessorActor)
+    processor = processors[processor_name]
 
-    assert processor.state.monitor_agent is None
-    assert processor.state.k8s_api_mode == k8s_processor_config["processor"]["my_processor"]["ks8_api_mode"]
-    assert processor.state.time_interval == k8s_processor_config["processor"]["my_processor"]["time_interval"]
-    assert processor.state.timeout_query == k8s_processor_config["processor"]["my_processor"]["timeout_query"]
+    check_k8s_processor_infos(processor=processor,
+                              expected_processor_info=k8s_processor_config["processor"][processor_name])
 
 
 def test_generate_several_k8s_processors_from_config(several_k8s_processors_config):
@@ -491,12 +502,10 @@ def test_generate_several_k8s_processors_from_config(several_k8s_processors_conf
 
     for processor_name, current_processor_infos in several_k8s_processors_config['processor'].items():
         assert processor_name in processors
-        assert isinstance(processors[processor_name], K8sProcessorActor)
 
-        assert processors[processor_name].state.monitor_agent is None
-        assert processors[processor_name].state.k8s_api_mode == current_processor_infos["ks8_api_mode"]
-        assert processors[processor_name].state.time_interval == current_processor_infos["time_interval"]
-        assert processors[processor_name].state.timeout_query == current_processor_infos["timeout_query"]
+        processor = processors[processor_name]
+
+        check_k8s_processor_infos(processor=processor, expected_processor_info=current_processor_infos)
 
 
 def test_generate_k8s_processor_uses_default_values_with_missing_arguments(
@@ -508,13 +517,65 @@ def test_generate_k8s_processor_uses_default_values_with_missing_arguments(
 
     processors = generator.generate(several_k8s_processors_without_some_arguments_config)
 
+    expected_processor_info = {'ks8_api_mode': None, 'time_interval': TIME_INTERVAL_DEFAULT_VALUE,
+                               'timeout_query': TIMEOUT_QUERY_DEFAULT_VALUE}
+
     assert len(processors) == len(several_k8s_processors_without_some_arguments_config['processor'])
 
-    for processor_name, current_processor_infos in several_k8s_processors_without_some_arguments_config['processor'].items():
+    for processor_name in several_k8s_processors_without_some_arguments_config['processor']:
         assert processor_name in processors
-        assert isinstance(processors[processor_name], K8sProcessorActor)
 
-        assert processors[processor_name].state.monitor_agent is None
-        assert processors[processor_name].state.k8s_api_mode is None
-        assert processors[processor_name].state.time_interval == TIME_INTERVAL_DEFAULT_VALUE
-        assert processors[processor_name].state.timeout_query == TIMEOUT_QUERY_DEFAULT_VALUE
+        processor = processors[processor_name]
+
+        check_k8s_processor_infos(processor=processor, expected_processor_info=expected_processor_info)
+
+
+def check_k8s_monitor_infos(monitor: K8sMonitorAgentActor, associated_processor: K8sProcessorActor):
+    """
+    Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
+    """
+
+    assert isinstance(monitor, K8sMonitorAgentActor)
+
+    assert monitor.state.k8s_api_mode == associated_processor.state.k8s_api_mode
+
+    assert monitor.state.time_interval == associated_processor.state.time_interval
+
+    assert monitor.state.timeout_query == associated_processor.state.timeout_query
+
+
+def test_generate_monitor_from_k8s_config(k8s_monitor_config):
+    """
+    Test that generation for k8s monitor from a processor config works correctly
+    """
+    generator = MonitorGenerator()
+    monitor_name = 'my_processor' + MONITOR_NAME_SUFFIX
+
+    monitors = generator.generate(k8s_monitor_config)
+
+    assert len(monitors) == len(k8s_monitor_config)
+
+    assert monitor_name in monitors
+
+    monitor = monitors[monitor_name]
+
+    check_k8s_monitor_infos(monitor=monitor,
+                            associated_processor=k8s_monitor_config['monitor'][monitor_name][LISTENER_ACTOR_KEY])
+
+
+def test_generate_several_k8s_monitors_from_config(several_k8s_monitors_config):
+    """
+    Test that several k8s monitors are correctly generated
+    """
+    generator = MonitorGenerator()
+
+    monitors = generator.generate(several_k8s_monitors_config)
+
+    assert len(monitors) == len(several_k8s_monitors_config['monitor'])
+
+    for monitor_name, current_monitor_infos in several_k8s_monitors_config['monitor'].items():
+        assert monitor_name in monitors
+
+        monitor = monitors[monitor_name]
+
+        check_k8s_monitor_infos(monitor=monitor, associated_processor=current_monitor_infos[LISTENER_ACTOR_KEY])

@@ -35,8 +35,9 @@ from typing import Dict, Type, Callable
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
-    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
+    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
 from powerapi.filter import Filter
+from powerapi.processor.k8s.k8s_monitor_actor import K8sMonitorAgentActor
 from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
@@ -65,8 +66,12 @@ K8S_API_MODE_KEY = 'ks8_api_mode'
 TIME_INTERVAL_KEY = 'time_interval'
 TIMEOUT_QUERY_KEY = 'timeout_query'
 
+LISTENER_ACTOR_KEY = 'listener_actor'
+
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
+
+MONITOR_NAME_SUFFIX = '_monitor'
 
 
 class Generator:
@@ -410,3 +415,34 @@ class ProcessorGenerator(Generator):
         else:
             component_config[ACTOR_NAME_KEY] = actor_name
             return self.processor_factory[processor_actor_type](component_config)
+
+
+class MonitorGenerator(Generator):
+    """
+    Generator that initialises the monitor by using a K8sProcessorActor
+    """
+
+    def __init__(self):
+        Generator.__init__(self, component_group_name='monitor')
+
+        self.monitor_factory = {
+            'k8s': lambda monitor_config: K8sMonitorAgentActor(
+                name=monitor_config[ACTOR_NAME_KEY],
+                listener_agent=monitor_config[LISTENER_ACTOR_KEY],
+                k8s_api_mode=monitor_config[LISTENER_ACTOR_KEY].state.k8s_api_mode,
+                time_interval=monitor_config[LISTENER_ACTOR_KEY].state.time_interval,
+                timeout_query=monitor_config[LISTENER_ACTOR_KEY].state.timeout_query,
+                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel()
+            )
+
+        }
+
+    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+
+        monitor_actor_type = component_config[COMPONENT_TYPE_KEY]
+
+        if monitor_actor_type not in self.monitor_factory:
+            raise MonitorTypeDoesNotExist(monitor_type=monitor_actor_type)
+        else:
+            component_config[ACTOR_NAME_KEY] = actor_name + MONITOR_NAME_SUFFIX
+            return self.monitor_factory[monitor_actor_type](component_config)

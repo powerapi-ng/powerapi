@@ -162,7 +162,7 @@ class K8sMonitorAgentActor(Actor):
         :param int time_interval: Time interval for the monitoring
         :pram int level_logger: The logger level
         """
-        Actor.__init__(self, name=name, level_logger=logging.DEBUG)
+        Actor.__init__(self, name=name, level_logger=level_logger)
         self.state = K8sMonitorAgentState(actor=self, time_interval=time_interval, timeout_query=timeout_query,
                                           listener_agent=listener_agent, k8s_api_mode=k8s_api_mode)
 
