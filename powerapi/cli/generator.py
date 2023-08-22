@@ -62,7 +62,7 @@ COMPONENT_URI_KEY = 'uri'
 ACTOR_NAME_KEY = 'actor_name'
 TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
-K8S_API_MODE_KEY = 'ks8_api_mode'
+K8S_API_MODE_KEY = 'k8s_api_mode'
 TIME_INTERVAL_KEY = 'time_interval'
 TIMEOUT_QUERY_KEY = 'timeout_query'
 
@@ -72,6 +72,8 @@ GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
 
 MONITOR_NAME_SUFFIX = '_monitor'
+MONITOR_KEY = 'monitor'
+K8S_COMPONENT_TYPE_VALUE = 'k8s'
 
 
 class Generator:
@@ -423,10 +425,10 @@ class MonitorGenerator(Generator):
     """
 
     def __init__(self):
-        Generator.__init__(self, component_group_name='monitor')
+        Generator.__init__(self, component_group_name=MONITOR_KEY)
 
         self.monitor_factory = {
-            'k8s': lambda monitor_config: K8sMonitorAgentActor(
+            K8S_COMPONENT_TYPE_VALUE: lambda monitor_config: K8sMonitorAgentActor(
                 name=monitor_config[ACTOR_NAME_KEY],
                 listener_agent=monitor_config[LISTENER_ACTOR_KEY],
                 k8s_api_mode=monitor_config[LISTENER_ACTOR_KEY].state.k8s_api_mode,
@@ -446,3 +448,18 @@ class MonitorGenerator(Generator):
         else:
             component_config[ACTOR_NAME_KEY] = actor_name + MONITOR_NAME_SUFFIX
             return self.monitor_factory[monitor_actor_type](component_config)
+
+    def generate_from_processors(self, processors: dict) -> dict:
+        """
+        Generates monitors associated with the given processors
+        :param dict processors: Dictionary with the processors for the generation
+        """
+
+        monitors_config = {MONITOR_KEY: {}}
+
+        for processor_name, processor in processors.items():
+            monitors_config[MONITOR_KEY][processor_name + MONITOR_NAME_SUFFIX] = {
+                COMPONENT_TYPE_KEY: K8S_COMPONENT_TYPE_VALUE,
+                LISTENER_ACTOR_KEY: processor}
+
+        return self.generate(main_config=monitors_config)
