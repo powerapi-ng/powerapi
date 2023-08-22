@@ -28,6 +28,7 @@
   },
   "binding": {
       "b1": {
+        "type": "processor",
         "from": "output.one_pusher",
         "to": "processor.my_processor"
     }

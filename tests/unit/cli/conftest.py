@@ -239,11 +239,29 @@ def generate_k8s_monitors_config(processors_config):
 
 
 @pytest.fixture
-def several_k8s_monitors_config(several_k8s_processors_config):
+def several_k8s_processors(several_k8s_processors_config):
+    """
+    Return a dictionary with several k8s processors
+    """
+    generator = ProcessorGenerator()
+
+    processors = generator.generate(several_k8s_processors_config)
+
+    return processors
+
+
+@pytest.fixture
+def several_k8s_monitors_config(several_k8s_processors):
     """
     Configuration with several k8s monitors derived from processor generators
     """
-    return generate_k8s_monitors_config(several_k8s_processors_config)
+    monitors_config = {'monitor': {}}
+
+    for processor_name, processor in several_k8s_processors.items():
+        monitors_config['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
+                                                                            LISTENER_ACTOR_KEY: processor}
+
+    return monitors_config
 
 
 @pytest.fixture
@@ -312,13 +330,24 @@ def k8s_processor_config():
 
 
 @pytest.fixture
-def k8s_monitor_config(k8s_processor_config):
+def k8s_processors(k8s_processor_config):
     """
-    the configuration of k8s monitors is derived from processor generators
+    Return a dictionary of k8s processors
     """
     generator = ProcessorGenerator()
 
     processors = generator.generate(k8s_processor_config)
+
+    return processors
+
+
+@pytest.fixture
+def k8s_monitor_config(k8s_processors):
+    """
+    The configuration of k8s monitors is derived from processor generators
+    """
+
+    processors = k8s_processors
 
     monitors = {'monitor': {}}
 

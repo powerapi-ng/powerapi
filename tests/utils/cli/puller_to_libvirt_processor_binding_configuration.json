@@ -28,7 +28,8 @@
   },
   "binding": {
       "b1": {
-          "from": "input.one_puller",
+        "type": "processor",
+        "from": "input.one_puller",
         "to": "processor.my_processor"
     }
   }

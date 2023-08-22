@@ -467,7 +467,7 @@ def check_k8s_processor_infos(processor: K8sProcessorActor, expected_processor_i
     """
     assert isinstance(processor, K8sProcessorActor)
 
-    assert processor.state.k8s_api_mode == expected_processor_info["ks8_api_mode"]
+    assert processor.state.k8s_api_mode == expected_processor_info["k8s_api_mode"]
     assert processor.state.time_interval == expected_processor_info["time_interval"]
     assert processor.state.timeout_query == expected_processor_info["timeout_query"]
 
@@ -517,7 +517,7 @@ def test_generate_k8s_processor_uses_default_values_with_missing_arguments(
 
     processors = generator.generate(several_k8s_processors_without_some_arguments_config)
 
-    expected_processor_info = {'ks8_api_mode': None, 'time_interval': TIME_INTERVAL_DEFAULT_VALUE,
+    expected_processor_info = {'k8s_api_mode': None, 'time_interval': TIME_INTERVAL_DEFAULT_VALUE,
                                'timeout_query': TIMEOUT_QUERY_DEFAULT_VALUE}
 
     assert len(processors) == len(several_k8s_processors_without_some_arguments_config['processor'])
@@ -544,7 +544,7 @@ def check_k8s_monitor_infos(monitor: K8sMonitorAgentActor, associated_processor:
     assert monitor.state.timeout_query == associated_processor.state.timeout_query
 
 
-def test_generate_monitor_from_k8s_config(k8s_monitor_config):
+def test_generate_k8s_monitor_from_k8s_config(k8s_monitor_config):
     """
     Test that generation for k8s monitor from a processor config works correctly
     """
@@ -579,3 +579,42 @@ def test_generate_several_k8s_monitors_from_config(several_k8s_monitors_config):
         monitor = monitors[monitor_name]
 
         check_k8s_monitor_infos(monitor=monitor, associated_processor=current_monitor_infos[LISTENER_ACTOR_KEY])
+
+
+def test_generate_k8s_monitor_from_k8s_processors(k8s_processors):
+    """
+    Test that generation for k8s monitor from a processor config works correctly
+    """
+    generator = MonitorGenerator()
+    processor_name = 'my_processor'
+    monitor_name = processor_name + MONITOR_NAME_SUFFIX
+
+    monitors = generator.generate_from_processors(processors=k8s_processors)
+
+    assert len(monitors) == len(k8s_processors)
+
+    assert monitor_name in monitors
+
+    monitor = monitors[monitor_name]
+
+    check_k8s_monitor_infos(monitor=monitor,
+                            associated_processor=k8s_processors[processor_name])
+
+
+def test_generate_several_k8s_monitors_from_processors(several_k8s_processors):
+    """
+    Test that several k8s monitors are correctly generated
+    """
+    generator = MonitorGenerator()
+
+    monitors = generator.generate_from_processors(processors=several_k8s_processors)
+
+    assert len(monitors) == len(several_k8s_processors)
+
+    for processor_name, processor in several_k8s_processors.items():
+        monitor_name = processor_name + MONITOR_NAME_SUFFIX
+        assert monitor_name in monitors
+
+        monitor = monitors[monitor_name]
+
+        check_k8s_monitor_infos(monitor=monitor, associated_processor=processor)

@@ -2,7 +2,7 @@
   "processor": {
     "my_processor": {
       "type": "k8s",
-      "ks8_api_mode": "Manual",
+      "k8s_api_mode": "Manual",
       "time_interval": 20,
       "timeout_query": 30
     }

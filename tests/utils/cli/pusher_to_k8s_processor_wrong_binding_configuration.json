@@ -22,13 +22,14 @@
   "processor": {
       "my_processor": {
           "type": "k8s",
-          "ks8_api_mode": "Manual",
+          "k8s_api_mode": "Manual",
           "time_interval": 70,
           "timeout_query": 80
       }
   },
   "binding": {
       "b1": {
+        "type": "processor",
         "from": "output.one_pusher",
         "to": "processor.my_processor"
     }
