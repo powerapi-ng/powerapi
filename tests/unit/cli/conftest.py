@@ -602,6 +602,13 @@ def empty_cli_configuration():
     sys.argv = []
 
 
+@pytest.fixture
+def output_input_configuration():
+    """
+    Return a dictionary containing bindings with a processor
+    """
+    return load_configuration_from_json_file(file_name='output_input_configuration.json')
+
 @pytest.fixture(params=['puller_to_libvirt_processor_binding_configuration.json',
                         'puller_to_k8s_processor_binding_configuration.json'])
 def puller_to_processor_binding_configuration(request):
@@ -609,6 +616,29 @@ def puller_to_processor_binding_configuration(request):
     Return a dictionary containing bindings with a processor
     """
     return load_configuration_from_json_file(file_name=request.param)
+
+
+@pytest.fixture
+def puller_to_processor_config_without_bindings(puller_to_processor_binding_configuration):
+    """
+    Return a configuration with processors but without bindings
+    """
+
+    puller_to_processor_binding_configuration.pop('binding')
+
+    return puller_to_processor_binding_configuration
+
+
+@pytest.fixture
+def puller_to_processor_config_without_processors(puller_to_processor_binding_configuration):
+
+    """
+    Return a configuration with bindings but without processors
+    """
+
+    puller_to_processor_binding_configuration.pop('processor')
+
+    return puller_to_processor_binding_configuration
 
 
 @pytest.fixture(params=['pusher_to_libvirt_processor_wrong_binding_configuration.json',
@@ -620,8 +650,8 @@ def pusher_to_processor_wrong_binding_configuration(request):
     return load_configuration_from_json_file(file_name=request.param)
 
 
-@pytest.fixture(params=['libvirt_processor_binding_with_non_existent_puller_configuration.json',
-                        'k8s_processor_binding_with_non_existent_puller_configuration.json'])
+@pytest.fixture(params=['libvirt_processor_binding_with_non_existing_puller_configuration.json',
+                        'k8s_processor_binding_with_non_existing_puller_configuration.json'])
 def not_existent_puller_to_processor_configuration(request):
     """
     Return a dictionary containing bindings with a puller that doesn't exist

@@ -32,13 +32,15 @@ import os
 
 from typing import Dict
 
-from powerapi.exception import MissingArgumentException, NotAllowedArgumentValueException, FileDoesNotExistException
+from powerapi.exception import MissingArgumentException, NotAllowedArgumentValueException, FileDoesNotExistException, \
+    UnexistingActorException
 
 
 class ConfigValidator:
     """
     Validate powerapi config and initialize missing default values
     """
+
     @staticmethod
     def validate(config: Dict):
         """
@@ -66,7 +68,8 @@ class ConfigValidator:
         for input_id in config['input']:
             input_config = config['input'][input_id]
             if input_config['type'] == 'csv' \
-                    and ('files' not in input_config or input_config['files'] is None or len(input_config['files']) == 0):
+                    and (
+                    'files' not in input_config or input_config['files'] is None or len(input_config['files']) == 0):
                 logging.error("no files parameter found for csv input")
                 raise MissingArgumentException(argument_name='files')
 
@@ -79,10 +82,23 @@ class ConfigValidator:
             if 'name' not in input_config:
                 input_config['name'] = 'default_puller'
 
+        if 'processor' in config and 'binding' not in config:
+            logging.error("no binding configuration found")
+            raise MissingArgumentException(argument_name='binding')
+        elif 'processor' not in config and 'binding' in config:
+            logging.error("no processor configuration found")
+            raise MissingArgumentException(argument_name='processor')
+
         ConfigValidator._validate_input(config)
+
+        if 'binding' in config:
+            ConfigValidator._validate_binding(config)
 
     @staticmethod
     def _validate_input(config: Dict):
+        """
+        Check that csv input type has files that exist
+        """
         for key, input_config in config['input'].items():
             if input_config['type'] == 'csv':
                 list_of_files = input_config['files']
@@ -94,3 +110,32 @@ class ConfigValidator:
                 for file_name in list_of_files:
                     if not os.access(file_name, os.R_OK):
                         raise FileDoesNotExistException(file_name=file_name)
+
+    @staticmethod
+    def _validate_binding(config: Dict):
+        """
+        Check that defined bindings use existing actors defined by the configuration
+        """
+        for _, binding_infos in config['binding'].items():
+
+            if 'from' not in binding_infos:
+                logging.error("no from parameter found for binding")
+                raise MissingArgumentException(argument_name='from')
+
+            if 'to' not in binding_infos:
+                logging.error("no to parameter found for binding")
+                raise MissingArgumentException(argument_name='to')
+
+            # from_info[0] is the subgroup and from_info[1] the actor name
+            from_infos = binding_infos['from'].split('.')
+
+            if from_infos[0] not in config or from_infos[1] not in config[from_infos[0]]:
+                logging.error("from actor does not exist")
+                raise UnexistingActorException(actor_path=binding_infos['from'])
+
+            # to_info[0] is the subgroup and to_info[1] the actor name
+            to_infos = binding_infos['to'].split('.')
+
+            if to_infos[0] not in config or to_infos[1] not in config[to_infos[0]]:
+                logging.error("to actor does not exist")
+                raise UnexistingActorException(actor_path=binding_infos['to'])
