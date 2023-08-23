@@ -31,7 +31,7 @@ import pytest
 from powerapi.cli.binding_manager import ProcessorBindingManager, INPUT_GROUP, OUTPUT_GROUP, PROCESSOR_GROUP, \
     BINDING_GROUP
 from powerapi.dispatcher import DispatcherActor
-from powerapi.exception import PowerAPIException, UnsupportedActorTypeException, BadInputData
+from powerapi.exception import PowerAPIException, UnsupportedActorTypeException, BadInputData, UnexistingActorException
 from powerapi.processor.processor_actor import ProcessorActor
 
 
@@ -133,7 +133,7 @@ def test_process_bindings_for_processor_raise_exception_with_wrong_binding_types
     Test that an exception is raised with a wrong type for the from actor in a binding
     """
 
-    with pytest.raises(BadInputData):
+    with pytest.raises(UnsupportedActorTypeException):
         processor_binding_manager.process_bindings(
             bindings=pusher_to_processor_wrong_binding_configuration[BINDING_GROUP])
 
@@ -145,6 +145,6 @@ def test_process_bindings_for_processor_raisse_exception_with_non_existent_pulle
     Test that an exception is raised with a non-existent puller
     """
 
-    with pytest.raises(BadInputData):
+    with pytest.raises(UnexistingActorException):
         processor_binding_manager.process_bindings(
             bindings=not_existent_puller_to_processor_configuration[BINDING_GROUP])

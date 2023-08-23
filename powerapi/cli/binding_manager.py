@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from powerapi.actor import Actor
 from powerapi.exception import MissingArgumentException, MissingValueException, BadInputData, \
-    UnsupportedActorTypeException
+    UnsupportedActorTypeException, BindingWrongActorsException, UnexistingActorException
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -134,7 +134,7 @@ class ProcessorBindingManager(BindingManager):
             # Check types and do the processing
             if isinstance(from_actor, ProcessorActor):
                 if not isinstance(to_actor, PusherActor):
-                    raise BadInputData()
+                    raise UnsupportedActorTypeException(actor_type=type(to_actor).__name__)
 
                 # The processor has to be between the formula and the pusher
                 # The pusher becomes a target of the processor
@@ -161,7 +161,7 @@ class ProcessorBindingManager(BindingManager):
 
             elif isinstance(to_actor, ProcessorActor):
                 if not isinstance(from_actor, PullerActor):
-                    raise BadInputData()
+                    raise UnsupportedActorTypeException(actor_type=type(from_actor).__name__)
 
                 # The processor has to be between the puller and the dispatcher
                 # The dispatcher becomes a target of the processor
@@ -180,7 +180,7 @@ class ProcessorBindingManager(BindingManager):
                     current_filter[1] = processor
                     from_actor.state.report_filter.filters[index] = tuple(current_filter)
             else:
-                raise BadInputData()
+                raise BindingWrongActorsException()
 
     def add_actor(self, actor: Actor):
         """
@@ -208,7 +208,7 @@ class ProcessorBindingManager(BindingManager):
 
     def check_actor_path(self, actor_path: str):
         """
-        Check that an actor path is separated by PATH_SEPARATOR, that it has to subpaths (group and actor name)
+        Check that an actor path is separated by PATH_SEPARATOR, that it has two subpaths (group and actor name)
         and the actor exist in self.actors. It raises a BadInputData exception is these conditions are not respected.
         Otherwise, it returns the path in a list with two elements
         """
@@ -216,6 +216,6 @@ class ProcessorBindingManager(BindingManager):
         path = actor_path.split(PATH_SEPARATOR)
 
         if len(path) != 2 or path[0] not in self.actors or path[1] not in self.actors[path[0]]:
-            raise BadInputData()
+            raise UnexistingActorException(actor_path=actor_path)
 
         return path

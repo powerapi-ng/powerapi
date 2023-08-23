@@ -269,7 +269,7 @@ class ModelNameDoesNotExist(PowerAPIException):
 
 class InvalidPrefixException(PowerAPIException):
     """
-    Exception raised when attempting to add a new prefix that is a prefix of a existing one or
+    Exception raised when attempting to add a new prefix that is a prefix of an existing one or
     vice-versa
     """
 
@@ -337,3 +337,22 @@ class MonitorTypeDoesNotExist(PowerAPIException):
     def __init__(self, monitor_type: str):
         PowerAPIException.__init__(self)
         self.monitor_type = monitor_type
+
+
+class UnexistingActorException(PowerAPIException):
+    """
+    Exception raised when an actor (from or to) referenced in a binding does not exist
+    """
+
+    def __init__(self, actor_path: str):
+        PowerAPIException.__init__(self)
+        self.actor_path = actor_path
+
+
+class BindingWrongActorsException(PowerAPIException):
+    """
+    Exception raised when at least one of the actors in a binding is not a processor
+    """
+
+    def __init__(self):
+        PowerAPIException.__init__(self)
