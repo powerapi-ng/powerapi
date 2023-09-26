@@ -19,18 +19,18 @@
           "collection": "my_collection_result"
       }
   },
-  "processor": {
-      "my_processor": {
-          "type": "libvirt",
-          "uri": "",
-          "regexp": "a_reg_exp"
-      }
-  },
-  "binding": {
-      "b1": {
-        "type": "processor",
-        "from": "output.one_pusher",
-        "to": "processor.my_processor"
+  "pre-processor": {
+    "my_processor": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp",
+      "puller": "one_puller"
+    },
+    "my_processor_2": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp",
+      "puller": "one_puller"
     }
   }
 }

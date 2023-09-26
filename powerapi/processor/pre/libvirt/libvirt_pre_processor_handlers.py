@@ -27,54 +27,56 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
+import re
 
-from powerapi.actor import State, Actor
-from powerapi.handler import PoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
+from powerapi.actor import State
+from powerapi.exception import LibvirtException
+from powerapi.processor.handlers import ProcessorReportHandler
+from powerapi.handler import StartHandler
+from powerapi.report import Report
+
+try:
+    from libvirt import libvirtError
+except ImportError:
+    logging.getLogger().info("libvirt-python is not installed.")
+
+    libvirtError = LibvirtException
 
 
-class ProcessorState(State):
+class LibvirtPreProcessorReportHandler(ProcessorReportHandler):
     """
-    Processor Actor State
-
-    Contains in addition to State values :
-      - the targets actors
-    """
-
-    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list):
-        """
-        :param list target_actors: List of target actors for the processor
-        """
-        super().__init__(actor)
-
-        if not target_actors:
-            target_actors = []
-
-        self.target_actors = target_actors
-        self.target_actors_names = target_actors_names
-
-
-class ProcessorActor(Actor):
-    """
-    ProcessorActor class
-
-    A processor modifies a report and sends the modified report to a list of targets
-    actor.
+    Modify reports by replacing libvirt id by open stak uuid
     """
 
-    def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int = 5000):
-        Actor.__init__(self, name, level_logger, timeout)
-        self.state = ProcessorState(actor=self, target_actors=[], target_actors_names=[])
+    def __init__(self, state):
+        ProcessorReportHandler.__init__(self, state=state)
 
-    def setup(self):
+    def handle(self, report: Report):
         """
-        Define PoisonPillMessage handler
-        """
-        self.add_handler(message_type=PoisonPillMessage, handler=PoisonPillMessageHandler(state=self.state))
+        Modify reports by replacing libvirt id by open stak uuid
 
-    def add_target_actor(self, actor: Actor):
+        :param Report report: Report to be modified
         """
-        Add the given actor to the list of targets
-        :param actor: Actor to be defined as target
-        """
-        self.state.target_actors.append(actor)
+        result = re.match(self.state.regexp, report.target)
+        if result is not None:
+            domain_name = result.groups(0)[0]
+            try:
+                domain = self.state.libvirt.lookupByName(domain_name)
+                report.metadata["domain_id"] = domain.UUIDString()
+            except libvirtError:
+                pass
+
+        self._send_report(report=report)
+
+
+class LibvirtPreProcessorStartHandler(StartHandler):
+    """
+    Initialize the target actors
+    """
+
+    def __init__(self, state: State):
+        StartHandler.__init__(self, state=state)
+
+    def initialization(self):
+        for actor in self.state.target_actors:
+            actor.connect_data()

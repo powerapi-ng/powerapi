@@ -37,7 +37,8 @@ from powerapi.exception import BadTypeException, BadContextException, UnknownArg
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
 POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'OUTPUT_'
 POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
-POWERAPI_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PROCESSOR_'
+POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PRE_PROCESSOR_'
+POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR_'
 POWERAPI_BINDING_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'BINDING_'
 POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'REPORT_MODIFIER_'
 
@@ -75,13 +76,13 @@ class CommonCLIParsingManager(RootConfigParsingManager):
                           prefix=POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX,
                           help_text="specify a database output : --output database_name ARG1 ARG2 ...")
 
-        self.add_subgroup(name='processor',
-                          prefix=POWERAPI_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX,
-                          help_text="specify a processor : --processor processor_name ARG1 ARG2 ...")
+        self.add_subgroup(name='pre-processor',
+                          prefix=POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX,
+                          help_text="specify a pre-processor : --pre-processor pre_processor_name ARG1 ARG2 ...")
 
-        self.add_subgroup(name='binding',
-                          prefix=POWERAPI_BINDING_ENVIRONMENT_VARIABLE_PREFIX,
-                          help_text="specify a binding : --binding binding_name ARG1 ARG2 ...")
+        self.add_subgroup(name='post-processor',
+                          prefix=POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX,
+                          help_text="specify a post-processor : --post-processor post_processor_name ARG1 ARG2 ...")
 
         # Parsers
 
@@ -433,41 +434,55 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_influx2_output
         )
 
-        subparser_libvirt_processor = SubgroupConfigParsingManager("libvirt")
-        subparser_libvirt_processor.add_argument(
+        subparser_libvirt_pre_processor = SubgroupConfigParsingManager("libvirt")
+        subparser_libvirt_pre_processor.add_argument(
             "u", "uri", help_text="libvirt daemon uri", default_value=""
         )
-        subparser_libvirt_processor.add_argument(
+        subparser_libvirt_pre_processor.add_argument(
             "d",
             "domain_regexp",
             help_text="regexp used to extract domain from cgroup string",
         )
-        subparser_libvirt_processor.add_argument("n", "name", help_text="")
-        self.add_subgroup_parser(
-            subgroup_name="processor",
-            subgroup_parser=subparser_libvirt_processor
+
+        subparser_libvirt_pre_processor.add_argument(
+            "p",
+            "puller",
+            help_text="target puller for the pre-processor",
         )
 
-        subparser_k8s_processor = SubgroupConfigParsingManager("k8s")
-        subparser_k8s_processor.add_argument(
+        subparser_libvirt_pre_processor.add_argument("n", "name", help_text="")
+        self.add_subgroup_parser(
+            subgroup_name="pre-processor",
+            subgroup_parser=subparser_libvirt_pre_processor
+        )
+
+        subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
+        subparser_k8s_pre_processor.add_argument(
             "a", "k8s_api_mode", help_text="k8s api mode (local, manual or cluster)"
         )
-        subparser_k8s_processor.add_argument(
+        subparser_k8s_pre_processor.add_argument(
             "t",
             "time_interval",
             help_text="time interval for the k8s monitoring",
             argument_type=int
         )
-        subparser_k8s_processor.add_argument(
+        subparser_k8s_pre_processor.add_argument(
             "o",
             "timeout_query",
             help_text="timeout for k8s queries",
             argument_type=int
         )
-        subparser_k8s_processor.add_argument("n", "name", help_text="")
+
+        subparser_k8s_pre_processor.add_argument(
+            "p",
+            "puller",
+            help_text="target puller for the pre-processor",
+        )
+
+        subparser_k8s_pre_processor.add_argument("n", "name", help_text="")
         self.add_subgroup_parser(
-            subgroup_name="processor",
-            subgroup_parser=subparser_k8s_processor
+            subgroup_name="pre-processor",
+            subgroup_parser=subparser_k8s_pre_processor
         )
 
         subparser_k8s_processor_binding = SubgroupConfigParsingManager("processor")

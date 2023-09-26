@@ -32,7 +32,7 @@ from unittest.mock import Mock
 import pytest
 
 from powerapi.message import K8sPodUpdateMessage
-from powerapi.processor.k8s.k8s_processor_actor import K8sMetadataCache
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sMetadataCache
 
 
 @pytest.fixture(name='pods_list')

@@ -34,13 +34,12 @@ from re import Pattern
 import pytest
 
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator, \
-    MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY
+    MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY, PreProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
-from powerapi.processor.k8s.k8s_monitor_actor import K8sMonitorAgentActor
-from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
+from powerapi.processor.pre.k8s.k8s_monitor_actor import K8sMonitorAgentActor
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
-from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
-from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.database import MongoDB, CsvDB, SocketDB, InfluxDB, PrometheusDB, InfluxDB2
@@ -401,136 +400,143 @@ def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_a
 
 
 ################################
-# ProcessorActorGenerator Test #
+# PreProcessorActorGenerator Test #
 ################################
-def test_generate_processor_from_empty_config_dict_raise_an_exception():
+def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
     """
-    Test that ProcessGenerator raise an exception when there is no processor argument
+    Test that PreProcessGenerator raise an exception when there is no processor argument
     """
     conf = {}
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
 
 
-def test_generate_processor_from_libvirt_config(libvirt_processor_config):
+def test_generate_pre_processor_from_libvirt_config(libvirt_pre_processor_config):
     """
-    Test that generation for libvirt processor from a config works correctly
+    Test that generation for libvirt pre-processor from a config works correctly
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(libvirt_processor_config)
+    processors = generator.generate(libvirt_pre_processor_config)
 
-    assert len(processors) == len(libvirt_processor_config)
+    assert len(processors) == len(libvirt_pre_processor_config)
     assert 'my_processor' in processors
     processor = processors['my_processor']
 
-    assert isinstance(processor, LibvirtProcessorActor)
+    assert isinstance(processor, LibvirtPreProcessorActor)
 
     assert processor.state.daemon_uri is None
     assert isinstance(processor.state.regexp, Pattern)
 
 
-def test_generate_several_libvirt_processors_from_config(several_libvirt_processors_config):
+def test_generate_several_libvirt_pre_processors_from_config(several_libvirt_pre_processors_config):
     """
-    Test that several libvirt processors are correctly generated
+    Test that several libvirt pre-processors are correctly generated
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(several_libvirt_processors_config)
+    processors = generator.generate(several_libvirt_pre_processors_config)
 
-    assert len(processors) == len(several_libvirt_processors_config['processor'])
+    assert len(processors) == len(several_libvirt_pre_processors_config['pre-processor'])
 
-    for processor_name, current_processor_infos in several_libvirt_processors_config['processor'].items():
+    for processor_name, current_processor_infos in several_libvirt_pre_processors_config['pre-processor'].items():
         assert processor_name in processors
-        assert isinstance(processors[processor_name], LibvirtProcessorActor)
+        assert isinstance(processors[processor_name], LibvirtPreProcessorActor)
 
         assert processors[processor_name].state.daemon_uri is None
         assert isinstance(processors[processor_name].state.regexp, Pattern)
 
 
-def test_generate_libvirt_processor_raise_exception_when_missing_arguments(
+def test_generate_libvirt_pre_processor_raise_exception_when_missing_arguments(
         several_libvirt_processors_without_some_arguments_config):
     """
-     Test that ProcessorGenerator raises a PowerAPIException when some arguments are missing for libvirt processor
+     Test that PreProcessorGenerator raises a PowerAPIException when some arguments are missing for libvirt processor
      """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_libvirt_processors_without_some_arguments_config)
 
 
-def check_k8s_processor_infos(processor: K8sProcessorActor, expected_processor_info: dict):
+def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, expected_pre_processor_info: dict):
     """
     Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
     """
-    assert isinstance(processor, K8sProcessorActor)
+    assert isinstance(pre_processor, K8sPreProcessorActor)
 
-    assert processor.state.k8s_api_mode == expected_processor_info["k8s_api_mode"]
-    assert processor.state.time_interval == expected_processor_info["time_interval"]
-    assert processor.state.timeout_query == expected_processor_info["timeout_query"]
+    assert pre_processor.state.k8s_api_mode == expected_pre_processor_info["k8s_api_mode"]
+    assert pre_processor.state.time_interval == expected_pre_processor_info["time_interval"]
+    assert pre_processor.state.timeout_query == expected_pre_processor_info["timeout_query"]
+    assert len(pre_processor.state.target_actors) == 0
+    assert len(pre_processor.state.target_actors_names) == 1
+    assert pre_processor.state.target_actors_names[0] == expected_pre_processor_info["puller"]
 
 
-def test_generate_processor_from_k8s_config(k8s_processor_config):
+def test_generate_pre_processor_from_k8s_config(k8s_pre_processor_config):
     """
     Test that generation for k8s processor from a config works correctly
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
     processor_name = 'my_processor'
 
-    processors = generator.generate(k8s_processor_config)
+    processors = generator.generate(k8s_pre_processor_config)
 
-    assert len(processors) == len(k8s_processor_config)
+    assert len(processors) == len(k8s_pre_processor_config)
     assert processor_name in processors
 
     processor = processors[processor_name]
 
-    check_k8s_processor_infos(processor=processor,
-                              expected_processor_info=k8s_processor_config["processor"][processor_name])
+    check_k8s_pre_processor_infos(pre_processor=processor,
+                                  expected_pre_processor_info=k8s_pre_processor_config["pre-processor"][processor_name])
 
 
-def test_generate_several_k8s_processors_from_config(several_k8s_processors_config):
+def test_generate_several_k8s_pre_processors_from_config(several_k8s_pre_processors_config):
     """
-    Test that several k8s processors are correctly generated
+    Test that several k8s pre-processors are correctly generated
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(several_k8s_processors_config)
+    processors = generator.generate(several_k8s_pre_processors_config)
 
-    assert len(processors) == len(several_k8s_processors_config['processor'])
+    assert len(processors) == len(several_k8s_pre_processors_config['pre-processor'])
 
-    for processor_name, current_processor_infos in several_k8s_processors_config['processor'].items():
+    for processor_name, current_processor_infos in several_k8s_pre_processors_config['pre-processor'].items():
         assert processor_name in processors
 
         processor = processors[processor_name]
 
-        check_k8s_processor_infos(processor=processor, expected_processor_info=current_processor_infos)
+        check_k8s_pre_processor_infos(pre_processor=processor, expected_pre_processor_info=current_processor_infos)
 
 
-def test_generate_k8s_processor_uses_default_values_with_missing_arguments(
-        several_k8s_processors_without_some_arguments_config):
+def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(
+        several_k8s_pre_processors_without_some_arguments_config):
     """
-     Test that ProcessorGenerator generates a processor with default values when arguments are not defined
+     Test that PreProcessorGenerator generates a pre-processor with default values when arguments are not defined
      """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(several_k8s_processors_without_some_arguments_config)
+    processors = generator.generate(several_k8s_pre_processors_without_some_arguments_config)
 
     expected_processor_info = {'k8s_api_mode': None, 'time_interval': TIME_INTERVAL_DEFAULT_VALUE,
                                'timeout_query': TIMEOUT_QUERY_DEFAULT_VALUE}
 
-    assert len(processors) == len(several_k8s_processors_without_some_arguments_config['processor'])
+    assert len(processors) == len(several_k8s_pre_processors_without_some_arguments_config['pre-processor'])
 
-    for processor_name in several_k8s_processors_without_some_arguments_config['processor']:
-        assert processor_name in processors
+    pre_processor_number = 1
+    for pre_processor_name in several_k8s_pre_processors_without_some_arguments_config['pre-processor']:
+        assert pre_processor_name in processors
 
-        processor = processors[processor_name]
+        processor = processors[pre_processor_name]
+        expected_processor_info['puller'] = 'my_puller_' + str(pre_processor_number)
 
-        check_k8s_processor_infos(processor=processor, expected_processor_info=expected_processor_info)
+        check_k8s_pre_processor_infos(pre_processor=processor, expected_pre_processor_info=expected_processor_info)
+
+        pre_processor_number += 1
 
 
-def check_k8s_monitor_infos(monitor: K8sMonitorAgentActor, associated_processor: K8sProcessorActor):
+def check_k8s_monitor_infos(monitor: K8sMonitorAgentActor, associated_processor: K8sPreProcessorActor):
     """
     Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
     """
@@ -581,7 +587,7 @@ def test_generate_several_k8s_monitors_from_config(several_k8s_monitors_config):
         check_k8s_monitor_infos(monitor=monitor, associated_processor=current_monitor_infos[LISTENER_ACTOR_KEY])
 
 
-def test_generate_k8s_monitor_from_k8s_processors(k8s_processors):
+def test_generate_k8s_monitor_from_k8s_processors(k8s_pre_processors):
     """
     Test that generation for k8s monitor from a processor config works correctly
     """
@@ -589,29 +595,29 @@ def test_generate_k8s_monitor_from_k8s_processors(k8s_processors):
     processor_name = 'my_processor'
     monitor_name = processor_name + MONITOR_NAME_SUFFIX
 
-    monitors = generator.generate_from_processors(processors=k8s_processors)
+    monitors = generator.generate_from_processors(processors=k8s_pre_processors)
 
-    assert len(monitors) == len(k8s_processors)
+    assert len(monitors) == len(k8s_pre_processors)
 
     assert monitor_name in monitors
 
     monitor = monitors[monitor_name]
 
     check_k8s_monitor_infos(monitor=monitor,
-                            associated_processor=k8s_processors[processor_name])
+                            associated_processor=k8s_pre_processors[processor_name])
 
 
-def test_generate_several_k8s_monitors_from_processors(several_k8s_processors):
+def test_generate_several_k8s_monitors_from_processors(several_k8s_pre_processors):
     """
     Test that several k8s monitors are correctly generated
     """
     generator = MonitorGenerator()
 
-    monitors = generator.generate_from_processors(processors=several_k8s_processors)
+    monitors = generator.generate_from_processors(processors=several_k8s_pre_processors)
 
-    assert len(monitors) == len(several_k8s_processors)
+    assert len(monitors) == len(several_k8s_pre_processors)
 
-    for processor_name, processor in several_k8s_processors.items():
+    for processor_name, processor in several_k8s_pre_processors.items():
         monitor_name = processor_name + MONITOR_NAME_SUFFIX
         assert monitor_name in monitors
 

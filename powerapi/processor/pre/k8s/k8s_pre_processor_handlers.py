@@ -36,7 +36,7 @@ POD_NAMESPACE_METADATA_KEY = 'pod_namespace'
 POD_NAME_METADATA_KEY = 'pod_name'
 
 
-class K8sProcessorActorStartMessageHandler(StartHandler):
+class K8sPreProcessorActorStartMessageHandler(StartHandler):
     """
     Start the K8sProcessorActor
     """
@@ -50,7 +50,7 @@ class K8sProcessorActorStartMessageHandler(StartHandler):
             actor.connect_data()
 
 
-class K8sProcessorActorHWPCReportHandler(ProcessorReportHandler):
+class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
     """
     Process the HWPC Reports
     """
@@ -84,7 +84,7 @@ class K8sProcessorActorHWPCReportHandler(ProcessorReportHandler):
         self._send_report(report=message)
 
 
-class K8sProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
+class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
     """
      Stop the K8sProcessorActor
      """
@@ -107,7 +107,7 @@ class K8sProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
 #         self.state.actor.logger.debug('teardown finished..')
 
 
-class K8sProcessorActorK8sPodUpdateMessageHandler(Handler):
+class K8sPreProcessorActorK8sPodUpdateMessageHandler(Handler):
     """
     Process the K8sPodUpdateMessage
     """

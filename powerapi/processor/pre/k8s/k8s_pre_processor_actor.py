@@ -38,10 +38,10 @@ from typing import Tuple, Dict
 
 from powerapi.actor import Actor
 from powerapi.message import K8sPodUpdateMessage, StartMessage, PoisonPillMessage
-from powerapi.processor.k8s.k8s_monitor_actor import ADDED_EVENT, DELETED_EVENT, MODIFIED_EVENT
-from powerapi.processor.k8s.k8s_processor_handlers import K8sProcessorActorHWPCReportHandler, \
-    K8sProcessorActorK8sPodUpdateMessageHandler, K8sProcessorActorStartMessageHandler, \
-    K8sProcessorActorPoisonPillMessageHandler
+from powerapi.processor.pre.k8s.k8s_monitor_actor import ADDED_EVENT, DELETED_EVENT, MODIFIED_EVENT
+from powerapi.processor.pre.k8s.k8s_pre_processor_handlers import K8sPreProcessorActorHWPCReportHandler, \
+    K8sPreProcessorActorK8sPodUpdateMessageHandler, K8sPreProcessorActorStartMessageHandler, \
+    K8sPreProcessorActorPoisonPillMessageHandler
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
 from powerapi.report import HWPCReport
 
@@ -130,44 +130,45 @@ class K8sMetadataCache:
         return self.pod_labels.get((namespace, pod_name), dict)
 
 
-class K8sProcessorState(ProcessorState):
+class K8sPreProcessorState(ProcessorState):
     """
     State related to a K8SProcessorActor
     """
 
-    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list, k8s_api_mode: str,
-                 time_interval: int, timeout_query: int):
-        ProcessorState.__init__(self, actor=actor, target_actors=target_actors)
+    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list, target_actors_names: list,
+                 k8s_api_mode: str, time_interval: int, timeout_query: int):
+        ProcessorState.__init__(self, actor=actor, target_actors=target_actors, target_actors_names=target_actors_names)
         self.metadata_cache = metadata_cache
         self.k8s_api_mode = k8s_api_mode
         self.time_interval = time_interval
         self.timeout_query = timeout_query
 
 
-class K8sProcessorActor(ProcessorActor):
+class K8sPreProcessorActor(ProcessorActor):
     """
-    Processor Actor that modifies reports by adding K8s related metadata
+    Pre-processor Actor that modifies reports by adding K8s related metadata
     """
 
-    def __init__(self, name: str, ks8_api_mode: str, target_actors: list = None, level_logger: int = logging.WARNING,
+    def __init__(self, name: str, ks8_api_mode: str, target_actors: list = None, target_actors_names: list = None,
+                 level_logger: int = logging.WARNING,
                  timeout: int = 5000, time_interval: int = TIME_INTERVAL_DEFAULT_VALUE,
                  timeout_query: int = TIMEOUT_QUERY_DEFAULT_VALUE):
-        ProcessorActor.__init__(self, name=name, target_actors=target_actors, level_logger=level_logger,
+        ProcessorActor.__init__(self, name=name, level_logger=level_logger,
                                 timeout=timeout)
 
-        self.state = K8sProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
-                                       target_actors=target_actors,
-                                       k8s_api_mode=ks8_api_mode, time_interval=time_interval,
-                                       timeout_query=timeout_query)
+        self.state = K8sPreProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
+                                          target_actors=target_actors,
+                                          k8s_api_mode=ks8_api_mode, time_interval=time_interval,
+                                          timeout_query=timeout_query, target_actors_names=target_actors_names)
 
     def setup(self):
         """
         Define HWPCReportMessage handler, StartMessage handler and PoisonPillMessage Handler
         """
         ProcessorActor.setup(self)
-        self.add_handler(message_type=StartMessage, handler=K8sProcessorActorStartMessageHandler(state=self.state))
-        self.add_handler(message_type=HWPCReport, handler=K8sProcessorActorHWPCReportHandler(state=self.state))
+        self.add_handler(message_type=StartMessage, handler=K8sPreProcessorActorStartMessageHandler(state=self.state))
+        self.add_handler(message_type=HWPCReport, handler=K8sPreProcessorActorHWPCReportHandler(state=self.state))
         self.add_handler(message_type=PoisonPillMessage,
-                         handler=K8sProcessorActorPoisonPillMessageHandler(state=self.state))
+                         handler=K8sPreProcessorActorPoisonPillMessageHandler(state=self.state))
         self.add_handler(message_type=K8sPodUpdateMessage,
-                         handler=K8sProcessorActorK8sPodUpdateMessageHandler(state=self.state))
+                         handler=K8sPreProcessorActorK8sPodUpdateMessageHandler(state=self.state))

@@ -31,9 +31,9 @@ import sys
 
 import pytest
 import tests.utils.cli as test_files_module
-from powerapi.cli.binding_manager import INPUT_GROUP, OUTPUT_GROUP, PROCESSOR_GROUP, ProcessorBindingManager
+from powerapi.cli.binding_manager import PreProcessorBindingManager
 from powerapi.cli.generator import PullerGenerator, PusherGenerator, ProcessorGenerator, COMPONENT_TYPE_KEY, \
-    LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX
+    LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
@@ -188,11 +188,11 @@ def several_inputs_outputs_stream_filedb_without_some_arguments_config(several_i
 
 
 @pytest.fixture
-def several_libvirt_processors_config():
+def several_libvirt_pre_processors_config():
     """
     Configuration with several libvirt processors
     """
-    return load_configuration_from_json_file(file_name='several_libvirt_processors_configuration.json')
+    return load_configuration_from_json_file(file_name='several_libvirt_pre_processors_configuration.json')
 
 
 @pytest.fixture
@@ -205,20 +205,20 @@ def several_libvirt_processors_without_some_arguments_config():
 
 
 @pytest.fixture
-def several_k8s_processors_config():
+def several_k8s_pre_processors_config():
     """
     Configuration with several k8s processors
     """
-    return load_configuration_from_json_file(file_name='several_k8s_processors_configuration.json')
+    return load_configuration_from_json_file(file_name='several_k8s_pre_processors_configuration.json')
 
 
 @pytest.fixture
-def several_k8s_processors_without_some_arguments_config():
+def several_k8s_pre_processors_without_some_arguments_config():
     """
     Configuration with several k8s processors
     """
     return load_configuration_from_json_file(
-        file_name='several_k8s_processors_without_some_arguments_configuration.json')
+        file_name='several_k8s_pre_processors_without_some_arguments_configuration.json')
 
 
 def generate_k8s_monitors_config(processors_config):
@@ -239,25 +239,25 @@ def generate_k8s_monitors_config(processors_config):
 
 
 @pytest.fixture
-def several_k8s_processors(several_k8s_processors_config):
+def several_k8s_pre_processors(several_k8s_pre_processors_config):
     """
     Return a dictionary with several k8s processors
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(several_k8s_processors_config)
+    pre_processors = generator.generate(several_k8s_pre_processors_config)
 
-    return processors
+    return pre_processors
 
 
 @pytest.fixture
-def several_k8s_monitors_config(several_k8s_processors):
+def several_k8s_monitors_config(several_k8s_pre_processors):
     """
     Configuration with several k8s monitors derived from processor generators
     """
     monitors_config = {'monitor': {}}
 
-    for processor_name, processor in several_k8s_processors.items():
+    for processor_name, processor in several_k8s_pre_processors.items():
         monitors_config['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
                                                                             LISTENER_ACTOR_KEY: processor}
 
@@ -314,40 +314,40 @@ def config_without_output(csv_io_postmortem_config):
 
 
 @pytest.fixture
-def libvirt_processor_config():
+def libvirt_pre_processor_config():
     """
-    Configuration with libvirt as processor
+    Configuration with libvirt as pre-processor
     """
-    return load_configuration_from_json_file(file_name='libvirt_processor_configuration.json')
+    return load_configuration_from_json_file(file_name='libvirt_pre_processor_configuration.json')
 
 
 @pytest.fixture
-def k8s_processor_config():
+def k8s_pre_processor_config():
     """
-    Configuration with k8s as processor
+    Configuration with k8s as pre-processor
     """
-    return load_configuration_from_json_file(file_name='k8s_processor_configuration.json')
+    return load_configuration_from_json_file(file_name='k8s_pre_processor_configuration.json')
 
 
 @pytest.fixture
-def k8s_processors(k8s_processor_config):
+def k8s_pre_processors(k8s_pre_processor_config):
     """
-    Return a dictionary of k8s processors
+    Return a dictionary of k8s pre-processors
     """
-    generator = ProcessorGenerator()
+    generator = PreProcessorGenerator()
 
-    processors = generator.generate(k8s_processor_config)
+    processors = generator.generate(k8s_pre_processor_config)
 
     return processors
 
 
 @pytest.fixture
-def k8s_monitor_config(k8s_processors):
+def k8s_monitor_config(k8s_pre_processors):
     """
     The configuration of k8s monitors is derived from processor generators
     """
 
-    processors = k8s_processors
+    processors = k8s_pre_processors
 
     monitors = {'monitor': {}}
 
@@ -609,78 +609,87 @@ def output_input_configuration():
     """
     return load_configuration_from_json_file(file_name='output_input_configuration.json')
 
-@pytest.fixture(params=['puller_to_libvirt_processor_binding_configuration.json',
-                        'puller_to_k8s_processor_binding_configuration.json'])
-def puller_to_processor_binding_configuration(request):
+
+@pytest.fixture(params=['libvirt_pre_processor_complete_configuration.json',
+                        'k8s_pre_processor_complete_configuration.json'])
+def pre_processor_complete_configuration(request):
     """
-    Return a dictionary containing bindings with a processor
+    Return a dictionary containing a configuration with pre-processor
     """
     return load_configuration_from_json_file(file_name=request.param)
 
 
 @pytest.fixture
-def puller_to_processor_config_without_bindings(puller_to_processor_binding_configuration):
+def pre_processor_config_without_puller(pre_processor_complete_configuration):
     """
     Return a configuration with processors but without bindings
     """
 
-    puller_to_processor_binding_configuration.pop('binding')
+    pre_processor_complete_configuration['pre-processor']['my_processor'].pop('puller')
 
-    return puller_to_processor_binding_configuration
+    return pre_processor_complete_configuration
 
 
 @pytest.fixture
-def puller_to_processor_config_without_processors(puller_to_processor_binding_configuration):
-
+def empty_pre_processor_config(pre_processor_complete_configuration):
     """
     Return a configuration with bindings but without processors
     """
 
-    puller_to_processor_binding_configuration.pop('processor')
+    pre_processor_complete_configuration.pop('pre-processor')
 
-    return puller_to_processor_binding_configuration
+    return pre_processor_complete_configuration
 
 
-@pytest.fixture(params=['pusher_to_libvirt_processor_wrong_binding_configuration.json',
-                        'pusher_to_k8s_processor_wrong_binding_configuration.json'])
-def pusher_to_processor_wrong_binding_configuration(request):
+@pytest.fixture(params=['libvirt_pre_processor_wrong_binding_configuration.json',
+                        'k8s_pre_processor_wrong_binding_configuration.json'])
+def pre_processor_wrong_binding_configuration(request):
     """
-    Return a dictionary containing wrong bindings with a processor
+    Return a dictionary containing wrong bindings with a pre-processor
     """
     return load_configuration_from_json_file(file_name=request.param)
 
 
-@pytest.fixture(params=['libvirt_processor_binding_with_non_existing_puller_configuration.json',
-                        'k8s_processor_binding_with_non_existing_puller_configuration.json'])
-def not_existent_puller_to_processor_configuration(request):
+@pytest.fixture(params=['libvirt_pre_processor_with_non_existing_puller_configuration.json',
+                        'k8s_pre_processor_with_non_existing_puller_configuration.json'])
+def pre_processor_with_unexisting_puller_configuration(request):
     """
-    Return a dictionary containing bindings with a puller that doesn't exist
+    Return a dictionary containing a pre-processor with a puller that doesn't exist
+    """
+    return load_configuration_from_json_file(
+        file_name=request.param)
+
+
+@pytest.fixture(params=['libvirt_pre_processor_with_reused_puller_in_bindings_configuration.json',
+                        'k8s_pre_processor_with_reused_puller_in_bindings_configuration.json'])
+def pre_processor_with_reused_puller_in_bindings_configuration(request):
+    """
+    Return a dictionary containing a pre-processor with a puller that doesn't exist
     """
     return load_configuration_from_json_file(
         file_name=request.param)
 
 
 @pytest.fixture
-def processor_binding_actors_and_dictionary(puller_to_processor_binding_configuration):
+def pre_processor_pullers_and_processors_dictionaries(pre_processor_complete_configuration):
     """
-    Return a list of dictionary which contains actors as well as the expected unified dictionary related to the actor
-    list
+    Return a dictionary which contains puller actors, a dictionary of processors as well as the pushers
     """
-    actors = []
-    expected_actors_dictionary = {INPUT_GROUP: {}, OUTPUT_GROUP: {}, PROCESSOR_GROUP: {}}
+    return get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+        configuration=pre_processor_complete_configuration)
 
+
+def get_pre_processor_pullers_and_processors_dictionaries_from_configuration(configuration: dict) -> (dict, dict, dict):
+    """
+    Return a tuple of dictionaries (pullers, processors) created from the given configuration.
+    :param dict configuration : Dictionary containing the configuration
+    """
     report_filter = Filter()
     puller_generator = PullerGenerator(report_filter=report_filter)
-    pullers = puller_generator.generate(main_config=puller_to_processor_binding_configuration)
-    actors.append(pullers)
-
-    expected_actors_dictionary[INPUT_GROUP].update(pullers)
+    pullers = puller_generator.generate(main_config=configuration)
 
     pusher_generator = PusherGenerator()
-    pushers = pusher_generator.generate(main_config=puller_to_processor_binding_configuration)
-    actors.append(pushers)
-
-    expected_actors_dictionary[OUTPUT_GROUP].update(pushers)
+    pushers = pusher_generator.generate(main_config=configuration)
 
     route_table = RouteTable()
 
@@ -689,13 +698,10 @@ def processor_binding_actors_and_dictionary(puller_to_processor_binding_configur
 
     report_filter.filter(lambda msg: True, dispatcher)
 
-    processor_generator = ProcessorGenerator()
-    processors = processor_generator.generate(main_config=puller_to_processor_binding_configuration)
-    actors.append(processors)
+    processor_generator = PreProcessorGenerator()
+    processors = processor_generator.generate(main_config=configuration)
 
-    expected_actors_dictionary[PROCESSOR_GROUP].update(processors)
-
-    return actors, expected_actors_dictionary
+    return pullers, processors, pushers
 
 
 @pytest.fixture
@@ -713,13 +719,45 @@ def dispatcher_actor_in_dictionary():
 
 
 @pytest.fixture
-def processor_binding_manager(processor_binding_actors_and_dictionary):
+def pre_processor_binding_manager(pre_processor_pullers_and_processors_dictionaries):
     """
     Return a ProcessorBindingManager with a libvirt Processor
     """
-    actors = {}
+    pullers = pre_processor_pullers_and_processors_dictionaries[0]
+    processors = pre_processor_pullers_and_processors_dictionaries[1]
 
-    for current_actors in processor_binding_actors_and_dictionary[0]:
-        actors.update(current_actors)
+    return PreProcessorBindingManager(actors=pullers, processors=processors)
 
-    return ProcessorBindingManager(actors=actors)
+
+@pytest.fixture
+def pre_processor_binding_manager_with_wrong_binding_types(pre_processor_wrong_binding_configuration):
+    """
+    Return a PreProcessorBindingManager with wrong target for the pre-processor (a pusher instead of a puller)
+    """
+    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+        configuration=pre_processor_wrong_binding_configuration)
+
+    return PreProcessorBindingManager(actors=pushers, processors=processors)
+
+
+@pytest.fixture
+def pre_processor_binding_manager_with_unexisting_puller(pre_processor_with_unexisting_puller_configuration):
+    """
+    Return a PreProcessorBindingManager with an unexisting target for the pre-processor (a puller that doesn't exist)
+    """
+    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+        configuration=pre_processor_with_unexisting_puller_configuration)
+
+    return PreProcessorBindingManager(actors=pullers, processors=processors)
+
+
+@pytest.fixture
+def pre_processor_binding_manager_with_reused_puller_in_bindings(
+        pre_processor_with_reused_puller_in_bindings_configuration):
+    """
+    Return a PreProcessorBindingManager with a puller used by two different pre-processors
+    """
+    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+        configuration=pre_processor_with_reused_puller_in_bindings_configuration)
+
+    return PreProcessorBindingManager(actors=pullers, processors=processors)

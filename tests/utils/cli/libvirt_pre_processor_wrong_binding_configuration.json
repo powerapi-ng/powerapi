@@ -19,19 +19,12 @@
           "collection": "my_collection_result"
       }
   },
-  "processor": {
+  "pre-processor": {
       "my_processor": {
-          "type": "k8s",
-          "k8s_api_mode": "Manual",
-          "time_interval": 70,
-          "timeout_query": 80
+          "type": "libvirt",
+          "uri": "",
+          "regexp": "a_reg_exp",
+          "puller": "one_pusher"
       }
-  },
-  "binding": {
-      "b1": {
-        "type": "processor",
-        "from": "output.one_pusher",
-        "to": "processor.my_processor"
-    }
   }
 }

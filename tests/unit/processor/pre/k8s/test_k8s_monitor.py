@@ -36,7 +36,7 @@ import pytest
 from kubernetes import client
 
 from powerapi.message import K8sPodUpdateMessage
-from powerapi.processor.k8s.k8s_monitor_actor import local_config, MANUAL_CONFIG_MODE, \
+from powerapi.processor.pre.k8s.k8s_monitor_actor import local_config, MANUAL_CONFIG_MODE, \
     K8sMonitorAgentActor
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe
 

@@ -82,17 +82,35 @@ class ConfigValidator:
             if 'name' not in input_config:
                 input_config['name'] = 'default_puller'
 
-        if 'processor' in config and 'binding' not in config:
-            logging.error("no binding configuration found")
-            raise MissingArgumentException(argument_name='binding')
-        elif 'processor' not in config and 'binding' in config:
-            logging.error("no processor configuration found")
-            raise MissingArgumentException(argument_name='processor')
+        if 'pre-processor' in config:
+            for pre_processor_id in config['pre-processor']:
+                pre_processor_config = config['pre-processor'][pre_processor_id]
+
+                if 'puller' not in pre_processor_config:
+                    logging.error("no puller name found for pre-processor " + pre_processor_id)
+                    raise MissingArgumentException(argument_name='puller')
+
+                puller_id = pre_processor_config['puller']
+
+                if puller_id not in config['input']:
+                    logging.error("puller actor " + puller_id + " does not exist")
+                    raise UnexistingActorException(actor=puller_id)
+
+        elif 'post-processor' in config:
+            for post_processor_id in config['post-processor']:
+                post_processor_config = config['post-processor'][post_processor_id]
+
+                if 'pusher' not in post_processor_config:
+                    logging.error("no pusher name found for post-processor " + post_processor_id)
+                    raise MissingArgumentException(argument_name='pusher')
+
+                pusher_id = post_processor_config['pusher']
+
+                if pusher_id not in config['output']:
+                    logging.error("pusher actor " + pusher_id + " does not exist")
+                    raise UnexistingActorException(actor=pusher_id)
 
         ConfigValidator._validate_input(config)
-
-        if 'binding' in config:
-            ConfigValidator._validate_binding(config)
 
     @staticmethod
     def _validate_input(config: Dict):
@@ -131,11 +149,11 @@ class ConfigValidator:
 
             if from_infos[0] not in config or from_infos[1] not in config[from_infos[0]]:
                 logging.error("from actor does not exist")
-                raise UnexistingActorException(actor_path=binding_infos['from'])
+                raise UnexistingActorException(actor=binding_infos['from'])
 
             # to_info[0] is the subgroup and to_info[1] the actor name
             to_infos = binding_infos['to'].split('.')
 
             if to_infos[0] not in config or to_infos[1] not in config[to_infos[0]]:
                 logging.error("to actor does not exist")
-                raise UnexistingActorException(actor_path=binding_infos['to'])
+                raise UnexistingActorException(actor=binding_infos['to'])

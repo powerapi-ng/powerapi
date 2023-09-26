@@ -1,6 +1,8 @@
 # Copyright (c) 2023, INRIA
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
+import copy
+
 import pytest
 
 # Redistribution and use in source and binary forms, with or without
@@ -28,123 +30,149 @@ import pytest
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.cli.binding_manager import ProcessorBindingManager, INPUT_GROUP, OUTPUT_GROUP, PROCESSOR_GROUP, \
-    BINDING_GROUP
+from powerapi.cli.binding_manager import PreProcessorBindingManager
 from powerapi.dispatcher import DispatcherActor
-from powerapi.exception import PowerAPIException, UnsupportedActorTypeException, BadInputData, UnexistingActorException
+from powerapi.exception import PowerAPIException, UnsupportedActorTypeException, BadInputData, UnexistingActorException, \
+    TargetActorAlreadyUsed
 from powerapi.processor.processor_actor import ProcessorActor
 
 
-def check_default_processor_binding_manager_default_actors_content(processor_manager: ProcessorBindingManager):
+def check_default_pre_processor_binding_manager_default_actors_content(processor_manager: PreProcessorBindingManager):
     """
     Check the default size for actors dictionary of the manager
-    :param ProcessorBindingManager processor_manager: Binding manager to check the size
+    :param PreProcessorBindingManager processor_manager: Binding manager to check the size
     """
-    assert len(processor_manager.actors) == 3
-    assert len(processor_manager.actors[INPUT_GROUP]) == 0
-    assert len(processor_manager.actors[OUTPUT_GROUP]) == 0
-    assert len(processor_manager.actors[PROCESSOR_GROUP]) == 0
+    assert len(processor_manager.actors) == 0
+    assert len(processor_manager.processors) == 0
 
 
-def test_create_processor_binding_manager_with_actors(processor_binding_actors_and_dictionary):
+def test_create_pre_processor_binding_manager_with_actors(pre_processor_pullers_and_processors_dictionaries):
     """
-    Test that a ProcessorBindingManager is correctly created when an actor dictionary is provided
+    Test that a PreProcessorBindingManager is correctly created when an actor and a processor dictionary are provided
     """
-    actors = {}
+    expected_actors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[0])
+    expected_processors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[1])
 
-    for current_actors in processor_binding_actors_and_dictionary[0]:
-        actors.update(current_actors)
-    binding_manager = ProcessorBindingManager(actors=actors)
+    binding_manager = PreProcessorBindingManager(actors=pre_processor_pullers_and_processors_dictionaries[0],
+                                                 processors=pre_processor_pullers_and_processors_dictionaries[1])
 
-    assert binding_manager.actors == processor_binding_actors_and_dictionary[1]
+    assert binding_manager.actors == expected_actors_dictionary
+    assert binding_manager.processors == expected_processors_dictionary
 
 
 def test_create_processor_binding_manager_without_actors():
     """
     Test that a ProcessorBindingManager is correctly created without a dictionary
     """
-    binding_manager = ProcessorBindingManager(actors=None)
+    binding_manager = PreProcessorBindingManager(actors=None, processors=None)
 
-    check_default_processor_binding_manager_default_actors_content(processor_manager=binding_manager)
-
-
-def test_create_processor_binding_manager_raise_exception_with_wrong_actor_type(dispatcher_actor_in_dictionary):
-    """
-    Test that a ProcessorBindingManager is correctly created without a dictionary
-    """
-    with pytest.raises(UnsupportedActorTypeException):
-        _ = ProcessorBindingManager(actors=dispatcher_actor_in_dictionary)
+    check_default_pre_processor_binding_manager_default_actors_content(processor_manager=binding_manager)
 
 
-def test_add_actors(processor_binding_actors_and_dictionary):
-    """
-    Test that a dictionary is correctly generated according to a list of actors
-    """
-    binding_manager = ProcessorBindingManager(actors=[])
-
-    check_default_processor_binding_manager_default_actors_content(processor_manager=binding_manager)
-
-    for actors in processor_binding_actors_and_dictionary[0]:
-        binding_manager.add_actors(actors)
-
-    assert binding_manager.actors == processor_binding_actors_and_dictionary[1]
-
-
-def test_add_actors_raise_exception_with_wrong_actor_type(dispatcher_actor_in_dictionary):
-    """
-    Test that a dictionary is correctly generated according to a list of actors
-    """
-    binding_manager = ProcessorBindingManager(actors=[])
-
-    check_default_processor_binding_manager_default_actors_content(processor_manager=binding_manager)
-
-    with pytest.raises(UnsupportedActorTypeException):
-        binding_manager.add_actors(dispatcher_actor_in_dictionary)
-
-    check_default_processor_binding_manager_default_actors_content(processor_manager=binding_manager)
-
-
-def test_process_bindings_for_processor(puller_to_processor_binding_configuration,
-                                        processor_binding_actors_and_dictionary):
+def test_process_bindings_for_pre_processor(pre_processor_complete_configuration,
+                                            pre_processor_pullers_and_processors_dictionaries):
     """
     Test that the bindings between a puller and a processor are correctly created
     """
-    actors = {}
+    pullers = pre_processor_pullers_and_processors_dictionaries[0]
+    processors = pre_processor_pullers_and_processors_dictionaries[1]
 
-    for current_actors in processor_binding_actors_and_dictionary[0]:
-        actors.update(current_actors)
+    binding_manager = PreProcessorBindingManager(actors=pullers,
+                                                 processors=processors)
 
-    binding_manager = ProcessorBindingManager(actors=actors)
+    assert len(pullers['one_puller'].state.report_filter.filters) == 1
+    assert isinstance(pullers['one_puller'].state.report_filter.filters[0][1], DispatcherActor)
 
-    assert len(actors['one_puller'].state.report_filter.filters) == 1
-    assert isinstance(actors['one_puller'].state.report_filter.filters[0][1], DispatcherActor)
+    binding_manager.process_bindings()
 
-    binding_manager.process_bindings(bindings=puller_to_processor_binding_configuration[BINDING_GROUP])
-
-    assert len(actors['one_puller'].state.report_filter.filters) == 1
-    assert isinstance(actors['one_puller'].state.report_filter.filters[0][1], ProcessorActor)
-    assert actors['one_puller'].state.report_filter.filters[0][1] == actors['my_processor']
+    assert len(pullers['one_puller'].state.report_filter.filters) == 1
+    assert isinstance(pullers['one_puller'].state.report_filter.filters[0][1], ProcessorActor)
+    assert pullers['one_puller'].state.report_filter.filters[0][1] == processors['my_processor']
 
 
-def test_process_bindings_for_processor_raise_exception_with_wrong_binding_types(
-        pusher_to_processor_wrong_binding_configuration,
-        processor_binding_manager):
+def test_process_bindings_for_pre_processor_raise_exception_with_wrong_binding_types(
+        pre_processor_binding_manager_with_wrong_binding_types):
     """
     Test that an exception is raised with a wrong type for the from actor in a binding
     """
 
     with pytest.raises(UnsupportedActorTypeException):
-        processor_binding_manager.process_bindings(
-            bindings=pusher_to_processor_wrong_binding_configuration[BINDING_GROUP])
+        pre_processor_binding_manager_with_wrong_binding_types.process_bindings()
 
 
-def test_process_bindings_for_processor_raisse_exception_with_non_existent_puller(
-        not_existent_puller_to_processor_configuration,
-        processor_binding_manager):
+def test_process_bindings_for_pre_processor_raise_exception_with_no_existing_puller(
+        pre_processor_binding_manager_with_unexisting_puller):
     """
-    Test that an exception is raised with a non-existent puller
+    Test that an exception is raised with a puller that doesn't exist
     """
 
     with pytest.raises(UnexistingActorException):
-        processor_binding_manager.process_bindings(
-            bindings=not_existent_puller_to_processor_configuration[BINDING_GROUP])
+        pre_processor_binding_manager_with_unexisting_puller.process_bindings()
+
+
+def test_process_bindings_for_pre_processor_raise_exception_with_reused_puller_in_bindings(
+        pre_processor_binding_manager_with_reused_puller_in_bindings):
+    """
+    Test that an exception is raised when the same puller is used by several processors
+    """
+
+    with pytest.raises(TargetActorAlreadyUsed):
+        pre_processor_binding_manager_with_reused_puller_in_bindings.process_bindings()
+
+
+def test_check_processors_targets_are_unique_raise_exception_with_reused_puller_in_bindings(
+        pre_processor_binding_manager_with_reused_puller_in_bindings):
+    """
+    Test that an exception is raised when the same puller is used by several processors
+    """
+    with pytest.raises(TargetActorAlreadyUsed):
+        pre_processor_binding_manager_with_reused_puller_in_bindings.check_processors_targets_are_unique()
+
+
+def test_check_processors_targets_are_unique_pass_without_reused_puller_in_bindings(
+        pre_processor_binding_manager):
+    """
+    Test that a correct without repeated target passes the validation
+    """
+    try:
+        pre_processor_binding_manager.check_processors_targets_are_unique()
+        assert True
+    except TargetActorAlreadyUsed:
+        assert False
+
+
+def test_check_processor_targets_raise_exception_with_no_existing_puller(
+        pre_processor_binding_manager_with_unexisting_puller):
+    """
+    Test that an exception is raised with a puller that doesn't exist
+    """
+    pre_processor_binding_manager = pre_processor_binding_manager_with_unexisting_puller
+    with pytest.raises(UnexistingActorException):
+        for _, processor in pre_processor_binding_manager.processors.items():
+            pre_processor_binding_manager.check_processor_targets(processor=processor)
+
+
+def test_check_processor_targets_raise_exception_with_raise_exception_with_wrong_binding_types(
+        pre_processor_binding_manager_with_wrong_binding_types):
+    """
+    Test that an exception is raised with a puller that doesn't exist
+    """
+    pre_processor_binding_manager = pre_processor_binding_manager_with_wrong_binding_types
+    with pytest.raises(UnsupportedActorTypeException):
+        for _, processor in pre_processor_binding_manager.processors.items():
+            pre_processor_binding_manager.check_processor_targets(processor=processor)
+
+
+def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding_manager):
+    """
+    Test that validation of a configuration with existing targets of the correct type
+    """
+    try:
+        for _, processor in pre_processor_binding_manager.processors.items():
+            pre_processor_binding_manager.check_processor_targets(processor=processor)
+
+        assert True
+    except UnsupportedActorTypeException:
+        assert False
+    except UnexistingActorException:
+        assert False

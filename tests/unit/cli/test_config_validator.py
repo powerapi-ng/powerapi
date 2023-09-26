@@ -118,52 +118,55 @@ def test_config_without_outputs_raise_an_exception(config_without_output):
     assert raised_exception.value.argument_name == 'output'
 
 
-def test_config_with_processor_but_without_binding_raise_an_exception(puller_to_processor_config_without_bindings):
+def test_config_with_pre_processor_but_without_puller_raise_an_exception(pre_processor_config_without_puller):
     """
-    Test that validation of a configuration with processors but without binding raises a
-    """
-    with pytest.raises(MissingArgumentException) as raised_exception:
-        ConfigValidator.validate(puller_to_processor_config_without_bindings)
-
-    assert raised_exception.value.argument_name == 'binding'
-
-
-def test_config_without_processor_but_with_binding_raise_an_exception(puller_to_processor_config_without_processors):
-    """
-    Test that validation of a configuration without processors but with binding raises a
+    Test that validation of a configuration with pre-processors but without a related puller raises a
+    MissingArgumentException
     """
     with pytest.raises(MissingArgumentException) as raised_exception:
-        ConfigValidator.validate(puller_to_processor_config_without_processors)
+        ConfigValidator.validate(pre_processor_config_without_puller)
 
-    assert raised_exception.value.argument_name == 'processor'
+    assert raised_exception.value.argument_name == 'puller'
 
 
-def test_config_with_processor_and_binding_with_unexisting_from_actor_raise_an_exception(
-        not_existent_puller_to_processor_configuration):
+def test_config_with_empty_pre_processor_pass_validation(empty_pre_processor_config):
+    """
+    Test that validation of a configuration without pre-processors passes validation
+    """
+    try:
+        ConfigValidator.validate(empty_pre_processor_config)
+
+    except MissingArgumentException:
+        assert False
+
+
+def test_config_with_pre_processor_with_unexisting_puller_actor_raise_an_exception(
+        pre_processor_with_unexisting_puller_configuration):
     """
     Test that validation of a configuration with unexisting actors raise an exception
     """
     with pytest.raises(UnexistingActorException) as raised_exception:
-        ConfigValidator.validate(not_existent_puller_to_processor_configuration)
+        ConfigValidator.validate(pre_processor_with_unexisting_puller_configuration)
 
-    assert raised_exception.value.actor_path == not_existent_puller_to_processor_configuration['binding']['b1']['from']
+    assert raised_exception.value.actor == \
+           pre_processor_with_unexisting_puller_configuration['pre-processor']['my_processor']['puller']
 
 
-def test_validation_of_correct_configuration_with_processors_and_bindings(output_input_configuration):
+def test_validation_of_correct_configuration_with_pre_processors(pre_processor_complete_configuration):
     """
     Test that a correct configuration with processors and bindings passes the validation
     """
     try:
-        ConfigValidator.validate(output_input_configuration)
+        ConfigValidator.validate(pre_processor_complete_configuration)
     except Exception:
         assert False
 
     assert True
 
 
-def test_validation_of_correct_configuration_without_processors_and_bindings(output_input_configuration):
+def test_validation_of_correct_configuration_without_pre_processors_and_bindings(output_input_configuration):
     """
-    Test that a correct configuration without processors and bindings passes the validation
+    Test that a correct configuration without pre-processors passes the validation
     """
     try:
         ConfigValidator.validate(output_input_configuration)

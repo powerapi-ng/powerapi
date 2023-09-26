@@ -39,7 +39,7 @@ from kubernetes.client.rest import ApiException
 
 from powerapi.actor import State, Actor
 from powerapi.message import StartMessage, PoisonPillMessage, K8sPodUpdateMessage
-from powerapi.processor.k8s.k8s_monitor_handlers import K8sMonitorAgentStartMessageHandler, \
+from powerapi.processor.pre.k8s.k8s_monitor_handlers import K8sMonitorAgentStartMessageHandler, \
     K8sMonitorAgentPoisonPillMessageHandler
 
 LOCAL_CONFIG_MODE = "local"

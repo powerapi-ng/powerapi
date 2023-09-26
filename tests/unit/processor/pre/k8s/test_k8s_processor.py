@@ -36,9 +36,9 @@ from unittest.mock import patch, Mock
 import pytest
 
 from powerapi.message import K8sPodUpdateMessage
-from powerapi.processor.k8s.k8s_monitor_actor import MANUAL_CONFIG_MODE, ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
-from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor
-from powerapi.processor.k8s.k8s_processor_handlers import clean_up_container_id, POD_NAMESPACE_METADATA_KEY, \
+from powerapi.processor.pre.k8s.k8s_monitor_actor import MANUAL_CONFIG_MODE, ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor
+from powerapi.processor.pre.k8s.k8s_pre_processor_handlers import clean_up_container_id, POD_NAMESPACE_METADATA_KEY, \
     POD_NAME_METADATA_KEY
 from powerapi.report import HWPCReport
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe
@@ -185,10 +185,11 @@ class TestK8sProcessor(AbstractTestActor):
                    return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
             with patch('kubernetes.config.load_kube_config', return_value=Mock()):
                 with patch('kubernetes.watch.Watch', return_value=mocked_watch_initialized):
-                    with patch('powerapi.processor.k8s.k8s_processor_actor.K8sMetadataCache',
+                    with patch('powerapi.processor.pre.k8s.k8s_pre_processor_actor.K8sMetadataCache',
                                return_value=multiprocess_metadata_cache_empty):
-                        return K8sProcessorActor(name='test_k8s_processor_actor', ks8_api_mode=MANUAL_CONFIG_MODE,
-                                                 target_actors=[started_fake_target_actor], level_logger=logging.DEBUG)
+                        return K8sPreProcessorActor(name='test_k8s_processor_actor', ks8_api_mode=MANUAL_CONFIG_MODE,
+                                                    target_actors=[started_fake_target_actor],
+                                                    level_logger=logging.DEBUG)
 
     def test_update_metadata_cache_with_added_event(self, started_actor, update_metadata_cache_message_added_event,
                                                     dummy_pipe_out, shutdown_system):
@@ -282,11 +283,11 @@ class TestK8sProcessor(AbstractTestActor):
 
         assert result[1] == hwpc_report_with_metadata
 
-    def test_add_metadata_to_hwpc_report_does_not_modifie_report_with_unknown_container_id(self,
-                                                                                           started_actor,
-                                                                                           hwpc_report,
-                                                                                           dummy_pipe_out,
-                                                                                           shutdown_system):
+    def test_add_metadata_to_hwpc_report_does_not_modify_report_with_unknown_container_id(self,
+                                                                                          started_actor,
+                                                                                          hwpc_report,
+                                                                                          dummy_pipe_out,
+                                                                                          shutdown_system):
         """
         Test that a HWPC report is not modified with an unknown container id
         """

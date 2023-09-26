@@ -37,10 +37,10 @@ from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
 from powerapi.filter import Filter
-from powerapi.processor.k8s.k8s_monitor_actor import K8sMonitorAgentActor
-from powerapi.processor.k8s.k8s_processor_actor import K8sProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
+from powerapi.processor.pre.k8s.k8s_monitor_actor import K8sMonitorAgentActor
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
-from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
+from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
     VirtioFSDB, FileDB
@@ -65,6 +65,8 @@ REGEXP_KEY = 'regexp'
 K8S_API_MODE_KEY = 'k8s_api_mode'
 TIME_INTERVAL_KEY = 'time_interval'
 TIMEOUT_QUERY_KEY = 'timeout_query'
+PULLER_NAME_KEY = 'puller'
+PUSHER_NAME_KEY = 'pusher'
 
 LISTENER_ACTOR_KEY = 'listener_actor'
 
@@ -365,26 +367,16 @@ class ProcessorGenerator(Generator):
     Generator that initialises the processor from config
     """
 
-    def __init__(self):
-        Generator.__init__(self, component_group_name='processor')
+    def __init__(self, component_group_name: str):
+        Generator.__init__(self, component_group_name=component_group_name)
 
-        self.processor_factory = {
-            'libvirt': lambda processor_config: LibvirtProcessorActor(name=processor_config[ACTOR_NAME_KEY],
-                                                                      uri=processor_config[COMPONENT_URI_KEY],
-                                                                      regexp=processor_config[REGEXP_KEY]),
-            'k8s': lambda processor_config: K8sProcessorActor(name=processor_config[ACTOR_NAME_KEY],
-                                                              ks8_api_mode=None if
-                                                              K8S_API_MODE_KEY not in processor_config else
-                                                              processor_config[K8S_API_MODE_KEY],
-                                                              time_interval=TIME_INTERVAL_DEFAULT_VALUE if
-                                                              TIME_INTERVAL_KEY not in processor_config else
-                                                              processor_config[TIME_INTERVAL_KEY],
-                                                              timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
-                                                              TIMEOUT_QUERY_KEY not in processor_config
-                                                              else processor_config[TIMEOUT_QUERY_KEY]
-                                                              )
+        self.processor_factory = self._get_default_processor_factories()
 
-        }
+    def _get_default_processor_factories(self) -> dict:
+        """
+        Init the factories for this processor generator
+        """
+        raise NotImplementedError
 
     def remove_processor_factory(self, processor_type: str):
         """
@@ -404,10 +396,6 @@ class ProcessorGenerator(Generator):
 
     def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
 
-        return self._actor_factory(actor_name, main_config, component_config)
-
-    def _actor_factory(self, actor_name: str, _, component_config: dict):
-
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]
 
         if processor_actor_type not in self.processor_factory:
@@ -417,6 +405,48 @@ class ProcessorGenerator(Generator):
         else:
             component_config[ACTOR_NAME_KEY] = actor_name
             return self.processor_factory[processor_actor_type](component_config)
+
+
+class PreProcessorGenerator(ProcessorGenerator):
+    """
+    Generator that initialises the pre-processor from config
+    """
+
+    def __init__(self):
+        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
+
+    def _get_default_processor_factories(self) -> dict:
+        return {
+            'libvirt': lambda processor_config: LibvirtPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                                         uri=processor_config[COMPONENT_URI_KEY],
+                                                                         regexp=processor_config[REGEXP_KEY],
+                                                                         target_actors_names=[processor_config
+                                                                                              [PULLER_NAME_KEY]]),
+            'k8s': lambda processor_config: K8sPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                                 ks8_api_mode=None if
+                                                                 K8S_API_MODE_KEY not in processor_config else
+                                                                 processor_config[K8S_API_MODE_KEY],
+                                                                 time_interval=TIME_INTERVAL_DEFAULT_VALUE if
+                                                                 TIME_INTERVAL_KEY not in processor_config else
+                                                                 processor_config[TIME_INTERVAL_KEY],
+                                                                 timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
+                                                                 TIMEOUT_QUERY_KEY not in processor_config
+                                                                 else processor_config[TIMEOUT_QUERY_KEY],
+                                                                 target_actors_names=[processor_config[PULLER_NAME_KEY]]
+                                                                 )
+        }
+
+
+class PostProcessorGenerator(ProcessorGenerator):
+    """
+    Generator that initialises the post-processor from config
+    """
+
+    def __init__(self):
+        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
+
+    def _get_default_processor_factories(self) -> dict:
+        return {}
 
 
 class MonitorGenerator(Generator):
@@ -458,8 +488,10 @@ class MonitorGenerator(Generator):
         monitors_config = {MONITOR_KEY: {}}
 
         for processor_name, processor in processors.items():
-            monitors_config[MONITOR_KEY][processor_name + MONITOR_NAME_SUFFIX] = {
-                COMPONENT_TYPE_KEY: K8S_COMPONENT_TYPE_VALUE,
-                LISTENER_ACTOR_KEY: processor}
+
+            if isinstance(processor, K8sPreProcessorActor):
+                monitors_config[MONITOR_KEY][processor_name + MONITOR_NAME_SUFFIX] = {
+                    COMPONENT_TYPE_KEY: K8S_COMPONENT_TYPE_VALUE,
+                    LISTENER_ACTOR_KEY: processor}
 
         return self.generate(main_config=monitors_config)

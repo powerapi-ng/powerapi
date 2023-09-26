@@ -31,8 +31,8 @@ import re
 
 from powerapi.exception import LibvirtException
 from powerapi.message import StartMessage
-from powerapi.processor.libvirt.libvirt_processor_handlers import LibvirtProcessorReportHandler, \
-    LibvirtProcessorStartHandler
+from powerapi.processor.pre.libvirt.libvirt_pre_processor_handlers import LibvirtPreProcessorReportHandler, \
+    LibvirtPreProcessorStartHandler
 from powerapi.report import Report
 from powerapi.actor import Actor
 from powerapi.processor.processor_actor import ProcessorActor, ProcessorState
@@ -46,34 +46,35 @@ except ImportError:
     openReadOnly = None
 
 
-class LibvirtProcessorState(ProcessorState):
+class LibvirtPreProcessorState(ProcessorState):
     """
-    State related to a LibvirtProcssorActor
+    State related to a LibvirtPreProcessorActor
     """
 
-    def __init__(self, actor: Actor, uri: str, regexp: str, target_actors: list):
-        ProcessorState.__init__(self, actor=actor, target_actors=target_actors)
+    def __init__(self, actor: Actor, uri: str, regexp: str, target_actors: list, target_actors_names: list):
+        ProcessorState.__init__(self, actor=actor, target_actors=target_actors, target_actors_names=target_actors_names)
         self.regexp = re.compile(regexp)
         self.daemon_uri = None if uri == '' else uri
         self.libvirt = openReadOnly(self.daemon_uri)
 
 
-class LibvirtProcessorActor(ProcessorActor):
+class LibvirtPreProcessorActor(ProcessorActor):
     """
     Processor Actor that modifies reports by replacing libvirt id by open stak uuid
     """
 
-    def __init__(self, name: str, uri: str, regexp: str, target_actors: list = None,
+    def __init__(self, name: str, uri: str, regexp: str, target_actors: list = None, target_actors_names: list = None,
                  level_logger: int = logging.WARNING,
                  timeout: int = 5000):
-        ProcessorActor.__init__(self, name=name, target_actors=target_actors, level_logger=level_logger,
+        ProcessorActor.__init__(self, name=name, level_logger=level_logger,
                                 timeout=timeout)
-        self.state = LibvirtProcessorState(actor=self, uri=uri, regexp=regexp, target_actors=target_actors)
+        self.state = LibvirtPreProcessorState(actor=self, uri=uri, regexp=regexp, target_actors=target_actors,
+                                              target_actors_names=target_actors_names)
 
     def setup(self):
         """
         Define ReportMessage handler and StartMessage handler
         """
         ProcessorActor.setup(self)
-        self.add_handler(message_type=StartMessage, handler=LibvirtProcessorStartHandler(state=self.state))
-        self.add_handler(message_type=Report, handler=LibvirtProcessorReportHandler(state=self.state))
+        self.add_handler(message_type=StartMessage, handler=LibvirtPreProcessorStartHandler(state=self.state))
+        self.add_handler(message_type=Report, handler=LibvirtPreProcessorReportHandler(state=self.state))

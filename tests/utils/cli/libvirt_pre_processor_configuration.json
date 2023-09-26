@@ -1,0 +1,10 @@
+{
+  "pre-processor": {
+    "my_processor": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp",
+      "puller": "my_puller"
+    }
+  }
+}

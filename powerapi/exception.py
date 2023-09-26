@@ -341,18 +341,28 @@ class MonitorTypeDoesNotExist(PowerAPIException):
 
 class UnexistingActorException(PowerAPIException):
     """
-    Exception raised when an actor (from or to) referenced in a binding does not exist
+    Exception raised when an actor referenced in a processor does not exist
     """
 
-    def __init__(self, actor_path: str):
+    def __init__(self, actor: str):
         PowerAPIException.__init__(self)
-        self.actor_path = actor_path
+        self.actor = actor
 
 
 class BindingWrongActorsException(PowerAPIException):
     """
-    Exception raised when at least one of the actors in a binding is not a processor
+    Exception raised when at least one of the actors in a binding is not of a given type
     """
 
     def __init__(self):
         PowerAPIException.__init__(self)
+
+
+class TargetActorAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when an actor is used by more than one processor
+    """
+
+    def __init__(self, target_actor: str):
+        PowerAPIException.__init__(self)
+        self.target_actor = target_actor

@@ -26,20 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from powerapi.actor import Actor
-from powerapi.exception import MissingArgumentException, MissingValueException, BadInputData, \
-    UnsupportedActorTypeException, BindingWrongActorsException, UnexistingActorException
+from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, TargetActorAlreadyUsed
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-
-FROM_KEY = 'from'
-TO_KEY = 'to'
-PATH_SEPARATOR = '.'
-INPUT_GROUP = 'input'
-OUTPUT_GROUP = 'output'
-PROCESSOR_GROUP = 'processor'
-BINDING_GROUP = 'binding'
 
 
 class BindingManager:
@@ -49,35 +39,18 @@ class BindingManager:
 
     def __init__(self, actors: dict = {}):
         """
-        :param dict actors: Dictionary of actors to create the bindings
+        :param dict actors: Dictionary of actors to create the bindings. The name of the actor is the key
         """
-        self.actors = actors
+        if not actors:
+            self.actors = {}
+        else:
+            self.actors = actors
 
-    def process_bindings(self, bindings: dict):
+    def process_bindings(self):
         """
-        Define bindings between self.actors according to the provided binding dictionary.
+        Define bindings between self.actors according to the processors' targets.
         """
         raise NotImplementedError()
-
-
-def check_parameters_in_binding(binding: dict):
-    """
-    Check that a binding has the from and to parameters and that they have a value.
-    If it is not the case, it raises a MissingArgumentException or
-    """
-    # Check from and to exist
-    if FROM_KEY not in binding:
-        raise MissingArgumentException(argument_name=FROM_KEY)
-
-    if TO_KEY not in binding:
-        raise MissingArgumentException(argument_name=TO_KEY)
-
-    from_actor_path = binding[FROM_KEY]
-    to_actor_path = binding[TO_KEY]
-
-    # Check that from and to values are not empty
-    if from_actor_path == "" or to_actor_path == "":
-        raise MissingValueException(argument_name=FROM_KEY + ' or ' + TO_KEY)
 
 
 class ProcessorBindingManager(BindingManager):
@@ -85,73 +58,156 @@ class ProcessorBindingManager(BindingManager):
     Class for management the binding between processor actors and others actors
     """
 
-    def __init__(self, actors: dict):
+    def __init__(self, actors: dict, processors: dict):
         """
-        The ProcessorBindingManager keeps an actor dictionary with  the following structure: [<group_name>][actor_name]
-        where <group_name> is 'input' for pullers, 'output' for pushers and
-        'processor' for processors
+        The ProcessorBindingManager defines bindings between actors and processors
         :param dict actors: Dictionary of actors with structure {<actor1_key>:actor1,<actor2_key>:actor2...}
+        :param dict processors: Dictionary of processors with structure {<processor1_key>:processor1,
+        <processor2_key>:processor2...}
         """
 
-        BindingManager.__init__(self, actors={INPUT_GROUP: {}, OUTPUT_GROUP: {}, PROCESSOR_GROUP: {}})
-        if actors:
-            self.add_actors(actors=actors)
+        BindingManager.__init__(self, actors=actors)
+        if not processors:
+            self.processors = {}
+        else:
+            self.processors = processors
 
-    def process_bindings(self, bindings: dict):
+    def check_processor_targets(self, processor: ProcessorActor):
         """
-        Define bindings between self.actors according to the provided binding dictionary.
-        This dictionary has the structure
-        {"<binding_name>":
-            "from": "<from_actor_path>",
-            "to": "<to_actor_path>"
-        }
-        the "<from_actor_path>" and "to": "<to_actor_path>" follow the convention "<subgroup_name>.<actor_name>"
-        according to the configuration, e.g., "input.my_puller" and "processor.my_libvirt_processor"
+        Check that targets of a processor exist in the dictionary of targets.
+        If it is not the case, it raises a UnexistingActorException
+        """
+        for target_actor_name in processor.state.target_actors_names:
+            if target_actor_name not in self.actors:
+                raise UnexistingActorException(actor=target_actor_name)
 
-        One of the actors in the binding has to be a processor. If the "to" actor is the processor, the "from" has to be
-        a puller. If the "from" actor is a processor, the "to" actor has to be a pusher.
-        :param bindings: The bindings to be processed.
+    def check_processors_targets_are_unique(self):
+        """
+        Check that processors targets are unique, i.e., the same target is not related to
+        two different processors
+        """
+        used_targets = []
+        for _, processor in self.processors.items():
+            for target_actor_name in processor.state.target_actors_names:
+                if target_actor_name in used_targets:
+                    raise TargetActorAlreadyUsed(target_actor=target_actor_name)
+                else:
+                    used_targets.append(target_actor_name)
+
+
+class PreProcessorBindingManager(ProcessorBindingManager):
+    """
+    Class for management the binding between pullers and pre-processor actors
+    """
+
+    def __init__(self, actors: dict, processors: dict):
+        """
+        The PreProcessorBindingManager defines bindings between pullers and processors: puller->processor->dispatcher
+        :param dict actors: Dictionary of actors with structure {<actor1_key>:actor1,<actor2_key>:actor2...}
+        :param dict processors: Dictionary of processors with structure {<processor1_key>:processor1,
+        <processor2_key>:processor2...}
         """
 
-        for _, binding in bindings.items():
+        ProcessorBindingManager.__init__(self, actors=actors, processors=processors)
 
-            check_parameters_in_binding(binding=binding)
+    def process_bindings(self):
+        """
+        Define bindings between self.actors according to the pre-processors' targets.
 
-            from_actor_path = binding[FROM_KEY]
-            to_actor_path = binding[TO_KEY]
+        """
 
-            # Check that the paths have the correct format and the actors with the
-            # given paths exist
+        # Check that processors targets are unique
+        self.check_processors_targets_are_unique()
 
-            from_actor_path = self.check_actor_path(actor_path=from_actor_path)
-            to_actor_path = self.check_actor_path(actor_path=to_actor_path)
+        # For each processor, we get targets and create the binding:
+        # puller->processor->disparcher
+        for _, processor in self.processors.items():
 
-            # Check that actors types are correct
+            self.check_processor_targets(processor=processor)
 
-            from_actor = self.actors[from_actor_path[0]][from_actor_path[1]]
-            to_actor = self.actors[to_actor_path[0]][to_actor_path[1]]
+            for target_actor_name in processor.state.target_actors_names:
 
-            # Check types and do the processing
-            if isinstance(from_actor, ProcessorActor):
-                if not isinstance(to_actor, PusherActor):
-                    raise UnsupportedActorTypeException(actor_type=type(to_actor).__name__)
+                # The processor has to be between the puller and the dispatcher
+                # The dispatcher becomes a target of the processor
+
+                puller_actor = self.actors[target_actor_name]
+
+                # The dispatcher defines the relationship between the Formula and
+                # Puller
+                number_of_filters = len(puller_actor.state.report_filter.filters)
+
+                for index in range(number_of_filters):
+                    # The filters define the relationship with the dispatcher
+                    # The relationship has to be updated
+                    current_filter = list(puller_actor.state.report_filter.filters[index])
+                    current_filter_dispatcher = current_filter[1]
+                    processor.add_target_actor(actor=current_filter_dispatcher)
+                    current_filter[1] = processor
+                    puller_actor.state.report_filter.filters[index] = tuple(current_filter)
+
+    def check_processor_targets(self, processor: ProcessorActor):
+        """
+        Check that targets of a processor exist in the dictionary of targets.
+        If it is not the case, it raises a UnexistingActorException
+        It also checks that the actor is a PullerActor instance
+        """
+        ProcessorBindingManager.check_processor_targets(self, processor=processor)
+
+        for target_actor_name in processor.state.target_actors_names:
+            actor = self.actors[target_actor_name]
+
+            if not isinstance(actor, PullerActor):
+                raise UnsupportedActorTypeException(actor_type=type(actor).__name__)
+
+
+class PostProcessorBindingManager(ProcessorBindingManager):
+    """
+    Class for management the binding between post-processor and pusher actors
+    """
+
+    def __init__(self, actors: dict, processors: dict, pullers: dict):
+        """
+        The PostProcessorBindingManager defines bindings between processors and pushers: formula->processor->pushers
+        :param dict actors: Dictionary of PusherActors with structure {<actor1_key>:actor1,<actor2_key>:actor2...}
+        :param dict processors: Dictionary of processors with structure {<processor1_key>:processor1,
+        <processor2_key>:processor2...}
+        """
+        ProcessorBindingManager.__init__(self, actors=actors, processors=processors)
+        self.pullers = pullers
+
+    def process_bindings(self):
+        """
+        Define bindings between self.actors according to the post-processors' targets.
+
+        """
+
+        # For each processor, we get targets and create the binding:
+        # formula->processor->pusher
+        for _, processor in self.processors.items():
+
+            self.check_processor_targets(processor=processor)
+
+            for target_actor_name in processor.state.target_actors_names:
 
                 # The processor has to be between the formula and the pusher
                 # The pusher becomes a target of the processor
-                processor = from_actor
-                processor.add_target_actor(actor=to_actor)
+
+                pusher_actor = self.actors[target_actor_name]
+
+                processor.add_target_actor(actor=pusher_actor)
 
                 # We look for the pusher on each dispatcher in order to replace it by
-                # the processor.
-                for _, puller in self.actors[INPUT_GROUP]:
-                    for filter in puller.state.report_filter.filters:
-                        dispatcher = filter[1]
+                # the processor
+                for _, puller in self.pullers:
+
+                    for current_filter in puller.state.report_filter.filters:
+                        dispatcher = current_filter[1]
 
                         number_of_pushers = len(dispatcher.pusher)
                         pusher_updated = False
 
                         for index in range(number_of_pushers):
-                            if dispatcher.pusher[index] == to_actor:
+                            if dispatcher.pusher[index] == pusher_actor:
                                 dispatcher.pusher[index] = processor
                                 pusher_updated = True
                                 break
@@ -159,63 +215,16 @@ class ProcessorBindingManager(BindingManager):
                         if pusher_updated:
                             dispatcher.update_state_formula_factory()
 
-            elif isinstance(to_actor, ProcessorActor):
-                if not isinstance(from_actor, PullerActor):
-                    raise UnsupportedActorTypeException(actor_type=type(from_actor).__name__)
-
-                # The processor has to be between the puller and the dispatcher
-                # The dispatcher becomes a target of the processor
-
-                # The dispatcher defines the relationship between the Formula and
-                # puller
-                processor = to_actor
-                number_of_filters = len(from_actor.state.report_filter.filters)
-
-                for index in range(number_of_filters):
-                    # The filters define the relationship with the dispatcher
-                    # The relationship has to be updated
-                    current_filter = list(from_actor.state.report_filter.filters[index])
-                    current_filter_dispatcher = current_filter[1]
-                    processor.add_target_actor(actor=current_filter_dispatcher)
-                    current_filter[1] = processor
-                    from_actor.state.report_filter.filters[index] = tuple(current_filter)
-            else:
-                raise BindingWrongActorsException()
-
-    def add_actor(self, actor: Actor):
+    def check_processor_targets(self, processor: ProcessorActor):
         """
-        Add the actor to the dictionary of actors according to its type.
-        Actor has to be PullerActor, PusherActor or ProcessorActor. The key of the actor is its name
+        Check that targets of a processor exist in the dictionary of targets.
+        If it is not the case, it raises a UnexistingActorException
+        It also checks that the actor is a PusherActor instance
         """
-        group = None
-        if isinstance(actor, PullerActor):
-            group = INPUT_GROUP
-        elif isinstance(actor, PusherActor):
-            group = OUTPUT_GROUP
-        elif isinstance(actor, ProcessorActor):
-            group = PROCESSOR_GROUP
-        else:
-            raise UnsupportedActorTypeException(actor_type=str(type(actor)))
+        ProcessorBindingManager.check_processor_targets(self, processor=processor)
 
-        self.actors[group][actor.name] = actor
+        for target_actor_name in processor.state.target_actors_names:
+            actor = self.actors[target_actor_name]
 
-    def add_actors(self, actors: dict):
-        """
-        Add the dictionary of actors to the manager dictionary
-        """
-        for _, actor in actors.items():
-            self.add_actor(actor)
-
-    def check_actor_path(self, actor_path: str):
-        """
-        Check that an actor path is separated by PATH_SEPARATOR, that it has two subpaths (group and actor name)
-        and the actor exist in self.actors. It raises a BadInputData exception is these conditions are not respected.
-        Otherwise, it returns the path in a list with two elements
-        """
-
-        path = actor_path.split(PATH_SEPARATOR)
-
-        if len(path) != 2 or path[0] not in self.actors or path[1] not in self.actors[path[0]]:
-            raise UnexistingActorException(actor_path=actor_path)
-
-        return path
+            if not isinstance(actor, PusherActor):
+                raise UnsupportedActorTypeException(actor_type=type(actor).__name__)

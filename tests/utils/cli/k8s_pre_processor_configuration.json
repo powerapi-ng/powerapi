@@ -1,10 +1,11 @@
 {
-  "processor": {
+  "pre-processor": {
     "my_processor": {
       "type": "k8s",
       "k8s_api_mode": "Manual",
       "time_interval": 20,
-      "timeout_query": 30
+      "timeout_query": 30,
+      "puller": "my_puller"
     }
   }
 }

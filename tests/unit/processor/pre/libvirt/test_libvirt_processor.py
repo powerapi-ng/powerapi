@@ -33,7 +33,7 @@ from time import sleep
 import pytest
 from mock.mock import patch
 
-from powerapi.processor.libvirt.libvirt_processor_actor import LibvirtProcessorActor
+from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.report import Report
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe
 from tests.utils.actor.dummy_actor import DummyActor
@@ -63,9 +63,10 @@ class TestLibvirtProcessor(AbstractTestActor):
 
     @pytest.fixture
     def actor(self, started_fake_dispatcher):
-        with patch('powerapi.processor.libvirt.libvirt_processor_actor.openReadOnly', return_value=MockedLibvirt()):
-            return LibvirtProcessorActor(name='processor_actor', uri='', regexp=REGEXP,
-                                         target_actors=[started_fake_dispatcher])
+        with patch('powerapi.processor.pre.libvirt.libvirt_pre_processor_actor.openReadOnly',
+                   return_value=MockedLibvirt()):
+            return LibvirtPreProcessorActor(name='processor_actor', uri='', regexp=REGEXP,
+                                            target_actors=[started_fake_dispatcher])
 
     def test_modify_report_that_not_match_regexp_must_not_modify_report(self, started_actor,
                                                                         dummy_pipe_out,
