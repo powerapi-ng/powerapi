@@ -485,27 +485,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_k8s_pre_processor
         )
 
-        subparser_k8s_processor_binding = SubgroupConfigParsingManager("processor")
-
-        subparser_k8s_processor_binding.add_argument(
-            "f",
-            "from",
-            help_text="starting actor for the binding",
-        )
-
-        subparser_k8s_processor_binding.add_argument(
-            "t",
-            "to",
-            help_text="end actor for the binding",
-        )
-
-        subparser_k8s_processor_binding.add_argument("n", "name", help_text="")
-
-        self.add_subgroup_parser(
-            subgroup_name="binding",
-            subgroup_parser=subparser_k8s_processor_binding
-        )
-
     def parse_argv(self):
         """ """
         try:
