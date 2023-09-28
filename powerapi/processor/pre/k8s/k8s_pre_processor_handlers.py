@@ -63,8 +63,6 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
         # Add pod name, namespace and labels to the report
         c_id = clean_up_container_id(message.target)
 
-        print('c_id', c_id)
-        print('containers pods', str(self.state.metadata_cache.containers_pod))
         namespace, pod = self.state.metadata_cache.get_container_pod(c_id)
         if namespace is None or pod is None:
             self.state.actor.logger.warning(
@@ -95,16 +93,6 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
     def teardown(self, soft=False):
         for actor in self.state.target_actors:
             actor.close()
-
-
-#         self.state.actor.logger.debug('Killing monitor actor..')
-#         self.state.monitor_agent.active_monitoring = False
-#         self.state.monitor_agent.send_data(PoisonPillMessage(soft=soft, sender_name=self.state.actor.name))
-#         if self.state.monitor_agent.is_alive():
-#             self.state.monitor_agent.terminate()
-#         self.state.monitor_agent.socket_interface.close()
-#         self.state.monitor_agent.join(timeout=10)
-#         self.state.actor.logger.debug('teardown finished..')
 
 
 class K8sPreProcessorActorK8sPodUpdateMessageHandler(Handler):

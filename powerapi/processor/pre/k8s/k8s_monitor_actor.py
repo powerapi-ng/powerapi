@@ -170,7 +170,6 @@ class K8sMonitorAgentActor(Actor):
         """
         Define StartMessage handler and PoisonPillMessage handler
         """
-        print('setup monitor called')
         self.add_handler(message_type=StartMessage, handler=K8sMonitorAgentStartMessageHandler(state=self.state))
         self.add_handler(message_type=PoisonPillMessage,
                          handler=K8sMonitorAgentPoisonPillMessageHandler(state=self.state))
@@ -185,17 +184,18 @@ class K8sMonitorAgentActor(Actor):
                 events = self.k8s_streaming_query(timeout_seconds=self.state.timeout_query,
                                                   k8sapi_mode=self.state.k8s_api_mode)
                 for event in events:
-                    event_type, namespace, pod_name, container_ids, labels = event
-                    self.state.listener_agent.send_data(
-                        K8sPodUpdateMessage(
-                            sender_name=self.name,
-                            event=event_type,
-                            namespace=namespace,
-                            pod=pod_name,
-                            containers_id=container_ids,
-                            labels=labels
+                    if event:
+                        event_type, namespace, pod_name, container_ids, labels = event
+                        self.state.listener_agent.send_data(
+                            K8sPodUpdateMessage(
+                                sender_name=self.name,
+                                event=event_type,
+                                namespace=namespace,
+                                pod=pod_name,
+                                containers_id=container_ids,
+                                labels=labels
+                            )
                         )
-                    )
                 sleep(self.state.time_interval)
             except Exception as ex:
                 self.logger.warning(ex)
@@ -203,7 +203,7 @@ class K8sMonitorAgentActor(Actor):
 
     def k8s_streaming_query(self, timeout_seconds: int, k8sapi_mode: str) -> list:
         """
-        Return a list of events by using the provided paremeters
+        Return a list of events by using the provided parameters
         :param int timeout_seconds: Timeout in seconds for waiting for events
         :param str k8sapi_mode: Kind of API mode
         """
