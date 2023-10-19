@@ -31,7 +31,6 @@
 
 import logging
 from logging import Logger
-from time import sleep
 
 from kubernetes import client, config, watch
 from kubernetes.client.configuration import Configuration
@@ -180,25 +179,23 @@ class K8sMonitorAgentActor(Actor):
         """
         while self.state.active_monitoring:
             try:
-                self.logger.debug("Start - K8sMonitorAgentActor Querying k8s")
                 events = self.k8s_streaming_query(timeout_seconds=self.state.timeout_query,
                                                   k8sapi_mode=self.state.k8s_api_mode)
                 for event in events:
-                    if event:
-                        event_type, namespace, pod_name, container_ids, labels = event
-                        self.state.listener_agent.send_data(
-                            K8sPodUpdateMessage(
-                                sender_name=self.name,
-                                event=event_type,
-                                namespace=namespace,
-                                pod=pod_name,
-                                containers_id=container_ids,
-                                labels=labels
-                            )
+                    event_type, namespace, pod_name, container_ids, labels = event
+                    self.state.listener_agent.send_data(
+                        K8sPodUpdateMessage(
+                            sender_name=self.name,
+                            event=event_type,
+                            namespace=namespace,
+                            pod=pod_name,
+                            containers_id=container_ids,
+                            labels=labels
                         )
-                sleep(self.state.time_interval)
+                    )
+
+                # sleep(self.state.time_interval)
             except Exception as ex:
-                self.logger.warning(ex)
                 self.logger.warning("Failed streaming query %s", ex)
 
     def k8s_streaming_query(self, timeout_seconds: int, k8sapi_mode: str) -> list:
@@ -212,30 +209,35 @@ class K8sMonitorAgentActor(Actor):
         w = watch.Watch()
 
         try:
+            event = None
             for event in w.stream(
-                    api.list_pod_for_all_namespaces, timeout_seconds
+                    func=api.list_pod_for_all_namespaces, timeout_seconds=timeout_seconds
             ):
 
-                if not event["type"] in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
-                    self.logger.warning(
-                        "UNKNOWN EVENT TYPE : %s :  %s  %s",
-                        event['type'], event['object'].metadata.name, event
+                if event:
+
+                    if not event["type"] in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
+                        self.logger.warning(
+                            "UNKNOWN EVENT TYPE : %s :  %s  %s",
+                            event['type'], event['object'].metadata.name, event
+                        )
+                        continue
+
+                    pod_obj = event["object"]
+                    namespace, pod_name = \
+                        pod_obj.metadata.namespace, pod_obj.metadata.name
+                    container_ids = (
+                        [] if event["type"] == "DELETED"
+                        else extract_containers(pod_obj)
                     )
-                    continue
-                pod_obj = event["object"]
-                namespace, pod_name = \
-                    pod_obj.metadata.namespace, pod_obj.metadata.name
-                container_ids = (
-                    [] if event["type"] == "DELETED"
-                    else extract_containers(pod_obj)
-                )
-                labels = pod_obj.metadata.labels
-                events.append(
-                    (event["type"], namespace, pod_name, container_ids, labels)
-                )
+                    labels = pod_obj.metadata.labels
+                    events.append(
+                        (event["type"], namespace, pod_name, container_ids, labels)
+                    )
 
         except ApiException as ae:
             self.logger.error("APIException %s %s", ae.status, ae)
         except Exception as undef_e:
             self.logger.error("Error when watching Exception %s %s", undef_e, event)
+
         return events

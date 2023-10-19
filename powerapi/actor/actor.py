@@ -92,7 +92,7 @@ class Actor(multiprocessing.Process):
         :param str name: unique name that will be used to indentify the actor
                          processus
         :param int level_logger: Define the level of the logger
-        :param int timeout: if define, do something if no msg is recv every
+        :param int timeout: if defined, do something if no msg is recv every
                             timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)

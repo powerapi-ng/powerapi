@@ -43,9 +43,8 @@ class K8sMonitorAgentStartMessageHandler(StartHandler):
     def initialization(self):
         self.state.active_monitoring = True
         self.state.listener_agent.connect_data()
-        monitoring_thread = Thread(target=self.state.actor.query_k8s)
-        monitoring_thread.start()
-        self.state.monitor_thread = monitoring_thread
+        self.state.monitor_thread = Thread(target=self.state.actor.query_k8s)
+        self.state.monitor_thread.start()
 
 
 class K8sMonitorAgentPoisonPillMessageHandler(PoisonPillMessageHandler):

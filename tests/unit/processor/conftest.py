@@ -1,7 +1,7 @@
 # Copyright (c) 2023, INRIA
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-
+from typing import Any
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 
@@ -177,12 +177,16 @@ class MockedWatch(Mock):
         Mock.__init__(self)
         self.events = events
         self.args = None
+        self.timeout_seconds = 0
+        self.func = None
 
-    def stream(self, *args):
+    def stream(self, func: Any, timeout_seconds: int, *args):
         """
         Return the list of events related to the MockedWatch
         """
         self.args = args
+        self.timeout_seconds = timeout_seconds
+        self.func = func
         return self.events
 
 
