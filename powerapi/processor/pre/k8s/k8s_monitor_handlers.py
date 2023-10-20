@@ -56,6 +56,6 @@ class K8sMonitorAgentPoisonPillMessageHandler(PoisonPillMessageHandler):
         PoisonPillMessageHandler.__init__(self, state=state)
 
     def teardown(self, soft=False):
-        self.state.actor.logger.debug('teardown monitor')
+        self.state.actor.logger.debug('teardown K8sMonitorAgent')
         self.state.active_monitoring = False
         self.state.monitor_thread.join(10)

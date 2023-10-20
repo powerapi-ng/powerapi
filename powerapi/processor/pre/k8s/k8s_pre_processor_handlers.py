@@ -72,7 +72,7 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
             message.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
             message.metadata[POD_NAME_METADATA_KEY] = pod
             self.state.actor.logger.debug(
-                f"K8sMdtModifierActor add metadata to report {c_id}, {namespace}, {pod}"
+                f"K8sPreProcessorActorHWPCReportHandler add metadata to report {c_id}, {namespace}, {pod}"
             )
 
             labels = self.state.metadata_cache.get_pod_labels(namespace, pod)
