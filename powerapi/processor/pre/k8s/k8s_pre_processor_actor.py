@@ -48,7 +48,7 @@ from powerapi.report import HWPCReport
 DEFAULT_K8S_CACHE_NAME = 'k8s_cache'
 DEFAULT_K8S_MONITOR_NAME = 'k8s_monitor'
 
-TIME_INTERVAL_DEFAULT_VALUE = 10
+TIME_INTERVAL_DEFAULT_VALUE = 0
 TIMEOUT_QUERY_DEFAULT_VALUE = 5
 
 
@@ -136,12 +136,14 @@ class K8sPreProcessorState(ProcessorState):
     """
 
     def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list, target_actors_names: list,
-                 k8s_api_mode: str, time_interval: int, timeout_query: int):
+                 k8s_api_mode: str, time_interval: int, timeout_query: int, api_key: str, host: str):
         ProcessorState.__init__(self, actor=actor, target_actors=target_actors, target_actors_names=target_actors_names)
         self.metadata_cache = metadata_cache
         self.k8s_api_mode = k8s_api_mode
         self.time_interval = time_interval
         self.timeout_query = timeout_query
+        self.api_key = api_key
+        self.host = host
 
 
 class K8sPreProcessorActor(ProcessorActor):
@@ -152,14 +154,15 @@ class K8sPreProcessorActor(ProcessorActor):
     def __init__(self, name: str, ks8_api_mode: str, target_actors: list = None, target_actors_names: list = None,
                  level_logger: int = logging.WARNING,
                  timeout: int = 5000, time_interval: int = TIME_INTERVAL_DEFAULT_VALUE,
-                 timeout_query: int = TIMEOUT_QUERY_DEFAULT_VALUE):
+                 timeout_query: int = TIMEOUT_QUERY_DEFAULT_VALUE, api_key: str = None, host: str = None):
         ProcessorActor.__init__(self, name=name, level_logger=level_logger,
                                 timeout=timeout)
 
         self.state = K8sPreProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
                                           target_actors=target_actors,
                                           k8s_api_mode=ks8_api_mode, time_interval=time_interval,
-                                          timeout_query=timeout_query, target_actors_names=target_actors_names)
+                                          timeout_query=timeout_query, target_actors_names=target_actors_names,
+                                          api_key=api_key, host=host)
 
     def setup(self):
         """

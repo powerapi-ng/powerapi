@@ -31,6 +31,7 @@
 
 import logging
 from logging import Logger
+from time import sleep
 
 from kubernetes import client, config, watch
 from kubernetes.client.configuration import Configuration
@@ -45,11 +46,17 @@ LOCAL_CONFIG_MODE = "local"
 MANUAL_CONFIG_MODE = "manual"
 CLUSTER_CONFIG_MODE = "cluster"
 
+MANUAL_CONFIG_API_KEY_DEFAULT_VALUE = "YOUR_API_KEY"
+MANUAL_CONFIG_HOST_DEFAULT_VALUE = "http://localhost"
+
 ADDED_EVENT = 'ADDED'
 DELETED_EVENT = 'DELETED'
 MODIFIED_EVENT = 'MODIFIED'
 
 v1_api = None
+
+manual_config_api_key = MANUAL_CONFIG_API_KEY_DEFAULT_VALUE
+manual_config_host = MANUAL_CONFIG_HOST_DEFAULT_VALUE
 
 
 def local_config():
@@ -66,9 +73,9 @@ def manual_config():
     # Manual config
     configuration = client.Configuration()
     # Configure API key authorization: BearerToken
-    configuration.api_key["authorization"] = "YOUR_API_KEY"
+    configuration.api_key["authorization"] = manual_config_api_key
     # Defining host is optional and default to http://localhost
-    configuration.host = "http://localhost"
+    configuration.host = manual_config_host
     Configuration.set_default(configuration)
 
 
@@ -95,12 +102,18 @@ def load_k8s_client_config(logger: Logger, mode: str = None):
     }.get(mode, local_config)()
 
 
-def get_core_v1_api(logger: Logger, mode: str = None):
+def get_core_v1_api(logger: Logger, mode: str = None, api_key: str = None, host: str = None):
     """
     Returns a handler to the k8s API.
     """
     global v1_api
+    global manual_config_api_key
+    global manual_config_host
     if v1_api is None:
+        if api_key:
+            manual_config_api_key = api_key
+        if host:
+            manual_config_host = host
         load_k8s_client_config(logger=logger, mode=mode)
         v1_api = client.CoreV1Api()
         logger.info(f"Core v1 api access : {v1_api}")
@@ -135,7 +148,8 @@ class K8sMonitorAgentState(State):
     State related to a K8sMonitorAgentActor
     """
 
-    def __init__(self, actor: Actor, time_interval: int, timeout_query: int, listener_agent: Actor, k8s_api_mode: str):
+    def __init__(self, actor: Actor, time_interval: int, timeout_query: int, listener_agent: Actor, k8s_api_mode: str,
+                 api_key: str = None, host: str = None):
         State.__init__(self, actor=actor)
         self.time_interval = time_interval
         self.timeout_query = timeout_query
@@ -143,6 +157,8 @@ class K8sMonitorAgentState(State):
         self.k8s_api_mode = k8s_api_mode
         self.active_monitoring = False
         self.monitor_thread = None
+        self.api_key = api_key
+        self.host = host
 
 
 class K8sMonitorAgentActor(Actor):
@@ -152,7 +168,7 @@ class K8sMonitorAgentActor(Actor):
     """
 
     def __init__(self, name: str, listener_agent: Actor, k8s_api_mode: str = None, time_interval: int = 10,
-                 timeout_query=5, level_logger: int = logging.WARNING):
+                 timeout_query: int = 5, api_key: str = None, host: str = None, level_logger: int = logging.WARNING):
         """
         :param str name: The actor name
         :param K8sProcessorActor listener_agent: actor waiting for notifications of the monitor
@@ -163,7 +179,8 @@ class K8sMonitorAgentActor(Actor):
         """
         Actor.__init__(self, name=name, level_logger=level_logger)
         self.state = K8sMonitorAgentState(actor=self, time_interval=time_interval, timeout_query=timeout_query,
-                                          listener_agent=listener_agent, k8s_api_mode=k8s_api_mode)
+                                          listener_agent=listener_agent, k8s_api_mode=k8s_api_mode, api_key=api_key,
+                                          host=host)
 
     def setup(self):
         """
@@ -179,8 +196,7 @@ class K8sMonitorAgentActor(Actor):
         """
         while self.state.active_monitoring:
             try:
-                events = self.k8s_streaming_query(timeout_seconds=self.state.timeout_query,
-                                                  k8sapi_mode=self.state.k8s_api_mode)
+                events = self.k8s_streaming_query()
                 for event in events:
                     event_type, namespace, pod_name, container_ids, labels = event
                     self.state.listener_agent.send_data(
@@ -194,24 +210,25 @@ class K8sMonitorAgentActor(Actor):
                         )
                     )
 
-                # sleep(self.state.time_interval)
+                sleep(self.state.time_interval)
             except Exception as ex:
                 self.logger.warning("Failed streaming query %s", ex)
 
-    def k8s_streaming_query(self, timeout_seconds: int, k8sapi_mode: str) -> list:
+    def k8s_streaming_query(self) -> list:
         """
         Return a list of events by using the provided parameters
         :param int timeout_seconds: Timeout in seconds for waiting for events
         :param str k8sapi_mode: Kind of API mode
         """
-        api = get_core_v1_api(mode=k8sapi_mode, logger=self.logger)
+        api = get_core_v1_api(mode=self.state.k8s_api_mode, logger=self.logger, api_key=self.state.api_key,
+                              host=self.state.host)
         events = []
         w = watch.Watch()
 
         try:
             event = None
             for event in w.stream(
-                    func=api.list_pod_for_all_namespaces, timeout_seconds=timeout_seconds
+                    func=api.list_pod_for_all_namespaces, timeout_seconds=self.state.timeout_query
             ):
 
                 if event:

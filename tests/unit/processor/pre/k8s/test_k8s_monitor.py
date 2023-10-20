@@ -86,7 +86,7 @@ class TestK8sMonitor(AbstractTestActor):
         """
         Test that k8s_streaming_query is able to retrieve events related to pods
         """
-        result = started_actor.k8s_streaming_query(timeout_seconds=5, k8sapi_mode=MANUAL_CONFIG_MODE)
+        result = started_actor.k8s_streaming_query()
 
         assert result == expected_events_list_k8s
 
@@ -95,7 +95,7 @@ class TestK8sMonitor(AbstractTestActor):
         """
          Test that unknown events are ignored by k8s_streaming_query
          """
-        result = started_actor.k8s_streaming_query(timeout_seconds=5, k8sapi_mode=MANUAL_CONFIG_MODE)
+        result = started_actor.k8s_streaming_query()
 
         assert result == []
 

@@ -67,6 +67,8 @@ TIME_INTERVAL_KEY = 'time_interval'
 TIMEOUT_QUERY_KEY = 'timeout_query'
 PULLER_NAME_KEY = 'puller'
 PUSHER_NAME_KEY = 'pusher'
+API_KEY_KEY = 'api_key'
+HOST_KEY = 'host'
 
 LISTENER_ACTOR_KEY = 'listener_actor'
 
@@ -432,6 +434,10 @@ class PreProcessorGenerator(ProcessorGenerator):
                                                                  timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
                                                                  TIMEOUT_QUERY_KEY not in processor_config
                                                                  else processor_config[TIMEOUT_QUERY_KEY],
+                                                                 api_key=None if API_KEY_KEY not in processor_config
+                                                                 else processor_config[API_KEY_KEY],
+                                                                 host=None if HOST_KEY not in processor_config
+                                                                 else processor_config[HOST_KEY],
                                                                  target_actors_names=[processor_config[PULLER_NAME_KEY]]
                                                                  )
         }
@@ -451,7 +457,7 @@ class PostProcessorGenerator(ProcessorGenerator):
 
 class MonitorGenerator(Generator):
     """
-    Generator that initialises the monitor by using a K8sProcessorActor
+    Generator that initialises the monitor by using a K8sPreProcessorActor
     """
 
     def __init__(self):
@@ -464,7 +470,9 @@ class MonitorGenerator(Generator):
                 k8s_api_mode=monitor_config[LISTENER_ACTOR_KEY].state.k8s_api_mode,
                 time_interval=monitor_config[LISTENER_ACTOR_KEY].state.time_interval,
                 timeout_query=monitor_config[LISTENER_ACTOR_KEY].state.timeout_query,
-                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel()
+                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel(),
+                api_key=monitor_config[LISTENER_ACTOR_KEY].state.api_key,
+                host=monitor_config[LISTENER_ACTOR_KEY].state.host
             )
 
         }

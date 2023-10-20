@@ -474,6 +474,18 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         subparser_k8s_pre_processor.add_argument(
+            "k",
+            "api-key",
+            help_text="API key authorization required for k8s manual configuration",
+        )
+
+        subparser_k8s_pre_processor.add_argument(
+            "h",
+            "host",
+            help_text="host required for k8s manual configuration",
+        )
+
+        subparser_k8s_pre_processor.add_argument(
             "p",
             "puller",
             help_text="target puller for the pre-processor",
