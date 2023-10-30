@@ -33,78 +33,118 @@ This module provides two k8s specific actors
 * `K8sMonitorAgent`, which monitors the k8s API and sends messages when pod are created, removed or modified.
 """
 import logging
+from multiprocessing.managers import BaseManager
 
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from powerapi.actor import Actor
-from powerapi.message import K8sPodUpdateMessage, StartMessage, PoisonPillMessage
-from powerapi.processor.pre.k8s.k8s_monitor_actor import ADDED_EVENT, DELETED_EVENT, MODIFIED_EVENT
+from powerapi.message import StartMessage, PoisonPillMessage
 from powerapi.processor.pre.k8s.k8s_pre_processor_handlers import K8sPreProcessorActorHWPCReportHandler, \
-    K8sPreProcessorActorK8sPodUpdateMessageHandler, K8sPreProcessorActorStartMessageHandler, \
-    K8sPreProcessorActorPoisonPillMessageHandler
+    K8sPreProcessorActorStartMessageHandler, K8sPreProcessorActorPoisonPillMessageHandler
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
 from powerapi.report import HWPCReport
 
-DEFAULT_K8S_CACHE_NAME = 'k8s_cache'
+ADDED_EVENT = 'ADDED'
+DELETED_EVENT = 'DELETED'
+MODIFIED_EVENT = 'MODIFIED'
+
+DEFAULT_K8S_CACHE_MANAGER_NAME = 'k8s_cache_manager'
 DEFAULT_K8S_MONITOR_NAME = 'k8s_monitor'
+
+POD_LABELS_KEY = 'pod_labels'
+CONTAINERS_POD_KEY = 'containers_pod'
+POD_CONTAINERS_KEY = 'pod_containers'
 
 TIME_INTERVAL_DEFAULT_VALUE = 0
 TIMEOUT_QUERY_DEFAULT_VALUE = 5
 
 
-class K8sMetadataCache:
+class K8sPodUpdateMetadata:
+    """
+    Metadata related to a monitored event
+    """
+
+    def __init__(
+            self,
+            event: str,
+            namespace: str,
+            pod: str,
+            containers_id: List[str] = None,
+            labels: Dict[str, str] = None,
+    ):
+        """
+        :param str event: Event name
+        :param str namespace: Namespace name
+        :param str pod: Id of the Pod
+        :param list containers_id: List of containers id
+        :param dict labels: Dictionary of labels
+        """
+        self.event = event
+        self.namespace = namespace
+        self.pod = pod
+        self.containers_id = containers_id if containers_id is not None else []
+        self.labels = labels if labels is not None else {}
+
+    def __str__(self):
+        return f"K8sPodUpdateMetadata {self.event} {self.namespace} {self.pod}"
+
+    def __eq__(self, metadata):
+        return (self.event, self.namespace, self.pod, self.containers_id, self.labels) == \
+            (metadata.event, metadata.namespace, metadata.pod, metadata.containers_id, metadata.labels)
+
+
+class K8sMetadataCacheManager:
     """
     K8sMetadataCache maintains a cache of pods' metadata
     (namespace, labels and id of associated containers)
     """
 
-    def __init__(self, name: str = DEFAULT_K8S_CACHE_NAME, level_logger: int = logging.WARNING):
+    def __init__(self, process_manager: BaseManager, name: str = DEFAULT_K8S_CACHE_MANAGER_NAME,
+                 level_logger: int = logging.WARNING):
 
-        self.pod_labels = {}  # (ns, pod) => [labels]
-        self.containers_pod = {}  # container_id => (ns, pod)
-        self.pod_containers = {}  # (ns, pod) => [container_ids]
+        # Dictionaries
 
+        self.process_manager = process_manager
+
+        self.pod_labels = self.process_manager.dict()  # (ns, pod) => [labels]
+
+        self.containers_pod = self.process_manager.dict()  # container_id => (ns, pod)
+
+        self.pod_containers = self.process_manager.dict()  # (ns, pod) => [container_ids]
+
+        # Logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level_logger)
 
-    def update_cache(self, message: K8sPodUpdateMessage):
+    def update_cache(self, metadata: K8sPodUpdateMetadata):
         """
         Update the local cache for pods.
 
         Register this function as a callback for K8sMonitorAgent messages.
         """
-        if message.event == ADDED_EVENT:
-            self.pod_labels[(message.namespace, message.pod)] = message.labels
-            self.pod_containers[
-                (message.namespace, message.pod)
-            ] = message.containers_id
-            for container_id in message.containers_id:
+        if metadata.event == ADDED_EVENT:
+            self.pod_labels[(metadata.namespace, metadata.pod)] = metadata.labels
+            self.pod_containers[(metadata.namespace, metadata.pod)] = metadata.containers_id
+            for container_id in metadata.containers_id:
                 self.containers_pod[container_id] = \
-                    (message.namespace, message.pod)
+                    (metadata.namespace, metadata.pod)
 
-        elif message.event == DELETED_EVENT:
-            self.pod_labels.pop((message.namespace, message.pod), None)
-            for container_id in self.pod_containers.pop(
-                    (message.namespace, message.pod), []
-            ):
+        elif metadata.event == DELETED_EVENT:
+            self.pod_labels.pop((metadata.namespace, metadata.pod), None)
+            for container_id in self.pod_containers.pop((metadata.namespace, metadata.pod), []):
                 self.containers_pod.pop(container_id, None)
             # logger.debug("Pod removed %s %s", message.namespace, message.pod)
 
-        elif message.event == MODIFIED_EVENT:
-            self.pod_labels[(message.namespace, message.pod)] = message.labels
-            for prev_container_id in self.pod_containers.pop(
-                    (message.namespace, message.pod), []
-            ):
-                self.containers_pod.pop(prev_container_id, None)
-            self.pod_containers[
-                (message.namespace, message.pod)
-            ] = message.containers_id
-            for container_id in message.containers_id:
-                self.containers_pod[container_id] = \
-                    (message.namespace, message.pod)
+        elif metadata.event == MODIFIED_EVENT:
+            self.pod_labels[(metadata.namespace, metadata.pod)] = metadata.labels
+            for prev_container_id in self.pod_containers.pop((metadata.namespace, metadata.pod), []):
+                self.pod_containers.pop(prev_container_id, None)
+            self.pod_containers[(metadata.namespace, metadata.pod)] = metadata.containers_id
+            for container_id in metadata.containers_id:
+                self.containers_pod[container_id] = (metadata.namespace, metadata.pod)
 
         else:
-            self.logger.error("Error : unknown event type %s ", message.event)
+            self.logger.error("Error : unknown event type %s ", metadata.event)
 
     def get_container_pod(self, container_id: str) -> Tuple[str, str]:
         """
@@ -135,10 +175,11 @@ class K8sPreProcessorState(ProcessorState):
     State related to a K8SProcessorActor
     """
 
-    def __init__(self, actor: Actor, metadata_cache: K8sMetadataCache, target_actors: list, target_actors_names: list,
-                 k8s_api_mode: str, time_interval: int, timeout_query: int, api_key: str, host: str):
+    def __init__(self, actor: Actor, target_actors: list,
+                 target_actors_names: list, k8s_api_mode: str, time_interval: int, timeout_query: int, api_key: str,
+                 host: str):
         ProcessorState.__init__(self, actor=actor, target_actors=target_actors, target_actors_names=target_actors_names)
-        self.metadata_cache = metadata_cache
+        self.metadata_cache_manager = None
         self.k8s_api_mode = k8s_api_mode
         self.time_interval = time_interval
         self.timeout_query = timeout_query
@@ -158,7 +199,7 @@ class K8sPreProcessorActor(ProcessorActor):
         ProcessorActor.__init__(self, name=name, level_logger=level_logger,
                                 timeout=timeout)
 
-        self.state = K8sPreProcessorState(actor=self, metadata_cache=K8sMetadataCache(level_logger=level_logger),
+        self.state = K8sPreProcessorState(actor=self,
                                           target_actors=target_actors,
                                           k8s_api_mode=ks8_api_mode, time_interval=time_interval,
                                           timeout_query=timeout_query, target_actors_names=target_actors_names,
@@ -173,5 +214,3 @@ class K8sPreProcessorActor(ProcessorActor):
         self.add_handler(message_type=HWPCReport, handler=K8sPreProcessorActorHWPCReportHandler(state=self.state))
         self.add_handler(message_type=PoisonPillMessage,
                          handler=K8sPreProcessorActorPoisonPillMessageHandler(state=self.state))
-        self.add_handler(message_type=K8sPodUpdateMessage,
-                         handler=K8sPreProcessorActorK8sPodUpdateMessageHandler(state=self.state))

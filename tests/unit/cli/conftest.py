@@ -31,7 +31,6 @@ import sys
 
 import pytest
 import tests.utils.cli as test_files_module
-from powerapi.cli.binding_manager import PreProcessorBindingManager
 from powerapi.cli.generator import PullerGenerator, PusherGenerator, ProcessorGenerator, COMPONENT_TYPE_KEY, \
     LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
@@ -582,7 +581,6 @@ def cli_configuration(config_file: str):
     """
     Load in sys.argv a configuration with arguments extracted from a json file
     """
-    # config_file = 'root_manager_basic_configuration.json'
     sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
 
     yield None
@@ -716,48 +714,3 @@ def dispatcher_actor_in_dictionary():
                                  route_table=route_table)
 
     return {dispatcher.name: dispatcher}
-
-
-@pytest.fixture
-def pre_processor_binding_manager(pre_processor_pullers_and_processors_dictionaries):
-    """
-    Return a ProcessorBindingManager with a libvirt Processor
-    """
-    pullers = pre_processor_pullers_and_processors_dictionaries[0]
-    processors = pre_processor_pullers_and_processors_dictionaries[1]
-
-    return PreProcessorBindingManager(actors=pullers, processors=processors)
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_wrong_binding_types(pre_processor_wrong_binding_configuration):
-    """
-    Return a PreProcessorBindingManager with wrong target for the pre-processor (a pusher instead of a puller)
-    """
-    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_wrong_binding_configuration)
-
-    return PreProcessorBindingManager(actors=pushers, processors=processors)
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_unexisting_puller(pre_processor_with_unexisting_puller_configuration):
-    """
-    Return a PreProcessorBindingManager with an unexisting target for the pre-processor (a puller that doesn't exist)
-    """
-    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_with_unexisting_puller_configuration)
-
-    return PreProcessorBindingManager(actors=pullers, processors=processors)
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_reused_puller_in_bindings(
-        pre_processor_with_reused_puller_in_bindings_configuration):
-    """
-    Return a PreProcessorBindingManager with a puller used by two different pre-processors
-    """
-    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_with_reused_puller_in_bindings_configuration)
-
-    return PreProcessorBindingManager(actors=pullers, processors=processors)

@@ -1,10 +1,9 @@
 # Copyright (c) 2023, INRIA
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-from typing import Any
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+import multiprocessing
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
 
@@ -27,12 +26,13 @@ from typing import Any
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Any
+
 from unittest.mock import Mock
 
 import pytest
 
-from powerapi.message import K8sPodUpdateMessage
-from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sMetadataCache
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPodUpdateMetadata, K8sMetadataCacheManager
 
 
 @pytest.fixture(name='pods_list')
@@ -151,21 +151,20 @@ def extract_containers_ids(containers_status: list) -> list:
 
 
 @pytest.fixture
-def expected_k8s_pod_update_messages(expected_events_list_k8s):
+def expected_k8s_pod_update_metadata(expected_events_list_k8s):
     """
     Return a list of K8sPodUpdateMessage by using the provided events list
     """
-    update_messages = []
+    update_metadata = []
 
-    for type, namespace, name, containers_id, labels in expected_events_list_k8s:
-        update_messages.append(K8sPodUpdateMessage(sender_name='test_k8s_monitor_actor',
-                                                   event=type,
-                                                   namespace=namespace,
-                                                   pod=name,
-                                                   containers_id=containers_id,
-                                                   labels=labels))
+    for event_type, namespace, name, containers_id, labels in expected_events_list_k8s:
+        update_metadata.append(K8sPodUpdateMetadata(event=event_type,
+                                                    namespace=namespace,
+                                                    pod=name,
+                                                    containers_id=containers_id,
+                                                    labels=labels))
 
-    return update_messages
+    return update_metadata
 
 
 class MockedWatch(Mock):
@@ -206,22 +205,23 @@ def mocked_watch_initialized_unknown_events(unknown_events_list_k8s):
     return MockedWatch(unknown_events_list_k8s)
 
 
-class PipeMetadataCache(K8sMetadataCache):
+class PipeMetadataCacheManager(K8sMetadataCacheManager):
     """
-    K8sMetadataCache maintains a cache of pods' metadata
+    K8sMetadataCacheManager maintains a cache of pods' metadata
     (namespace, labels and id of associated containers).
     This metadata cache send itself via a pipe when an update is done
     """
 
     def __init__(self, name: str, level_logger: int, pipe):
-        K8sMetadataCache.__init__(self, name=name, level_logger=level_logger)
+        K8sMetadataCacheManager.__init__(self, name=name, level_logger=level_logger,
+                                         process_manager=multiprocessing.Manager())
         self.pipe = pipe
 
-    def update_cache(self, message: K8sPodUpdateMessage):
+    def update_cache(self, metadata: K8sPodUpdateMetadata):
         """
         Update the local cache for pods.
 
         Send the metadata cache via the pipe
         """
-        K8sMetadataCache.update_cache(self, message=message)
+        K8sMetadataCacheManager.update_cache(self, metadata=metadata)
         self.pipe.send(self)

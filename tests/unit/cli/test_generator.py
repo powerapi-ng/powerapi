@@ -36,7 +36,7 @@ import pytest
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator, \
     MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY, PreProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
-from powerapi.processor.pre.k8s.k8s_monitor_actor import K8sMonitorAgentActor
+from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
@@ -536,18 +536,22 @@ def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(
         pre_processor_number += 1
 
 
-def check_k8s_monitor_infos(monitor: K8sMonitorAgentActor, associated_processor: K8sPreProcessorActor):
+def check_k8s_monitor_infos(monitor: K8sMonitorAgent, associated_processor: K8sPreProcessorActor):
     """
     Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
     """
 
-    assert isinstance(monitor, K8sMonitorAgentActor)
+    assert isinstance(monitor, K8sMonitorAgent)
 
-    assert monitor.state.k8s_api_mode == associated_processor.state.k8s_api_mode
+    assert monitor.concerned_actor_state.k8s_api_mode == associated_processor.state.k8s_api_mode
 
-    assert monitor.state.time_interval == associated_processor.state.time_interval
+    assert monitor.concerned_actor_state.time_interval == associated_processor.state.time_interval
 
-    assert monitor.state.timeout_query == associated_processor.state.timeout_query
+    assert monitor.concerned_actor_state.timeout_query == associated_processor.state.timeout_query
+
+    assert monitor.concerned_actor_state.api_key == associated_processor.state.api_key
+
+    assert monitor.concerned_actor_state.host == associated_processor.state.host
 
 
 def test_generate_k8s_monitor_from_k8s_config(k8s_monitor_config):

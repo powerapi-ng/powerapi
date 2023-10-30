@@ -37,7 +37,7 @@ from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
 from powerapi.filter import Filter
-from powerapi.processor.pre.k8s.k8s_monitor_actor import K8sMonitorAgentActor
+from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
@@ -464,15 +464,10 @@ class MonitorGenerator(Generator):
         Generator.__init__(self, component_group_name=MONITOR_KEY)
 
         self.monitor_factory = {
-            K8S_COMPONENT_TYPE_VALUE: lambda monitor_config: K8sMonitorAgentActor(
+            K8S_COMPONENT_TYPE_VALUE: lambda monitor_config: K8sMonitorAgent(
                 name=monitor_config[ACTOR_NAME_KEY],
-                listener_agent=monitor_config[LISTENER_ACTOR_KEY],
-                k8s_api_mode=monitor_config[LISTENER_ACTOR_KEY].state.k8s_api_mode,
-                time_interval=monitor_config[LISTENER_ACTOR_KEY].state.time_interval,
-                timeout_query=monitor_config[LISTENER_ACTOR_KEY].state.timeout_query,
-                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel(),
-                api_key=monitor_config[LISTENER_ACTOR_KEY].state.api_key,
-                host=monitor_config[LISTENER_ACTOR_KEY].state.host
+                concerned_actor_state=monitor_config[LISTENER_ACTOR_KEY].state,
+                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel()
             )
 
         }

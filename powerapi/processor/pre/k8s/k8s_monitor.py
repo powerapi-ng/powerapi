@@ -30,17 +30,16 @@
 # pylint: disable=W0603,W0718
 
 import logging
+import multiprocessing
 from logging import Logger
-from time import sleep
+from multiprocessing import Process
 
 from kubernetes import client, config, watch
 from kubernetes.client.configuration import Configuration
 from kubernetes.client.rest import ApiException
 
-from powerapi.actor import State, Actor
-from powerapi.message import StartMessage, PoisonPillMessage, K8sPodUpdateMessage
-from powerapi.processor.pre.k8s.k8s_monitor_handlers import K8sMonitorAgentStartMessageHandler, \
-    K8sMonitorAgentPoisonPillMessageHandler
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorState, K8sMetadataCacheManager, \
+    K8sPodUpdateMetadata, DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT
 
 LOCAL_CONFIG_MODE = "local"
 MANUAL_CONFIG_MODE = "manual"
@@ -48,10 +47,6 @@ CLUSTER_CONFIG_MODE = "cluster"
 
 MANUAL_CONFIG_API_KEY_DEFAULT_VALUE = "YOUR_API_KEY"
 MANUAL_CONFIG_HOST_DEFAULT_VALUE = "http://localhost"
-
-ADDED_EVENT = 'ADDED'
-DELETED_EVENT = 'DELETED'
-MODIFIED_EVENT = 'MODIFIED'
 
 v1_api = None
 
@@ -143,76 +138,71 @@ def extract_containers(pod_obj):
     return sorted(container_ids)
 
 
-class K8sMonitorAgentState(State):
+class K8sMonitorAgent(Process):
     """
-    State related to a K8sMonitorAgentActor
-    """
-
-    def __init__(self, actor: Actor, time_interval: int, timeout_query: int, listener_agent: Actor, k8s_api_mode: str,
-                 api_key: str = None, host: str = None):
-        State.__init__(self, actor=actor)
-        self.time_interval = time_interval
-        self.timeout_query = timeout_query
-        self.listener_agent = listener_agent
-        self.k8s_api_mode = k8s_api_mode
-        self.active_monitoring = False
-        self.monitor_thread = None
-        self.api_key = api_key
-        self.host = host
-
-
-class K8sMonitorAgentActor(Actor):
-    """
-    An actor that monitors the k8s API and sends messages
+    A monitors the k8s API and sends messages
     when pod are created, removed or modified.
     """
 
-    def __init__(self, name: str, listener_agent: Actor, k8s_api_mode: str = None, time_interval: int = 10,
-                 timeout_query: int = 5, api_key: str = None, host: str = None, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, concerned_actor_state: K8sPreProcessorState, level_logger: int = logging.WARNING):
         """
         :param str name: The actor name
-        :param K8sProcessorActor listener_agent: actor waiting for notifications of the monitor
-        :param k8s_api_mode: the used k8s API mode
-        :param int timeout_query: Timeout for queries
-        :param int time_interval: Time interval for the monitoring
+        :param K8sPreProcessorState concerned_actor_state: state of the actor that will use the monitored information
         :pram int level_logger: The logger level
         """
-        Actor.__init__(self, name=name, level_logger=level_logger)
-        self.state = K8sMonitorAgentState(actor=self, time_interval=time_interval, timeout_query=timeout_query,
-                                          listener_agent=listener_agent, k8s_api_mode=k8s_api_mode, api_key=api_key,
-                                          host=host)
+        Process.__init__(self, name=name)
 
-    def setup(self):
+        #: (logging.Logger): Logger
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(level_logger)
+        formatter = logging.Formatter('%(asctime)s || %(levelname)s || ' + '%(process)d %(processName)s || %(message)s')
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+
+        # Concerned Actor state
+        self.concerned_actor_state = concerned_actor_state
+
+        # Multiprocessing Manager
+        self.manager = multiprocessing.Manager()
+
+        # Shared cache
+        self.concerned_actor_state.metadata_cache_manager = K8sMetadataCacheManager(process_manager=self.manager,
+                                                                                    level_logger=level_logger)
+
+        self.stop_monitoring = self.manager.Event()
+
+        self.stop_monitoring.clear()
+
+    def run(self):
         """
-        Define StartMessage handler and PoisonPillMessage handler
+        Main code executed by the Monitor
         """
-        self.add_handler(message_type=StartMessage, handler=K8sMonitorAgentStartMessageHandler(state=self.state))
-        self.add_handler(message_type=PoisonPillMessage,
-                         handler=K8sMonitorAgentPoisonPillMessageHandler(state=self.state))
+        self.query_k8s()
 
     def query_k8s(self):
         """
-        Query k8s for changes and send the related information to the listener
+        Query k8s for changes and update the metadata cache
         """
-        while self.state.active_monitoring:
+        while not self.stop_monitoring.is_set():
             try:
                 events = self.k8s_streaming_query()
                 for event in events:
                     event_type, namespace, pod_name, container_ids, labels = event
-                    self.state.listener_agent.send_data(
-                        K8sPodUpdateMessage(
-                            sender_name=self.name,
-                            event=event_type,
-                            namespace=namespace,
-                            pod=pod_name,
-                            containers_id=container_ids,
-                            labels=labels
-                        )
+
+                    self.concerned_actor_state.metadata_cache_manager.update_cache(metadata=K8sPodUpdateMetadata(
+                        event=event_type,
+                        namespace=namespace,
+                        pod=pod_name,
+                        containers_id=container_ids,
+                        labels=labels
+                    )
                     )
 
-                sleep(self.state.time_interval)
+                self.stop_monitoring.wait(timeout=self.concerned_actor_state.time_interval)
             except Exception as ex:
                 self.logger.warning("Failed streaming query %s", ex)
+
+        self.manager.shutdown()
 
     def k8s_streaming_query(self) -> list:
         """
@@ -220,15 +210,15 @@ class K8sMonitorAgentActor(Actor):
         :param int timeout_seconds: Timeout in seconds for waiting for events
         :param str k8sapi_mode: Kind of API mode
         """
-        api = get_core_v1_api(mode=self.state.k8s_api_mode, logger=self.logger, api_key=self.state.api_key,
-                              host=self.state.host)
+        api = get_core_v1_api(mode=self.concerned_actor_state.k8s_api_mode, logger=self.logger,
+                              api_key=self.concerned_actor_state.api_key, host=self.concerned_actor_state.host)
         events = []
         w = watch.Watch()
 
         try:
             event = None
             for event in w.stream(
-                    func=api.list_pod_for_all_namespaces, timeout_seconds=self.state.timeout_query
+                    func=api.list_pod_for_all_namespaces, timeout_seconds=self.concerned_actor_state.timeout_query
             ):
 
                 if event:
@@ -241,12 +231,15 @@ class K8sMonitorAgentActor(Actor):
                         continue
 
                     pod_obj = event["object"]
+
                     namespace, pod_name = \
                         pod_obj.metadata.namespace, pod_obj.metadata.name
+
                     container_ids = (
                         [] if event["type"] == "DELETED"
                         else extract_containers(pod_obj)
                     )
+
                     labels = pod_obj.metadata.labels
                     events.append(
                         (event["type"], namespace, pod_name, container_ids, labels)
@@ -256,5 +249,4 @@ class K8sMonitorAgentActor(Actor):
             self.logger.error("APIException %s %s", ae.status, ae)
         except Exception as undef_e:
             self.logger.error("Error when watching Exception %s %s", undef_e, event)
-
         return events
