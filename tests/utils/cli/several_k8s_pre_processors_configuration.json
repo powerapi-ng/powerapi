@@ -3,44 +3,44 @@
   "pre-processor": {
     "my_processor_1": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 20,
-      "timeout_query": 20,
+      "k8s-api-mode": "Manual",
+      "time-interval": 20,
+      "timeout-query": 20,
       "puller": "my_puller_1"
     },
     "my_processor_2": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 30,
-      "timeout_query": 30,
+      "k8s-api-mode": "Manual",
+      "time-interval": 30,
+      "timeout-query": 30,
       "puller": "my_puller_2"
     },
     "my_processor_3": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 40,
-      "timeout_query": 40,
+      "k8s-api-mode": "Manual",
+      "time-interval": 40,
+      "timeout-query": 40,
       "puller": "my_puller_3"
     },
     "my_processor_4": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 50,
-      "timeout_query": 50,
+      "k8s-api-mode": "Manual",
+      "time-interval": 50,
+      "timeout-query": 50,
       "puller": "my_puller_4"
     },
     "my_processor_5": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 60,
-      "timeout_query": 60,
+      "k8s-api-mode": "Manual",
+      "time-interval": 60,
+      "timeout-query": 60,
       "puller": "my_puller_5"
     },
     "my_processor_6": {
       "type": "k8s",
-      "k8s_api_mode": "Manual",
-      "time_interval": 70,
-      "timeout_query": 70,
+      "k8s-api-mode": "Manual",
+      "time-interval": 70,
+      "timeout-query": 70,
       "puller": "my_puller_6"
     }
   }

@@ -466,9 +466,9 @@ def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, expected_
     """
     assert isinstance(pre_processor, K8sPreProcessorActor)
 
-    assert pre_processor.state.k8s_api_mode == expected_pre_processor_info["k8s_api_mode"]
-    assert pre_processor.state.time_interval == expected_pre_processor_info["time_interval"]
-    assert pre_processor.state.timeout_query == expected_pre_processor_info["timeout_query"]
+    assert pre_processor.state.k8s_api_mode == expected_pre_processor_info["k8s-api-mode"]
+    assert pre_processor.state.time_interval == expected_pre_processor_info["time-interval"]
+    assert pre_processor.state.timeout_query == expected_pre_processor_info["timeout-query"]
     assert len(pre_processor.state.target_actors) == 0
     assert len(pre_processor.state.target_actors_names) == 1
     assert pre_processor.state.target_actors_names[0] == expected_pre_processor_info["puller"]
@@ -519,8 +519,8 @@ def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(
 
     processors = generator.generate(several_k8s_pre_processors_without_some_arguments_config)
 
-    expected_processor_info = {'k8s_api_mode': None, 'time_interval': TIME_INTERVAL_DEFAULT_VALUE,
-                               'timeout_query': TIMEOUT_QUERY_DEFAULT_VALUE}
+    expected_processor_info = {'k8s-api-mode': None, 'time-interval': TIME_INTERVAL_DEFAULT_VALUE,
+                               'timeout-query': TIMEOUT_QUERY_DEFAULT_VALUE}
 
     assert len(processors) == len(several_k8s_pre_processors_without_some_arguments_config['pre-processor'])
 
