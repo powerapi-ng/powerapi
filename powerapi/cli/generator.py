@@ -406,6 +406,7 @@ class ProcessorGenerator(Generator):
             raise PowerAPIException(msg)
         else:
             component_config[ACTOR_NAME_KEY] = actor_name
+            component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
             return self.processor_factory[processor_actor_type](component_config)
 
 
@@ -438,6 +439,9 @@ class PreProcessorGenerator(ProcessorGenerator):
                                                                  else processor_config[API_KEY_KEY],
                                                                  host=None if HOST_KEY not in processor_config
                                                                  else processor_config[HOST_KEY],
+                                                                 level_logger=logging.DEBUG if
+                                                                 processor_config[GENERAL_CONF_VERBOSE_KEY] else
+                                                                 logging.INFO,
                                                                  target_actors_names=[processor_config[PULLER_NAME_KEY]]
                                                                  )
         }

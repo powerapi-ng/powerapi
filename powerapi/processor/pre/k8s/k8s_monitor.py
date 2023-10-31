@@ -201,7 +201,7 @@ class K8sMonitorAgent(Process):
                 self.stop_monitoring.wait(timeout=self.concerned_actor_state.time_interval)
 
             except BrokenPipeError:
-                # This error can happen when stopping the monitor process 
+                # This error can happen when stopping the monitor process
                 return
             except Exception as ex:
                 self.logger.warning("Failed streaming query %s", ex)

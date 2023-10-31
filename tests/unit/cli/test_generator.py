@@ -421,7 +421,7 @@ def test_generate_pre_processor_from_libvirt_config(libvirt_pre_processor_config
 
     processors = generator.generate(libvirt_pre_processor_config)
 
-    assert len(processors) == len(libvirt_pre_processor_config)
+    assert len(processors) == len(libvirt_pre_processor_config['pre-processor'])
     assert 'my_processor' in processors
     processor = processors['my_processor']
 
@@ -483,7 +483,7 @@ def test_generate_pre_processor_from_k8s_config(k8s_pre_processor_config):
 
     processors = generator.generate(k8s_pre_processor_config)
 
-    assert len(processors) == len(k8s_pre_processor_config)
+    assert len(processors) == len(k8s_pre_processor_config['pre-processor'])
     assert processor_name in processors
 
     processor = processors[processor_name]

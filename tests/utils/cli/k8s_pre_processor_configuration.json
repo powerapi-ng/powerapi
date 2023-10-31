@@ -1,4 +1,5 @@
 {
+  "verbose": true,
   "pre-processor": {
     "my_processor": {
       "type": "k8s",
