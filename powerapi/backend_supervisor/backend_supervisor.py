@@ -32,10 +32,10 @@ import select
 from powerapi.actor import Supervisor
 from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
+from powerapi.pusher import PusherActor
 
 
 class BackendSupervisor(Supervisor):
-
     """
     Provide additional functionality to deal with actors: join
     """
@@ -55,6 +55,9 @@ class BackendSupervisor(Supervisor):
         #: (list): List of Pusher
         self.pushers = []
 
+        #: (list): List of pre processors
+        self.pre_processors = []
+
     def join(self):
         """
         wait until all actor are terminated
@@ -65,8 +68,10 @@ class BackendSupervisor(Supervisor):
                 self.pullers.append(actor)
             elif isinstance(actor, DispatcherActor):
                 self.dispatchers.append(actor)
-            else:
+            elif isinstance(actor, PusherActor):
                 self.pushers.append(actor)
+            else:
+                self.pre_processors.append(actor)
 
         if self.stream_mode:
             self.join_stream_mode_on()
@@ -103,6 +108,9 @@ class BackendSupervisor(Supervisor):
         """
         for puller in self.pullers:
             puller.join()
+        for pre_processor in self.pre_processors:
+            pre_processor.soft_kill()
+            pre_processor.join()
         for dispatcher in self.dispatchers:
             dispatcher.soft_kill()
             dispatcher.join()

@@ -183,8 +183,8 @@ class K8sMonitorAgent(Process):
         """
         Query k8s for changes and update the metadata cache
         """
-        while not self.stop_monitoring.is_set():
-            try:
+        try:
+            while not self.stop_monitoring.is_set():
                 events = self.k8s_streaming_query()
                 for event in events:
                     event_type, namespace, pod_name, container_ids, labels = event
@@ -200,13 +200,13 @@ class K8sMonitorAgent(Process):
 
                 self.stop_monitoring.wait(timeout=self.concerned_actor_state.time_interval)
 
-            except BrokenPipeError:
-                # This error can happen when stopping the monitor process
-                return
-            except Exception as ex:
-                self.logger.warning("Failed streaming query %s", ex)
-            finally:
-                self.manager.shutdown()
+        except BrokenPipeError:
+            # This error can happen when stopping the monitor process
+            return
+        except Exception as ex:
+            self.logger.warning("Failed streaming query %s", ex)
+        finally:
+            self.manager.shutdown()
 
     def k8s_streaming_query(self) -> list:
         """
