@@ -36,7 +36,6 @@ if TYPE_CHECKING:
     from powerapi.filter import Filter
     from powerapi.dispatcher import RouteTable
     from powerapi.formula import FormulaActor, FormulaState
-    from powerapi.report_modifier import ReportModifier
 
 
 class Message:

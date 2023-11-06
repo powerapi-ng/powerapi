@@ -54,7 +54,7 @@ def test_generate_puller_from_empty_config_dict_raise_an_exception():
     Test that PullerGenerator raises a PowerAPIException when there is no input argument
     """
     conf = {}
-    generator = PullerGenerator(report_filter=None, report_modifier_list=[])
+    generator = PullerGenerator(report_filter=None)
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
@@ -64,7 +64,7 @@ def test_generate_puller_from_mongo_basic_config(mongodb_input_output_stream_con
     """
     Test that generation for mongodb puller from a config with a mongodb input works correctly
     """
-    generator = PullerGenerator(None, [])
+    generator = PullerGenerator(report_filter=None)
 
     pullers = generator.generate(mongodb_input_output_stream_config)
 
@@ -89,7 +89,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
     for _, current_input in several_inputs_outputs_stream_config['input'].items():
         if current_input['type'] == 'csv':
             current_input['files'] = current_input['files'].split(',')
-    generator = PullerGenerator(report_filter=None, report_modifier_list=[])
+    generator = PullerGenerator(report_filter=None)
     pullers = generator.generate(several_inputs_outputs_stream_config)
 
     assert len(pullers) == len(several_inputs_outputs_stream_config['input'])
@@ -123,7 +123,7 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
     """
     Test that PullerGenerator raise a PowerAPIException when some arguments are missing for mongo input
     """
-    generator = PullerGenerator(report_filter=None, report_modifier_list=[])
+    generator = PullerGenerator(report_filter=None)
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
@@ -134,7 +134,7 @@ def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_ac
     """
     Test that PullerGenerator generates the csv related actors even if there are some missing arguments
     """
-    generator = PullerGenerator(report_filter=None, report_modifier_list=[])
+    generator = PullerGenerator(report_filter=None)
 
     pullers = generator.generate(several_inputs_outputs_stream_csv_without_some_arguments_config)
 
@@ -159,7 +159,7 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_socket_input(
     """
     Test that PullerGenerator raise a PowerAPIException when some arguments are missing for socket input
     """
-    generator = PullerGenerator(report_filter=None, report_modifier_list=[])
+    generator = PullerGenerator(report_filter=None)
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_socket_without_some_arguments_config)
@@ -187,7 +187,7 @@ def test_remove_HWPCReport_model_and_generate_puller_from_a_config_with_hwpc_rep
     """
     Test that PullGenerator raises PowerAPIException when the model class is not defined
     """
-    generator = PullerGenerator(None, [])
+    generator = PullerGenerator(report_filter=None)
     generator.remove_report_class('HWPCReport')
     with pytest.raises(PowerAPIException):
         _ = generator.generate(mongodb_input_output_stream_config)
@@ -198,7 +198,7 @@ def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_i
     """
     Test that PullGenerator raises a PowerAPIException when an input type is not defined
     """
-    generator = PullerGenerator(None, [])
+    generator = PullerGenerator(report_filter=None)
     generator.remove_db_factory('mongodb')
     with pytest.raises(PowerAPIException):
         _ = generator.generate(mongodb_input_output_stream_config)

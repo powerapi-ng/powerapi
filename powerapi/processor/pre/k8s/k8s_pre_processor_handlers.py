@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.actor import State
-from powerapi.handler import Handler, StartHandler, PoisonPillMessageHandler
+from powerapi.handler import StartHandler, PoisonPillMessageHandler
 from powerapi.message import Message
 from powerapi.processor.handlers import ProcessorReportHandler
 

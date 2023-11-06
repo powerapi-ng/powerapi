@@ -87,17 +87,12 @@ class DBPullerThread(Thread):
     def _get_dispatchers(self, report):
         return self.state.report_filter.route(report)
 
-    def _modify_report(self, report):
-        for report_modifier in self.state.report_modifier_list:
-            report = report_modifier.modify_report(report)
-        return report
-
     def run(self):
         """
         Read data from Database and send it to the dispatchers.
         If there is no more data, send a kill message to every
         dispatcher.
-        If stream mode is disable, kill the actor.
+        If stream mode is disabled, kill the actor.
 
         :param None msg: None.
         """
@@ -113,11 +108,10 @@ class DBPullerThread(Thread):
         while self.state.alive:
             try:
                 raw_report = self._pull_database()
-                report = self._modify_report(raw_report)
 
-                dispatchers = self._get_dispatchers(report)
+                dispatchers = self._get_dispatchers(raw_report)
                 for dispatcher in dispatchers:
-                    dispatcher.send_data(report)
+                    dispatcher.send_data(raw_report)
 
             except NoReportExtractedException:
                 time.sleep(self.state.timeout_puller / 1000)

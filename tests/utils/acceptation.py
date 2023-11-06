@@ -36,7 +36,7 @@ from typing import Dict, Callable
 import pytest
 
 from powerapi.actor import Supervisor
-from powerapi.cli.generator import PusherGenerator, PullerGenerator, ReportModifierGenerator
+from powerapi.cli.generator import PusherGenerator, PullerGenerator
 from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
@@ -134,7 +134,7 @@ def get_basic_config_with_stream():
 
 
 def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_level: str,
-                               formula_class: Callable, generate_report_modifier_list=False):
+                               formula_class: Callable):
     """
     Launch a simple architecture with a pusher, a dispatcher et a puller.
     :param config: Architecture configuration
@@ -169,12 +169,7 @@ def launch_simple_architecture(config: Dict, supervisor: Supervisor, hwpc_depth_
     report_filter = Filter()
     report_filter.filter(filter_rule, dispatcher)
 
-    report_modifier_list = []
-    if generate_report_modifier_list:
-        report_modifier_generator = ReportModifierGenerator()
-        report_modifier_list = report_modifier_generator.generate(config)
-
-    puller_generator = PullerGenerator(report_filter, report_modifier_list)
+    puller_generator = PullerGenerator(report_filter)
     puller_info = puller_generator.generate(config)
     puller = puller_info['test_puller']
     supervisor.launch_actor(actor=puller, start_message=True)

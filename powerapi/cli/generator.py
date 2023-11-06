@@ -47,7 +47,6 @@ from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, Prom
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
-from powerapi.report_modifier.libvirt_mapper import LibvirtMapper
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
 
@@ -270,18 +269,13 @@ class PullerGenerator(DBActorGenerator):
     Generate Puller Actor class and Puller start message from config
     """
 
-    def __init__(self, report_filter: Filter, report_modifier_list=None):
+    def __init__(self, report_filter: Filter):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
-
-        if report_modifier_list is None:
-            report_modifier_list = []
-        self.report_modifier_list = report_modifier_list
 
     def _actor_factory(self, actor_name: str, main_config, component_config: dict):
         return PullerActor(name=actor_name, database=component_config[COMPONENT_DB_MANAGER_KEY],
                            report_filter=self.report_filter, stream_mode=main_config[GENERAL_CONF_STREAM_MODE_KEY],
-                           report_modifier_list=self.report_modifier_list,
                            report_model=component_config[COMPONENT_MODEL_KEY],
                            level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
 
@@ -341,27 +335,6 @@ class SimplePusherGenerator(BaseGenerator):
     def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict):
         return SimplePusherActor(name=actor_name,
                                  number_of_reports_to_store=component_config['number_of_reports_to_store'])
-
-
-class ReportModifierGenerator:
-    """
-    Generate Report modifier list from config
-    """
-
-    def __init__(self):
-        self.factory = {'libvirt_mapper': lambda config: LibvirtMapper(config['uri'], config['domain_regexp'])}
-
-    def generate(self, config: dict):
-        """
-        Generate Report modifier list from config
-        """
-        report_modifier_list = []
-        if 'report_modifier' not in config:
-            return []
-        for report_modifier_name in config['report_modifier'].keys():
-            report_modifier = self.factory[report_modifier_name](config['report_modifier'][report_modifier_name])
-            report_modifier_list.append(report_modifier)
-        return report_modifier_list
 
 
 class ProcessorGenerator(Generator):

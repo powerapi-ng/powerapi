@@ -90,7 +90,7 @@ class MainProcess(Process):
 
         launch_simple_architecture(config=get_basic_config_with_stream(), supervisor=self.supervisor,
                                    hwpc_depth_level=SOCKET_DEPTH_LEVEL,
-                                   formula_class=DummyFormulaActor, generate_report_modifier_list=True)
+                                   formula_class=DummyFormulaActor)
 
 
 @pytest.fixture

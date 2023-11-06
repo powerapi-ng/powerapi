@@ -288,7 +288,7 @@ class TestK8sProcessor(AbstractTestActor):
 
         metadata_for_update = get_metadata_from_event(basic_event=basic_modified_event_k8s)
         mocked_monitor_modified_event.start()
-        sleep(3)
+        sleep(5)
 
         result = started_actor.state.metadata_cache_manager
 

@@ -32,7 +32,11 @@
 try:
     from libvirt import libvirtError
 except ImportError:
-    from powerapi.report_modifier.libvirt_mapper import LibvirtException
+    class LibvirtException(Exception):
+        """"""
+
+        def __init__(self, _):
+            Exception.__init__(self)
     libvirtError = LibvirtException
 
 DOMAIN_NAME_1 = 'instance-00000001'
