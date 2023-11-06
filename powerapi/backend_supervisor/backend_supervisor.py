@@ -102,6 +102,7 @@ class BackendSupervisor(Supervisor):
         """
         Supervisor behaviour when stream mode is off.
         - Supervisor wait the Puller death
+        - Supervisor wait the pre-processors death
         - Supervisor wait for the dispatcher death
         - Supervisor send a PoisonPill (by_data) to the Pusher
         - Supervisor wait for the Pusher death
