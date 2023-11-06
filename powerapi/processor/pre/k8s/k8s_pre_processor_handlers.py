@@ -95,19 +95,6 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
             actor.close()
 
 
-class K8sPreProcessorActorK8sPodUpdateMessageHandler(Handler):
-    """
-    Process the K8sPodUpdateMessage
-    """
-
-    def __init__(self, state: State):
-        Handler.__init__(self, state=state)
-
-    def handle(self, message: Message):
-        self.state.actor.logger.debug(f"received K8sPodUpdateMessage message {message}")
-        self.state.metadata_cache_manager.update_cache(message)
-
-
 def clean_up_container_id(c_id):
     """
     On some system, we receive a container id that requires some cleanup to match
