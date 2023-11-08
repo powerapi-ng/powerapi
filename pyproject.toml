@@ -30,6 +30,7 @@ authors = [
 dependencies = [
     "pyzmq >= 18.1.0",
     "setproctitle >= 1.1.8",
+    "kubernetes >= 27.0.2"
 ]
 
 [project.optional-dependencies]
