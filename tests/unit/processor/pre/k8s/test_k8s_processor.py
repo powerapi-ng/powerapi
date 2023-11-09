@@ -48,6 +48,12 @@ from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 DISPATCHER_NAME = 'test_k8s_processor_dispatcher'
 
+KUBERNETES_CLIENT_API_REFERENCE = 'kubernetes.client.CoreV1Api'
+
+KUBERNETES_LOAD_CONFIG_REFERENCE = 'kubernetes.config.load_kube_config'
+
+KUBERNETES_WATCH_REFERENCE = 'kubernetes.watch.Watch'
+
 
 def get_metadata_from_event(basic_event: dict):
     """
@@ -213,10 +219,10 @@ class TestK8sProcessor(AbstractTestActor):
         """
         Return a mocked monitor that produces an added event
         """
-        with patch('kubernetes.client.CoreV1Api',
+        with patch(KUBERNETES_CLIENT_API_REFERENCE,
                    return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
-            with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-                with patch('kubernetes.watch.Watch',
+            with patch(KUBERNETES_LOAD_CONFIG_REFERENCE, return_value=Mock()):
+                with patch(KUBERNETES_WATCH_REFERENCE,
                            return_value=MockedWatch(events=[basic_added_event_k8s])):
                     yield K8sMonitorAgent(name='test_update_metadata_cache_with_added_event_monitor_agent',
                                           concerned_actor_state=actor.state)
@@ -226,10 +232,10 @@ class TestK8sProcessor(AbstractTestActor):
         """
         Return a mocked monitor that produces a modified event
         """
-        with patch('kubernetes.client.CoreV1Api',
+        with patch(KUBERNETES_CLIENT_API_REFERENCE,
                    return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
-            with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-                with patch('kubernetes.watch.Watch',
+            with patch(KUBERNETES_LOAD_CONFIG_REFERENCE, return_value=Mock()):
+                with patch(KUBERNETES_WATCH_REFERENCE,
                            return_value=MockedWatch(events=[basic_modified_event_k8s])):
                     yield K8sMonitorAgent(name='test_update_metadata_cache_with_added_event_monitor_agent',
                                           concerned_actor_state=actor.state)
@@ -239,10 +245,10 @@ class TestK8sProcessor(AbstractTestActor):
         """
         Return a mocked monitor that produces a deleted event
         """
-        with patch('kubernetes.client.CoreV1Api',
+        with patch(KUBERNETES_CLIENT_API_REFERENCE,
                    return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
-            with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-                with patch('kubernetes.watch.Watch',
+            with patch(KUBERNETES_LOAD_CONFIG_REFERENCE, return_value=Mock()):
+                with patch(KUBERNETES_WATCH_REFERENCE,
                            return_value=MockedWatch(events=[basic_deleted_event_k8s])):
                     yield K8sMonitorAgent(name='test_update_metadata_cache_with_added_event_monitor_agent',
                                           concerned_actor_state=actor.state)
@@ -252,10 +258,10 @@ class TestK8sProcessor(AbstractTestActor):
         """
         Return a mocked monitor that produces an unknown event
         """
-        with patch('kubernetes.client.CoreV1Api',
+        with patch(KUBERNETES_CLIENT_API_REFERENCE,
                    return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
-            with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-                with patch('kubernetes.watch.Watch',
+            with patch(KUBERNETES_LOAD_CONFIG_REFERENCE, return_value=Mock()):
+                with patch(KUBERNETES_WATCH_REFERENCE,
                            return_value=MockedWatch(events=[basic_unknown_event_k8s, basic_added_event_k8s])):
                     yield K8sMonitorAgent(name='test_update_metadata_cache_with_added_event_monitor_agent',
                                           concerned_actor_state=actor.state)

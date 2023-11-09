@@ -227,7 +227,7 @@ class K8sMonitorAgent(Process):
 
                 if event:
 
-                    if not event["type"] in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
+                    if event["type"] not in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
                         self.logger.warning(
                             "UNKNOWN EVENT TYPE : %s :  %s  %s",
                             event['type'], event['object'].metadata.name, event

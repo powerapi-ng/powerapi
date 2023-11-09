@@ -161,8 +161,6 @@ def test_validation_of_correct_configuration_with_pre_processors(pre_processor_c
     except Exception:
         assert False
 
-    assert True
-
 
 def test_validation_of_correct_configuration_without_pre_processors_and_bindings(output_input_configuration):
     """
@@ -172,5 +170,3 @@ def test_validation_of_correct_configuration_without_pre_processors_and_bindings
         ConfigValidator.validate(output_input_configuration)
     except Exception:
         assert False
-
-    assert True

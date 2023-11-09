@@ -712,7 +712,7 @@ def pre_processor_binding_manager_with_wrong_binding_types(pre_processor_wrong_b
     """
     Return a PreProcessorBindingManager with wrong target for the pre-processor (a pusher instead of a puller)
     """
-    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+    _, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
         configuration=pre_processor_wrong_binding_configuration)
 
     return PreProcessorBindingManager(pullers=pushers, processors=processors)
@@ -735,7 +735,7 @@ def pre_processor_binding_manager_with_reused_puller_in_bindings(
     """
     Return a PreProcessorBindingManager with a puller used by two different pre-processors
     """
-    pullers, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
+    pullers, processors, _ = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
         configuration=pre_processor_with_reused_puller_in_bindings_configuration)
 
     return PreProcessorBindingManager(pullers=pullers, processors=processors)

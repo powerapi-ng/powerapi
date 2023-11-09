@@ -130,7 +130,6 @@ def test_check_processors_targets_are_unique_pass_without_reused_puller_in_bindi
     """
     try:
         pre_processor_binding_manager.check_processors_targets_are_unique()
-        assert True
     except TargetActorAlreadyUsed:
         assert False
 
@@ -164,8 +163,6 @@ def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding
     try:
         for _, processor in pre_processor_binding_manager.processors.items():
             pre_processor_binding_manager.check_processor_targets(processor=processor)
-
-        assert True
     except UnsupportedActorTypeException:
         assert False
     except UnexistingActorException:
