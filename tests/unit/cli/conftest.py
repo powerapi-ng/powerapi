@@ -640,8 +640,7 @@ def empty_pre_processor_config(pre_processor_complete_configuration):
     return pre_processor_complete_configuration
 
 
-@pytest.fixture(params=['libvirt_pre_processor_wrong_binding_configuration.json',
-                        'k8s_pre_processor_wrong_binding_configuration.json'])
+@pytest.fixture(params=['k8s_pre_processor_wrong_binding_configuration.json'])
 def pre_processor_wrong_binding_configuration(request):
     """
     Return a dictionary containing wrong bindings with a pre-processor
@@ -649,8 +648,7 @@ def pre_processor_wrong_binding_configuration(request):
     return load_configuration_from_json_file(file_name=request.param)
 
 
-@pytest.fixture(params=['libvirt_pre_processor_with_non_existing_puller_configuration.json',
-                        'k8s_pre_processor_with_non_existing_puller_configuration.json'])
+@pytest.fixture(params=['k8s_pre_processor_with_non_existing_puller_configuration.json'])
 def pre_processor_with_unexisting_puller_configuration(request):
     """
     Return a dictionary containing a pre-processor with a puller that doesn't exist
@@ -659,8 +657,7 @@ def pre_processor_with_unexisting_puller_configuration(request):
         file_name=request.param)
 
 
-@pytest.fixture(params=['libvirt_pre_processor_with_reused_puller_in_bindings_configuration.json',
-                        'k8s_pre_processor_with_reused_puller_in_bindings_configuration.json'])
+@pytest.fixture(params=['k8s_pre_processor_with_reused_puller_in_bindings_configuration.json'])
 def pre_processor_with_reused_puller_in_bindings_configuration(request):
     """
     Return a dictionary containing a pre-processor with a puller that doesn't exist

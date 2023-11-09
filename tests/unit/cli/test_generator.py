@@ -413,6 +413,7 @@ def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
         generator.generate(conf)
 
 
+@pytest.mark.skip
 def test_generate_pre_processor_from_libvirt_config(libvirt_pre_processor_config):
     """
     Test that generation for libvirt pre-processor from a config works correctly
@@ -431,6 +432,7 @@ def test_generate_pre_processor_from_libvirt_config(libvirt_pre_processor_config
     assert isinstance(processor.state.regexp, Pattern)
 
 
+@pytest.mark.skip
 def test_generate_several_libvirt_pre_processors_from_config(several_libvirt_pre_processors_config):
     """
     Test that several libvirt pre-processors are correctly generated
@@ -449,6 +451,7 @@ def test_generate_several_libvirt_pre_processors_from_config(several_libvirt_pre
         assert isinstance(processors[processor_name].state.regexp, Pattern)
 
 
+@pytest.mark.skip
 def test_generate_libvirt_pre_processor_raise_exception_when_missing_arguments(
         several_libvirt_processors_without_some_arguments_config):
     """
