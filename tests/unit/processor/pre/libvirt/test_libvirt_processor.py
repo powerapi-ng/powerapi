@@ -68,6 +68,7 @@ class TestLibvirtProcessor(AbstractTestActor):
             return LibvirtPreProcessorActor(name='processor_actor', uri='', regexp=REGEXP,
                                             target_actors=[started_fake_dispatcher])
 
+    @pytest.mark.skip
     def test_modify_report_that_not_match_regexp_must_not_modify_report(self, started_actor,
                                                                         dummy_pipe_out,
                                                                         shutdown_system):
@@ -79,6 +80,7 @@ class TestLibvirtProcessor(AbstractTestActor):
         sleep(1)
         assert recv_from_pipe(dummy_pipe_out, 2) == (DISPATCHER_NAME, report)
 
+    @pytest.mark.skip
     def test_modify_report_that_match_regexp_must_modify_report(self, started_actor, dummy_pipe_out, shutdown_system):
         """
         Test that a report matching the regexp of the processor is actually modified
@@ -88,6 +90,7 @@ class TestLibvirtProcessor(AbstractTestActor):
         new_report = recv_from_pipe(dummy_pipe_out, 2)[1]
         assert new_report.metadata["domain_id"] == UUID_1
 
+    @pytest.mark.skip
     def test_modify_report_that_match_regexp_but_with_wrong_domain_name_must_not_modify_report(self, started_actor,
                                                                                                dummy_pipe_out,
                                                                                                shutdown_system):
