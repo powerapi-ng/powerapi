@@ -27,7 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.message import UnknownMessageTypeException, PoisonPillMessage
+from powerapi.message import PoisonPillMessage
+from powerapi.exception import UnknownMessageTypeException
 from .handler import Handler
 
 

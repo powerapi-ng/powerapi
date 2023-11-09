@@ -30,14 +30,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from powerapi.exception import PowerAPIException
 
 if TYPE_CHECKING:
     from powerapi.database import BaseDB
     from powerapi.filter import Filter
     from powerapi.dispatcher import RouteTable
     from powerapi.formula import FormulaActor, FormulaState
-    from powerapi.report_modifier import ReportModifier
 
 
 class Message:
@@ -170,9 +168,3 @@ class PoisonPillMessage(Message):
         if isinstance(other, PoisonPillMessage):
             return other.is_soft == self.is_soft and other.is_hard == self.is_hard
         return False
-
-
-class UnknownMessageTypeException(PowerAPIException):
-    """
-    Exception happen when we don't know the message type
-    """

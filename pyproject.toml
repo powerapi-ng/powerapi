@@ -29,7 +29,7 @@ authors = [
 
 dependencies = [
     "pyzmq >= 18.1.0",
-    "setproctitle >= 1.1.8",
+    "setproctitle >= 1.1.8"
 ]
 
 [project.optional-dependencies]
@@ -59,10 +59,11 @@ prometheus = ["prometheus-client >= 0.9.0"]
 
 # Plaforms:
 libvirt = ["libvirt-python >= 6.1.0"]  # requires libvirt lib/headers, do not include by default.
+kubernetes = ["kubernetes >= 27.0.2"]
 
 # Aliases:
 all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
-all-platforms = []
+all-platforms = ["kubernetes"]
 everything = ["powerapi[all-databases, all-platforms]"]
 devel = ["powerapi[everything, test, docs, lint]"]
 

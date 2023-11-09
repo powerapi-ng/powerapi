@@ -36,9 +36,8 @@ import sys
 import traceback
 import setproctitle
 
-from powerapi.exception import PowerAPIExceptionWithMessage
+from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
 from powerapi.message import PoisonPillMessage
-from powerapi.message import UnknownMessageTypeException
 from powerapi.handler import HandlerException
 
 from .socket_interface import SocketInterface
@@ -93,7 +92,7 @@ class Actor(multiprocessing.Process):
         :param str name: unique name that will be used to indentify the actor
                          processus
         :param int level_logger: Define the level of the logger
-        :param int timeout: if define, do something if no msg is recv every
+        :param int timeout: if defined, do something if no msg is recv every
                             timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
@@ -229,7 +228,7 @@ class Actor(multiprocessing.Process):
                 handler = self.state.get_corresponding_handler(msg)
                 handler.handle_message(msg)
             except UnknownMessageTypeException:
-                self.logger.warning("UnknowMessageTypeException: " + str(msg))
+                self.logger.warning("UnknownMessageTypeException: " + str(msg))
             except HandlerException:
                 self.logger.warning("HandlerException")
 

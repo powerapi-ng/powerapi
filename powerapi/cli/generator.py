@@ -30,20 +30,23 @@
 import logging
 import os
 import sys
-from typing import Dict, Type
+from typing import Dict, Type, Callable
 
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
-    DatabaseNameAlreadyUsed
+    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
 from powerapi.filter import Filter
+from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
+from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
+    TIMEOUT_QUERY_DEFAULT_VALUE
+from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, DirectPrometheusDB, \
     VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
-from powerapi.report_modifier.libvirt_mapper import LibvirtMapper
 from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
 from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
 
@@ -52,10 +55,28 @@ COMPONENT_MODEL_KEY = 'model'
 COMPONENT_DB_NAME_KEY = 'db'
 COMPONENT_DB_COLLECTION_KEY = 'collection'
 COMPONENT_DB_MANAGER_KEY = 'db_manager'
-COMPONENT_DB_MAX_BUFFER_SIZE = 'max_buffer_size'
+COMPONENT_DB_MAX_BUFFER_SIZE_KEY = 'max_buffer_size'
+COMPONENT_URI_KEY = 'uri'
+
+ACTOR_NAME_KEY = 'actor_name'
+TARGET_ACTORS_KEY = 'target_actors'
+REGEXP_KEY = 'regexp'
+K8S_API_MODE_KEY = 'k8s-api-mode'
+TIME_INTERVAL_KEY = 'time-interval'
+TIMEOUT_QUERY_KEY = 'timeout-query'
+PULLER_NAME_KEY = 'puller'
+PUSHER_NAME_KEY = 'pusher'
+API_KEY_KEY = 'api-key'
+HOST_KEY = 'host'
+
+LISTENER_ACTOR_KEY = 'listener_actor'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
+
+MONITOR_NAME_SUFFIX = '_monitor'
+MONITOR_KEY = 'monitor'
+K8S_COMPONENT_TYPE_VALUE = 'k8s'
 
 
 class Generator:
@@ -248,18 +269,13 @@ class PullerGenerator(DBActorGenerator):
     Generate Puller Actor class and Puller start message from config
     """
 
-    def __init__(self, report_filter: Filter, report_modifier_list=None):
+    def __init__(self, report_filter: Filter):
         DBActorGenerator.__init__(self, 'input')
         self.report_filter = report_filter
-
-        if report_modifier_list is None:
-            report_modifier_list = []
-        self.report_modifier_list = report_modifier_list
 
     def _actor_factory(self, actor_name: str, main_config, component_config: dict):
         return PullerActor(name=actor_name, database=component_config[COMPONENT_DB_MANAGER_KEY],
                            report_filter=self.report_filter, stream_mode=main_config[GENERAL_CONF_STREAM_MODE_KEY],
-                           report_modifier_list=self.report_modifier_list,
                            report_model=component_config[COMPONENT_MODEL_KEY],
                            level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
 
@@ -301,7 +317,7 @@ class PusherGenerator(DBActorGenerator):
         if 'max_buffer_size' in component_config.keys():
             return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                                database=component_config[COMPONENT_DB_MANAGER_KEY],
-                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE])
+                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE_KEY])
 
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                            database=component_config[COMPONENT_DB_MANAGER_KEY],
@@ -321,22 +337,141 @@ class SimplePusherGenerator(BaseGenerator):
                                  number_of_reports_to_store=component_config['number_of_reports_to_store'])
 
 
-class ReportModifierGenerator:
+class ProcessorGenerator(Generator):
     """
-    Generate Report modifier list from config
+    Generator that initialises the processor from config
+    """
+
+    def __init__(self, component_group_name: str):
+        Generator.__init__(self, component_group_name=component_group_name)
+
+        self.processor_factory = self._get_default_processor_factories()
+
+    def _get_default_processor_factories(self) -> dict:
+        """
+        Init the factories for this processor generator
+        """
+        raise NotImplementedError
+
+    def remove_processor_factory(self, processor_type: str):
+        """
+        remove a processor from generator
+        """
+        if processor_type not in self.processor_factory:
+            raise ProcessorTypeDoesNotExist(processor_type=processor_type)
+        del self.processor_factory[processor_type]
+
+    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable):
+        """
+        add a processor to generator
+        """
+        if processor_type in self.processor_factory:
+            raise ProcessorTypeAlreadyUsed(processor_type=processor_type)
+        self.processor_factory[processor_type] = processor_factory_function
+
+    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+
+        processor_actor_type = component_config[COMPONENT_TYPE_KEY]
+
+        if processor_actor_type not in self.processor_factory:
+            msg = 'Configuration error : processor actor type ' + processor_actor_type + ' unknown'
+            print(msg, file=sys.stderr)
+            raise PowerAPIException(msg)
+        else:
+            component_config[ACTOR_NAME_KEY] = actor_name
+            component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
+            return self.processor_factory[processor_actor_type](component_config)
+
+
+class PreProcessorGenerator(ProcessorGenerator):
+    """
+    Generator that initialises the pre-processor from config
     """
 
     def __init__(self):
-        self.factory = {'libvirt_mapper': lambda config: LibvirtMapper(config['uri'], config['domain_regexp'])}
+        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
 
-    def generate(self, config: dict):
+    def _get_default_processor_factories(self) -> dict:
+        return {
+            'libvirt': lambda processor_config: LibvirtPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                                         uri=processor_config[COMPONENT_URI_KEY],
+                                                                         regexp=processor_config[REGEXP_KEY],
+                                                                         target_actors_names=[processor_config
+                                                                                              [PULLER_NAME_KEY]]),
+            'k8s': lambda processor_config: K8sPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
+                                                                 ks8_api_mode=None if
+                                                                 K8S_API_MODE_KEY not in processor_config else
+                                                                 processor_config[K8S_API_MODE_KEY],
+                                                                 time_interval=TIME_INTERVAL_DEFAULT_VALUE if
+                                                                 TIME_INTERVAL_KEY not in processor_config else
+                                                                 processor_config[TIME_INTERVAL_KEY],
+                                                                 timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
+                                                                 TIMEOUT_QUERY_KEY not in processor_config
+                                                                 else processor_config[TIMEOUT_QUERY_KEY],
+                                                                 api_key=None if API_KEY_KEY not in processor_config
+                                                                 else processor_config[API_KEY_KEY],
+                                                                 host=None if HOST_KEY not in processor_config
+                                                                 else processor_config[HOST_KEY],
+                                                                 level_logger=logging.DEBUG if
+                                                                 processor_config[GENERAL_CONF_VERBOSE_KEY] else
+                                                                 logging.INFO,
+                                                                 target_actors_names=[processor_config[PULLER_NAME_KEY]]
+                                                                 )
+        }
+
+
+class PostProcessorGenerator(ProcessorGenerator):
+    """
+    Generator that initialises the post-processor from config
+    """
+
+    def __init__(self):
+        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
+
+    def _get_default_processor_factories(self) -> dict:
+        return {}
+
+
+class MonitorGenerator(Generator):
+    """
+    Generator that initialises the monitor by using a K8sPreProcessorActor
+    """
+
+    def __init__(self):
+        Generator.__init__(self, component_group_name=MONITOR_KEY)
+
+        self.monitor_factory = {
+            K8S_COMPONENT_TYPE_VALUE: lambda monitor_config: K8sMonitorAgent(
+                name=monitor_config[ACTOR_NAME_KEY],
+                concerned_actor_state=monitor_config[LISTENER_ACTOR_KEY].state,
+                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel()
+            )
+
+        }
+
+    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+
+        monitor_actor_type = component_config[COMPONENT_TYPE_KEY]
+
+        if monitor_actor_type not in self.monitor_factory:
+            raise MonitorTypeDoesNotExist(monitor_type=monitor_actor_type)
+        else:
+            component_config[ACTOR_NAME_KEY] = actor_name + MONITOR_NAME_SUFFIX
+            return self.monitor_factory[monitor_actor_type](component_config)
+
+    def generate_from_processors(self, processors: dict) -> dict:
         """
-        Generate Report modifier list from config
+        Generates monitors associated with the given processors
+        :param dict processors: Dictionary with the processors for the generation
         """
-        report_modifier_list = []
-        if 'report_modifier' not in config:
-            return []
-        for report_modifier_name in config['report_modifier'].keys():
-            report_modifier = self.factory[report_modifier_name](config['report_modifier'][report_modifier_name])
-            report_modifier_list.append(report_modifier)
-        return report_modifier_list
+
+        monitors_config = {MONITOR_KEY: {}}
+
+        for processor_name, processor in processors.items():
+
+            if isinstance(processor, K8sPreProcessorActor):
+                monitors_config[MONITOR_KEY][processor_name + MONITOR_NAME_SUFFIX] = {
+                    COMPONENT_TYPE_KEY: K8S_COMPONENT_TYPE_VALUE,
+                    LISTENER_ACTOR_KEY: processor}
+
+        return self.generate(main_config=monitors_config)

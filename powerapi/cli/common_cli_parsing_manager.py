@@ -37,7 +37,8 @@ from powerapi.exception import BadTypeException, BadContextException, UnknownArg
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
 POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'OUTPUT_'
 POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
-POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'REPORT_MODIFIER_'
+POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PRE_PROCESSOR_'
+POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR'
 
 
 def extract_file_names(arg, val, args, acc):
@@ -60,18 +61,21 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         self.add_argument_prefix(argument_prefix=POWERAPI_ENVIRONMENT_VARIABLE_PREFIX)
         # Subgroups
-        self.add_subgroup(name='report_modifier',
-                          prefix=POWERAPI_REPORT_MODIFIER_ENVIRONMENT_VARIABLE_PREFIX,
-                          help_text="Specify a report modifier to change input report values : "
-                                    "--report_modifier ARG1 ARG2 ...")
-
         self.add_subgroup(name='input',
                           prefix=POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX,
-                          help_text="specify a database input : --db_input database_name ARG1 ARG2 ... ")
+                          help_text="specify a database input : --input database_name ARG1 ARG2 ... ")
 
         self.add_subgroup(name='output',
                           prefix=POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX,
-                          help_text="specify a database output : --db_output database_name ARG1 ARG2 ...")
+                          help_text="specify a database output : --output database_name ARG1 ARG2 ...")
+
+        self.add_subgroup(name='pre-processor',
+                          prefix=POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX,
+                          help_text="specify a pre-processor : --pre-processor pre_processor_name ARG1 ARG2 ...")
+
+        self.add_subgroup(name='post-processor',
+                          prefix=POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX,
+                          help_text="specify a post-processor : --post-processor post_processor_name ARG1 ARG2 ...")
 
         # Parsers
 
@@ -90,21 +94,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             action=store_true,
             default_value=False,
             help_text="enable stream mode",
-        )
-
-        subparser_libvirt_mapper_modifier = SubgroupConfigParsingManager("libvirt_mapper")
-        subparser_libvirt_mapper_modifier.add_argument(
-            "u", "uri", help_text="libvirt daemon uri", default_value=""
-        )
-        subparser_libvirt_mapper_modifier.add_argument(
-            "d",
-            "domain_regexp",
-            help_text="regexp used to extract domain from cgroup string",
-        )
-        subparser_libvirt_mapper_modifier.add_argument("n", "name", help_text="")
-        self.add_subgroup_parser(
-            subgroup_name="report_modifier",
-            subgroup_parser=subparser_libvirt_mapper_modifier
         )
 
         subparser_mongo_input = SubgroupConfigParsingManager("mongodb")
@@ -421,6 +410,69 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self.add_subgroup_parser(
             subgroup_name="output",
             subgroup_parser=subparser_influx2_output
+        )
+
+        subparser_libvirt_pre_processor = SubgroupConfigParsingManager("libvirt")
+        subparser_libvirt_pre_processor.add_argument(
+            "u", "uri", help_text="libvirt daemon uri", default_value=""
+        )
+        subparser_libvirt_pre_processor.add_argument(
+            "d",
+            "domain-regexp",
+            help_text="regexp used to extract domain from cgroup string",
+        )
+
+        subparser_libvirt_pre_processor.add_argument(
+            "p",
+            "puller",
+            help_text="target puller for the pre-processor",
+        )
+
+        subparser_libvirt_pre_processor.add_argument("n", "name", help_text="")
+        self.add_subgroup_parser(
+            subgroup_name="pre-processor",
+            subgroup_parser=subparser_libvirt_pre_processor
+        )
+
+        subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
+        subparser_k8s_pre_processor.add_argument(
+            "a", "k8s-api-mode", help_text="k8s api mode (local, manual or cluster)"
+        )
+        subparser_k8s_pre_processor.add_argument(
+            "t",
+            "time-interval",
+            help_text="time interval for the k8s monitoring",
+            argument_type=int
+        )
+        subparser_k8s_pre_processor.add_argument(
+            "o",
+            "timeout-query",
+            help_text="timeout for k8s queries",
+            argument_type=int
+        )
+
+        subparser_k8s_pre_processor.add_argument(
+            "k",
+            "api-key",
+            help_text="API key authorization required for k8s manual configuration",
+        )
+
+        subparser_k8s_pre_processor.add_argument(
+            "h",
+            "host",
+            help_text="host required for k8s manual configuration",
+        )
+
+        subparser_k8s_pre_processor.add_argument(
+            "p",
+            "puller",
+            help_text="target puller for the pre-processor",
+        )
+
+        subparser_k8s_pre_processor.add_argument("n", "name", help_text="")
+        self.add_subgroup_parser(
+            subgroup_name="pre-processor",
+            subgroup_parser=subparser_k8s_pre_processor
         )
 
     def parse_argv(self):

@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,16 +26,18 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from powerapi.handler import InitHandler
 from powerapi.report import Report
 
 
-class ReportModifier:
+class ProcessorReportHandler(InitHandler):
     """
-    Abstract class for object used by puller to modify reports before sending them to dispatcher
+    Processor the report by modifying it in some way and then send the modified report to targets actos
     """
-    def modify_report(self, report: Report) -> Report:
+
+    def _send_report(self, report: Report):
         """
-        modify the given report
+        Send the report to the actor target
         """
-        raise NotImplementedError()
+        for target in self.state.target_actors:
+            target.send_data(report)

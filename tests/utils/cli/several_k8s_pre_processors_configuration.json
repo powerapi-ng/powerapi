@@ -1,0 +1,47 @@
+{
+  "verbose": true,
+  "pre-processor": {
+    "my_processor_1": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 20,
+      "timeout-query": 20,
+      "puller": "my_puller_1"
+    },
+    "my_processor_2": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 30,
+      "timeout-query": 30,
+      "puller": "my_puller_2"
+    },
+    "my_processor_3": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 40,
+      "timeout-query": 40,
+      "puller": "my_puller_3"
+    },
+    "my_processor_4": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 50,
+      "timeout-query": 50,
+      "puller": "my_puller_4"
+    },
+    "my_processor_5": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 60,
+      "timeout-query": 60,
+      "puller": "my_puller_5"
+    },
+    "my_processor_6": {
+      "type": "k8s",
+      "k8s-api-mode": "Manual",
+      "time-interval": 70,
+      "timeout-query": 70,
+      "puller": "my_puller_6"
+    }
+  }
+}

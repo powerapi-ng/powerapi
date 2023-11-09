@@ -1,0 +1,41 @@
+{
+  "verbose": true,
+  "pre-processor": {
+    "my_processor_1": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_1",
+      "puller": "my_puller_1"
+    },
+    "my_processor_2": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_2",
+      "puller": "my_puller_2"
+    },
+    "my_processor_3": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_3",
+      "puller": "my_puller_3"
+    },
+    "my_processor_4": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_4",
+      "puller": "my_puller_4"
+    },
+    "my_processor_5": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_5",
+      "puller": "my_puller_5"
+    },
+    "my_processor_6": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp_6",
+      "puller": "my_puller_6"
+    }
+  }
+}

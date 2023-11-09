@@ -39,13 +39,13 @@ from powerapi.report import Report
 
 class SimplePullerState(State):
     """
-        Simple Puller Actor State
+    Simple Puller Actor State
 
-        Contains in addition to State values :
-          - the number of reports to send
-          - the report type to send
-          - the report filter
-        """
+    Contains in addition to State values :
+      - the number of reports to send
+      - the report type to send
+      - the report filter
+    """
 
     def __init__(self, actor, number_of_reports_to_send: int, report_type_to_send: Type[Report], report_filter):
         """

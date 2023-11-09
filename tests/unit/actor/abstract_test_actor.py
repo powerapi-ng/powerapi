@@ -206,6 +206,7 @@ class CrashHandler(Handler):
 
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
 PUSHER_NAME_HWPC_REPORT = 'fake_pusher_hwpc'
+TARGET_ACTOR_NAME = 'fake_target_actor'
 
 REPORT_TYPE_TO_BE_SENT = PowerReport
 REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
@@ -237,6 +238,13 @@ class AbstractTestActor:
         raise NotImplementedError()
 
     @pytest.fixture
+    def report_to_be_sent(self):
+        """
+        This fixture must return the report class for testing
+        """
+        raise NotImplementedError()
+
+    @pytest.fixture
     def init_actor(self, actor):
         actor.start()
         actor.connect_data()
@@ -264,6 +272,18 @@ class AbstractTestActor:
             pusher.terminate()
 
         join_actor(pusher)
+
+    @pytest.fixture
+    def started_fake_target_actor(self, report_to_be_sent, dummy_pipe_in):
+        """
+        Return a started DummyActor. When the test is finished, the actor is stopped
+        """
+        target_actor = DummyActor(name=TARGET_ACTOR_NAME, pipe=dummy_pipe_in, message_type=report_to_be_sent)
+        target_actor.start()
+
+        yield target_actor
+        if target_actor.is_alive():
+            target_actor.terminate()
 
     @pytest.fixture
     def started_fake_pusher_hwpc_report(self, dummy_pipe_in):
@@ -316,8 +336,7 @@ class AbstractTestActor:
     def test_send_StartMessage_answer_OkMessage(self, init_actor):
         init_actor.send_control(StartMessage(SENDER_NAME))
         msg = init_actor.receive_control(2000)
-        print('Message....')
-        print(msg)
+        print('message start', str(msg))
         assert isinstance(msg, OKMessage)
 
     def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(self, started_actor):

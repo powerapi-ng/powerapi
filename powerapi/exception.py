@@ -269,7 +269,7 @@ class ModelNameDoesNotExist(PowerAPIException):
 
 class InvalidPrefixException(PowerAPIException):
     """
-    Exception raised when attempting to add a new prefix that is a prefix of a existing one or
+    Exception raised when attempting to add a new prefix that is a prefix of an existing one or
     vice-versa
     """
 
@@ -279,3 +279,90 @@ class InvalidPrefixException(PowerAPIException):
         self.existing_prefix = existing_prefix
         self.msg = "The new prefix " + self.new_prefix + " has a conflict with the existing prefix " \
                    + self.existing_prefix
+
+
+class LibvirtException(PowerAPIException):
+    """
+    Exception raised when there are issues regarding the import of LibvirtException
+    """
+
+    def __init__(self, _):
+        PowerAPIException.__init__(self)
+
+
+class ProcessorTypeDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a ProcessorActorGenerator a processor factory with a type that is not
+    bound to a processor factory
+    """
+
+    def __init__(self, processor_type: str):
+        PowerAPIException.__init__(self)
+        self.processor_type = processor_type
+
+
+class ProcessorTypeAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when attempting to add to a ProcessorActorGenerator a processor factory with a type already bound
+    to another processor factory
+    """
+
+    def __init__(self, processor_type: str):
+        PowerAPIException.__init__(self)
+        self.processor_type = processor_type
+
+
+class UnsupportedActorTypeException(ParserException):
+    """
+    Exception raised when the binding manager do not support an actor type
+    """
+
+    def __init__(self, actor_type: str):
+        ParserException.__init__(self, argument_name=actor_type)
+        self.msg = 'Unsupported Actor Type ' + actor_type
+
+
+class UnknownMessageTypeException(PowerAPIException):
+    """
+    Exception happen when we don't know the message type
+    """
+
+
+class MonitorTypeDoesNotExist(PowerAPIException):
+    """
+    Exception raised when attempting to remove to a MonitorGenerator a monitor factory with a type that is not
+    bound to a monitor factory
+    """
+
+    def __init__(self, monitor_type: str):
+        PowerAPIException.__init__(self)
+        self.monitor_type = monitor_type
+
+
+class UnexistingActorException(PowerAPIException):
+    """
+    Exception raised when an actor referenced in a processor does not exist
+    """
+
+    def __init__(self, actor: str):
+        PowerAPIException.__init__(self)
+        self.actor = actor
+
+
+class BindingWrongActorsException(PowerAPIException):
+    """
+    Exception raised when at least one of the actors in a binding is not of a given type
+    """
+
+    def __init__(self):
+        PowerAPIException.__init__(self)
+
+
+class TargetActorAlreadyUsed(PowerAPIException):
+    """
+    Exception raised when an actor is used by more than one processor
+    """
+
+    def __init__(self, target_actor: str):
+        PowerAPIException.__init__(self)
+        self.target_actor = target_actor

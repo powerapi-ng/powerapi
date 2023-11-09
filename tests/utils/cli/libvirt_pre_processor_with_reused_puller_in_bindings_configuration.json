@@ -1,0 +1,36 @@
+{
+  "verbose": true,
+  "stream": true,
+  "input": {
+      "one_puller": {
+          "model": "HWPCReport",
+          "type": "mongodb",
+          "uri": "one_uri",
+          "db": "my_db",
+          "collection": "my_collection"
+      }
+  },
+  "output": {
+      "one_pusher": {
+          "type": "mongodb",
+          "model": "PowerReport",
+          "uri": "second_uri",
+          "db": "my_db_result",
+          "collection": "my_collection_result"
+      }
+  },
+  "pre-processor": {
+    "my_processor": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp",
+      "puller": "one_puller"
+    },
+    "my_processor_2": {
+      "type": "libvirt",
+      "uri": "",
+      "regexp": "a_reg_exp",
+      "puller": "one_puller"
+    }
+  }
+}
