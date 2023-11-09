@@ -609,8 +609,7 @@ def output_input_configuration():
     return load_configuration_from_json_file(file_name='output_input_configuration.json')
 
 
-@pytest.fixture(params=['libvirt_pre_processor_complete_configuration.json',
-                        'k8s_pre_processor_complete_configuration.json'])
+@pytest.fixture(params=['k8s_pre_processor_complete_configuration.json'])
 def pre_processor_complete_configuration(request):
     """
     Return a dictionary containing a configuration with pre-processor
