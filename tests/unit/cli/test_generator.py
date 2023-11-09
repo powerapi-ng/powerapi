@@ -28,12 +28,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import re
-from re import Pattern
+from re import compile, Pattern
 
 import pytest
 
-from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, ProcessorGenerator, \
+from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, \
     MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY, PreProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
 from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
@@ -292,7 +291,7 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert db.metric_name == current_pusher_infos['metric_name']
 
         elif pusher_type == 'virtiofs':
-            assert db.vm_name_regexp == re.compile(current_pusher_infos['vm_name_regexp'])
+            assert db.vm_name_regexp == compile(current_pusher_infos['vm_name_regexp'])
             assert db.root_directory_name == current_pusher_infos['root_directory_name']
             assert db.vm_directory_name_prefix == current_pusher_infos['vm_directory_name_prefix']
             assert db.vm_directory_name_suffix == current_pusher_infos['vm_directory_name_suffix']

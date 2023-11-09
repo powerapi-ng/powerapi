@@ -29,10 +29,8 @@
 
 # pylint: disable=W0603,W0718
 
-import logging
-import multiprocessing
-from logging import Logger
-from multiprocessing import Process
+from logging import Formatter, getLogger, Logger, StreamHandler, WARNING
+from multiprocessing import Manager, Process
 
 from kubernetes import client, config, watch
 from kubernetes.client.configuration import Configuration
@@ -144,7 +142,7 @@ class K8sMonitorAgent(Process):
     when pod are created, removed or modified.
     """
 
-    def __init__(self, name: str, concerned_actor_state: K8sPreProcessorState, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, concerned_actor_state: K8sPreProcessorState, level_logger: int = WARNING):
         """
         :param str name: The actor name
         :param K8sPreProcessorState concerned_actor_state: state of the actor that will use the monitored information
@@ -153,17 +151,17 @@ class K8sMonitorAgent(Process):
         Process.__init__(self, name=name)
 
         #: (logging.Logger): Logger
-        self.logger = logging.getLogger(name)
+        self.logger = getLogger(name)
         self.logger.setLevel(level_logger)
-        formatter = logging.Formatter('%(asctime)s || %(levelname)s || ' + '%(process)d %(processName)s || %(message)s')
-        handler = logging.StreamHandler()
+        formatter = Formatter('%(asctime)s || %(levelname)s || ' + '%(process)d %(processName)s || %(message)s')
+        handler = StreamHandler()
         handler.setFormatter(formatter)
 
         # Concerned Actor state
         self.concerned_actor_state = concerned_actor_state
 
         # Multiprocessing Manager
-        self.manager = multiprocessing.Manager()
+        self.manager = Manager()
 
         # Shared cache
         self.concerned_actor_state.metadata_cache_manager = K8sMetadataCacheManager(process_manager=self.manager,

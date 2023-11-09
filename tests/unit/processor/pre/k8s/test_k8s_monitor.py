@@ -1,7 +1,6 @@
 # Copyright (c) 2023, INRIA
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-from time import sleep
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 
@@ -29,6 +28,7 @@ from time import sleep
 
 # pylint: disable=R6301,W0613,W0221
 
+from time import sleep
 from unittest.mock import patch, Mock
 
 import pytest
