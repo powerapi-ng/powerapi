@@ -221,23 +221,6 @@ def several_k8s_pre_processors_without_some_arguments_config():
         file_name='several_k8s_pre_processors_without_some_arguments_configuration.json')
 
 
-def generate_k8s_monitors_config(processors_config):
-    """
-    Generate the configuration related to the given k8s processors configuration
-    """
-    generator = ProcessorGenerator()
-
-    processors = generator.generate(processors_config)
-
-    monitors = {'monitor': {}}
-
-    for processor_name, processor in processors.items():
-        monitors['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
-                                                                     LISTENER_ACTOR_KEY: processor}
-
-    return monitors
-
-
 @pytest.fixture
 def several_k8s_pre_processors(several_k8s_pre_processors_config):
     """
