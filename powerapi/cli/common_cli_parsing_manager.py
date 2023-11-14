@@ -250,69 +250,34 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_mongo_output
         )
 
-        subparser_prom_output = SubgroupConfigParsingManager("prom")
-        subparser_prom_output.add_argument("t", "tags", help_text="specify report tags")
-        subparser_prom_output.add_argument("u", "uri", help_text="specify server uri")
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output = SubgroupConfigParsingManager("prometheus")
+        subparser_prometheus_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri")
+        subparser_prometheus_output.add_argument(
             "p", "port", help_text="specify server port", argument_type=int
         )
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "M", "metric_name", help_text="specify metric name"
         )
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "d",
             "metric_description",
             help_text="specify metric description",
             default_value="energy consumption",
         )
-        help_text = "specify number of second for the value must be aggregated before compute statistics on them"
-        subparser_prom_output.add_argument(
-            "A", "aggregation_period", help_text=help_text, default_value=15, argument_type=int
-        )
 
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "m",
             "model",
             help_text="specify data type that will be stored in the database",
             default_value="PowerReport",
         )
-        subparser_prom_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
+        subparser_prometheus_output.add_argument(
+            "n", "name", help_text="specify pusher name", default_value="pusher_prometheus"
         )
         self.add_subgroup_parser(
             subgroup_name="output",
-            subgroup_parser=subparser_prom_output
-        )
-
-        subparser_direct_prom_output = SubgroupConfigParsingManager("direct_prom")
-        subparser_direct_prom_output.add_argument(
-            "t", "tags", help_text="specify report tags"
-        )
-        subparser_direct_prom_output.add_argument("a", "uri", help_text="specify server uri")
-        subparser_direct_prom_output.add_argument(
-            "p", "port", help_text="specify server port", argument_type=int
-        )
-        subparser_direct_prom_output.add_argument(
-            "M", "metric_name", help_text="specify metric name"
-        )
-        subparser_direct_prom_output.add_argument(
-            "d",
-            "metric_description",
-            help_text="specify metric description",
-            default_value="energy consumption",
-        )
-        subparser_direct_prom_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
-        )
-        subparser_direct_prom_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="output",
-            subgroup_parser=subparser_direct_prom_output
+            subgroup_parser=subparser_prometheus_output
         )
 
         subparser_csv_output = SubgroupConfigParsingManager("csv")

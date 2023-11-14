@@ -65,118 +65,130 @@ REPORTB_5 = PowerReport(datetime.datetime(1970, 1, 1, 1, 1, 4), 0, TARGET2, 90, 
 def extract_metrics(metric_prefix, url):
     time.sleep(0.5)
     request_result = requests.get(url)
-
-    regexp = re.compile(metric_prefix + '_(.*){sensor="(.*)",socket="(.*)",target="(.*)"} (.*)')
+    regexp = re.compile(metric_prefix + '{sensor="(.*)",socket="(.*)",target="(.*)"} (.*)')
 
     metrics = {}
 
     for s in filter(lambda s: metric_prefix in s and s[0] != '#', request_result.text.split('\n')):
-        [(metric, sensor, socket, target, value)] = re.findall(regexp, s)
-        if metric not in metrics:
-            metrics[metric] = {}
-        if target not in metrics[metric]:
-            metrics[metric][target] = []
-        metrics[metric][target].append({'socket': socket, 'sensor': sensor, 'value': float(value)})
+        [(sensor, socket, target, value)] = re.findall(regexp, s)
+        if target not in metrics:
+            metrics[target] = []
+        metrics[target].append({'socket': socket, 'sensor': sensor, 'value': float(value)})
     return metrics
 
 
-class Prometheus_server(multiprocessing.Process):
-    def __init__(self, q):
+class PrometheusServer(multiprocessing.Process):
+    def __init__(self, q, port):
         multiprocessing.Process.__init__(self)
+        self.port = port
         self.q = q
 
     def run(self):
-        db = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
+        db = PrometheusDB(report_type=PowerReport,
+                          port=self.port,
+                          address=ADDR,
+                          metric_name=METRIC,
+                          metric_description=DESC,
+                          tags=['socket'])
         db.connect()
+        self.q.put('ok')
         while True:
             report_list = self.q.get()
             db.save_many(report_list)
 
 
+def _gen_serv(unused_tcp_port_factory):
+    port = PORT
+    q = multiprocessing.Queue()
+    p = PrometheusServer(q, port)
+    p.start()
+    return port, q, p
+
+
 @pytest.fixture
-def db():
+def db_info():
     """
     start a PrometheusDB in a process and return a q to send report to the DB
     """
-    q = multiprocessing.Queue()
-    p = Prometheus_server(q)
-    p.start()
-    yield q
+    port, q, p = _gen_serv(PORT)
+    if q.get(timeout=1) == 'ok':
+        yield q, _gen_url(port)
+    else:
+        p.terminate()
+        port, q, p = _gen_serv(PORT)
+        yield q, _gen_url(port)
     p.terminate()
 
 
-def test_create_prometheus_db_and_connect_it_must_launch_web_server_on_given_address(db):
-    r = requests.get(URL)
+def _gen_url(port):
+    return 'http://' + ADDR + ':' + str(port) + '/metrics'
+
+
+def test_create_direct_prometheus_db_and_connect_it_must_launch_web_server_on_given_address(db_info):
+    db, url = db_info
+    r = requests.get(url)
     assert r.status_code == 200
 
 
-def test_create_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address():
-    _ = PrometheusDB(PowerReport, PORT, ADDR, METRIC, DESC, AGG, ['socket'])
+def test_create_direct_prometheus_db_and_dont_connect_it_must_not_launch_web_server_on_given_address():
+    _ = PrometheusDB(report_type=PowerReport,
+                     port=PORT,
+                     address=ADDR,
+                     metric_name=METRIC,
+                     metric_description=DESC,
+                     tags=['socket'])
     with pytest.raises(requests.exceptions.ConnectionError):
-        _ = requests.get(URL)
+        _ = requests.get(_gen_url(PORT))
 
 
-def test_save_one_report_must_not_expose_data(db):
+def test_save_one_report_must_expose_data(db_info):
+    db, url = db_info
     db.put([REPORTA_1])
-    assert extract_metrics(METRIC, URL) == {}
+    assert extract_metrics(METRIC, url) != {}
 
 
-def test_save_two_report_with_same_target_must_not_expose_data(db):
+def test_save_one_report_must_expose_energy_metric_for_the_given_target(db_info):
+    db, url = db_info
+    db.put([REPORTA_1])
+    data = extract_metrics(METRIC, url)
+    assert TARGET1 in data
+
+
+def test_save_one_report_must_expose_correct_value(db_info):
+    db, url = db_info
+    db.put([REPORTA_1])
+    data = extract_metrics(METRIC, url)
+    assert data[TARGET1][0]['value'] == 10
+
+
+def test_save_two_reports_with_same_target_must_expose_correct_energy_value_for_second_report(db_info):
+    db, url = db_info
     db.put([REPORTA_1, REPORTA_2])
-    assert extract_metrics(METRIC, URL) == {}
+    data = extract_metrics(METRIC, url)
+    assert data[TARGET1][0]['value'] == 20
 
 
-def test_save_three_report_with_same_target_must_expose_data_for_the_two_first_reports(db):
-    db.put([REPORTA_1, REPORTA_2, REPORTA_3])
-    assert extract_metrics(METRIC, URL) != {}
+def test_save_two_report_with_different_target_must_expose_data_for_the_two_target(db_info):
+    db, url = db_info
+    db.put([REPORTA_1, REPORTB_1])
+    data = extract_metrics(METRIC, url)
+    assert TARGET1 in data
+    assert TARGET2 in data
 
 
-def test_save_three_report_with_same_target_must_expose_min_max_mean_and_std_data_for_the_two_first_reports(db):
-    db.put([REPORTA_1, REPORTA_2, REPORTA_3])
-    data = extract_metrics(METRIC, URL)
-    assert 'min' in data
-    assert 'max' in data
-    assert 'mean' in data
-    assert 'std' in data
+def test_save_two_report_with_different_target_must_expose_correct_data_for_each_target(db_info):
+    db, url = db_info
+    db.put([REPORTA_1, REPORTB_1])
 
-
-def test_save_three_report_with_same_target_must_expose_correct_min_max_mean_and_std_data_for_the_two_first_reports(db):
-    db.put([REPORTA_1, REPORTA_2, REPORTA_3])
-    data = extract_metrics(METRIC, URL)
-    assert data['min'][TARGET1][0]['value'] == 10
-    assert data['max'][TARGET1][0]['value'] == 20
-    assert data['mean'][TARGET1][0]['value'] == 15
-    assert data['std'][TARGET1][0]['value'] == 5
-
-
-def test_save_five_report_with_same_target_must_expose_correct_min_max_mean_and_std_data_for_last_two_report(db):
-    db.put([REPORTA_1, REPORTA_2, REPORTA_3, REPORTA_4, REPORTA_5])
-    data = extract_metrics(METRIC, URL)
-    assert data['min'][TARGET1][0]['value'] == 30
-    assert data['max'][TARGET1][0]['value'] == 40
-    assert data['mean'][TARGET1][0]['value'] == 35
-    assert data['std'][TARGET1][0]['value'] == 5
-
-
-def test_save_three_report_with_different_target_must_not_expose_data(db):
-    db.put([REPORTA_1, REPORTB_2, REPORTA_3])
-    assert extract_metrics(METRIC, URL) == {}
-
-
-def test_save_six_report_with_different_target_must_expose_correct_data_for_each_target(db):
-    db.put([REPORTA_1, REPORTB_1, REPORTA_2, REPORTB_2, REPORTA_3, REPORTB_3, ])
-
-    data = extract_metrics(METRIC, URL)
-    assert TARGET1 in data['mean']
-    assert TARGET2 in data['mean']
+    data = extract_metrics(METRIC, url)
+    assert data[TARGET1][0]['value'] == 10
+    assert data[TARGET2][0]['value'] == 40
 
 
 def test_save_report_from_two_target_and_then_report_from_one_target_must_finaly_only_expose_report_from_remaining_target(
-        db):
-    db.put(
-        [REPORTA_1, REPORTB_1, REPORTA_2, REPORTB_2, REPORTA_3, REPORTB_3, REPORTA_4, REPORTA_5, REPORTA_6, REPORTA_7])
-    data = extract_metrics(METRIC, URL)
-    assert TARGET1 in data['mean']
-    assert TARGET2 not in data['mean']
-    assert TARGET2 not in data['max']
-    assert TARGET1 in data['max']
+        db_info):
+    db, url = db_info
+    db.put([REPORTA_1, REPORTB_1, REPORTA_2, REPORTA_3])
+    data = extract_metrics(METRIC, url)
+    assert TARGET1 in data
+    assert TARGET2 not in data

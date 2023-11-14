@@ -32,7 +32,7 @@ import sys
 import pytest
 import tests.utils.cli as test_files_module
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.cli.generator import PullerGenerator, PusherGenerator, ProcessorGenerator, COMPONENT_TYPE_KEY, \
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, COMPONENT_TYPE_KEY, \
     LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
@@ -135,7 +135,7 @@ def several_inputs_outputs_stream_prometheus_without_some_arguments_config(sever
     of prometheus output are removed
     """
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'prom':
+        if current_output['type'] == 'prometheus':
             current_output.pop('metric_name')
             current_output.pop('metric_description')
             current_output.pop('aggregation_period')

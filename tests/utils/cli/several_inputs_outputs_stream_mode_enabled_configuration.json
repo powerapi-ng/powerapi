@@ -39,7 +39,7 @@
           "db": "my_db_result_2"
       },
       "third_pusher": {
-          "type": "prom",
+          "type": "prometheus",
           "model": "PowerReport",
           "uri": "127.0.0.1",
           "port": 2222,
