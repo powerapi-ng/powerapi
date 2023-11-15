@@ -105,7 +105,6 @@ class PrometheusDB(BasePrometheusDB):
         raise NotImplementedError()
 
     def _init_metrics(self):
-        print(self.tags)
         self.energy_metric = Gauge(self.metric_name, self.metric_description, [SENSOR_TAG, TARGET_TAG] + self.tags)
 
     def _expose_data(self, _, measure):
@@ -117,7 +116,7 @@ class PrometheusDB(BasePrometheusDB):
 
     def _report_to_measure_and_key(self, report):
         value = self.report_type.to_prometheus(report, self.tags)
-        key = ''.join([str(value['tags'][tag]) for tag in value[TAGS_KEY]])
+        key = ''.join([str(value[TAGS_KEY][tag]) for tag in value[TAGS_KEY]])
         return key, value
 
     def _update_exposed_measure(self):
