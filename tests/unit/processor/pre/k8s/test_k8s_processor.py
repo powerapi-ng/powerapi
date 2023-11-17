@@ -208,6 +208,18 @@ class TestK8sProcessor(AbstractTestActor):
 
         return hwpc_report_with_metadata
 
+    @pytest.fixture()
+    def hwpc_report_empty_metadata_values(self, hwpc_report):
+        """
+        Return a HWPC report with metadata values (pod namespace and pod name)
+        """
+        hwpc_report_with_empty_metadata_values = deepcopy(hwpc_report)
+
+        hwpc_report_with_empty_metadata_values.metadata[POD_NAMESPACE_METADATA_KEY] = ""
+        hwpc_report_with_empty_metadata_values.metadata[POD_NAME_METADATA_KEY] = ""
+
+        return hwpc_report_with_empty_metadata_values
+
     @pytest.fixture
     def actor(self, started_fake_target_actor, pods_list, mocked_watch_initialized):
         return K8sPreProcessorActor(name='test_k8s_processor_actor', ks8_api_mode=MANUAL_CONFIG_MODE,
@@ -368,12 +380,13 @@ class TestK8sProcessor(AbstractTestActor):
 
         mocked_monitor_added_event.stop_monitoring.set()
 
-    def test_add_metadata_to_hwpc_report_does_not_modify_report_with_unknown_container_id(self,
-                                                                                          mocked_monitor_added_event,
-                                                                                          started_actor,
-                                                                                          hwpc_report,
-                                                                                          dummy_pipe_out,
-                                                                                          shutdown_system):
+    def test_add_metadata_to_hwpc_report_add_empty_values_with_unknown_container_id(self,
+                                                                                    mocked_monitor_added_event,
+                                                                                    started_actor,
+                                                                                    hwpc_report,
+                                                                                    dummy_pipe_out,
+                                                                                    shutdown_system,
+                                                                                    hwpc_report_empty_metadata_values):
         """
          Test that a HWPC report is not modified with an unknown container id
          """
@@ -382,4 +395,4 @@ class TestK8sProcessor(AbstractTestActor):
 
         result = recv_from_pipe(dummy_pipe_out, 4)
 
-        assert result[1] == hwpc_report
+        assert result[1] == hwpc_report_empty_metadata_values
