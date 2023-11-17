@@ -97,7 +97,7 @@ class PrometheusServer(multiprocessing.Process):
             db.save_many(report_list)
 
 
-def _gen_serv(unused_tcp_port_factory):
+def _gen_serv():
     port = PORT
     q = multiprocessing.Queue()
     p = PrometheusServer(q, port)
@@ -110,12 +110,12 @@ def db_info():
     """
     start a PrometheusDB in a process and return a q to send report to the DB
     """
-    port, q, p = _gen_serv(PORT)
+    port, q, p = _gen_serv()
     if q.get(timeout=1) == 'ok':
         yield q, _gen_url(port)
     else:
         p.terminate()
-        port, q, p = _gen_serv(PORT)
+        port, q, p = _gen_serv()
         yield q, _gen_url(port)
     p.terminate()
 
@@ -145,6 +145,19 @@ def test_save_one_report_must_expose_data(db_info):
     db, url = db_info
     db.put([REPORTA_1])
     assert extract_metrics(METRIC, url) != {}
+
+
+def test_save_one_report_with_prometheus_specified_labels(db_info):
+    db, url = db_info
+    db.put([REPORTA_1])
+    data = extract_metrics(METRIC, url)
+
+    # The exposed metric has to have sensor and socket as labels (the target is used as metric key)
+    assert TARGET1 in data
+    assert 'sensor' in data[REPORTA_1.target][0]
+    assert 'socket' in data[REPORTA_1.target][0]
+    assert data[REPORTA_1.target][0]['sensor'] == str(REPORTA_1.sensor)
+    assert data[REPORTA_1.target][0]['socket'] == str(REPORTA_1.metadata['socket'])
 
 
 def test_save_one_report_must_expose_energy_metric_for_the_given_target(db_info):
