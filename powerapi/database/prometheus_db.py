@@ -68,7 +68,6 @@ class BasePrometheusDB(BaseDB):
         """
         Start an HTTP server exposing metrics
         """
-        self._init_metrics()
         start_http_server(port=self.port, addr=self.address)
 
 
@@ -100,12 +99,15 @@ class PrometheusDB(BasePrometheusDB):
         self.current_ts = 0
         self.exposed_measure = {}
         self.measure_for_current_period = {}
+        self.metrics_initialized = False
 
     def __iter__(self):
         raise NotImplementedError()
 
     def _init_metrics(self):
-        self.energy_metric = Gauge(self.metric_name, self.metric_description, [SENSOR_TAG, TARGET_TAG] + self.tags)
+        if not self.metrics_initialized:
+            self.energy_metric = Gauge(self.metric_name, self.metric_description, [SENSOR_TAG, TARGET_TAG] + self.tags)
+            self.metrics_initialized = True
 
     def _expose_data(self, _, measure):
         kwargs = {label: measure[TAGS_KEY][label] for label in measure[TAGS_KEY]}
@@ -133,6 +135,10 @@ class PrometheusDB(BasePrometheusDB):
 
         :param report: Report to save
         """
+        if self.tags is None or not self.tags:
+            self.tags = list(report.metadata.keys())
+        self._init_metrics()
+
         key, measure = self._report_to_measure_and_key(report)
         if self.current_ts != measure[TIME_KEY]:
             self.current_ts = measure[TIME_KEY]
