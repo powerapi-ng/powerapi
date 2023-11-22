@@ -259,7 +259,7 @@ class BaseConfigParser:
             elif current_argument_name != 'type':
                 raise UnknownArgException(argument_name=current_argument_name)
 
-        return conf
+        return self.normalize_configuration(conf=conf)
 
     def normalize_configuration(self, conf: dict) -> dict:
         """

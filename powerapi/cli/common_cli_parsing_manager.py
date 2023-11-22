@@ -32,6 +32,7 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
+from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
@@ -263,17 +264,17 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "d",
             "metric_description",
             help_text="specify metric description",
-            default_value="energy consumption",
+            default_value=DEFAULT_METRIC_DESCRIPTION
         )
 
         subparser_prometheus_output.add_argument(
             "m",
             "model",
             help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
+            default_value=DEFAULT_MODEL_VALUE,
         )
         subparser_prometheus_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_prometheus"
+            "n", "name", help_text="specify pusher name", default_value=DEFAULT_PUSHER_NAME
         )
         self.add_subgroup_parser(
             subgroup_name="output",

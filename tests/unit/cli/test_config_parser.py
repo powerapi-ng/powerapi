@@ -35,6 +35,7 @@ from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, 
     SubgroupParserWithoutNameArgumentException, \
     NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, MissingArgumentException, \
     SameLengthArgumentNamesException, AlreadyAddedSubgroupException
+from tests.unit.cli.conftest import get_config_with_longest_argument_names, get_config_with_default_values
 
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
     generate_configuration_tuples_from_json_file, define_environment_variables_configuration_from_json_file, \
@@ -145,12 +146,15 @@ def test_validate_check_mandatory_arguments_on_configuration(base_config_parser)
     Test if mandatory arguments are verified by the parser
     """
     conf = load_configuration_from_json_file('basic_configuration.json')
+    config_longest_names = get_config_with_default_values(config=conf, arguments=base_config_parser.arguments)
+    config_longest_names = get_config_with_longest_argument_names(config=config_longest_names,
+                                                                  arguments=base_config_parser.arguments)
     conf_without_mandatory_arguments = \
         load_configuration_from_json_file('basic_configuration_without_mandatory_arguments.json')
 
     try:
         validated_config = base_config_parser.validate(conf)
-        assert validated_config == conf
+        assert validated_config == config_longest_names
 
     except MissingArgumentException:
         assert False
@@ -179,12 +183,12 @@ def test_validate_adds_default_values_for_no_arguments_defined_in_configuration_
     """
     conf = load_configuration_from_json_file('basic_configuration_without_arguments_with_default_values.json')
 
-    expected_conf = conf.copy()
-    expected_conf['arg1'] = 3
-    expected_conf['arg5'] = 'default value'
+    expected_conf_default_values = get_config_with_default_values(config=conf, arguments=base_config_parser.arguments)
+    expected_conf_default_values = get_config_with_longest_argument_names(config=expected_conf_default_values,
+                                                                          arguments=base_config_parser.arguments)
 
     validated_config = base_config_parser.validate(conf)
-    assert validated_config == expected_conf
+    assert validated_config == expected_conf_default_values
 
 
 def test_get_arguments_str_return_str_with_all_information(base_config_parser, base_config_parser_str_representation):

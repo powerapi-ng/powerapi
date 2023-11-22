@@ -39,6 +39,9 @@ from powerapi.report import Report
 from .base_db import BaseDB
 
 DEFAULT_ADDRESS = '127.0.0.1'
+DEFAULT_METRIC_DESCRIPTION = 'energy consumption'
+DEFAULT_MODEL_VALUE = 'PowerReport'
+DEFAULT_PUSHER_NAME = 'pusher_prometheus'
 TAGS_KEY = 'tags'
 VALUE_KEY = 'value'
 TIME_KEY = 'time'
@@ -53,7 +56,7 @@ class BasePrometheusDB(BaseDB):
     """
 
     def __init__(self, report_type: Type[Report], port: int, metric_name: str,
-                 metric_description: str, tags: List[str], address: str = DEFAULT_ADDRESS):
+                 tags: List[str], metric_description: str = DEFAULT_METRIC_DESCRIPTION, address: str = DEFAULT_ADDRESS):
         BaseDB.__init__(self, report_type)
         self.address = address
         self.port = port
