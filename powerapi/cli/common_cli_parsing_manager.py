@@ -42,6 +42,8 @@ POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFI
 POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PRE_PROCESSOR_'
 POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR'
 
+TAGS_ARGUMENT_HELP_TEXT = 'specify report tags'
+
 
 def extract_file_names(arg, val, args, acc):
     """
@@ -253,7 +255,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         subparser_prometheus_output = SubgroupConfigParsingManager("prometheus")
-        subparser_prometheus_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_prometheus_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri",
                                                  default_value=DEFAULT_ADDRESS)
         subparser_prometheus_output.add_argument(
@@ -296,7 +298,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="PowerReport",
         )
 
-        subparser_csv_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_csv_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_csv_output.add_argument(
             "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )
@@ -307,7 +309,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx_output = SubgroupConfigParsingManager("influxdb")
         subparser_influx_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_influx_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_influx_output.add_argument(
             "d", "db", help_text="specify InfluxDB database name"
         )
@@ -353,7 +355,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx2_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_influx2_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_influx2_output.add_argument("k", "token",
                                               help_text="specify token for accessing the database")
         subparser_influx2_output.add_argument("g", "org",

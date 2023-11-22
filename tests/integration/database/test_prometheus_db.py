@@ -125,7 +125,7 @@ def _gen_url(port):
 
 
 def test_create_direct_prometheus_db_and_connect_it_must_launch_web_server_on_given_address(db_info):
-    db, url = db_info
+    _, url = db_info
     r = requests.get(url)
     assert r.status_code == 200
 
