@@ -32,7 +32,8 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
-from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME
+from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
+    DEFAULT_ADDRESS
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
@@ -253,7 +254,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_prometheus_output = SubgroupConfigParsingManager("prometheus")
         subparser_prometheus_output.add_argument("t", "tags", help_text="specify report tags")
-        subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri")
+        subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri",
+                                                 default_value=DEFAULT_ADDRESS)
         subparser_prometheus_output.add_argument(
             "p", "port", help_text="specify server port", argument_type=int
         )

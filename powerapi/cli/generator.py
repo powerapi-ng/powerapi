@@ -34,7 +34,6 @@ from typing import Dict, Type, Callable
 
 from powerapi.actor import Actor
 from powerapi.database.influxdb2 import InfluxDB2
-from powerapi.database.prometheus_db import DEFAULT_ADDRESS
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
 from powerapi.filter import Filter
@@ -199,8 +198,7 @@ class DBActorGenerator(BaseGenerator):
                                                    port=db_config['port'], metric_name=db_config['metric_name']),
             'prometheus': lambda db_config: PrometheusDB(report_type=db_config['model'],
                                                          port=db_config['port'],
-                                                         address=db_config['uri'] if 'uri' in db_config else
-                                                         DEFAULT_ADDRESS,
+                                                         address=db_config['uri'],
                                                          metric_name=db_config['metric_name'],
                                                          metric_description=db_config['metric_description'],
                                                          tags=gen_tag_list(db_config)),
