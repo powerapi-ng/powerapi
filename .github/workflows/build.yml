@@ -29,11 +29,11 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8 --count --show-source --statistics powerapi/ tests/
+        flake8 --count --show-source --statistics src/ tests/
 
     - name: Static code analysis with pylint
       run: |
-        pylint powerapi/ tests/
+        pylint src/ tests/
 
     - name: Test with pytest
       run: |
