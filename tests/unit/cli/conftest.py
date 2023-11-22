@@ -780,7 +780,7 @@ def get_config_with_default_values(config: dict, arguments: dict):
 
     processed_arguments = []
 
-    config_default_values = deepcopy(config)
+    config_all_values = deepcopy(config)
 
     for current_argument_name, current_argument in arguments.items():
         if current_argument not in processed_arguments:
@@ -793,8 +793,8 @@ def get_config_with_default_values(config: dict, arguments: dict):
                     break
 
             if not argument_value_already_defined and current_argument.default_value is not None:
-                config_default_values[current_argument_name] = current_argument.default_value
+                config_all_values[current_argument_name] = current_argument.default_value
 
             processed_arguments.append(current_argument)
 
-    return config_default_values
+    return config_all_values
