@@ -68,9 +68,9 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
             self.state.actor.logger.warning(
                 f"Container with no associated pod : {message.target}, {c_id}, {namespace}, {pod}"
             )
+            namespace = ""
+            pod = ""
         else:
-            message.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
-            message.metadata[POD_NAME_METADATA_KEY] = pod
             self.state.actor.logger.debug(
                 f"K8sPreProcessorActorHWPCReportHandler add metadata to report {c_id}, {namespace}, {pod}"
             )
@@ -78,6 +78,9 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
             labels = self.state.metadata_cache_manager.get_pod_labels(namespace, pod)
             for label_key, label_value in labels.items():
                 message.metadata[f"label_{label_key}"] = label_value
+
+        message.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
+        message.metadata[POD_NAME_METADATA_KEY] = pod
 
         self._send_report(report=message)
 

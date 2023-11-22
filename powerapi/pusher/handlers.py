@@ -32,6 +32,7 @@ import time
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import ErrorMessage
 from powerapi.database import DBError
+from powerapi.report import BadInputData
 
 
 class PusherStartHandler(StartHandler):
@@ -89,6 +90,9 @@ class ReportHandler(InitHandler):
 
             self.state.buffer.sort(key=lambda x: x.timestamp)
 
-            self.state.database.save_many(self.state.buffer)
-            self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
-            self.state.buffer = []
+            try:
+                self.state.database.save_many(self.state.buffer)
+                self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
+                self.state.buffer = []
+            except BadInputData as ex:
+                self.state.actor.logger.warning(f"The report cannot be saved: {ex.msg}")

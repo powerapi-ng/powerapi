@@ -32,6 +32,8 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
+from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
+    DEFAULT_ADDRESS
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
@@ -39,6 +41,8 @@ POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREF
 POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
 POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PRE_PROCESSOR_'
 POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR'
+
+TAGS_ARGUMENT_HELP_TEXT = 'specify report tags'
 
 
 def extract_file_names(arg, val, args, acc):
@@ -250,69 +254,35 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_mongo_output
         )
 
-        subparser_prom_output = SubgroupConfigParsingManager("prom")
-        subparser_prom_output.add_argument("t", "tags", help_text="specify report tags")
-        subparser_prom_output.add_argument("u", "uri", help_text="specify server uri")
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output = SubgroupConfigParsingManager("prometheus")
+        subparser_prometheus_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
+        subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri",
+                                                 default_value=DEFAULT_ADDRESS)
+        subparser_prometheus_output.add_argument(
             "p", "port", help_text="specify server port", argument_type=int
         )
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "M", "metric_name", help_text="specify metric name"
         )
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "d",
             "metric_description",
             help_text="specify metric description",
-            default_value="energy consumption",
-        )
-        help_text = "specify number of second for the value must be aggregated before compute statistics on them"
-        subparser_prom_output.add_argument(
-            "A", "aggregation_period", help_text=help_text, default_value=15, argument_type=int
+            default_value=DEFAULT_METRIC_DESCRIPTION
         )
 
-        subparser_prom_output.add_argument(
+        subparser_prometheus_output.add_argument(
             "m",
             "model",
             help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
+            default_value=DEFAULT_MODEL_VALUE,
         )
-        subparser_prom_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="output",
-            subgroup_parser=subparser_prom_output
-        )
-
-        subparser_direct_prom_output = SubgroupConfigParsingManager("direct_prom")
-        subparser_direct_prom_output.add_argument(
-            "t", "tags", help_text="specify report tags"
-        )
-        subparser_direct_prom_output.add_argument("a", "uri", help_text="specify server uri")
-        subparser_direct_prom_output.add_argument(
-            "p", "port", help_text="specify server port", argument_type=int
-        )
-        subparser_direct_prom_output.add_argument(
-            "M", "metric_name", help_text="specify metric name"
-        )
-        subparser_direct_prom_output.add_argument(
-            "d",
-            "metric_description",
-            help_text="specify metric description",
-            default_value="energy consumption",
-        )
-        subparser_direct_prom_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
-        )
-        subparser_direct_prom_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_prom"
+        subparser_prometheus_output.add_argument(
+            "n", "name", help_text="specify pusher name", default_value=DEFAULT_PUSHER_NAME
         )
         self.add_subgroup_parser(
             subgroup_name="output",
-            subgroup_parser=subparser_direct_prom_output
+            subgroup_parser=subparser_prometheus_output
         )
 
         subparser_csv_output = SubgroupConfigParsingManager("csv")
@@ -328,7 +298,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="PowerReport",
         )
 
-        subparser_csv_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_csv_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_csv_output.add_argument(
             "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )
@@ -339,7 +309,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx_output = SubgroupConfigParsingManager("influxdb")
         subparser_influx_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_influx_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_influx_output.add_argument(
             "d", "db", help_text="specify InfluxDB database name"
         )
@@ -385,7 +355,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx2_output.add_argument("t", "tags", help_text="specify report tags")
+        subparser_influx2_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
         subparser_influx2_output.add_argument("k", "token",
                                               help_text="specify token for accessing the database")
         subparser_influx2_output.add_argument("g", "org",

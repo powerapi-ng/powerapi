@@ -28,11 +28,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import sys
+from copy import deepcopy
 
 import pytest
 import tests.utils.cli as test_files_module
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.cli.generator import PullerGenerator, PusherGenerator, ProcessorGenerator, COMPONENT_TYPE_KEY, \
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, COMPONENT_TYPE_KEY, \
     LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
@@ -135,7 +136,7 @@ def several_inputs_outputs_stream_prometheus_without_some_arguments_config(sever
     of prometheus output are removed
     """
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'prom':
+        if current_output['type'] == 'prometheus':
             current_output.pop('metric_name')
             current_output.pop('metric_description')
             current_output.pop('aggregation_period')
@@ -739,3 +740,61 @@ def pre_processor_binding_manager_with_reused_puller_in_bindings(
         configuration=pre_processor_with_reused_puller_in_bindings_configuration)
 
     return PreProcessorBindingManager(pullers=pullers, processors=processors)
+
+
+def get_config_with_longest_argument_names(config: dict, arguments: dict):
+    """
+    Return a copy of the provided configuration with the longest name for each argument
+    :param dict config: Configuration to be modified
+    :param dict arguments: Arguments definition
+    """
+    config_longest_names = {}
+    for argument_name in config.keys():
+        current_argument = arguments[argument_name]
+        longest_argument_name = get_longest_name(current_argument.names)
+        config_longest_names[longest_argument_name] = config[argument_name]
+
+    return config_longest_names
+
+
+def get_longest_name(names: list):
+    """
+    Return the longest name in the provide list
+    :param list names: List of names
+    """
+    longest_name = ""
+
+    for name in names:
+        if len(name) > len(longest_name):
+            longest_name = name
+
+    return longest_name
+
+
+def get_config_with_default_values(config: dict, arguments: dict):
+    """
+    Get a configuration that contains all optional arguments with their default values
+    :param dict config: Configuration to be modified
+    :param dict arguments: Arguments definition
+    """
+
+    processed_arguments = []
+
+    config_all_values = deepcopy(config)
+
+    for current_argument_name, current_argument in arguments.items():
+        if current_argument not in processed_arguments:
+            argument_value_already_defined = False
+
+            for name in current_argument.names:
+                if name in config:
+                    argument_value_already_defined = True
+
+                    break
+
+            if not argument_value_already_defined and current_argument.default_value is not None:
+                config_all_values[current_argument_name] = current_argument.default_value
+
+            processed_arguments.append(current_argument)
+
+    return config_all_values

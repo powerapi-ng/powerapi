@@ -268,7 +268,7 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert db.db_name == current_pusher_infos['db']
             assert db.port == current_pusher_infos['port']
 
-        elif pusher_type == 'prom':
+        elif pusher_type == 'prometheus':
             assert isinstance(db, PrometheusDB)
             assert db.address == current_pusher_infos['uri']
             assert db.port == current_pusher_infos['port']
