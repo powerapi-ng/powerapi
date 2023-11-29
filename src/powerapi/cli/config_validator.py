@@ -54,13 +54,6 @@ class ConfigValidator:
             logging.error("no output configuration found")
             raise MissingArgumentException(argument_name='output')
 
-        for output_type in config['output']:
-            output_config = config['output'][output_type]
-            if 'model' not in output_config:
-                output_config['model'] = 'HWPCReport'
-            if 'name' not in output_config:
-                output_config['name'] = 'default_pusher'
-
         if 'input' not in config:
             logging.error("no input configuration found")
             raise MissingArgumentException(argument_name='input')
@@ -76,11 +69,6 @@ class ConfigValidator:
             if input_config['type'] == 'csv' and config['stream']:
                 logging.error("stream mode cannot be used for csv input")
                 raise NotAllowedArgumentValueException("Stream mode cannot be used for csv input")
-
-            if 'model' not in input_config:
-                input_config['model'] = 'PowerReport'
-            if 'name' not in input_config:
-                input_config['name'] = 'default_puller'
 
         if 'pre-processor' in config:
             for pre_processor_id in config['pre-processor']:
