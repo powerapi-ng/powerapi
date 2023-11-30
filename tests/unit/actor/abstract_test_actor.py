@@ -261,7 +261,9 @@ class AbstractTestActor:
     def started_actor(self, init_actor):
         init_actor.send_control(StartMessage('test_case'))
         _ = init_actor.receive_control(2000)
-        return init_actor
+        yield init_actor
+
+        init_actor.send_control(PoisonPillMessage())
 
     @pytest.fixture
     def started_fake_pusher_power_report(self, dummy_pipe_in):

@@ -331,23 +331,23 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(self,
                                                                                                           started_actor,
-                                                                                                          dummy_pipe_out,
-                                                                                                          shutdown_system):
+                                                                                                          dummy_pipe_out):
 
         """
             Check that a formula is created when a report is received
         """
         started_actor.send_data(REPORT_1)
-        _, power_report = recv_from_pipe(dummy_pipe_out, 2)
+        _, power_report = recv_from_pipe(dummy_pipe_out, 0.2)
         assert isinstance(power_report, PowerReport)
         assert power_report.power == 42
+
+        # started_actor.send_control(PoisonPillMessage())
 
     @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_send_report_to_formula(self,
                                                                                                 dispatcher_with_formula,
-                                                                                                dummy_pipe_out,
-                                                                                                shutdown_system):
+                                                                                                dummy_pipe_out):
         """
             Check that DispatcherActor with a created formula sent a report to it
         """
@@ -367,8 +367,7 @@ class TestDispatcher(AbstractTestActor):
                             (Report2, DispatchRule2A())])
     def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_send_report_to_all_formula(self,
                                                                                                             dispatcher_with_two_formula,
-                                                                                                            dummy_pipe_out,
-                                                                                                            shutdown_system):
+                                                                                                            dummy_pipe_out):
 
         """
             Check that DispatcherActor sent a report to all existing formulas
@@ -394,7 +393,7 @@ class TestDispatcher(AbstractTestActor):
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(self, started_actor,
-                                                                            dummy_pipe_out, shutdown_system):
+                                                                            dummy_pipe_out):
         """
             Check that two formulas are created by DispatcherActor
         """
@@ -411,8 +410,7 @@ class TestDispatcher(AbstractTestActor):
                             (Report3, DispatchRule3())])
     def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(self,
                                                                                                           dispatcher_with_two_formula,
-                                                                                                          dummy_pipe_out,
-                                                                                                          shutdown_system):
+                                                                                                          dummy_pipe_out):
 
         """
             Check that 3 reports are produced by formulas when DispatcherActor receives
@@ -431,8 +429,7 @@ class TestDispatcher(AbstractTestActor):
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
-    def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula,
-                                                                          shutdown_system):
+    def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(self, dispatcher_with_two_formula):
         """
             Check that a PoissonPillMessage stops the DispatcherActor as well as their formulas
         """
