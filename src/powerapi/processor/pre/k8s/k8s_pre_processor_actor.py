@@ -42,7 +42,7 @@ from powerapi.message import StartMessage, PoisonPillMessage
 from powerapi.processor.pre.k8s.k8s_pre_processor_handlers import K8sPreProcessorActorHWPCReportHandler, \
     K8sPreProcessorActorStartMessageHandler, K8sPreProcessorActorPoisonPillMessageHandler
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
-from powerapi.report import HWPCReport
+from powerapi.report.report import Report
 
 ADDED_EVENT = 'ADDED'
 DELETED_EVENT = 'DELETED'
@@ -211,6 +211,6 @@ class K8sPreProcessorActor(ProcessorActor):
         """
         ProcessorActor.setup(self)
         self.add_handler(message_type=StartMessage, handler=K8sPreProcessorActorStartMessageHandler(state=self.state))
-        self.add_handler(message_type=HWPCReport, handler=K8sPreProcessorActorHWPCReportHandler(state=self.state))
+        self.add_handler(message_type=Report, handler=K8sPreProcessorActorHWPCReportHandler(state=self.state))
         self.add_handler(message_type=PoisonPillMessage,
                          handler=K8sPreProcessorActorPoisonPillMessageHandler(state=self.state))
