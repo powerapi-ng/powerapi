@@ -63,7 +63,7 @@ kubernetes = ["kubernetes >= 27.0.2"]
 
 # Aliases:
 all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
-all-platforms = ["kubernetes"]
+all-platforms = ["powerapi[kubernetes]"]
 everything = ["powerapi[all-databases, all-platforms]"]
 devel = ["powerapi[everything, test, docs, lint]"]
 
