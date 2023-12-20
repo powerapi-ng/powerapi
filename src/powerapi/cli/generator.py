@@ -422,7 +422,7 @@ class PostProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
-        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
+        ProcessorGenerator.__init__(self, component_group_name='post-processor')
 
     def _get_default_processor_factories(self) -> dict:
         return {}
