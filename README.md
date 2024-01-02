@@ -5,6 +5,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/powerapi-ng/powerapi/build.yml)](https://github.com/powerapi-ng/powerapi/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/powerapi)](https://pypi.org/project/powerapi/)
 [![Codecov](https://codecov.io/gh/powerapi-ng/powerapi/branch/master/graph/badge.svg)](https://codecov.io/gh/powerapi-ng/powerapi)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpowerapi-ng%2Fpowerapi.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpowerapi-ng%2Fpowerapi?ref=badge_shield)
 
 PowerAPI is a middleware toolkit for building software-defined power meters.
 Software-defined power meters are configurable software libraries that can estimate the power consumption of software in real-time.
@@ -53,3 +54,7 @@ PowerAPI is used in a variety of projects to address key challenges of GreenIT:
 We all stand on the shoulders of giants and get by with a little help from our friends. PowerAPI is written in [Python](https://www.python.org/) (under [PSF license](https://docs.python.org/3/license.html)) and built on top of:
 * [pyzmq](https://github.com/zeromq/pyzmq) (under [3-Clause BSD license](https://opensource.org/licenses/BSD-3-Clause)) for inter-process communication.
 * [pymongo](https://github.com/mongodb/mongo-python-driver) (under [Apache 2 license](https://github.com/mongodb/mongo-python-driver/blob/master/LICENSE)) for the MongoDB database (input/output) support.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpowerapi-ng%2Fpowerapi.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpowerapi-ng%2Fpowerapi?ref=badge_large)
