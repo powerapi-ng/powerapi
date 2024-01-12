@@ -54,7 +54,7 @@ lint = [
 
 # Databases:
 mongodb = ["pymongo >= 3.7.2"]
-influxdb = ["influxdb-client >= 1.30.0", "influxdb >= 2.12"]
+influxdb = ["influxdb-client >= 1.30.0"]
 opentsdb = ["opentsdb-py >= 0.6.0"]
 prometheus = ["prometheus-client >= 0.9.0"]
 
