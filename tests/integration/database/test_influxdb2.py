@@ -34,7 +34,7 @@ from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.report import PowerReport
 # noinspection PyUnresolvedReferences
 from tests.utils.db.influx2 import INFLUX2_ORG, INFLUX2_TOKEN, INFLUX2_URL, INFLUX2_BUCKET_NAME, \
-    influx_database, get_all_the_reports, INFLUX2_MEASUREMENT_NAME, INFLUX2_DEFAULT_START_DATE, INFLUX2_PORT, \
+    influx2_database, get_all_the_reports, INFLUX2_MEASUREMENT_NAME, INFLUX2_DEFAULT_START_DATE, INFLUX2_PORT, \
     INFLUX2_URL_WITHOUT_PORT
 from tests.utils.report.power import SENSOR_NAME, TARGET_NAME
 
@@ -159,7 +159,7 @@ def check_db_reports(client: InfluxDB2, input_reports):
         assert output_r['_value'] == input_r.power
 
 
-def test_write_one_report_in_empty_db(influx_database, database):
+def test_write_one_report_in_empty_db(influx2_database, database):
     """
     call the save method with One PowerReport
 
@@ -171,7 +171,7 @@ def test_write_one_report_in_empty_db(influx_database, database):
     check_db_reports(database, [POWER_REPORT_1])
 
 
-def test_write_many_report_in_empty_db(influx_database, database):
+def test_write_many_report_in_empty_db(influx2_database, database):
     """
      call the save_many method with One PowerReport
 
@@ -187,7 +187,7 @@ def test_write_many_report_in_empty_db(influx_database, database):
 # # REPORT WRITING NON EMPTY DB #
 # ###############################
 
-def test_write_one_report_in_non_empty_db(influx_database, database):
+def test_write_one_report_in_non_empty_db(influx2_database, database):
     """
      call the save method with One PowerReport
 
@@ -199,7 +199,7 @@ def test_write_one_report_in_non_empty_db(influx_database, database):
     check_db_reports(database, [POWER_REPORT_0, POWER_REPORT_1])
 
 
-def test_write_many_report_in_non_empty_db(influx_database, database):
+def test_write_many_report_in_non_empty_db(influx2_database, database):
     """
      call the save_many method with One PowerReport
 

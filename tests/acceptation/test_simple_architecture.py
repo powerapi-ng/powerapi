@@ -58,13 +58,11 @@ from powerapi.actor import Supervisor
 from tests.utils.formula.dummy import DummyFormulaActor
 
 from tests.utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
-    INFLUX_OUTPUT_CONFIG, CSV_INPUT_OUTPUT_CONFIG
+    CSV_INPUT_OUTPUT_CONFIG
 from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 # noinspection PyUnresolvedReferences
 from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME, mongo_database
-# noinspection PyUnresolvedReferences
-from tests.utils.db.influx import INFLUX_DBNAME, INFLUX_URI, get_all_reports, influx_database
 # noinspection PyUnresolvedReferences
 from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
 from tests.utils.db.socket import ClientThread, ClientThreadDelay
@@ -122,40 +120,6 @@ def influxdb_content():
         Return an empty content for an influxdb
     """
     return []
-
-
-def check_influx_db(influx_client):
-    """
-        Verify that output DB has the correct information
-    """
-    mongo = pymongo.MongoClient(INFLUX_URI)
-    c_input = mongo[MONGO_DATABASE_NAME][MONGO_INPUT_COLLECTION_NAME]
-    c_output = get_all_reports(influx_client, INFLUX_DBNAME)
-
-    assert len(c_output) == c_input.count_documents({})
-
-    for report in c_input.find():
-        influx_client.switch_database(INFLUX_DBNAME)
-
-        query_result = list(influx_client.query(
-            'SELECT * FROM "power_consumption" WHERE "time" = \'' + report['timestamp'] + 'Z\'').get_points())
-        assert len(query_result) == 1
-
-
-def test_run_mongo_to_influx(mongo_database, influx_database, shutdown_system):
-    """
-        Check that report are correctly stored into an output influx database.
-        The input source is a mongo database.
-    """
-    supervisor = Supervisor()
-    launch_simple_architecture(config=INFLUX_OUTPUT_CONFIG, supervisor=supervisor, hwpc_depth_level=SOCKET_DEPTH_LEVEL,
-                               formula_class=DummyFormulaActor)
-
-    time.sleep(4)
-
-    check_influx_db(influx_database)
-
-    supervisor.kill_actors()
 
 
 ##############

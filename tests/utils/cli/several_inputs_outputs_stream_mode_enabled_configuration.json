@@ -31,13 +31,6 @@
           "db": "my_db_result",
           "collection": "my_collection_result"
       },
-      "second_pusher": {
-          "type": "influxdb",
-          "model": "PowerReport",
-          "uri": "127.0.0.1",
-          "port": 1111,
-          "db": "my_db_result_2"
-      },
       "third_pusher": {
           "type": "prometheus",
           "model": "PowerReport",
