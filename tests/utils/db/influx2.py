@@ -64,7 +64,7 @@ INFLUX2_MEASUREMENT_NAME = 'power_consumption'
 
 
 @pytest.fixture()
-def influx_database():
+def influx2_database():
     """
         connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
         after test end, delete the data

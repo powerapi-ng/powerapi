@@ -42,7 +42,7 @@ from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorAc
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
-from powerapi.database import MongoDB, CsvDB, InfluxDB, OpenTSDB, SocketDB, PrometheusDB, \
+from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, \
     VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -186,9 +186,6 @@ class DBActorGenerator(BaseGenerator):
                                            current_path=os.getcwd() if 'directory' not in db_config else db_config[
                                                'directory'],
                                            files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb': lambda db_config: InfluxDB(report_type=db_config['model'], uri=db_config['uri'],
-                                                   port=db_config['port'], db_name=db_config['db'],
-                                                   tags=gen_tag_list(db_config)),
             'influxdb2': lambda db_config: InfluxDB2(report_type=db_config['model'], url=db_config['uri'],
                                                      org=db_config['org'],
                                                      bucket_name=db_config['db'], token=db_config['token'],

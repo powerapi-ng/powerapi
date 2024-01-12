@@ -31,7 +31,6 @@ from powerapi.database.csvdb import CsvDB, CsvBadFilePathError
 from powerapi.database.csvdb import CsvBadCommonKeysError, HeaderAreNotTheSameError
 from powerapi.database.mongodb import MongoDB, MongoBadDBError
 from powerapi.database.opentsdb import OpenTSDB, CantConnectToOpenTSDBException
-from powerapi.database.influxdb import InfluxDB, CantConnectToInfluxDBException
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.database.prometheus_db import PrometheusDB
 from powerapi.database.virtiofs_db import VirtioFSDB

@@ -42,7 +42,6 @@ from powerapi.dispatcher import RouteTable, DispatcherActor
 from powerapi.filter import Filter
 from powerapi.report import HWPCReport
 from tests.utils.db.csv import OUTPUT_PATH, FILES
-from tests.utils.db.influx import INFLUX_URI, INFLUX_PORT, INFLUX_DBNAME
 from tests.utils.db.mongo import MONGO_URI, MONGO_DATABASE_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_INPUT_COLLECTION_NAME
 from tests.utils.libvirt import REGEXP
@@ -73,22 +72,6 @@ BASIC_CONFIG = {'verbose': True,
                                           'db': MONGO_DATABASE_NAME,
                                           'collection': MONGO_INPUT_COLLECTION_NAME}}
                 }
-
-INFLUX_OUTPUT_CONFIG = {'verbose': True,
-                        'stream': False,
-                        'output': {'test_pusher': {'type': 'influxdb',
-                                                   'tags': 'socket',
-                                                   'model': 'PowerReport',
-                                                   'max_buffer_size': 0,
-                                                   'uri': INFLUX_URI,
-                                                   'port': INFLUX_PORT,
-                                                   'db': INFLUX_DBNAME}},
-                        'input': {'test_puller': {'type': 'mongodb',
-                                                  'model': 'HWPCReport',
-                                                  'uri': MONGO_URI,
-                                                  'db': MONGO_DATABASE_NAME,
-                                                  'collection': MONGO_INPUT_COLLECTION_NAME}}
-                        }
 
 CSV_INPUT_OUTPUT_CONFIG = {'verbose': True,
                            'stream': False,

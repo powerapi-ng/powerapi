@@ -41,7 +41,7 @@ from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorAc
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.database import MongoDB, CsvDB, SocketDB, InfluxDB, PrometheusDB, InfluxDB2
+from powerapi.database import MongoDB, CsvDB, SocketDB, PrometheusDB, InfluxDB2
 from powerapi.exception import PowerAPIException
 
 
@@ -262,12 +262,6 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert db.db_name == current_pusher_infos['db']
             assert db.collection_name == current_pusher_infos['collection']
 
-        elif pusher_type == 'influxdb':
-            assert isinstance(db, InfluxDB)
-            assert db.uri == current_pusher_infos['uri']
-            assert db.db_name == current_pusher_infos['db']
-            assert db.port == current_pusher_infos['port']
-
         elif pusher_type == 'prometheus':
             assert isinstance(db, PrometheusDB)
             assert db.address == current_pusher_infos['uri']
@@ -312,17 +306,6 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
-
-
-def test_generate_pusher_raise_exception_when_missing_arguments_in_influx_output(
-        several_inputs_outputs_stream_influx_without_some_arguments_config):
-    """
-    Test that PusherGenerator raises a PowerAPIException when some arguments are missing for influx output
-    """
-    generator = PusherGenerator()
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_influx_without_some_arguments_config)
 
 
 def test_generate_pusher_raise_exception_when_missing_arguments_in_prometheus_output(
