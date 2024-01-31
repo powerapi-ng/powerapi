@@ -33,6 +33,7 @@ import sys
 from typing import Dict, Type, Callable
 
 from powerapi.actor import Actor
+from powerapi.database.http_db import HttpServerDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
@@ -204,7 +205,9 @@ class DBActorGenerator(BaseGenerator):
                                                      root_directory_name=db_config['root_directory_name'],
                                                      vm_directory_name_prefix=db_config['vm_directory_name_prefix'],
                                                      vm_directory_name_suffix=db_config['vm_directory_name_suffix']),
-            'filedb': lambda db_config: FileDB(report_type=db_config['model'], filename=db_config['filename'])
+            'filedb': lambda db_config: FileDB(report_type=db_config['model'], filename=db_config['filename']),
+            'rest': lambda db_config: HttpServerDB(report_type=db_config['model'], port=db_config['port'],
+                                                   host=db_config['host'], token=db_config['token'])
         }
 
     def remove_report_class(self, model_name: str):

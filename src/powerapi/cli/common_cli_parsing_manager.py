@@ -32,6 +32,7 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
+from powerapi.database import http_db
 from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
     DEFAULT_ADDRESS
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
@@ -178,6 +179,40 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self.add_subgroup_parser(
             subgroup_name="input",
             subgroup_parser=subparser_file_input
+        )
+
+        subparser_rest_input = SubgroupConfigParsingManager("rest")
+        subparser_rest_input.add_argument(
+            "p", "port", argument_type=int, help_text="specify port to bind the server",
+            default_value=http_db.DEFAULT_PORT
+        )
+        subparser_rest_input.add_argument(
+            "n", "name", help_text="specify puller name", default_value="puller_rest"
+        )
+        subparser_rest_input.add_argument(
+            "m",
+            "model",
+            help_text="specify data type that will be sent through the server",
+            default_value="HWPCReport",
+        )
+
+        subparser_rest_input.add_argument(
+            "h",
+            "host",
+            help_text="specify a host to bind the server",
+            default_value=http_db.DEFAULT_HOST,
+        )
+
+        subparser_rest_input.add_argument(
+            "t",
+            "token",
+            help_text="specify a token for authentification",
+            default_value=None,
+        )
+
+        self.add_subgroup_parser(
+            subgroup_name="input",
+            subgroup_parser=subparser_rest_input
         )
 
         subparser_file_output = SubgroupConfigParsingManager("filedb")
