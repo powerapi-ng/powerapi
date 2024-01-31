@@ -99,6 +99,20 @@ def several_inputs_outputs_stream_socket_without_some_arguments_config(several_i
 
 
 @pytest.fixture
+def several_inputs_outputs_stream_rest_without_some_arguments_config(several_inputs_outputs_stream_config):
+    """
+    Configuration with several inputs and outputs and stream mode enabled. Some arguments
+    of rest input are removed
+    """
+    for _, current_input in several_inputs_outputs_stream_config["input"].items():
+        if current_input['type'] == 'rest':
+            current_input.pop('port')
+            current_input.pop('host')
+
+    return several_inputs_outputs_stream_config
+
+
+@pytest.fixture
 def several_inputs_outputs_stream_csv_without_some_arguments_config(several_inputs_outputs_stream_config):
     """
     Configuration with several inputs and outputs and stream mode enabled. Some arguments
@@ -107,6 +121,8 @@ def several_inputs_outputs_stream_csv_without_some_arguments_config(several_inpu
     for _, current_input in several_inputs_outputs_stream_config["input"].items():
         if current_input['type'] == 'csv':
             current_input.pop('files')
+        elif current_input['type'] == 'rest':
+            current_input['port'] += 1
 
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
         if current_output['type'] == 'csv':

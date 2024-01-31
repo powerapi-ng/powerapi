@@ -35,6 +35,7 @@ import pytest
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, \
     MonitorGenerator, MONITOR_NAME_SUFFIX, LISTENER_ACTOR_KEY, PreProcessorGenerator
 from powerapi.cli.generator import ModelNameDoesNotExist
+from powerapi.database.http_db import HttpServerDB
 from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
@@ -113,6 +114,13 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
             assert isinstance(db, SocketDB)
             assert db.port == current_puller_infos['port']
 
+        elif current_puller_infos['type'] == 'rest':
+            assert isinstance(db, HttpServerDB)
+            assert db.port == current_puller_infos['port']
+            assert db.host == current_puller_infos['host']
+            assert len(db.tokens) == 1
+            assert current_puller_infos['token'] in db.tokens
+            assert db.tokens[current_puller_infos['token']]
         else:
             assert False
 
@@ -126,6 +134,17 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
+
+
+def test_generate_puller_raise_exception_when_missing_arguments_in_rest_input(
+        several_inputs_outputs_stream_rest_without_some_arguments_config):
+    """
+    Test that PullerGenerator raise a PowerAPIException when some arguments are missing for rest input
+    """
+    generator = PullerGenerator(report_filter=None)
+
+    with pytest.raises(PowerAPIException):
+        generator.generate(several_inputs_outputs_stream_rest_without_some_arguments_config)
 
 
 def test_generate_puller_when_missing_arguments_in_csv_input_generate_related_actors(
