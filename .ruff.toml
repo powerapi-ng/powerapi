@@ -1,0 +1,46 @@
+target-version = "py310"  # should match minimal python version of PowerAPI
+
+[lint]
+select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "B",   # flake8-bugbear
+    "G",   # flake8-logging-format
+    "PT",  # flake8-pytest-style
+    "UP",  # pyupgrade
+    "ERA", # eradicate
+    "RUF", # ruff
+]
+
+ignore = [
+    "E501",   # line too long
+
+    "UP006",  # non-pep585-annotation
+    "UP007",  # non-pep604-annotation-union
+    "UP015",  # redundant-open-modes
+    "UP031",  # printf-string-formatting
+    "UP035",  # deprecated-import
+    "B006",   # mutable-argument-default
+    "B008",   # function-call-in-default-argument
+    "F401",   # unused-import
+    "ERA001", # commented-out-code
+    "G003",   # logging-string-concat
+    "G004",   # logging-f-string
+    "RUF005", # collection-literal-concatenation
+    "RUF013", # implicit-optional
+    "RUF015", # unnecessary-iterable-allocation-for-first-element
+
+    "UP026",  # deprecated-mock-import
+    "B005",   # strip-with-multi-characters
+    "B010",   # set-attr-with-constant
+    "B011",   # assert-false
+    "B017",   # assert-raises-exception
+    "B905",   # zip-without-explicit-strict
+    "E721",   # type-comparison
+    "PT001",  # pytest-fixture-incorrect-parentheses-style
+    "PT011",  # pytest-raises-too-broad
+    "PT012",  # pytest-raises-with-multiple-statements
+    "PT015",  # pytest-assert-always-false
+    "PT022",  # pytest-useless-yield-fixture
+]
