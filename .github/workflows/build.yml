@@ -62,4 +62,5 @@ jobs:
         with:
           push: false
           provenance: false
+          load: true
           tags: localbuild/powerapi:sha-${{ github.sha }}
