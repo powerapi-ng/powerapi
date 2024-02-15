@@ -87,6 +87,12 @@ class BaseDB:
         """
         raise NotImplementedError()
 
+    def disconnect(self):
+        """
+        Close the connection to the database
+        """
+        pass
+
     def iter(self, stream_mode: bool) -> IterDB:
         """
         Create the iterator for get the data
