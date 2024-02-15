@@ -29,14 +29,11 @@
 import json
 from typing import Dict, List
 
-from powerapi.report import HWPCReport
 import tests.utils.report as parent_module
+from powerapi.report import HWPCReport
 from tests.utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
 
-###################
-# Report Creation #
-###################
 def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
@@ -44,10 +41,9 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    json_file = open(path + '/hwpc_rapl_2_socket.json', 'r')
-    reports = json.load(json_file)
-    json_file.close()
-    return reports['reports'][:number_of_reports]
+    with open(f"{path}/hwpc_rapl_2_socket.json", "r") as json_file:
+        reports = json.load(json_file)
+        return reports['reports'][:number_of_reports]
 
 
 def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
@@ -65,10 +61,9 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Di
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    json_file = open(path + '/hwpc_all_events_2_socket.json', 'r')
-    reports = json.load(json_file)
-    json_file.close()
-    return reports['reports'][:number_of_reports]
+    with open(f"{path}/hwpc_all_events_2_socket.json", "r") as json_file:
+        reports = json.load(json_file)
+        return reports['reports'][:number_of_reports]
 
 
 def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict]:
@@ -90,10 +85,9 @@ def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict
     :return: a list of reports. Each reports is a json dictionary. Only reports with vm name as target is returned
     """
     path = parent_module.__path__[0]
-    json_file = open(path + '/hwpc_all_vm_target.json', 'r')
-    reports = json.load(json_file)
-    json_file.close()
-    return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2, reports['reports']))[:number_of_reports]
+    with open(f"{path}/hwpc_all_vm_target.json", "r") as json_file:
+        reports = json.load(json_file)
+        return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2, reports['reports']))[:number_of_reports]
 
 
 def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
@@ -102,8 +96,6 @@ def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
     :return: a list of HWPCReport
     """
     path = parent_module.__path__[0]
-    json_file = open(path + '/hwpc.json', 'r')
-    reports = list(map(HWPCReport.from_json, json.load(json_file)['reports']))
-
-    json_file.close()
-    return reports[:number_of_reports]
+    with open(f"{path}/hwpc.json", "r") as json_file:
+        reports = list(map(HWPCReport.from_json, json.load(json_file)['reports']))
+        return reports[:number_of_reports]
