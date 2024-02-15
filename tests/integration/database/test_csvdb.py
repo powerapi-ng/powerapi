@@ -87,31 +87,6 @@ TARGET = "target"
 # Report Creation #
 ###################
 
-
-# def gen_hwpc_report():
-#     """
-#     Return a well formated HWPCReport
-#     """
-#     cpua0 = create_core_report('1', 'e0', '0')
-#     cpub0 = create_core_report('2', 'e0', '1')
-#     cpuc0 = create_core_report('3', 'e0', '2')
-#     cpud0 = create_core_report('4', 'e0', '3')
-#     cpua1 = create_core_report('1', 'e1', '0')
-#     cpub1 = create_core_report('2', 'e1', '1')
-#     cpuc1 = create_core_report('3', 'e1', '2')
-#     cpud1 = create_core_report('4', 'e1', '3')
-
-#     socketa0 = create_socket_report('1', [cpua0, cpub0])
-#     socketb0 = create_socket_report('2', [cpuc0, cpud0])
-#     socketa1 = create_socket_report('1', [cpua1, cpub1])
-#     socketb1 = create_socket_report('2', [cpuc1, cpud1])
-
-#     groupa = create_group_report('group1', [socketa0, socketb0])
-#     groupb = create_group_report('group2', [socketa1, socketb1])
-
-#     return create_report_root([groupa, groupb])
-
-
 def gen_power_report():
     global CPT
     CPT += 1
