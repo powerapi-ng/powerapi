@@ -63,7 +63,6 @@ class DBPullerThread(Thread):
 
     def _connect(self):
         try:
-            self.state.database.connect()
             self.loop.run_until_complete(self.state.database.connect())
             self.state.database_it = self.state.database.iter(self.state.stream_mode)
         except DBError as error:
@@ -137,6 +136,8 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
     def teardown(self, soft=False):
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.socket_interface.close()
+
+        self.state.database.disconnect()
 
 
 class PullerInitializationException(Exception):
