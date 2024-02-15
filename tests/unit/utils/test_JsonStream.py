@@ -30,6 +30,7 @@
 import time
 import asyncio
 
+import pytest
 from mock import Mock
 
 from powerapi.utils import JsonStream
@@ -53,7 +54,8 @@ class MockedStreamReader(Mock):
             return bytes(data, 'utf-8')
 
 
-def test_read_json_object_from_a_socket_without_data_return_None():
+@pytest.mark.asyncio
+async def test_read_json_object_from_a_socket_without_data_return_None():
     socket = MockedStreamReader('')
     stream = JsonStream(socket)
 
@@ -62,7 +64,8 @@ def test_read_json_object_from_a_socket_without_data_return_None():
     assert future.result() is None
 
 
-def test_read_json_object_from_a_socket_with_one_json_object_must_return_one_json_string():
+@pytest.mark.asyncio
+async def test_read_json_object_from_a_socket_with_one_json_object_must_return_one_json_string():
     json_string = '{"a":1}'
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
@@ -72,7 +75,8 @@ def test_read_json_object_from_a_socket_with_one_json_object_must_return_one_jso
     assert future.result() == json_string
 
 
-def test_read_json_object_twice_from_a_socket_with_one_json_object_must_return_only_one_json_string():
+@pytest.mark.asyncio
+async def test_read_json_object_twice_from_a_socket_with_one_json_object_must_return_only_one_json_string():
     json_string = '{"a":1}'
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
@@ -86,7 +90,8 @@ def test_read_json_object_twice_from_a_socket_with_one_json_object_must_return_o
     assert future.result() is None
 
 
-def test_read_json_object_from_a_socket_with_an_incomplete_json_object_must_return_None():
+@pytest.mark.asyncio
+async def test_read_json_object_from_a_socket_with_an_incomplete_json_object_must_return_None():
     json_string = '{"a":1'
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
@@ -96,7 +101,8 @@ def test_read_json_object_from_a_socket_with_an_incomplete_json_object_must_retu
     assert future.result() is None
 
 
-def test_read_json_object_from_a_socket_with_an_complete_json_object_and_incomplete_json_object_must_return_only_one_json_string():
+@pytest.mark.asyncio
+async def test_read_json_object_from_a_socket_with_an_complete_json_object_and_incomplete_json_object_must_return_only_one_json_string():
     json_string = '{"a":1}{"a":1'
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
@@ -110,7 +116,8 @@ def test_read_json_object_from_a_socket_with_an_complete_json_object_and_incompl
     assert future.result() is None
 
 
-def test_read_json_object_twice_from_a_socket_with_two_json_object_must_return_two_json_string():
+@pytest.mark.asyncio
+async def test_read_json_object_twice_from_a_socket_with_two_json_object_must_return_two_json_string():
     json1 = '{"a":1}'
     json2 = '{"b":2}'
     socket = MockedStreamReader(json1 + json2)
