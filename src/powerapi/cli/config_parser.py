@@ -768,4 +768,3 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
         return argument.type(val)
     except ValueError as exn:
         raise BadTypeException(arg_name, argument.type) from exn
-    return val
