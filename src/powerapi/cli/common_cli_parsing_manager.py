@@ -207,7 +207,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "t",
             "token",
             help_text="specify a token for authentification",
-            default_value=None,
+            default_value=http_db.DEFAULT_TOKEN,
         )
 
         self.add_subgroup_parser(

@@ -21,7 +21,16 @@
           "type": "socket",
           "port": 1111,
           "name": "puller3"
+      },
+      "puller4": {
+          "model": "HWPCReport",
+          "type": "rest",
+          "port": 10001,
+          "host": "127.0.0.1",
+          "token": "token_4",
+          "name": "puller4"
       }
+
   },
   "output": {
       "one_pusher": {

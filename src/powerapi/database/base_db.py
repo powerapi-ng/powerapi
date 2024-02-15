@@ -91,7 +91,6 @@ class BaseDB:
         """
         Close the connection to the database
         """
-        pass
 
     def iter(self, stream_mode: bool) -> IterDB:
         """

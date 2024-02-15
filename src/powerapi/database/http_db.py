@@ -31,14 +31,18 @@
 
 import asyncio
 import random
-from threading import Thread
-from typing import Type
-from wsgiref.simple_server import WSGIServer
+
+from typing import Type, List
+
+from gevent import monkey
+
+from gevent.pywsgi import WSGIServer
+from gevent.threading import Thread
 
 from flask import Flask, request
 from flask_httpauth import HTTPTokenAuth
 
-from powerapi.database import BaseDB, IterDB
+from powerapi.database import BaseDB, IterDB, DBError
 from powerapi.report import Report, HWPCReport
 
 # Constants
@@ -73,6 +77,7 @@ NOT_FOUND_CODE = 404
 UNAUTHORIZED_CODE = 401
 
 # Server
+monkey.patch_all(ssl=False)
 
 flask_app = Flask(import_name=DEFAULT_APPLICATION_NAME)
 
@@ -151,6 +156,8 @@ class HttpServerDB(BaseDB):
     def __init__(self, report_type: Type[Report], port: int, host: str, token: str = None):
         BaseDB.__init__(self, report_type)
 
+        self.asynchrone = True
+
         global flask_app, tokens, report_queue
         tokens = {}
         report_queue = asyncio.Queue()
@@ -177,21 +184,35 @@ class HttpServerDB(BaseDB):
             """
             Start the http server
             """
-            self.http_server.serve_forever()
+            self.http_server.start()
+            print('finished')
 
-        self.server_thread = Thread(target=run_wsgi)
+        self.server_thread = Thread(run_wsgi())
         self.server_thread.start()
 
-    def stop(self):
+    def disconnect(self):
+        self._stop()
+
+    def _stop(self):
         """
         Stop the running http server and wait for the end of the thread running it
         """
-        self.http_server.shutdown()
-        self.server_thread.join(timeout=10)
+        self.http_server.stop()
+        if self.server_thread:
+            self.server_thread.join(2)
 
     def iter(self, stream_mode: bool) -> IterDB:
         global report_queue
         return IterHttpServerDB(report_type=self.report_type, stream_mode=stream_mode, queue=self.report_queue)
+
+    def __iter__(self):
+        raise DBError('Http db don\'t support __iter__ method')
+
+    def save(self, report: Report):
+        raise DBError('Http db don\'t support save method')
+
+    def save_many(self, reports: List[Report]):
+        raise DBError('Http db don\'t support save_many method')
 
 
 class IterHttpServerDB(IterDB):

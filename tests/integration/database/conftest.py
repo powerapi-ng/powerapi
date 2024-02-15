@@ -49,7 +49,7 @@ def server(host_token_port: tuple) -> HttpServerDB:
 
     yield the_server
 
-    the_server.stop()
+    the_server.disconnect()
 
 
 @pytest.fixture()
