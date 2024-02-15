@@ -59,9 +59,8 @@ async def test_read_json_object_from_a_socket_without_data_return_None():
     socket = MockedStreamReader('')
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
+    result = await stream.read_json_object()
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -70,9 +69,8 @@ async def test_read_json_object_from_a_socket_with_one_json_object_must_return_o
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json_string
+    result = await stream.read_json_object()
+    assert result == json_string
 
 
 @pytest.mark.asyncio
@@ -81,13 +79,11 @@ async def test_read_json_object_twice_from_a_socket_with_one_json_object_must_re
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json_string
+    result = await stream.read_json_object()
+    assert result == json_string
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
+    result = await stream.read_json_object()
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -96,9 +92,8 @@ async def test_read_json_object_from_a_socket_with_an_incomplete_json_object_mus
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
+    result = await stream.read_json_object()
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -107,13 +102,11 @@ async def test_read_json_object_from_a_socket_with_an_complete_json_object_and_i
     socket = MockedStreamReader(json_string)
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == '{"a":1}'
+    result = await stream.read_json_object()
+    assert result == '{"a":1}'
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
+    result = await stream.read_json_object()
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -123,14 +116,11 @@ async def test_read_json_object_twice_from_a_socket_with_two_json_object_must_re
     socket = MockedStreamReader(json1 + json2)
     stream = JsonStream(socket)
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json1
+    result = await stream.read_json_object()
+    assert result == json1
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() == json2
+    result = await stream.read_json_object()
+    assert result == json2
 
-    future = asyncio.ensure_future(stream.read_json_object())
-    asyncio.get_event_loop().run_until_complete(future)
-    assert future.result() is None
+    result = await stream.read_json_object()
+    assert result is None
