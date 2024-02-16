@@ -57,6 +57,12 @@ class ControlReport(Report):
     def __repr__(self) -> str:
         return 'ControlReport(%s, %s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters, str(self.metadata))
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, ControlReport):
+            return False
+
+        return super().__eq__(other) and self.action == other.action and self.parameters == other.parameters
+
     @staticmethod
     def from_json(data: Dict) -> ControlReport:
         """

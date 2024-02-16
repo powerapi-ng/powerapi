@@ -59,6 +59,12 @@ class PowerReport(Report):
         return 'PowerReport(%s, %s, %s, %f, %s)' % (
             self.timestamp, self.sensor, self.target, self.power, str(self.metadata))
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, PowerReport):
+            return False
+
+        return super().__eq__(other) and self.power == other.power
+
     @staticmethod
     def from_json(data: Dict) -> Report:
         """

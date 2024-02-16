@@ -71,6 +71,12 @@ class ProcfsReport(Report):
     def __repr__(self) -> str:
         return 'ProcfsReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.usage.keys()), str(self.metadata))
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, ProcfsReport):
+            return False
+
+        return super().__eq__(other) and self.usage == other.usage and self.global_cpu_usage == other.global_cpu_usage
+
     @staticmethod
     def from_json(data: Dict) -> ProcfsReport:
         """

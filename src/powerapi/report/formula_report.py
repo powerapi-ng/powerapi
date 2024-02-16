@@ -52,8 +52,7 @@ class FormulaReport(Report):
         :param target: Target name
         :param metadata: Metadata values, can be anything but should be json serializable
         """
-        Report.__init__(self, timestamp, sensor, target)
-        self.metadata = metadata
+        Report.__init__(self, timestamp, sensor, target, metadata)
 
     def __repr__(self) -> str:
         return f'FormulaReport({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'

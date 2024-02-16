@@ -87,6 +87,12 @@ class HWPCReport(Report):
         return 'HWCPReport(%s, %s, %s, %s)' % (
             self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, HWPCReport):
+            return False
+
+        return super().__eq__(other) and self.groups == other.groups
+
     @staticmethod
     def from_json(data: Dict) -> HWPCReport:
         """
