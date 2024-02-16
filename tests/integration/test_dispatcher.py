@@ -31,14 +31,14 @@ from multiprocessing import Pipe
 
 import pytest
 
+from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatcher import RouteTable, DispatcherActor
-from powerapi.formula import DummyFormulaActor
 from powerapi.message import StartMessage
 from powerapi.report import HWPCReport, PowerReport
-from powerapi.dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
-from tests.utils.actor.dummy_actor import DummyActor
-from tests.utils.report.hwpc import gen_HWPCReports
 from tests.unit.actor.abstract_test_actor import recv_from_pipe
+from tests.utils.actor.dummy_actor import DummyActor
+from tests.utils.formula.dummy import DummyFormulaActor
+from tests.utils.report.hwpc import gen_HWPCReports
 
 PUSHER_NAME_POWER_REPORT = 'fake_pusher_power'
 REPORT_TYPE_TO_BE_SENT = PowerReport

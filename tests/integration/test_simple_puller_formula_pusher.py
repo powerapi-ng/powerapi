@@ -38,8 +38,7 @@ from powerapi.dispatcher import RouteTable
 from powerapi.dispatcher.simple.simple_dispatcher_actor import SimpleDispatcherActor
 from powerapi.filter import Filter
 from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor
-from powerapi.message import SimplePullerSendReportsMessage, \
-    GetReceivedReportsSimplePusherMessage
+from powerapi.message import SimplePullerSendReportsMessage, GetReceivedReportsSimplePusherMessage
 from powerapi.report import HWPCReport
 from tests.unit.actor.abstract_test_actor import start_actor, stop_actor
 

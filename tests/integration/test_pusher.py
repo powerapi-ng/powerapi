@@ -27,19 +27,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import logging
 import time
 
-import pytest
-
 from powerapi.database import MongoDB
-from powerapi.report import PowerReport
 from powerapi.message import StartMessage, ErrorMessage, OKMessage
-
-from tests.utils.db import define_database, define_report_type
-# noinspection PyUnresolvedReferences
+from powerapi.report import PowerReport
 from tests.unit.actor.abstract_test_actor import pusher
+from tests.utils.db import define_database, define_report_type
 
 URI = "mongodb://localhost:27017"
 LOG_LEVEL = logging.NOTSET
