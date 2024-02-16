@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=arguments-differ,redefined-outer-name,unused-argument,unused-import,no-self-use
 from datetime import datetime
 from time import sleep
 
@@ -110,8 +109,7 @@ class DispatchRule1A(DispatchRule):
     """
 
     def __init__(self, primary=False):
-        DispatchRule.__init__(self, primary)
-        self.fields = ['A']
+        DispatchRule.__init__(self, primary, ['A'])
 
     def get_formula_id(self, report):
         return [(report.a,)]
@@ -131,8 +129,7 @@ class DispatchRule1AB(DispatchRule):
     """
 
     def __init__(self, primary=False):
-        DispatchRule.__init__(self, primary)
-        self.fields = ['A', 'B']
+        DispatchRule.__init__(self, primary, ['A', 'B'])
 
     def get_formula_id(self, report):
         b2_id = [] if report.b2 is None else [(report.a, report.b2)]
@@ -172,8 +169,7 @@ class DispatchRule2A(DispatchRule):
     """
 
     def __init__(self, primary=False):
-        DispatchRule.__init__(self, primary)
-        self.fields = ['A']
+        DispatchRule.__init__(self, primary, ['A'])
 
     def get_formula_id(self, report):
         return [(report.a,)]
@@ -192,8 +188,7 @@ class DispatchRule2AC(DispatchRule):
     """
 
     def __init__(self, primary=False):
-        DispatchRule.__init__(self, primary)
-        self.fields = ['A', 'C']
+        DispatchRule.__init__(self, primary, ['A', 'C'])
 
     def get_formula_id(self, report):
         c2_ids = [] if report.c2 is None else [(report.a, report.c2)]
@@ -237,8 +232,7 @@ class DispatchRule3(DispatchRule):
     """
 
     def __init__(self, primary=False):
-        DispatchRule.__init__(self, primary)
-        self.fields = ['A', 'B']
+        DispatchRule.__init__(self, primary, ['A', 'B'])
 
     def get_formula_id(self, report):
         return [(report.a, report.b)]
