@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Tuple
+from typing import Tuple, List
 from enum import IntEnum
 
 from powerapi.report import PowerReport
@@ -66,20 +66,20 @@ class PowerDispatchRule(DispatchRule):
     """
     Group by rule for HWPC report
     """
-    def __init__(self, depth: PowerDepthLevel, primary=False):
+    def __init__(self, depth: PowerDepthLevel, primary: bool = False):
         """
         :param depth:
         :type depth: HWPCDepthLevel
         """
-        DispatchRule.__init__(self, primary)
+        DispatchRule.__init__(self, primary, self._get_fields_by_depth(depth))
         self.depth = depth
-        self.fields = self._set_field()
 
-    def _set_field(self):
-        if self.depth == PowerDepthLevel.TARGET:
+    @staticmethod
+    def _get_fields_by_depth(depth: PowerDepthLevel) -> List[str]:
+        if depth == PowerDepthLevel.TARGET:
             return ['target']
 
-        return ['sensor', 'socket', 'core'][:(self.depth + 1)]
+        return ['sensor', 'socket', 'core'][:(depth + 1)]
 
     def get_formula_id(self, report):
         return [extract_id_from_report(report, self.depth)]

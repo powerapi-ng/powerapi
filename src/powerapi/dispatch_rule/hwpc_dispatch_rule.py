@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from enum import IntEnum
+from typing import List
 
 from .dispatch_rule import DispatchRule
 
@@ -47,20 +48,20 @@ class HWPCDispatchRule(DispatchRule):
     """
     Group by rule for HWPC report
     """
-    def __init__(self, depth, primary=False):
+    def __init__(self, depth: HWPCDepthLevel, primary: bool = False):
         """
         :param depth:
         :type depth: HWPCDepthLevel
         """
-        DispatchRule.__init__(self, primary)
+        DispatchRule.__init__(self, primary, self._get_fields_by_depth(depth))
         self.depth = depth
-        self.fields = self._set_field()
 
-    def _set_field(self):
-        if self.depth == HWPCDepthLevel.TARGET:
+    @staticmethod
+    def _get_fields_by_depth(depth: HWPCDepthLevel) -> List[str]:
+        if depth == HWPCDepthLevel.TARGET:
             return ['target']
 
-        return ['sensor', 'socket', 'core'][:(self.depth + 1)]
+        return ['sensor', 'socket', 'core'][:(depth + 1)]
 
     def get_formula_id(self, report):
         """
