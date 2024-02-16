@@ -1,21 +1,21 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 
 """
 Test the behaviour of the most simple architecture
@@ -47,25 +46,22 @@ Test if:
   - each HWPCReport in the intput database was converted in one PowerReport per
     socket in the output database
 """
-# pylint: disable=redefined-outer-name,unused-argument,unused-import
+
 import time
 from datetime import datetime
 
-import pytest
 import pymongo
+import pytest
 
 from powerapi.actor import Supervisor
-from tests.utils.formula.dummy import DummyFormulaActor
-
 from tests.utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     CSV_INPUT_OUTPUT_CONFIG
-from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
-# noinspection PyUnresolvedReferences
+from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
 from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
     MONGO_DATABASE_NAME, mongo_database
-# noinspection PyUnresolvedReferences
-from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
 from tests.utils.db.socket import ClientThread, ClientThreadDelay
+from tests.utils.formula.dummy import DummyFormulaActor
+from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 
 ##################
