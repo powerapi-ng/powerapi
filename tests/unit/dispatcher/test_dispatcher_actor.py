@@ -28,18 +28,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
+from multiprocessing import Pipe
 from time import sleep
 
 import pytest
 
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
-from powerapi.message import PoisonPillMessage
+from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.report import Report, HWPCReport, PowerReport
-
-from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe, is_actor_alive, \
-    PUSHER_NAME_POWER_REPORT
-
+from tests.unit.actor.abstract_test_actor import recv_from_pipe, is_actor_alive, \
+    PUSHER_NAME_POWER_REPORT, join_actor, start_actor
+from tests.utils.actor.dummy_actor import DummyActor
 from tests.utils.formula.dummy import DummyFormulaActor
 
 
@@ -253,40 +253,102 @@ REPORT_TYPE_TO_BE_SENT = Report1
 REPORT_TYPE_TO_BE_SENT_2 = HWPCReport
 
 
-class TestDispatcher(AbstractTestActor):
+class TestDispatcher:
     """
-        Class for testing DispatcherActor
+    Class for testing DispatcherActor
     """
 
     @staticmethod
     @pytest.fixture
-    def formula_class():
+    def pipe():
         """
-            Return the formula class that will be used for
+        Fixture for creating a Pipe.
         """
-        return lambda name, pushers: DummyFormulaActor(name=name, pushers=pushers, socket=0, core=0)
+        return Pipe()
 
+    @staticmethod
     @pytest.fixture
-    def actor(self, dispatch_rules=None, started_fake_pusher_power_report=None):
+    def dummy_pipe_in(pipe):
+        """
+        Fixture for getting the dummy Pipe input.
+        """
+        return pipe[0]
 
+    @staticmethod
+    @pytest.fixture
+    def dummy_pipe_out(pipe):
+        """
+        Fixture for getting the dummy Pipe output.
+        """
+        return pipe[1]
+
+    @staticmethod
+    @pytest.fixture
+    def actor(dispatch_rules, started_fake_pusher_power_report):
+        """
+        Fixture for creating a DispatcherActor instance.
+        """
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
             route_table.dispatch_rule(report_type, gbr)
-        actor = DispatcherActor(name='test-dispatcher',
-                                formula_init_function=lambda name, pushers: DummyFormulaActor(name=name,
-                                                                                              pushers=pushers, socket=0,
-                                                                                              core=0),
-                                route_table=route_table,
-                                pushers={PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report})
+
+        def formula_factory(name, pushers):
+            return DummyFormulaActor(name, pushers, 0, 0)
+
+        reports_pusher = {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report}
+        actor = DispatcherActor('test-dispatcher', formula_factory, reports_pusher, route_table)
 
         return actor
 
     @staticmethod
     @pytest.fixture
+    def init_actor(actor):
+        """
+        Fixture for initializing a DispatcherActor.
+        """
+        actor.start()
+        actor.connect_data()
+        actor.connect_control()
+        yield actor
+
+        if actor.is_alive():
+            actor.terminate()
+        actor.socket_interface.close()
+
+        join_actor(actor)
+
+    @staticmethod
+    @pytest.fixture
+    def started_actor(init_actor):
+        """
+        Fixture for starting a DispatcherActor.
+        """
+        init_actor.send_control(StartMessage('test_case'))
+        _ = init_actor.receive_control(2000)
+        yield init_actor
+
+        init_actor.send_control(PoisonPillMessage())
+
+    @staticmethod
+    @pytest.fixture
+    def started_fake_pusher_power_report(dummy_pipe_in):
+        """
+        Fixture for starting a dummy pusher for PowerReport.
+        """
+        pusher = DummyActor(PUSHER_NAME_POWER_REPORT, dummy_pipe_in, PowerReport)
+        start_actor(pusher)
+        yield pusher
+        if pusher.is_alive():
+            pusher.terminate()
+
+        join_actor(pusher)
+
+    @staticmethod
+    @pytest.fixture
     def dispatcher_with_formula(started_actor, dummy_pipe_out):
         """
-            Send a report to force the creation of a formula in a started DispatcherActor.
-            The actor with the created formula is returned
+        Send a report to force the creation of a formula in a started DispatcherActor.
+        The actor with the created formula is returned
         """
         started_actor.send_data(REPORT_1)
         recv_from_pipe(dummy_pipe_out, 0.5)
@@ -297,8 +359,8 @@ class TestDispatcher(AbstractTestActor):
     @pytest.fixture
     def dispatcher_with_two_formula(dispatcher_with_formula, dummy_pipe_out):
         """
-            Send a report to force the creation of a formula in a DispatcherActor that already has a formula.
-            The actor with two formulas is returned
+        Send a report to force the creation of a formula in a DispatcherActor that already has a formula.
+        The actor with two formulas is returned
         """
         dispatcher_with_formula.send_data(Report1('a', 'c'))
         recv_from_pipe(dummy_pipe_out, 0.5)
@@ -310,7 +372,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report2, DispatchRule2A(primary=True))])
     def test_send_Report1_without_dispatch_rule_for_Report1_stop_dispatcher(started_actor):
         """
-            Check that dispatcher stops when it receives a report that it can no deal with it.
+        Check that dispatcher stops when it receives a report that it can no deal with it.
         """
         started_actor.send_data(REPORT_1)
         assert not is_actor_alive(started_actor)
@@ -321,8 +383,8 @@ class TestDispatcher(AbstractTestActor):
     def test_send_Report1_without_dispatch_rule_for_Report1_dont_create_formula(started_actor, dummy_pipe_out):
 
         """
-            Check that a formula is no created by DispatcherActor when it does not have a rule to deal with
-            a given report type
+        Check that a formula is no created by DispatcherActor when it does not have a rule to deal with
+        a given report type
         """
         started_actor.send_data(REPORT_1)
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
@@ -332,7 +394,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(started_actor, dummy_pipe_out):
         """
-            Check that a formula is created when a report is received
+        Check that a formula is created when a report is received
         """
         started_actor.send_data(REPORT_1)
         _, power_report = recv_from_pipe(dummy_pipe_out, 0.2)
@@ -344,7 +406,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_one_formula_send_report_to_formula(dispatcher_with_formula, dummy_pipe_out):
         """
-            Check that DispatcherActor with a created formula sent a report to it
+        Check that DispatcherActor with a created formula sent a report to it
         """
         expected_metadata = {'formula_name': "('" + dispatcher_with_formula.name + "', '" + REPORT_1.a + "', '" +
                                              REPORT_1.b + "')",
@@ -362,7 +424,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)), (Report2, DispatchRule2A())])
     def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_send_report_to_all_formula(dispatcher_with_two_formula, dummy_pipe_out):
         """
-            Check that DispatcherActor sent a report to all existing formulas
+        Check that DispatcherActor sent a report to all existing formulas
         """
         metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')",
                       'socket': 0}
@@ -387,7 +449,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(started_actor, dummy_pipe_out):
         """
-            Check that two formulas are created by DispatcherActor
+        Check that two formulas are created by DispatcherActor
         """
         started_actor.send_data(REPORT_1_B2)
         reports = []
@@ -402,7 +464,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)), (Report3, DispatchRule3())])
     def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(dispatcher_with_two_formula, dummy_pipe_out):
         """
-            Check that 3 reports are produced by formulas when DispatcherActor receives
+        Check that 3 reports are produced by formulas when DispatcherActor receives
         """
 
         metadata_b = {'formula_name': "('" + dispatcher_with_two_formula.state.actor.name + "', 'a', 'b')",
@@ -421,7 +483,7 @@ class TestDispatcher(AbstractTestActor):
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(dispatcher_with_two_formula):
         """
-            Check that a PoissonPillMessage stops the DispatcherActor as well as their formulas
+        Check that a PoissonPillMessage stops the DispatcherActor as well as their formulas
         """
         dispatcher_with_two_formula.send_control(PoisonPillMessage('system-test-dispatcher'))
 
@@ -442,8 +504,8 @@ class TestDispatcher(AbstractTestActor):
 #############################################
 def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_report, validation_id):
     """
-        Generate a test with that extract a formula id from an input report with a given dispatch rule and a primary dispatch rules
-        test if the extracted formula_ids are the same that given validation report ids
+    Generate a test with that extract a formula id from an input report with a given dispatch rule and a primary
+    dispatch rules test if the extracted formula_ids are the same that given validation report ids
     """
     formula_ids = extract_formula_id(input_report, dispatch_rule, primary_dispatch_rule)
     formula_ids.sort()
@@ -453,7 +515,7 @@ def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_repo
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_on_REPORT_1_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a',)])
@@ -462,7 +524,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1A_on_REPORT_1_must_return_good
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
@@ -471,7 +533,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2A_on_REPORT_
 
 def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1A(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
@@ -480,7 +542,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2AC_on_REPORT
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_on_REPORT_1_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a', 'b')])
@@ -489,7 +551,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1AB_on_REPORT_1_must_return_goo
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
@@ -498,7 +560,7 @@ def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2A_on_REPORT
 
 def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
     """
-        Check the formula id extraction
+    Check the formula id extraction
     """
     pgb = DispatchRule1AB(primary=True)
     gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
