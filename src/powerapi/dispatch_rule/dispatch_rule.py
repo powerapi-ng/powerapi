@@ -27,14 +27,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Optional, List
+
 
 class DispatchRule:
     """
     Group by rule
     """
-    def __init__(self, primary=False):
+    def __init__(self, primary: bool = False, fields: Optional[List[str]] = None):
         self.is_primary = primary
-        self.fields = None
+        self.fields = fields
 
     def get_formula_id(self, report):
         """
