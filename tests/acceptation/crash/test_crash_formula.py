@@ -55,7 +55,6 @@ from powerapi.handler import Handler
 from powerapi.message import PoisonPillMessage
 from powerapi.report import PowerReport, Report
 from tests.utils.acceptation import MainProcess
-from tests.utils.db.mongo import mongo_database
 from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 
 

@@ -58,7 +58,6 @@ import pytest
 
 from tests.utils.acceptation import MainProcess
 from tests.utils.acceptation import get_actor_by_name, DISPATCHER_ACTOR_NAME
-from tests.utils.db.mongo import mongo_database
 from tests.utils.formula.dummy import DummyFormulaActor
 from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
 

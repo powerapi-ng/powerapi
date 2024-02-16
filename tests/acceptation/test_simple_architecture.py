@@ -56,9 +56,9 @@ import pytest
 from powerapi.actor import Supervisor
 from tests.utils.acceptation import launch_simple_architecture, BASIC_CONFIG, SOCKET_DEPTH_LEVEL, \
     CSV_INPUT_OUTPUT_CONFIG
-from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH, files
+from tests.utils.db.csv import ROOT_PATH, OUTPUT_PATH
 from tests.utils.db.mongo import MONGO_URI, MONGO_INPUT_COLLECTION_NAME, MONGO_OUTPUT_COLLECTION_NAME, \
-    MONGO_DATABASE_NAME, mongo_database
+    MONGO_DATABASE_NAME
 from tests.utils.db.socket import ClientThread, ClientThreadDelay
 from tests.utils.formula.dummy import DummyFormulaActor
 from tests.utils.report.hwpc import extract_rapl_reports_with_2_sockets
