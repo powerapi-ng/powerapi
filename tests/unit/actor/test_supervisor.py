@@ -130,10 +130,10 @@ def test_launch_actor_send_to_it_a_start_message(supervisor):
 def test_launch_an_actor_that_crash_dont_increase_supervised_actor_list(supervisor):
     list_length = len(supervisor.supervised_actors)
     actor = FakeActorConnectError()
-    try:
+
+    with pytest.raises(Exception):
         supervisor.launch_actor(actor)
-    except Exception:
-        pass
+
     assert len(supervisor.supervised_actors) == list_length
 
 
