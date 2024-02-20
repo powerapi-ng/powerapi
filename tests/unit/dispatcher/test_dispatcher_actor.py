@@ -30,6 +30,7 @@
 from datetime import datetime
 from multiprocessing import Pipe
 from time import sleep
+from collections.abc import Iterable
 
 import pytest
 
@@ -288,6 +289,9 @@ class TestDispatcher:
         """
         Fixture for creating a DispatcherActor instance.
         """
+        if not isinstance(dispatch_rules, Iterable):
+            raise TypeError('Invalid dispatch_rules')
+
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
             route_table.dispatch_rule(report_type, gbr)
