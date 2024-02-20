@@ -732,8 +732,8 @@ def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
 
-        assert result.type == SystemExit
-        assert result.value.code == -1
+    assert result.type == SystemExit
+    assert result.value.code == -1
 
 
 def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_root_parsing_manager(
@@ -746,8 +746,8 @@ def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_r
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' + test_files_path + '/' + config_file).split())
 
-        assert result.type == SystemExit
-        assert result.value.code == -1
+    assert result.type == SystemExit
+    assert result.value.code == -1
 
 
 @pytest.mark.parametrize('config_file', ['root_manager_basic_configuration.json'])
@@ -850,8 +850,8 @@ def test_parsing_environment_variables_with_unknown_argument_terminate_execution
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
-        assert result.type == SystemExit
-        assert result.value.code == -1
+    assert result.type == SystemExit
+    assert result.value.code == -1
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
@@ -1077,8 +1077,8 @@ def test_parsing_environment_variables_with_subgroups_and_unknown_arguments_term
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
-        assert result.type == SystemExit
-        assert result.value.code == -1
+    assert result.type == SystemExit
+    assert result.value.code == -1
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
@@ -1126,8 +1126,8 @@ def test_parsing_environment_variables_with_subgroups_and_wrong_type_terminate_e
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
-        assert result.type == SystemExit
-        assert result.value.code == -1
+    assert result.type == SystemExit
+    assert result.value.code == -1
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
@@ -1286,5 +1286,6 @@ def test_add_repeated_subgroup_terminate_execution_in_root_parsing_manager(root_
     """
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager.add_subgroup(name='sub')
-        assert result.type == SystemExit
-        assert result.value.code == -1
+
+    assert result.type == SystemExit
+    assert result.value.code == -1
