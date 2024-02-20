@@ -28,12 +28,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 
-from multiprocessing import Value
-
 from powerapi.actor import Actor, State
 from powerapi.handler import PoisonPillMessageHandler
-from powerapi.message import StartMessage, \
-    GetReceivedReportsSimplePusherMessage, PoisonPillMessage
+from powerapi.message import StartMessage, GetReceivedReportsSimplePusherMessage, PoisonPillMessage
 from powerapi.pusher.simple.simple_pusher_handlers import SimplePusherStartHandler, SimplePusherHandler, \
     SimplePusherGetReceivedReportsHandler
 from powerapi.report import PowerReport, HWPCReport
@@ -52,10 +49,10 @@ class SimplePusherState(State):
         :param Actor actor: The actor related to the state
         :param int number_of_reports_to_store: Number of reports to store
         """
-        State.__init__(self, actor)
+        super().__init__(actor)
+
         self.number_of_reports_to_store = number_of_reports_to_store
         self.reports = []
-        self.alive = Value('i', 1)
 
 
 class SimplePusherActor(Actor):
