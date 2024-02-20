@@ -496,9 +496,9 @@ class RootConfigParser(BaseConfigParser):
         Return a configuration dict that has all the arguments' names in the long form.
         If an argument does not exist, a UnknownArgException is raised
         """
-        config_file = open(file_name, 'r')
-        conf = json.load(config_file)
-        return self.normalize_configuration(conf=conf)
+        with open(file_name, 'r') as config_file:
+            conf = json.load(config_file)
+            return self.normalize_configuration(conf=conf)
 
     def normalize_configuration(self, conf: dict) -> dict:
         """
@@ -768,4 +768,3 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
         return argument.type(val)
     except ValueError as exn:
         raise BadTypeException(arg_name, argument.type) from exn
-    return val

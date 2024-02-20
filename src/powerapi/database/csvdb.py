@@ -265,41 +265,34 @@ class CsvDB(BaseDB):
 
         :param report: Report
         """
-        csv_header, data = self.report_type.to_csv_lines(report, self.tags)
+        fixed_header, data = self.report_type.to_csv_lines(report, self.tags)
 
         # If the repository doesn't exist, create it
         rep_path = self.current_path + report.sensor + "-" + report.target
-        try:
-            os.makedirs(rep_path)
-        except FileExistsError:
-            pass
+        os.makedirs(rep_path, exist_ok=True)
 
         for filename, values in data.items():
-            rep_path_with_file = rep_path + '/' + filename + '.csv'
-            # Get the header and check if it's ok
-            for value in values:
-                header = csv_header + sorted(list(set([event_key for event_key, _ in value.items()]) - set(csv_header)))
+            output_filename = f'{rep_path}/{filename}.csv'
+
+            with open(output_filename, 'r+') as csvfile:
+                expected_header = fixed_header + sorted(set(values[0].keys()) - set(fixed_header))
                 header_exist = False
-                try:
-                    with open(rep_path_with_file) as csvfile:
-                        reader = csv.DictReader(csvfile)
-                        if reader.fieldnames:
-                            header_exist = True
 
-                        if header != reader.fieldnames:
-                            raise HeaderAreNotTheSameError("Header are not the same in " + rep_path_with_file)
-                        csvfile.flush()
-                        csvfile.close()
-                except FileNotFoundError:
-                    pass
+                reader = csv.DictReader(csvfile)
+                if reader.fieldnames:
+                    header_exist = True
+                    if reader.fieldnames != expected_header:
+                        raise HeaderAreNotTheSameError(f"Header are not the same in {output_filename}")
 
-                # Write
-                with open(rep_path_with_file, 'a') as csvfile:
-                    writer = csv.DictWriter(csvfile, header)
-                    if not header_exist:
-                        writer.writeheader()
-                    writer.writerow(value)
-                    csvfile.close()
+                # Go to EOF before writing rows
+                csvfile.seek(0, 2)
+
+                writer = csv.DictWriter(csvfile, fieldnames=expected_header)
+                if not header_exist:
+                    writer.writeheader()
+
+                for row in values:
+                    writer.writerow(row)
 
     def save_many(self, reports: List[Report]):
         """

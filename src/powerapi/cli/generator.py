@@ -41,6 +41,7 @@ from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
     TIMEOUT_QUERY_DEFAULT_VALUE
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
+from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, \
     VirtioFSDB, FileDB
@@ -335,16 +336,10 @@ class ProcessorGenerator(Generator):
     Generator that initialises the processor from config
     """
 
-    def __init__(self, component_group_name: str):
-        Generator.__init__(self, component_group_name=component_group_name)
+    def __init__(self, component_group_name: str, processor_factory: Dict[str, Callable[[Dict], ProcessorActor]] = None):
+        Generator.__init__(self, component_group_name)
 
-        self.processor_factory = self._get_default_processor_factories()
-
-    def _get_default_processor_factories(self) -> dict:
-        """
-        Init the factories for this processor generator
-        """
-        raise NotImplementedError
+        self.processor_factory = processor_factory
 
     def remove_processor_factory(self, processor_type: str):
         """
@@ -382,9 +377,10 @@ class PreProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
-        ProcessorGenerator.__init__(self, component_group_name='pre-processor')
+        ProcessorGenerator.__init__(self, 'pre-processor', self._get_default_processor_factories())
 
-    def _get_default_processor_factories(self) -> dict:
+    @staticmethod
+    def _get_default_processor_factories() -> Dict[str, Callable[[Dict], ProcessorActor]]:
         return {
             'libvirt': lambda processor_config: LibvirtPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
                                                                          uri=processor_config[COMPONENT_URI_KEY],
@@ -419,9 +415,10 @@ class PostProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
-        ProcessorGenerator.__init__(self, component_group_name='post-processor')
+        ProcessorGenerator.__init__(self, 'post-processor', self._get_default_processor_factories())
 
-    def _get_default_processor_factories(self) -> dict:
+    @staticmethod
+    def _get_default_processor_factories() -> Dict[str, Callable[[Dict], ProcessorActor]]:
         return {}
 
 

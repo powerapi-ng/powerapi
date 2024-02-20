@@ -1,23 +1,21 @@
 # Copyright (c) 2021, INRIA
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
-import os
-import sys
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,18 +26,19 @@ import sys
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import pytest
-import tests
 
+import sys
+import pytest
+
+from powerapi.cli.config_parser import store_true, store_val
 from powerapi.cli.parsing_manager import RootConfigParsingManager, \
     SubgroupConfigParsingManager
 from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
     MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
-    NoNameSpecifiedForSubgroupException, TooManyArgumentNamesException, AlreadyAddedSubparserException, \
+    NoNameSpecifiedForSubgroupException, AlreadyAddedSubparserException, \
     SameLengthArgumentNamesException, BadContextException
-from powerapi.cli.config_parser import store_true, store_val
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
-    generate_cli_configuration_from_json_file, define_environment_variables_configuration_from_json_file, \
+    define_environment_variables_configuration_from_json_file, \
     remove_environment_variables_configuration
 
 
@@ -691,9 +690,7 @@ def test_parsing_configuration_file_in_root_parsing_manager(
     config_file = 'root_manager_basic_configuration.json'
     expected_dict = load_configuration_from_json_file(config_file)
 
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
-                                                                                           test_files_path +
-                                                                                           '/' + config_file).split())
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
     assert result == expected_dict
 
 
@@ -707,9 +704,7 @@ def test_parsing_configuration_file_with_long_and_short_names_for_arguments_in_r
     expected_dict['argumento2'] = expected_dict.pop('2')
     expected_dict['arg5'] = expected_dict.pop('5')
 
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
-                                                                                           test_files_path +
-                                                                                           '/' + config_file).split())
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
     assert result == expected_dict
 
 
@@ -722,9 +717,7 @@ def test_parsing_configuration_file_with_no_argument_with_default_value_in_root_
     config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict['arg5'] = 'default value'
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
-                                                                                           test_files_path + '/' +
-                                                                                           config_file).split())
+    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
 
     assert result == expected_dict
 
@@ -736,11 +729,8 @@ def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in
     """
     config_file = 'root_manager_basic_configuration_with_unknown_argument.json'
 
-    result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
-                                                                                          test_files_path + '/' +
-                                                                                          config_file).split())
+        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
 
     assert result.type == SystemExit
     assert result.value.code == -1
@@ -753,11 +743,8 @@ def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_r
     """
     config_file = 'root_manager_basic_configuration_with_argument_type_value.json'
 
-    result = None
     with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' +
-                                                                                          test_files_path +
-                                                                                          '/' + config_file).split())
+        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' + test_files_path + '/' + config_file).split())
 
     assert result.type == SystemExit
     assert result.value.code == -1
@@ -860,7 +847,6 @@ def test_parsing_environment_variables_with_unknown_argument_terminate_execution
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    result = None
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
@@ -1088,7 +1074,6 @@ def test_parsing_environment_variables_with_subgroups_and_unknown_arguments_term
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    result = None
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
@@ -1138,7 +1123,6 @@ def test_parsing_environment_variables_with_subgroups_and_wrong_type_terminate_e
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    result = None
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
@@ -1300,7 +1284,6 @@ def test_add_repeated_subgroup_terminate_execution_in_root_parsing_manager(root_
     """
     Test that adding a repeated terminates the execution
     """
-    result = None
     with pytest.raises(SystemExit) as result:
         _ = root_config_parsing_manager.add_subgroup(name='sub')
 

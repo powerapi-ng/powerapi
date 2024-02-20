@@ -64,7 +64,7 @@ class LibvirtPreProcessorReportHandler(ProcessorReportHandler):
                 domain = self.state.libvirt.lookupByName(domain_name)
                 report.metadata["domain_id"] = domain.UUIDString()
             except libvirtError:
-                pass
+                logging.warning("Failed to get domain ID for target: %s", domain_name)
 
         self._send_report(report=report)
 

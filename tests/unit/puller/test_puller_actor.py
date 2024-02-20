@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from powerapi.database import BaseDB
 from powerapi.filter import Filter
@@ -43,7 +43,7 @@ def _setup_fake_database(num_reports: int = 5):
     """
     Set up a fake database for tests.
     """
-    return SilentFakeDB([Report(datetime.utcfromtimestamp(i), 'pytest', f'report-{i}') for i in range(num_reports)])
+    return SilentFakeDB([Report(datetime.fromtimestamp(i, timezone.utc), 'pytest', f'report-{i}') for i in range(num_reports)])
 
 
 def _setup_puller_actor(name: str, database: BaseDB, report_filter: Filter, stream_mode: bool = False):

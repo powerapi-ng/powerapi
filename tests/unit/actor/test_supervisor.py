@@ -123,16 +123,17 @@ def test_launch_actor_send_to_it_a_start_message(supervisor):
     actor = FakeActor()
     supervisor.launch_actor(actor)
     assert len(actor.send_msg) == 1
-    assert isinstance(actor.send_msg.pop(), StartMessage)
+    msg = actor.send_msg.pop()
+    assert isinstance(msg, StartMessage)
 
 
 def test_launch_an_actor_that_crash_dont_increase_supervised_actor_list(supervisor):
     list_length = len(supervisor.supervised_actors)
     actor = FakeActorConnectError()
-    try:
+
+    with pytest.raises(Exception):
         supervisor.launch_actor(actor)
-    except Exception:
-        pass
+
     assert len(supervisor.supervised_actors) == list_length
 
 

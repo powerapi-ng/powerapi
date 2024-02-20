@@ -29,6 +29,7 @@
 import logging
 try:
     import pymongo
+    import pymongo.errors
 except ImportError:
     logging.getLogger().info("PyMongo is not installed.")
 
@@ -103,7 +104,7 @@ class MongoDB(BaseDB):
         :param collection_name: collection name in the mongodb
                                     (ex: "sensor")
         """
-        BaseDB.__init__(self, report_type)
+        BaseDB.__init__(self, report_type, [pymongo.errors.PyMongoError])
 
         #: (str): URI of the mongodb server
         self.uri = uri
@@ -120,8 +121,6 @@ class MongoDB(BaseDB):
         #: (pymongo.MongoClient): MongoClient pointed to the
         #: targeted collection
         self.collection = None
-
-        self.exceptions = [pymongo.errors.PyMongoError]
 
     def connect(self):
         """

@@ -58,10 +58,9 @@ class FakeDB(BaseDB):
     Fake DB for testing purposes
     """
     def __init__(self, content=[]):
-        BaseDB.__init__(self, Report)
+        BaseDB.__init__(self, Report, [FakeDBError])
         self._content = content
         self.q = Queue()
-        self.exceptions = [FakeDBError]
 
     def connect(self):
         self.q.put('connected', block=False)

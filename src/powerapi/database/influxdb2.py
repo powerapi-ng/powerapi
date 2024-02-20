@@ -90,10 +90,7 @@ class InfluxDB2(BaseDB):
         raise NotImplementedError()
 
     def _ping_client(self):
-        # if hasattr(self.client, 'ping'):
         self.client.ping()
-        # else:
-        #    self.client.request(url="ping", method='GET', expected_response_code=204)
 
     def connect(self):
         """
