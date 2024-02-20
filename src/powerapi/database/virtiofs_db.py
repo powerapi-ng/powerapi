@@ -85,13 +85,12 @@ class VirtioFSDB(BaseDB):
             return
 
         vm_filename, power = self.report_type.to_virtiofs_db(report)
-        vm_filename_path = self.root_directory_name + '/' + directory_name + '/'
+        vm_filename_path = f'{self.root_directory_name}/{directory_name}'
         if not os.path.exists(vm_filename_path):
             raise DirectoryDoesNotExistForVirtioFS(vm_filename_path)
 
-        vm_file = open(vm_filename_path + vm_filename, 'w+')
-        vm_file.write(str(power))
-        vm_file.close()
+        with open(vm_filename_path + vm_filename, 'w') as vm_file:
+            vm_file.write(str(power))
 
     def save_many(self, reports: List[Report]):
         for report in reports:
