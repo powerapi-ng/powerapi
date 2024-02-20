@@ -71,20 +71,19 @@ class FileIterDB(IterDB):
         :raise: StopIteration in stream mode when no report was found.
         """
 
-        file_object = open(self.filename, "r")
-        json_str = file_object.read()
-        file_object.close()
+        with open(self.filename, "r") as file_object:
+            json_str = file_object.read()
 
-        if json_str is None:
-            raise StopIteration()
+            if json_str is None:
+                raise StopIteration()
 
-        if json_str == self.previousJson:
-            logging.error("Error : Report did not change since last read")
-            raise StopIteration()
+            if json_str == self.previousJson:
+                logging.error("Error : Report did not change since last read")
+                raise StopIteration()
 
-        self.previousJson = json_str
+            self.previousJson = json_str
 
-        return self.report_type.from_json(json.loads(json_str))
+            return self.report_type.from_json(json.loads(json_str))
 
 
 class FileDB(BaseDB):
@@ -125,7 +124,7 @@ class FileDB(BaseDB):
 
         :param report: Report to save
         """
-        file_object = open(self.filename, "w")
+
         line = {
             "sensor": report.sensor,
             "target": report.target,
@@ -135,9 +134,8 @@ class FileDB(BaseDB):
 
         final_dict = {"PowerReport": [line]}
 
-        file_object.truncate(0)
-        file_object.write(str(final_dict))
-        file_object.close()
+        with open(self.filename, "w") as file_object:
+            file_object.write(str(final_dict))
 
     def save_many(self, reports: List[Report]):
         """
