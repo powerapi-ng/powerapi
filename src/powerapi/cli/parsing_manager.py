@@ -161,6 +161,15 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
 
         return conf
 
+    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
+                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
+        """
+        Add an argument to the parser.
+        """
+        self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
+                                     help_text=help_text, argument_type=bool if is_flag else argument_type,
+                                     is_mandatory=is_mandatory)
+
     def validate(self, conf: dict) -> dict:
         """
         Check the parsed configuration
