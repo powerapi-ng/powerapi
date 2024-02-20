@@ -73,9 +73,9 @@ class BaseDB:
     by each DB module. A database module correspond to a kind of BDD.
     For example, Mongodb, influxdb, csv are different kind of BDD.
     """
-    def __init__(self, report_type: Type[Report]):
-        self.asynchrone = False
-        self.exceptions = []
+    def __init__(self, report_type: Type[Report], exceptions: List[Type[Exception]] = None, asynchrone: bool = False):
+        self.exceptions = exceptions or []
+        self.asynchrone = asynchrone
         self.report_type = report_type
 
     def connect(self):

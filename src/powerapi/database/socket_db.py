@@ -46,8 +46,7 @@ class SocketDB(BaseDB):
     """
 
     def __init__(self, report_type: Type[Report], port: int):
-        BaseDB.__init__(self, report_type)
-        self.asynchrone = True
+        BaseDB.__init__(self, report_type, asynchrone=True)
         self.queue = None
         self.port = port
         self.server = None
