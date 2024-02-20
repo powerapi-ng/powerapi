@@ -26,53 +26,60 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import sys
 import json
 import logging
-
+import sys
 from typing import Callable, Any
+
 from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
-from powerapi.exception import MissingArgumentException, BadTypeException, \
-    AlreadyAddedSubparserException, UnknownArgException, MissingValueException, BadContextException, \
-    RepeatedArgumentException, AlreadyAddedSubgroupException
+from powerapi.exception import MissingArgumentException, BadTypeException, AlreadyAddedSubparserException, \
+    UnknownArgException, MissingValueException, BadContextException, RepeatedArgumentException, \
+    AlreadyAddedSubgroupException
 from powerapi.utils.cli import merge_dictionaries
 
 
-class BaseConfigParsingManager:
-    """ Abstract class for dealing with parsing of configurations. """
+class BaseConfigParsingManagerInterface:
+    """
+    Abstract class for dealing with parsing of configurations.
+    """
 
-    def __init__(self):
-        self.cli_parser = None
-
-    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val,
-                     default_value: Any = None, help_text: str = '', argument_type: type = str,
-                     is_mandatory: bool = False):
+    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
+                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
         """
-        Add an argument to the parser and its specification
+        Add an argument to the parser.
+        """
+        raise NotImplementedError
 
+    def validate(self, conf: dict) -> dict:
+        """
+        Validate the parsed configuration.
+        """
+        raise NotImplementedError
+
+
+class SubgroupConfigParsingManager(BaseConfigParsingManagerInterface):
+    """
+    Sub Parser for MainConfigParser
+    """
+
+    def __init__(self, name: str):
+        self.subparser = {}
+        self.name = name
+        self.cli_parser = SubgroupConfigParser(name)
+
+    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
+                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
+        """
+        Add an argument to the parser.
         """
         self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
                                      help_text=help_text, argument_type=bool if is_flag else argument_type,
                                      is_mandatory=is_mandatory)
 
     def validate(self, conf: dict) -> dict:
-        """ Check the parsed configuration"""
-        raise NotImplementedError
-
-
-class SubgroupConfigParsingManager(BaseConfigParsingManager):
-    """
-    Sub Parser for MainConfigParser
-    """
-
-    def __init__(self, name: str):
-        BaseConfigParsingManager.__init__(self)
-        self.subparser = {}
-        self.cli_parser = SubgroupConfigParser(name)
-        self.name = name
-
-    def validate(self, conf: dict) -> dict:
-        """ Check the parsed configuration"""
+        """
+        Check the parsed configuration.
+        """
 
         # check types
         for args, value in conf.items():
@@ -88,13 +95,12 @@ class SubgroupConfigParsingManager(BaseConfigParsingManager):
         return conf
 
 
-class RootConfigParsingManager(BaseConfigParsingManager):
+class RootConfigParsingManager(BaseConfigParsingManagerInterface):
     """
     Parser abstraction for the configuration
     """
 
     def __init__(self):
-        BaseConfigParsingManager.__init__(self)
         self.subparser = {}
         self.cli_parser = RootConfigParser()
 
@@ -124,7 +130,6 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         """
         Add a Subgroup Parser to call when <name> is encountered
         When name is encountered, the subgroup parser such as subgroup_parser.name match conf[name].type
-
         """
         if subgroup_name in self.subparser:
             if subgroup_parser.name in list(self.subparser[subgroup_name]):
@@ -157,7 +162,9 @@ class RootConfigParsingManager(BaseConfigParsingManager):
         return conf
 
     def validate(self, conf: dict) -> dict:
-        """ Check the parsed configuration"""
+        """
+        Check the parsed configuration
+        """
 
         # check types
         for current_argument_name, current_argument_value in conf.items():
