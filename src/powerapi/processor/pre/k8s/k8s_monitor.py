@@ -210,40 +210,23 @@ class K8sMonitorAgent(Process):
         :param int timeout_seconds: Timeout in seconds for waiting for events
         :param str k8sapi_mode: Kind of API mode
         """
-        api = get_core_v1_api(mode=self.concerned_actor_state.k8s_api_mode, logger=self.logger,
-                              api_key=self.concerned_actor_state.api_key, host=self.concerned_actor_state.host)
+        api = get_core_v1_api(self.logger, self.concerned_actor_state.k8s_api_mode, self.concerned_actor_state.api_key, self.concerned_actor_state.host)
+
         events = []
         w = watch.Watch()
-
         try:
             event = None
-            for event in w.stream(
-                    func=api.list_pod_for_all_namespaces, timeout_seconds=self.concerned_actor_state.timeout_query
-            ):
-
+            for event in w.stream(api.list_pod_for_all_namespaces, timeout_seconds=self.concerned_actor_state.timeout_query):
                 if event:
-
                     if event["type"] not in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
-                        self.logger.warning(
-                            "UNKNOWN EVENT TYPE : %s :  %s  %s",
-                            event['type'], event['object'].metadata.name, event
-                        )
+                        self.logger.warning("Unknown event type: %s for %s", event['type'], event['object'].metadata.name)
                         continue
 
                     pod_obj = event["object"]
-
-                    namespace, pod_name = \
-                        pod_obj.metadata.namespace, pod_obj.metadata.name
-
-                    container_ids = (
-                        [] if event["type"] == "DELETED"
-                        else extract_containers(pod_obj)
-                    )
-
+                    namespace, pod_name = pod_obj.metadata.namespace, pod_obj.metadata.name
+                    container_ids = ([] if event["type"] == "DELETED" else extract_containers(pod_obj))
                     labels = pod_obj.metadata.labels
-                    events.append(
-                        (event["type"], namespace, pod_name, container_ids, labels)
-                    )
+                    events.append((event["type"], namespace, pod_name, container_ids, labels))
 
         except ApiException as ae:
             self.logger.error("APIException %s %s", ae.status, ae)
