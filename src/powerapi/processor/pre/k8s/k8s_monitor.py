@@ -75,11 +75,11 @@ def load_k8s_api_client_configuration(actor_state: K8sPreProcessorState) -> None
     Setup Kubernetes API client according to the selected mode.
     :param actor_state: Processor Actor state.
     """
-    if actor_state.k8s_api_mode is MANUAL_CONFIG_MODE:
+    if actor_state.k8s_api_mode.casefold() == MANUAL_CONFIG_MODE:
         _setup_k8s_client_with_manual_config(actor_state.host, actor_state.api_key)
         return
 
-    if actor_state.k8s_api_mode is CLUSTER_CONFIG_MODE:
+    if actor_state.k8s_api_mode.casefold() == CLUSTER_CONFIG_MODE:
         _setup_k8s_client_with_cluster_config()
         return
 
