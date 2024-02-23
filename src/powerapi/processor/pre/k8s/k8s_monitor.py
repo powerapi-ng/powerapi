@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from logging import Formatter, getLogger, Logger, StreamHandler, WARNING
+from logging import Formatter, getLogger, StreamHandler, WARNING
 from multiprocessing import Manager, Process
 
 from kubernetes import client, config, watch
@@ -41,74 +41,50 @@ LOCAL_CONFIG_MODE = "local"
 MANUAL_CONFIG_MODE = "manual"
 CLUSTER_CONFIG_MODE = "cluster"
 
-MANUAL_CONFIG_API_KEY_DEFAULT_VALUE = "YOUR_API_KEY"
-MANUAL_CONFIG_HOST_DEFAULT_VALUE = "http://localhost"
 
-v1_api = None
-
-manual_config_api_key = MANUAL_CONFIG_API_KEY_DEFAULT_VALUE
-manual_config_host = MANUAL_CONFIG_HOST_DEFAULT_VALUE
-
-
-def local_config():
+def _setup_k8s_client_with_local_config() -> None:
     """
-    Return local kubectl
+    Setup Kubernetes API client with a kube-config file. (from KUBECONFIG environment variable, or ~/.kube/config)
     """
     config.load_kube_config()
 
 
-def manual_config():
+def _setup_k8s_client_with_cluster_config() -> None:
     """
-    Return the manual configuration
-    """
-    # Manual config
-    configuration = client.Configuration()
-    # Configure API key authorization: BearerToken
-    configuration.api_key["authorization"] = manual_config_api_key
-    # Defining host is optional and default to http://localhost
-    configuration.host = manual_config_host
-    Configuration.set_default(configuration)
-
-
-def cluster_config():
-    """
-    Return the cluster configuration
+    Setup Kubernetes API client with the pod service account. (requires PowerAPI to be running in a Kubernetes cluster)
     """
     config.load_incluster_config()
 
 
-def load_k8s_client_config(logger: Logger, mode: str = None):
+def _setup_k8s_client_with_manual_config(host: str, api_key: str) -> None:
     """
-    Load K8S client configuration according to the `mode`.
-    If no mode is given `LOCAL_CONFIG_MODE` is used.
-    params:
-        mode : one of `LOCAL_CONFIG_MODE`, `MANUAL_CONFIG_MODE`
-               or `CLUSTER_CONFIG_MODE`
+    Setup Kubernetes API client with the user provided configuration. (Bearer Token)
+    :param host: Kubernetes API host url.
+    :param api_key: Kubernetes API token.
     """
-    logger.debug("Loading k8s api conf mode %s ", mode)
-    {
-        LOCAL_CONFIG_MODE: local_config,
-        MANUAL_CONFIG_MODE: manual_config,
-        CLUSTER_CONFIG_MODE: cluster_config,
-    }.get(mode, local_config)()
+    configuration = client.Configuration()
+
+    configuration.host = host or 'http://localhost'
+    configuration.api_key["authorization"] = api_key
+
+    Configuration.set_default(configuration)
 
 
-def get_core_v1_api(logger: Logger, mode: str = None, api_key: str = None, host: str = None):
+def load_k8s_api_client_configuration(actor_state: K8sPreProcessorState) -> None:
     """
-    Returns a handler to the k8s API.
+    Setup Kubernetes API client according to the selected mode.
+    :param actor_state: Processor Actor state.
     """
-    global v1_api
-    global manual_config_api_key
-    global manual_config_host
-    if v1_api is None:
-        if api_key:
-            manual_config_api_key = api_key
-        if host:
-            manual_config_host = host
-        load_k8s_client_config(logger=logger, mode=mode)
-        v1_api = client.CoreV1Api()
-        logger.info(f"Core v1 api access : {v1_api}")
-    return v1_api
+    if actor_state.k8s_api_mode is MANUAL_CONFIG_MODE:
+        _setup_k8s_client_with_manual_config(actor_state.host, actor_state.api_key)
+        return
+
+    if actor_state.k8s_api_mode is CLUSTER_CONFIG_MODE:
+        _setup_k8s_client_with_cluster_config()
+        return
+
+    # load local configuration by default.
+    _setup_k8s_client_with_local_config()
 
 
 def extract_containers(pod_obj):
@@ -155,19 +131,25 @@ class K8sMonitorAgent(Process):
         handler = StreamHandler()
         handler.setFormatter(formatter)
 
-        # Concerned Actor state
         self.concerned_actor_state = concerned_actor_state
 
         # Multiprocessing Manager
         self.manager = Manager()
 
         # Shared cache
-        self.concerned_actor_state.metadata_cache_manager = K8sMetadataCacheManager(process_manager=self.manager,
-                                                                                    level_logger=level_logger)
+        self.concerned_actor_state.metadata_cache_manager = K8sMetadataCacheManager(self.manager, level_logger=level_logger)
 
         self.stop_monitoring = self.manager.Event()
-
         self.stop_monitoring.clear()
+
+        self.k8s_api = self._setup_k8s_api_client()
+
+    def _setup_k8s_api_client(self) -> client.CoreV1Api:
+        """
+        Setup Kubernetes API client.
+        """
+        load_k8s_api_client_configuration(self.concerned_actor_state)
+        return client.CoreV1Api()
 
     def run(self):
         """
@@ -175,7 +157,7 @@ class K8sMonitorAgent(Process):
         """
         self.query_k8s()
 
-    def query_k8s(self):
+    def query_k8s(self) -> None:
         """
         Query k8s for changes and update the metadata cache
         """
@@ -184,15 +166,8 @@ class K8sMonitorAgent(Process):
                 events = self.k8s_streaming_query()
                 for event in events:
                     event_type, namespace, pod_name, container_ids, labels = event
-
-                    self.concerned_actor_state.metadata_cache_manager.update_cache(metadata=K8sPodUpdateMetadata(
-                        event=event_type,
-                        namespace=namespace,
-                        pod=pod_name,
-                        containers_id=container_ids,
-                        labels=labels
-                    )
-                    )
+                    cache_metadata = K8sPodUpdateMetadata(event_type, namespace, pod_name, container_ids, labels)
+                    self.concerned_actor_state.metadata_cache_manager.update_cache(cache_metadata)
 
                 self.stop_monitoring.wait(timeout=self.concerned_actor_state.time_interval)
 
@@ -206,19 +181,15 @@ class K8sMonitorAgent(Process):
 
     def k8s_streaming_query(self) -> list:
         """
-        Return a list of events by using the provided parameters
-        :param int timeout_seconds: Timeout in seconds for waiting for events
-        :param str k8sapi_mode: Kind of API mode
+        Return a list of events by using the provided parameters.
         """
-        api = get_core_v1_api(self.logger, self.concerned_actor_state.k8s_api_mode, self.concerned_actor_state.api_key, self.concerned_actor_state.host)
-
         events = []
         w = watch.Watch()
+        event = None
         try:
-            event = None
-            for event in w.stream(api.list_pod_for_all_namespaces, timeout_seconds=self.concerned_actor_state.timeout_query):
+            for event in w.stream(self.k8s_api.list_pod_for_all_namespaces, timeout_seconds=self.concerned_actor_state.timeout_query):
                 if event:
-                    if event["type"] not in {DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT}:
+                    if event["type"] not in [DELETED_EVENT, ADDED_EVENT, MODIFIED_EVENT]:
                         self.logger.warning("Unknown event type: %s for %s", event['type'], event['object'].metadata.name)
                         continue
 

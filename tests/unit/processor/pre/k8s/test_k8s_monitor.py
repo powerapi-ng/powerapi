@@ -26,17 +26,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=R6301,W0613,W0221
-
 from time import sleep
 from unittest.mock import patch, Mock
 
 import pytest
-
 from kubernetes import client
+from kubernetes.client import Configuration
 
-from powerapi.processor.pre.k8s.k8s_monitor import local_config, MANUAL_CONFIG_MODE, \
-    K8sMonitorAgent
+from powerapi.processor.pre.k8s.k8s_monitor import MANUAL_CONFIG_MODE, K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPodUpdateMetadata, K8sPreProcessorState, ADDED_EVENT, \
     MODIFIED_EVENT
 from powerapi.report import HWPCReport
@@ -53,7 +50,7 @@ def test_load_local_config():
                return_value=Mock(list_pod_for_all_namespaces=Mock(
                    return_value={'pod': 'some infos about the pod...'}))):
         with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-            local_config()
+            Configuration.set_default(Configuration())
 
             # Just check we are able to make a request and get a non-empty response
             v1_api = client.CoreV1Api()
@@ -66,39 +63,31 @@ class TestK8sMonitor:
     Class for testing a monitor
     """
 
+    @staticmethod
     @pytest.fixture
-    def report_to_be_sent(self):
+    def report_to_be_sent():
         """
         This fixture must return the report class for testing
         """
         return K8sPodUpdateMetadata
 
+    @staticmethod
     @pytest.fixture
-    def monitor_agent(self, mocked_watch_initialized, pods_list):
+    def monitor_agent(mocked_watch_initialized, pods_list):
         """
         Return a monitor agent that uses the provided mocked watch
         """
-        with patch('kubernetes.client.CoreV1Api',
-                   return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
+        with patch('kubernetes.client.CoreV1Api', return_value=Mock(list_pod_for_all_namespaces=Mock(return_value=pods_list))):
             with patch('kubernetes.config.load_kube_config', return_value=Mock()):
                 with patch('kubernetes.watch.Watch', return_value=mocked_watch_initialized):
-                    monitor_agent = K8sMonitorAgent(name='test_k8s_monitor',
-                                                    concerned_actor_state=K8sPreProcessorState(
-                                                        actor=DummyActor(name='test_k8s_monitor_actor',
-                                                                         pipe=None, message_type=HWPCReport),
-                                                        target_actors=[],
-                                                        target_actors_names=[],
-                                                        k8s_api_mode=MANUAL_CONFIG_MODE,
-                                                        time_interval=10,
-                                                        timeout_query=10,
-                                                        api_key='',
-                                                        host=''
-                                                    )
-                                                    )
+                    dummy_actor = DummyActor(name='test_k8s_monitor_actor', pipe=None, message_type=HWPCReport)
+                    state = K8sPreProcessorState(dummy_actor, [], [], MANUAL_CONFIG_MODE, 10, 10, '', '')
+                    monitor_agent = K8sMonitorAgent(name='test_k8s_monitor', concerned_actor_state=state)
                     yield monitor_agent
 
-    def test_streaming_query(self, monitor_agent, pods_list, expected_events_list_k8s, mocked_watch_initialized,
-                             shutdown_system):
+    @staticmethod
+    @pytest.mark.usefixtures("shutdown_system","mocked_watch_initialized")
+    def test_streaming_query(monitor_agent, expected_events_list_k8s):
         """
         Test that k8s_streaming_query is able to retrieve events related to pods
         """
@@ -106,8 +95,9 @@ class TestK8sMonitor:
 
         assert result == expected_events_list_k8s
 
-    def test_unknown_events_streaming_query(self, pods_list, mocked_watch_initialized_unknown_events,
-                                            monitor_agent, shutdown_system):
+    @staticmethod
+    @pytest.mark.usefixtures("shutdown_system","mocked_watch_initialized_unknown_events")
+    def test_unknown_events_streaming_query(monitor_agent):
         """
          Test that unknown events are ignored by k8s_streaming_query
          """
@@ -115,9 +105,9 @@ class TestK8sMonitor:
 
         assert result == []
 
-    def test_monitor_agent_update_metadata_cache_when_events_are_available(self, monitor_agent,
-                                                                           expected_k8s_pod_update_metadata,
-                                                                           shutdown_system):
+    @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
+    def test_monitor_agent_update_metadata_cache_when_events_are_available(monitor_agent, expected_k8s_pod_update_metadata):
         """
         Test that the monitor updates metadata cache when events are available
         """
@@ -145,7 +135,8 @@ class TestK8sMonitor:
 
         assert monitor_agent.stop_monitoring.is_set()
 
-    def test_stop_monitor_agent_works(self, monitor_agent):
+    @staticmethod
+    def test_stop_monitor_agent_works(monitor_agent):
         """
         Test that monitor agent is correctly stopped when the flag related to the monitoring is changed
         """
