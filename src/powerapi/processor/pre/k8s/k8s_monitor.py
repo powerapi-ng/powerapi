@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=W0603,W0718
-
 from logging import Formatter, getLogger, Logger, StreamHandler, WARNING
 from multiprocessing import Manager, Process
 
