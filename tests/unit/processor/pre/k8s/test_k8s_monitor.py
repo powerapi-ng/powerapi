@@ -1,20 +1,21 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,7 +32,6 @@ from unittest.mock import patch, Mock
 
 import pytest
 from kubernetes import client
-from kubernetes.client import Configuration
 
 from powerapi.processor.pre.k8s.k8s_monitor import MANUAL_CONFIG_MODE, K8sMonitorAgent
 from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPodUpdateMetadata, K8sPreProcessorState, ADDED_EVENT, \
@@ -42,17 +42,13 @@ from tests.utils.actor.dummy_actor import DummyActor
 LISTENER_AGENT_NAME = 'test_k8s_processor_listener_agent'
 
 
-def test_load_local_config():
+def test_override_k8s_api_methods():
     """
-    Test that load_config works correctly
+    Test the override of k8s client api methods is working. (base of other unit tests)
     """
-    with patch('kubernetes.client.CoreV1Api',
-               return_value=Mock(list_pod_for_all_namespaces=Mock(
-                   return_value={'pod': 'some infos about the pod...'}))):
+    v1api_mock = Mock(list_pod_for_all_namespaces=Mock(return_value=Mock()))
+    with patch('kubernetes.client.CoreV1Api', return_value=v1api_mock):
         with patch('kubernetes.config.load_kube_config', return_value=Mock()):
-            Configuration.set_default(Configuration())
-
-            # Just check we are able to make a request and get a non-empty response
             v1_api = client.CoreV1Api()
             ret = v1_api.list_pod_for_all_namespaces()
             assert ret.items != []
@@ -86,7 +82,7 @@ class TestK8sMonitor:
                     yield monitor_agent
 
     @staticmethod
-    @pytest.mark.usefixtures("shutdown_system","mocked_watch_initialized")
+    @pytest.mark.usefixtures("shutdown_system", "mocked_watch_initialized")
     def test_streaming_query(monitor_agent, expected_events_list_k8s):
         """
         Test that k8s_streaming_query is able to retrieve events related to pods
@@ -96,7 +92,7 @@ class TestK8sMonitor:
         assert result == expected_events_list_k8s
 
     @staticmethod
-    @pytest.mark.usefixtures("shutdown_system","mocked_watch_initialized_unknown_events")
+    @pytest.mark.usefixtures("shutdown_system", "mocked_watch_initialized_unknown_events")
     def test_unknown_events_streaming_query(monitor_agent):
         """
          Test that unknown events are ignored by k8s_streaming_query
