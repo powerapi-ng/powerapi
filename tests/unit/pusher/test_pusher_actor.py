@@ -97,7 +97,7 @@ class TestPusher(AbstractTestActorWithDB):
     """
 
     @pytest.fixture
-    def actor_with_db(self, fake_db, delay=100, buffer_size=50):
+    def actor_with_db(self, fake_db, delay, buffer_size):
         return PusherActor('pusher_test', Report, fake_db, logging.DEBUG, delay=delay, max_size=buffer_size)
 
     @staticmethod
