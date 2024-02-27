@@ -38,7 +38,7 @@ from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, HWPCReport
-from tests.utils.db import FakeDB
+from tests.utils.db import FakeDB, SilentFakeDB
 from tests.utils.actor.dummy_actor import DummyActor
 
 SENDER_NAME = 'test case'
@@ -383,17 +383,29 @@ class AbstractTestActorWithDB(AbstractTestActor):
 
     @pytest.fixture
     def fake_db(self, content):
-        return FakeDB(content)
+        return SilentFakeDB(content)
 
     @pytest.fixture
-    def started_actor(self, init_actor, fake_db):
-        init_actor.send_control(StartMessage(SENDER_NAME))
-        # remove OkMessage from control socket
-        _ = init_actor.receive_control(2000)
-        # remove 'connected' string from Queue
-        _ = fake_db.q.get(timeout=2)
-        return init_actor
+    def actor_with_db(self, fake_db):
+        raise NotImplementedError()
 
-    def test_starting_actor_make_it_connect_to_database(self, init_actor, fake_db):
-        init_actor.send_control(StartMessage(SENDER_NAME))
-        assert fake_db.q.get(timeout=2) == 'connected'
+    @pytest.fixture
+    def init_actor_with_db(self, actor_with_db):
+        actor_with_db.start()
+        actor_with_db.connect_data()
+        actor_with_db.connect_control()
+        yield actor_with_db
+
+        if actor_with_db.is_alive():
+            actor_with_db.terminate()
+        actor_with_db.socket_interface.close()
+
+        join_actor(actor_with_db)
+
+    @pytest.fixture
+    def started_actor_with_db(self, init_actor_with_db, fake_db):
+        init_actor_with_db.send_control(StartMessage('test_case'))
+        _ = init_actor_with_db.receive_control(2000)
+        yield init_actor_with_db
+
+        init_actor_with_db.send_control(PoisonPillMessage())
