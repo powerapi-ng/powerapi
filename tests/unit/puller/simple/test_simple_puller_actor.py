@@ -150,7 +150,6 @@ class TestSimplePuller(AbstractTestActor):
         started_actor.send_data(SimplePullerSendReportsMessage('system', ACTOR_NAME))
 
         while count < NUMBER_OF_REPORTS_TO_SEND:
-            sleep(1)
             assert recv_from_pipe(dummy_pipe_out, 2) == (DISPATCHER_NAME, report)
             count += 1
 
