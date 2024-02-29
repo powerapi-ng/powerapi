@@ -62,40 +62,37 @@ confidence=
 # --disable=W".
 disable=raw-checker-failed,
 	    too-many-locals,
-	    unnecessary-dunder-call,
-        use-symbolic-message-instead,
         too-many-branches,
         too-many-nested-blocks,
-        consider-using-f-string,
         too-many-instance-attributes,
-        consider-using-enumerate,
-        missing-module-docstring,
-        invalid-name,
-        no-else-return,
         too-many-arguments,
-        dangerous-default-value,
-        empty-docstring,
-        no-else-raise,
+        too-few-public-methods,
         too-many-statements,
-        arguments-renamed,
-        consider-using-with,
-        unspecified-encoding,
-        consider-using-set-comprehension,
+        unnecessary-dunder-call,
+        consider-using-f-string,
+        consider-using-enumerate,
         consider-using-dict-items,
+        consider-using-set-comprehension,
+        consider-using-with,
+        missing-module-docstring,
+        empty-docstring,
+        invalid-name,
+        dangerous-default-value,
+        no-else-return,
+        no-else-raise,
+        arguments-renamed,
         invalid-overridden-method,
         abstract-method,
         logging-not-lazy,
-        redefined-builtin,
         protected-access,
-        consider-using-f-string,
-        too-few-public-methods,
-        broad-exception-caught
+        broad-exception-caught,
+        unspecified-encoding
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member
+enable=c-extension-no-member,suppressed-message,useless-suppression
 
 
 [REPORTS]
