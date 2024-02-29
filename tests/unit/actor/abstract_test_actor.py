@@ -233,7 +233,7 @@ class AbstractTestActor:
         return pipe[1]
 
     @pytest.fixture
-    def actor(self):
+    def actor(self, request):
         """
         This fixture must return the actor class of the tested actor
         """
