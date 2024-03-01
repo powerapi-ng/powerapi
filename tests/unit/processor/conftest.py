@@ -29,7 +29,7 @@
 
 import multiprocessing
 
-from typing import Any
+from typing import Any, Dict
 
 from unittest.mock import Mock
 
@@ -51,7 +51,7 @@ class FakeMetadata:
     Fake metadata class related to an event
     """
 
-    def __init__(self, name: str, namespace: str, labels: dict[str, str]):
+    def __init__(self, name: str, namespace: str, labels: Dict[str, str]):
         self.name = name
         self.namespace = namespace
         self.labels = labels
