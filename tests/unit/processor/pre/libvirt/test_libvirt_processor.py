@@ -26,22 +26,20 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import logging
 from datetime import datetime, timezone
 from time import sleep
+
 import pytest
 from mock.mock import patch
 
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.report import Report
 from tests.unit.actor.abstract_test_actor import AbstractTestActor, recv_from_pipe
-from tests.utils.actor.dummy_actor import DummyActor
 from tests.utils.libvirt import REGEXP, LIBVIRT_TARGET_NAME1, UUID_1, MockedLibvirt, LIBVIRT_TARGET_NAME2
-
 
 BAD_TARGET = 'lkjqlskjdlqksjdlkj'
 DISPATCHER_NAME = 'test_libvirt_processor_dispatcher'
-REPORT_TYPE_TO_BE_SENT = Report
 
 
 class TestLibvirtProcessor(AbstractTestActor):
@@ -49,27 +47,21 @@ class TestLibvirtProcessor(AbstractTestActor):
     Class to test the processor related to libvirt
     """
 
-    @staticmethod
     @pytest.fixture
-    def started_fake_dispatcher(dummy_pipe_in):
+    def report_to_be_sent(self):
         """
-        Return a started DummyActor. When the test is finished, the actor is stopped
+        This fixture must return the report class for testing
         """
-        dispatcher = DummyActor(DISPATCHER_NAME, dummy_pipe_in, REPORT_TYPE_TO_BE_SENT)
-        dispatcher.start()
-
-        yield dispatcher
-        if dispatcher.is_alive():
-            dispatcher.terminate()
+        return Report
 
     @pytest.fixture
     def actor(self, request):
         with patch('powerapi.processor.pre.libvirt.libvirt_pre_processor_actor.openReadOnly', return_value=MockedLibvirt()):
-            fx_started_fake_dispatcher = request.getfixturevalue('started_fake_dispatcher')
-            return LibvirtPreProcessorActor('processor_actor', '', REGEXP, [fx_started_fake_dispatcher])
+            fx_started_fake_target_actor = request.getfixturevalue('started_fake_target_actor')
+            return LibvirtPreProcessorActor('test_libvirt_processor_actor', '', REGEXP, [fx_started_fake_target_actor], level_logger=logging.DEBUG)
 
     @staticmethod
-    @pytest.mark.skip(reason='libvirt is disable by default')
+    @pytest.mark.skip(reason='libvirt is disabled by default')
     def test_modify_report_that_not_match_regexp_must_not_modify_report(started_actor, dummy_pipe_out):
         """
         Test that te LibvirtProcessorActor does not modify an report that does not match the regexp
@@ -80,7 +72,7 @@ class TestLibvirtProcessor(AbstractTestActor):
         assert recv_from_pipe(dummy_pipe_out, 2) == (DISPATCHER_NAME, report)
 
     @staticmethod
-    @pytest.mark.skip(reason='libvirt is disable by default')
+    @pytest.mark.skip(reason='libvirt is disabled by default')
     def test_modify_report_that_match_regexp_must_modify_report(started_actor, dummy_pipe_out):
         """
         Test that a report matching the regexp of the processor is actually modified
@@ -91,7 +83,7 @@ class TestLibvirtProcessor(AbstractTestActor):
         assert new_report.metadata["domain_id"] == UUID_1
 
     @staticmethod
-    @pytest.mark.skip(reason='libvirt is disable by default')
+    @pytest.mark.skip(reason='libvirt is disabled by default')
     def test_modify_report_that_match_regexp_but_with_wrong_domain_name_must_not_modify_report(started_actor, dummy_pipe_out):
         """
         Test that a report matching the regexp but with wrong domain name is not modified by the processor

@@ -337,16 +337,19 @@ class AbstractTestActor:
         return actor_with_crash_handler
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_new_actor_is_alive(init_actor):
         assert init_actor.is_alive()
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_PoisonPillMessage_set_actor_alive_to_False(init_actor):
         init_actor.send_control(PoisonPillMessage(sender_name='system-abstract-test'))
         time.sleep(0.1)
         assert not init_actor.is_alive()
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_StartMessage_answer_OkMessage(init_actor):
         init_actor.send_control(StartMessage(SENDER_NAME))
         msg = init_actor.receive_control(2000)
@@ -354,6 +357,7 @@ class AbstractTestActor:
         assert isinstance(msg, OKMessage)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(started_actor):
         started_actor.send_control(StartMessage(SENDER_NAME))
         msg = started_actor.receive_control(2000)
@@ -361,16 +365,19 @@ class AbstractTestActor:
         assert msg.error_message == 'Actor already initialized'
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_message_on_data_canal_to_non_initialized_actor_raise_NotConnectedException(actor):
         with pytest.raises(NotConnectedException):
             actor.send_data(StartMessage(SENDER_NAME))
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_message_on_control_canal_to_non_initialized_actor_raise_NotConnectedException(actor):
         with pytest.raises(NotConnectedException):
             actor.send_control(StartMessage(SENDER_NAME))
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_low_exception_the_actor_must_stay_alive(actor_with_crash_handler):
         if not actor_with_crash_handler.low_exception:
             assert True
@@ -380,6 +387,7 @@ class AbstractTestActor:
             assert is_actor_alive(actor_with_crash_handler, time=1)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_low_exception_the_actor_must_answer_to_ping_message(actor_with_crash_handler):
         actor_with_crash_handler.send_data(PingMessage())
 
@@ -387,11 +395,13 @@ class AbstractTestActor:
         assert answer == 'pong'
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_fatal_exception_the_actor_must_be_killed(actor_with_crash_handler):
         actor_with_crash_handler.send_data(CrashMessage(TypeError()))
         assert not is_actor_alive(actor_with_crash_handler, time=1)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_starting_actor_with_a_no_StartMessage_does_no_change_initialized(init_actor):
         init_actor.send_control(ErrorMessage('system', 'error test'))
         assert not init_actor.state.initialized
@@ -450,22 +460,26 @@ class AbstractTestActorWithDB:
         init_actor_with_db.send_control(PoisonPillMessage())
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def started_actor_with_crash_handler(actor_with_db_and_crash_handler):
         actor_with_db_and_crash_handler.send_control(StartMessage(SENDER_NAME))
         _ = actor_with_db_and_crash_handler.receive_control(2000)
         return actor_with_db_and_crash_handler
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_new_actor_is_alive(init_actor_with_db):
         assert init_actor_with_db.is_alive()
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_PoisonPillMessage_set_actor_alive_to_False(init_actor_with_db):
         init_actor_with_db.send_control(PoisonPillMessage(sender_name='system-abstract-test'))
         time.sleep(0.1)
         assert not init_actor_with_db.is_alive()
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_StartMessage_answer_OkMessage(init_actor_with_db):
         init_actor_with_db.send_control(StartMessage(SENDER_NAME))
         msg = init_actor_with_db.receive_control(2000)
@@ -473,6 +487,7 @@ class AbstractTestActorWithDB:
         assert isinstance(msg, OKMessage)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_StartMessage_to_already_started_actor_answer_ErrorMessage(started_actor_with_db):
         started_actor_with_db.send_control(StartMessage(SENDER_NAME))
         msg = started_actor_with_db.receive_control(2000)
@@ -480,16 +495,19 @@ class AbstractTestActorWithDB:
         assert msg.error_message == 'Actor already initialized'
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_message_on_data_canal_to_non_initialized_actor_raise_NotConnectedException(actor_with_db):
         with pytest.raises(NotConnectedException):
             actor_with_db.send_data(StartMessage(SENDER_NAME))
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_send_message_on_control_canal_to_non_initialized_actor_raise_NotConnectedException(actor_with_db):
         with pytest.raises(NotConnectedException):
             actor_with_db.send_control(StartMessage(SENDER_NAME))
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_low_exception_the_actor_must_stay_alive(init_actor_with_db_and_crash_handler):
         if not init_actor_with_db_and_crash_handler.low_exception:
             assert True
@@ -499,6 +517,7 @@ class AbstractTestActorWithDB:
             assert is_actor_alive(init_actor_with_db_and_crash_handler, time=1)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_low_exception_the_actor_must_answer_to_ping_message(init_actor_with_db_and_crash_handler):
         init_actor_with_db_and_crash_handler.send_data(PingMessage())
 
@@ -506,11 +525,13 @@ class AbstractTestActorWithDB:
         assert answer == 'pong'
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_fatal_exception_the_actor_must_be_killed(init_actor_with_db_and_crash_handler):
         init_actor_with_db_and_crash_handler.send_data(CrashMessage(TypeError()))
         assert not is_actor_alive(init_actor_with_db_and_crash_handler, time=1)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     def test_starting_actor_with_a_no_StartMessage_does_no_change_initialized(init_actor_with_db):
         init_actor_with_db.send_control(ErrorMessage('system', 'error test'))
         assert not init_actor_with_db.state.initialized
