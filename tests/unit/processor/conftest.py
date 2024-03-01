@@ -1,20 +1,21 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-import multiprocessing
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +27,9 @@ import multiprocessing
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Any
+import multiprocessing
+
+from typing import Any, Dict
 
 from unittest.mock import Mock
 
@@ -48,7 +51,7 @@ class FakeMetadata:
     Fake metadata class related to an event
     """
 
-    def __init__(self, name: str, namespace: str, labels: list):
+    def __init__(self, name: str, namespace: str, labels: Dict[str, str]):
         self.name = name
         self.namespace = namespace
         self.labels = labels
@@ -87,25 +90,36 @@ def basic_events_list_k8s():
     """
     Return a list of three events
     """
-    return [{
-        'type': 'ADDED',
-        'object': FakePod(metadata=FakeMetadata(name='o1', namespace='s1', labels=['l1', 'l2', 'l3', 'l4', 'l5']),
-                          status=FakeStatus(container_statuses=[FakeContainerStatus(container_id='test://s1c1'),
-                                                                FakeContainerStatus(container_id='test://s1c2'),
-                                                                FakeContainerStatus(container_id='test://s1c3')]))
-
-    },
+    return [
+        {
+            'type': 'ADDED',
+            'object': FakePod(
+                FakeMetadata('o1', 's1', {'l1': 'l1label', 'l2': 'l2label'}),
+                FakeStatus([
+                    FakeContainerStatus('test://s1c1'),
+                    FakeContainerStatus('test://s1c2'),
+                    FakeContainerStatus('test://s1c3')
+                ])
+            )
+        },
         {
             'type': 'MODIFIED',
-            'object': FakePod(metadata=FakeMetadata(name='o2', namespace='s2', labels=['l1', 'l2', 'l3', 'l4', 'l5']),
-                              status=FakeStatus(container_statuses=[FakeContainerStatus(container_id='test://s2c1'),
-                                                                    FakeContainerStatus(container_id='test://s2c2'),
-                                                                    FakeContainerStatus(container_id='test://s2c3')]))},
+            'object': FakePod(
+                FakeMetadata('o2', 's2', {'l1': 'l1label', 'l2': 'l2label'}),
+                FakeStatus([
+                    FakeContainerStatus('test://s2c1'),
+                    FakeContainerStatus('test://s2c2'),
+                    FakeContainerStatus('test://s2c3')
+                ])
+            )
+        },
         {
             'type': 'DELETED',
-            'object': FakePod(metadata=FakeMetadata(name='o3', namespace='s3', labels=['l1', 'l2', 'l3', 'l4', 'l5']),
-                              status=FakeStatus(container_statuses=[]))}
-
+            'object': FakePod(
+                FakeMetadata('o3', 's3', {'l1': 'l1label', 'l2': 'l2label'}),
+                FakeStatus([])
+            )
+        }
     ]
 
 

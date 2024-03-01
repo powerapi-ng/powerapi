@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=c-extension-no-member
-
 import logging
 import signal
 import multiprocessing
@@ -135,7 +133,7 @@ class Actor(multiprocessing.Process):
         while self.state.alive:
             try:
                 self.behaviour(self)
-            except Exception as exn:  # pylint: disable=broad-exception-caught
+            except Exception as exn:
                 if type(exn) in self.low_exception:
                     self.logger.error('Minor exception raised, restart actor !')
                     traceback.print_exc()

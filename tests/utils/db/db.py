@@ -83,6 +83,7 @@ class SilentFakeDB(BaseDB):
     def __init__(self, content=[]):
         BaseDB.__init__(self, Report)
         self._content = content
+        self.q = Queue()
 
     def connect(self):
         pass
@@ -91,10 +92,10 @@ class SilentFakeDB(BaseDB):
         return self._content.__iter__()
 
     def save(self, report):
-        pass
+        self.q.put(report, block=False)
 
     def save_many(self, reports):
-        pass
+        self.q.put(reports, block=False)
 
 
 class CrashDB(BaseDB):

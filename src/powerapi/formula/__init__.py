@@ -30,4 +30,3 @@
 from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
 from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula
 from powerapi.formula.formula_actor import FormulaActor, FormulaState
-from powerapi.formula.simple.simple_formula_actor import SimpleFormulaActor

@@ -48,9 +48,6 @@ from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, 
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
-from powerapi.puller.simple.simple_puller_actor import SimplePullerActor
-from powerapi.pusher.simple.simple_pusher_actor import SimplePusherActor
-
 COMPONENT_TYPE_KEY = 'type'
 COMPONENT_MODEL_KEY = 'model'
 COMPONENT_DB_NAME_KEY = 'db'
@@ -274,31 +271,6 @@ class PullerGenerator(DBActorGenerator):
                            level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
 
 
-COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY = 'number_of_reports_to_send'
-
-
-class SimplePullerGenerator(BaseGenerator):
-    """
-    Generate Simple Puller Actor class and Simple Puller start message from config
-    """
-
-    def __init__(self, report_filter, report_modifier_list=None):
-        BaseGenerator.__init__(self, 'input')
-        self.report_filter = report_filter
-
-        if report_modifier_list is None:
-            report_modifier_list = []
-        self.report_modifier_list = report_modifier_list
-
-    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict):
-        return SimplePullerActor(name=actor_name, report_filter=self.report_filter,
-                                 number_of_reports_to_send=component_config[COMPONENT_NUMBER_OF_REPORTS_TO_SEND_KEY],
-                                 report_type_to_send=component_config[COMPONENT_MODEL_KEY])
-
-
-COMPONENT_NUMBER_OF_REPORTS_TO_STORE_KEY = 'number_of_reports_to_store'
-
-
 class PusherGenerator(DBActorGenerator):
     """
     Generate Pusher actor and Pusher start message from config
@@ -316,19 +288,6 @@ class PusherGenerator(DBActorGenerator):
         return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
                            database=component_config[COMPONENT_DB_MANAGER_KEY],
                            level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
-
-
-class SimplePusherGenerator(BaseGenerator):
-    """
-    Generate Simple Pusher actor and Simple Pusher start message from config
-    """
-
-    def __init__(self):
-        BaseGenerator.__init__(self, 'output')
-
-    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict):
-        return SimplePusherActor(name=actor_name,
-                                 number_of_reports_to_store=component_config['number_of_reports_to_store'])
 
 
 class ProcessorGenerator(Generator):

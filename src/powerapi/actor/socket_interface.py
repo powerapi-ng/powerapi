@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pylint: disable=no-self-use
-
 import pickle
 import logging
 import multiprocessing
@@ -199,7 +197,8 @@ class SocketInterface:
         if self.control_socket is not None:
             self.control_socket.close()
 
-    def _send_serialized(self, socket, msg):
+    @staticmethod
+    def _send_serialized(socket, msg):
         """
         Send a serialized msg with pickle to the given socket
 
@@ -208,7 +207,8 @@ class SocketInterface:
         """
         socket.send(pickle.dumps(msg))
 
-    def _recv_serialized(self, socket):
+    @staticmethod
+    def _recv_serialized(socket):
         """
         Wait for a message from the given socket and return its deserialized
         value (using pickle)

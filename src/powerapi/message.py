@@ -102,55 +102,6 @@ class EndMessage(Message):
         return "EndMessage"
 
 
-class SimplePullerSendReportsMessage(Message):
-    """
-    Message used to trigger sending of message by a Simple Puller actor
-    """
-
-    def __init__(self, sender_name: str, name: str):
-        """
-            :param sender_name: name of the actor that send the message
-            :param name: puller actor name
-        """
-        Message.__init__(self, sender_name)
-        self.name = name
-
-    def __str__(self):
-        return "SimplePullerSendReportsMessage"
-
-
-class GetReceivedReportsSimplePusherMessage(Message):
-    """
-    Message used to get the received reports of a simple pusher
-    """
-
-    def __init__(self, sender_name: str):
-        """
-        :param str error_code: message associated to the error
-        """
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "GetReceivedReportsSimplePusherMessage : " + self.sender_name
-
-
-class ReceivedReportsSimplePusherMessage(Message):
-    """
-    Message used to send reports of a simple pusher
-    """
-
-    def __init__(self, sender_name: str, reports: []):
-        """
-        :param str sender_name: name of the message sender
-        :param list reports: list of stored reports
-        """
-        Message.__init__(self, sender_name)
-        self.reports = reports
-
-    def __str__(self):
-        return "ReceivedReportsSimplePusherMessage : " + str(self.reports)
-
-
 class PoisonPillMessage(Message):
     """
     Message which allow to kill an actor

@@ -60,29 +60,39 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=R0903, R0902, C0200,
-	 C0114, C0103, R1705, R0913,
-	 W0102, C0112, R1720, R0915,
-	 W0237, R1732, W1514, R1718,
-	 C0206, W0236, W0223, W1201,
-	 W0622, W0212, C0209,
-	 too-many-locals,
-	 unnecessary-dunder-call,
-        raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-symbolic-message-instead,
-        too-many-branches
+disable=raw-checker-failed,
+	    too-many-locals,
+        too-many-branches,
+        too-many-nested-blocks,
+        too-many-instance-attributes,
+        too-many-arguments,
+        too-few-public-methods,
+        too-many-statements,
+        unnecessary-dunder-call,
+        consider-using-f-string,
+        consider-using-enumerate,
+        consider-using-dict-items,
+        consider-using-set-comprehension,
+        consider-using-with,
+        missing-module-docstring,
+        empty-docstring,
+        invalid-name,
+        dangerous-default-value,
+        no-else-return,
+        no-else-raise,
+        arguments-renamed,
+        invalid-overridden-method,
+        abstract-method,
+        logging-not-lazy,
+        protected-access,
+        broad-exception-caught,
+        unspecified-encoding
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member
+enable=c-extension-no-member,suppressed-message,useless-suppression
 
 
 [REPORTS]
