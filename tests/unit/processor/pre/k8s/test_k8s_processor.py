@@ -117,10 +117,10 @@ class TestK8sProcessor(AbstractTestActor):
         return {
             'type': ADDED_EVENT,
             'object': FakePod(fake_metadata, FakeStatus([
-                    FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_1_added'),
-                    FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_2_added'),
-                    FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_3_added'),
-                    FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_4_added')])
+                FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_1_added'),
+                FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_2_added'),
+                FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_3_added'),
+                FakeContainerStatus('/kpods/t_q/pod_test_k8s_processor_pod_added://test_cid_4_added')])
             )
         }
 
@@ -151,7 +151,7 @@ class TestK8sProcessor(AbstractTestActor):
         return {
             'type': DELETED_EVENT,
             'object': FakePod(
-                FakeMetadata('test_k8s_processor_pod', 'test_k8s_processor_namespace',{}),
+                FakeMetadata('test_k8s_processor_pod', 'test_k8s_processor_namespace', {}),
                 FakeStatus([])
             )
         }
@@ -165,7 +165,7 @@ class TestK8sProcessor(AbstractTestActor):
         return {
             'type': 'Unknown Event',
             'object': FakePod(
-                FakeMetadata('test_k8s_processor_pod', 'test_k8s_processor_namespace',{}),
+                FakeMetadata('test_k8s_processor_pod', 'test_k8s_processor_namespace', {}),
                 FakeStatus([])
             )
         }
