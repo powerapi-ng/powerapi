@@ -83,8 +83,7 @@ disable=raw-checker-failed,
         invalid-overridden-method,
         abstract-method,
         protected-access,
-        broad-exception-caught,
-        unspecified-encoding
+        broad-exception-caught
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
