@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import getopt
 import json
 import os
@@ -496,7 +497,7 @@ class RootConfigParser(BaseConfigParser):
         Return a configuration dict that has all the arguments' names in the long form.
         If an argument does not exist, a UnknownArgException is raised
         """
-        with open(file_name, 'r') as config_file:
+        with open(file_name, 'r', encoding='utf-8') as config_file:
             conf = json.load(config_file)
             return self.normalize_configuration(conf=conf)
 
