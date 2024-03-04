@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import json
 import logging
 import sys
@@ -121,8 +122,7 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
         try:
             self.cli_parser.add_subgroup(subgroup_type=name, help_text=help_text, prefix=prefix)
         except AlreadyAddedSubgroupException as exn:
-            msg = "Configuration error: " + exn.msg
-            logging.error(msg)
+            logging.error("Configuration error: %s", exn.msg)
             sys.exit(-1)
 
     def add_subgroup_parser(self, subgroup_name: str, subgroup_parser: SubgroupConfigParsingManager):
@@ -220,8 +220,9 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
         for current_arg in args:
             if current_arg == '--config-file':
                 if current_position + 1 == len(args):
-                    logging.error("CLI Error: config file path needed with argument --config-file")
+                    logging.error("CLI Error: Config filepath needed with argument --config-file")
                     sys.exit(-1)
+
                 filename = args[current_position + 1]
                 args.pop(current_position + 1)
                 args.pop(current_position)
@@ -242,44 +243,35 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
             conf = self.validate(conf)
 
         except MissingValueException as exn:
-            msg = 'CLI error: argument ' + exn.argument_name + ': expect a value'
-            logging.error(msg)
+            logging.error('CLI error: Argument "%s" expect a value', exn.argument_name)
             sys.exit(-1)
 
         except BadTypeException as exn:
-            msg = "Configuration error: " + exn.msg
-            logging.error(msg)
+            logging.error('Configuration error: %s', exn.msg)
             sys.exit(-1)
 
         except UnknownArgException as exn:
-            msg = 'Configuration error: unknown argument ' + exn.argument_name
-            logging.error(msg)
+            logging.error('Configuration error: Argument "%s" is unknown', exn.argument_name)
             sys.exit(-1)
 
         except BadContextException as exn:
-            msg = 'CLI error: argument ' + exn.argument_name
-            msg += ' not used in the correct context\nUse it with the following arguments:'
-            for main_arg_name, context_name in exn.context_list:
-                msg += '\n  --' + main_arg_name + ' ' + context_name
-            logging.error(msg)
+            logging.error('CLI error: %s', exn.msg)
             sys.exit(-1)
 
         except FileNotFoundError:
-            logging.error("Configuration Error: configuration file not found")
+            logging.error("Configuration Error: Configuration file not found")
             sys.exit(-1)
 
         except json.JSONDecodeError as exn:
-            logging.error(
-                'Configuration Error: JSON Error: ' + exn.msg + ' at line' + str(exn.lineno) + ' colon ' +
-                str(exn.colno))
+            logging.error('JSON error: "%s" at line %d column %d', exn.msg, exn.lineno, exn.colno)
             sys.exit(-1)
 
         except MissingArgumentException as exn:
-            logging.error("Configuration Error: " + exn.msg)
+            logging.error("Configuration Error: %s", exn.msg)
             sys.exit(-1)
 
         except RepeatedArgumentException as exn:
-            logging.error("Configuration Error: " + exn.msg)
+            logging.error("Configuration Error: %s", exn.msg)
             sys.exit(-1)
 
         return conf

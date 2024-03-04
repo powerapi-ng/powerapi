@@ -75,13 +75,13 @@ class ConfigValidator:
                 pre_processor_config = config['pre-processor'][pre_processor_id]
 
                 if 'puller' not in pre_processor_config:
-                    logging.error("no puller name found for pre-processor " + pre_processor_id)
+                    logging.error("No puller name found for pre-processor: %s ", pre_processor_id)
                     raise MissingArgumentException(argument_name='puller')
 
                 puller_id = pre_processor_config['puller']
 
                 if puller_id not in config['input']:
-                    logging.error("puller actor " + puller_id + " does not exist")
+                    logging.error("Puller actor '%s' does not exist", puller_id)
                     raise UnexistingActorException(actor=puller_id)
 
         elif 'post-processor' in config:
@@ -89,13 +89,13 @@ class ConfigValidator:
                 post_processor_config = config['post-processor'][post_processor_id]
 
                 if 'pusher' not in post_processor_config:
-                    logging.error("no pusher name found for post-processor " + post_processor_id)
+                    logging.error("No pusher name found for post-processor: %s", post_processor_id)
                     raise MissingArgumentException(argument_name='pusher')
 
                 pusher_id = post_processor_config['pusher']
 
                 if pusher_id not in config['output']:
-                    logging.error("pusher actor " + pusher_id + " does not exist")
+                    logging.error("Pusher actor '%s' does not exist", pusher_id)
                     raise UnexistingActorException(actor=pusher_id)
 
         ConfigValidator._validate_input(config)

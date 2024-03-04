@@ -61,7 +61,7 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=raw-checker-failed,
-	    too-many-locals,
+        too-many-locals,
         too-many-branches,
         too-many-nested-blocks,
         too-many-instance-attributes,
@@ -83,7 +83,6 @@ disable=raw-checker-failed,
         arguments-renamed,
         invalid-overridden-method,
         abstract-method,
-        logging-not-lazy,
         protected-access,
         broad-exception-caught,
         unspecified-encoding
