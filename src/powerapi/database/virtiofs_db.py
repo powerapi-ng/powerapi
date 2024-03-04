@@ -89,7 +89,7 @@ class VirtioFSDB(BaseDB):
         if not os.path.exists(vm_filename_path):
             raise DirectoryDoesNotExistForVirtioFS(vm_filename_path)
 
-        with open(vm_filename_path + vm_filename, 'w') as vm_file:
+        with open(vm_filename_path + vm_filename, 'w', encoding='utf-8') as vm_file:
             vm_file.write(str(power))
 
     def save_many(self, reports: List[Report]):
