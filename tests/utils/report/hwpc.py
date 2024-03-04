@@ -41,7 +41,7 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    with open(f"{path}/hwpc_rapl_2_socket.json", "r") as json_file:
+    with open(f'{path}/hwpc_rapl_2_socket.json', 'r', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return reports['reports'][:number_of_reports]
 
@@ -61,7 +61,7 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Di
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    with open(f"{path}/hwpc_all_events_2_socket.json", "r") as json_file:
+    with open(f'{path}/hwpc_all_events_2_socket.json', 'r', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return reports['reports'][:number_of_reports]
 
@@ -85,7 +85,7 @@ def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict
     :return: a list of reports. Each reports is a json dictionary. Only reports with vm name as target is returned
     """
     path = parent_module.__path__[0]
-    with open(f"{path}/hwpc_all_vm_target.json", "r") as json_file:
+    with open(f'{path}/hwpc_all_vm_target.json', 'r', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2, reports['reports']))[:number_of_reports]
 
@@ -96,6 +96,6 @@ def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
     :return: a list of HWPCReport
     """
     path = parent_module.__path__[0]
-    with open(f"{path}/hwpc.json", "r") as json_file:
+    with open(f'{path}/hwpc.json', 'r', encoding='utf-8') as json_file:
         reports = list(map(HWPCReport.from_json, json.load(json_file)['reports']))
         return reports[:number_of_reports]
