@@ -90,7 +90,7 @@ class CsvIterDB(IterDB):
         # Open all files with csv and read first line
         for filename in self.filenames:
             try:
-                self.tmp_read[filename]['file'] = open(filename)
+                self.tmp_read[filename]['file'] = open(filename, 'r', encoding='utf-8')
                 self.tmp_read[filename]['reader'] = csv.DictReader(self.tmp_read[filename]['file'])
             except FileNotFoundError as error:
                 raise CsvBadFilePathError(error) from error
@@ -274,7 +274,7 @@ class CsvDB(BaseDB):
         for filename, values in data.items():
             output_filename = f'{rep_path}/{filename}.csv'
 
-            with open(output_filename, 'r+') as csvfile:
+            with open(output_filename, 'r+', encoding='utf-8') as csvfile:
                 expected_header = fixed_header + sorted(set(values[0].keys()) - set(fixed_header))
                 header_exist = False
 
