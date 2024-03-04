@@ -51,22 +51,22 @@ class LibvirtPreProcessorReportHandler(ProcessorReportHandler):
     def __init__(self, state):
         ProcessorReportHandler.__init__(self, state=state)
 
-    def handle(self, report: Report):
+    def handle(self, msg: Report):
         """
         Modify reports by replacing libvirt id by open stak uuid
 
         :param Report report: Report to be modified
         """
-        result = re.match(self.state.regexp, report.target)
+        result = re.match(self.state.regexp, msg.target)
         if result is not None:
             domain_name = result.groups(0)[0]
             try:
                 domain = self.state.libvirt.lookupByName(domain_name)
-                report.metadata["domain_id"] = domain.UUIDString()
+                msg.metadata["domain_id"] = domain.UUIDString()
             except libvirtError:
                 logging.warning("Failed to get domain ID for target: %s", domain_name)
 
-        self._send_report(report=report)
+        self._send_report(msg)
 
 
 class LibvirtPreProcessorStartHandler(StartHandler):
