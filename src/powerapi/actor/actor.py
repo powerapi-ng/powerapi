@@ -175,7 +175,7 @@ class Actor(multiprocessing.Process):
 
         self.socket_interface.setup()
 
-        self.logger.debug(self.name + ' process created.')
+        self.logger.debug('Actor "%s" process created', self.name)
 
         self._signal_handler_setup()
 
@@ -217,25 +217,23 @@ class Actor(multiprocessing.Process):
         """
 
         msg = self.receive()
-        # Timeout
         if msg is None:
-            return
-        # Message
-        else:
-            try:
-                handler = self.state.get_corresponding_handler(msg)
-                handler.handle_message(msg)
-            except UnknownMessageTypeException:
-                self.logger.warning("UnknownMessageTypeException: " + str(msg))
-            except HandlerException:
-                self.logger.warning("HandlerException")
+            return  # Timeout
+
+        try:
+            handler = self.state.get_corresponding_handler(msg)
+            handler.handle_message(msg)
+        except UnknownMessageTypeException:
+            self.logger.warning("Unknown message type: %s", msg)
+        except HandlerException:
+            self.logger.warning("Failed to handle message: %s", msg)
 
     def _kill_process(self):
         """
         Kill the actor (close sockets)
         """
         self.socket_interface.close()
-        self.logger.debug(self.name + ' teardown')
+        self.logger.debug('Actor "%s" teardown', self.name)
 
     def connect_data(self):
         """
@@ -259,14 +257,14 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.socket_interface.send_control(msg)
-        self.logger.debug('send control [' + str(msg) + '] to Actor ' + self.name)
+        self.logger.debug('Send control to actor "%s" : %s', self.name, msg)
 
     def receive_control(self, timeout=None):
         """
         Receive a message from this actor on the control canal
         """
         msg = self.socket_interface.receive_control(timeout)
-        self.logger.debug('Actor ' + self.name + ' receive control : [' + str(msg) + ']')
+        self.logger.debug('Actor "%s" received control : %s', self.name, msg)
         return msg
 
     def send_data(self, msg):
@@ -276,7 +274,7 @@ class Actor(multiprocessing.Process):
         :param Object msg: the message to send to this actor
         """
         self.socket_interface.send_data(msg)
-        self.logger.debug('Actor ' + self.name + ' send data [' + str(msg) + '] to ' + self.name)
+        self.logger.debug('Send data to actor "%s" : %s ', self.name, msg)
 
     def receive(self):
         """
@@ -287,7 +285,7 @@ class Actor(multiprocessing.Process):
         :rtype: a list of Object
         """
         msg = self.socket_interface.receive()
-        self.logger.debug('Actor ' + self.name + ' receive data : [' + str(msg) + ']')
+        self.logger.debug('Actor "%s" received data : %s', self.name, msg)
         return msg
 
     def soft_kill(self):
