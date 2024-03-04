@@ -29,8 +29,8 @@
 
 from powerapi.actor import State
 from powerapi.handler import StartHandler, PoisonPillMessageHandler
-from powerapi.message import Message
 from powerapi.processor.handlers import ProcessorReportHandler
+from powerapi.report import Report
 
 POD_NAMESPACE_METADATA_KEY = 'pod_namespace'
 POD_NAME_METADATA_KEY = 'pod_name'
@@ -58,15 +58,15 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
     def __init__(self, state: State):
         ProcessorReportHandler.__init__(self, state=state)
 
-    def handle(self, message: Message):
+    def handle(self, msg: Report):
 
         # Add pod name, namespace and labels to the report
-        c_id = clean_up_container_id(message.target)
+        c_id = clean_up_container_id(msg.target)
 
         namespace, pod = self.state.metadata_cache_manager.get_container_pod(c_id)
         if namespace is None or pod is None:
             self.state.actor.logger.warning(
-                f"Container with no associated pod : {message.target}, {c_id}, {namespace}, {pod}"
+                f"Container with no associated pod : {msg.target}, {c_id}, {namespace}, {pod}"
             )
             namespace = ""
             pod = ""
@@ -77,12 +77,12 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
 
             labels = self.state.metadata_cache_manager.get_pod_labels(namespace, pod)
             for label_key, label_value in labels.items():
-                message.metadata[f"label_{label_key}"] = label_value
+                msg.metadata[f"label_{label_key}"] = label_value
 
-        message.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
-        message.metadata[POD_NAME_METADATA_KEY] = pod
+        msg.metadata[POD_NAMESPACE_METADATA_KEY] = namespace
+        msg.metadata[POD_NAME_METADATA_KEY] = pod
 
-        self._send_report(report=message)
+        self._send_report(msg)
 
 
 class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
