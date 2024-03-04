@@ -245,13 +245,13 @@ class DBActorGenerator(BaseGenerator):
         else:
             return self.db_factory[db_name](component_config)
 
-    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
         model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
         component_config[COMPONENT_MODEL_KEY] = model
         database_manager = self._generate_db(component_config[COMPONENT_TYPE_KEY], component_config)
         component_config[COMPONENT_DB_MANAGER_KEY] = database_manager
 
-        actor = self._actor_factory(actor_name, main_config, component_config)
+        actor = self._actor_factory(component_name, main_config, component_config)
         return actor
 
 
@@ -316,7 +316,7 @@ class ProcessorGenerator(Generator):
             raise ProcessorTypeAlreadyUsed(processor_type=processor_type)
         self.processor_factory[processor_type] = processor_factory_function
 
-    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
 
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]
 
@@ -325,7 +325,7 @@ class ProcessorGenerator(Generator):
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
         else:
-            component_config[ACTOR_NAME_KEY] = actor_name
+            component_config[ACTOR_NAME_KEY] = component_name
             component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
             return self.processor_factory[processor_actor_type](component_config)
 
@@ -398,14 +398,14 @@ class MonitorGenerator(Generator):
 
         }
 
-    def _gen_actor(self, component_config: dict, main_config: dict, actor_name: str):
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
 
         monitor_actor_type = component_config[COMPONENT_TYPE_KEY]
 
         if monitor_actor_type not in self.monitor_factory:
             raise MonitorTypeDoesNotExist(monitor_type=monitor_actor_type)
         else:
-            component_config[ACTOR_NAME_KEY] = actor_name + MONITOR_NAME_SUFFIX
+            component_config[ACTOR_NAME_KEY] = component_name + MONITOR_NAME_SUFFIX
             return self.monitor_factory[monitor_actor_type](component_config)
 
     def generate_from_processors(self, processors: dict) -> dict:
