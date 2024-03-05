@@ -242,8 +242,8 @@ class DBActorGenerator(BaseGenerator):
             msg = 'Configuration error : database type ' + db_name + ' unknown'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
-        else:
-            return self.db_factory[db_name](component_config)
+
+        return self.db_factory[db_name](component_config)
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
         model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
@@ -324,10 +324,10 @@ class ProcessorGenerator(Generator):
             msg = 'Configuration error : processor actor type ' + processor_actor_type + ' unknown'
             print(msg, file=sys.stderr)
             raise PowerAPIException(msg)
-        else:
-            component_config[ACTOR_NAME_KEY] = component_name
-            component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
-            return self.processor_factory[processor_actor_type](component_config)
+
+        component_config[ACTOR_NAME_KEY] = component_name
+        component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
+        return self.processor_factory[processor_actor_type](component_config)
 
 
 class PreProcessorGenerator(ProcessorGenerator):
@@ -404,9 +404,9 @@ class MonitorGenerator(Generator):
 
         if monitor_actor_type not in self.monitor_factory:
             raise MonitorTypeDoesNotExist(monitor_type=monitor_actor_type)
-        else:
-            component_config[ACTOR_NAME_KEY] = component_name + MONITOR_NAME_SUFFIX
-            return self.monitor_factory[monitor_actor_type](component_config)
+
+        component_config[ACTOR_NAME_KEY] = component_name + MONITOR_NAME_SUFFIX
+        return self.monitor_factory[monitor_actor_type](component_config)
 
     def generate_from_processors(self, processors: dict) -> dict:
         """
