@@ -111,12 +111,13 @@ class Supervisor:
             msg = actor.receive_control(2000)
             if isinstance(msg, ErrorMessage):
                 raise ActorInitError(msg.error_message)
-            elif msg is None:
+
+            if msg is None:
                 if actor.is_alive():
                     actor.terminate()
-                    raise FailConfigureError("Unable to configure the " + actor.name)
-                else:
-                    raise CrashConfigureError("The " + actor.name + " crash during initialisation process")
+                    raise FailConfigureError(f'Unable to configure the actor: {actor.name}')
+                raise CrashConfigureError(f'The actor "{actor.name}" crashed during initialisation')
+
         self.supervised_actors.append(actor)
 
     def join(self):
