@@ -91,9 +91,8 @@ class ProcessorBindingManager(BindingManager):
         for _, processor in self.processors.items():
             for target_actor_name in processor.state.target_actors_names:
                 if target_actor_name in used_targets:
-                    raise TargetActorAlreadyUsed(target_actor=target_actor_name)
-                else:
-                    used_targets.append(target_actor_name)
+                    raise TargetActorAlreadyUsed(target_actor_name)
+                used_targets.append(target_actor_name)
 
 
 class PreProcessorBindingManager(ProcessorBindingManager):

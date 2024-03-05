@@ -473,7 +473,7 @@ class RootConfigParser(BaseConfigParser):
         except getopt.GetoptError as exn:
             if 'recognized' in exn.msg:
                 raise UnknownArgException(exn.opt) from exn
-            elif 'requires' in exn.msg:
+            if 'requires' in exn.msg:
                 raise MissingValueException(exn.opt) from exn
 
         # remove minus
@@ -572,9 +572,8 @@ class RootConfigParser(BaseConfigParser):
             raise SubgroupParserWithoutNameArgumentException()
         if subgroup_type not in self.subgroup_parsers:
             raise SubgroupDoesNotExistException(argument_name=subgroup_type)
-        else:
-            if self.subgroup_parsers[subgroup_type].contains(subgroup_parser.name):
-                raise AlreadyAddedArgumentException(subgroup_parser.name)
+        if self.subgroup_parsers[subgroup_type].contains(subgroup_parser.name):
+            raise AlreadyAddedArgumentException(subgroup_parser.name)
 
         self.subgroup_parsers[subgroup_type].add_subgroup_parser(subgroup_parser.name, subgroup_parser)
 
