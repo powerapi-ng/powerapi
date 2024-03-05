@@ -149,8 +149,7 @@ class CsvIterDB(IterDB):
                     if not raw_data and path_file == self.filenames[0]:
                         self._close_file()
                         raise StopIteration()
-                    else:
-                        break
+                    break
 
                 # Get the timestamp as datetime
                 row_timestamp = utils.timestamp_to_datetime(
