@@ -151,16 +151,15 @@ class PowerReport(Report):
         power = report.power
         return filename, power
 
-    def _gen_tag(self, metadata_keept):
+    def _gen_tag(self, metadata_kept):
         tags = {'sensor': self.sensor,
                 'target': self.target
                 }
 
-        for metadata_name in metadata_keept:
+        for metadata_name in metadata_kept:
             if metadata_name not in self.metadata:
-                raise BadInputData('no tag ' + metadata_name + ' in power report', self)
-            else:
-                tags[metadata_name] = self.metadata[metadata_name]
+                raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
+            tags[metadata_name] = self.metadata[metadata_name]
 
         return tags
 
