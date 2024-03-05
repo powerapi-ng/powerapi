@@ -74,12 +74,11 @@ class DBPullerThread(Thread):
         try:
             if self.state.asynchrone:
                 report = self.loop.run_until_complete(self.state.database_it.__anext__())
-                if report is not None:
-                    return report
-                else:
+                if report is None:
                     raise StopIteration()
-            else:
-                return next(self.state.database_it)
+                return report
+
+            return next(self.state.database_it)
 
         except (StopIteration, BadInputData, DeserializationFail) as database_problem:
             raise NoReportExtractedException() from database_problem

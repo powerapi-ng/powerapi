@@ -158,11 +158,13 @@ class SocketInterface:
         """
         events = self.poller.poll(self.timeout)
 
-        # If there is control socket, he has the priority
+        # If there is data available on both sockets, the control one has priority
         if len(events) == 2:
             return self._recv_serialized(self.control_socket)
-        elif len(events) == 1:
+
+        if len(events) == 1:
             return self._recv_serialized(events[0][0])
+
         return None
 
     def receive_control(self, timeout):

@@ -86,14 +86,15 @@ class StatBuffer:
         time_of_first_measure = values[0]['time']
 
         def split(value_in_periode, value_out_periode):
-            if value_out_periode == []:
+            if not value_out_periode:
                 return value_in_periode, value_out_periode
+
             if value_out_periode[0]['time'] - time_of_first_measure > self.aggregation_periode:
                 return value_in_periode, value_out_periode
-            else:
-                val = value_out_periode.pop(0)
-                value_in_periode.append(val)
-                return split(value_in_periode, value_out_periode)
+
+            val = value_out_periode.pop(0)
+            value_in_periode.append(val)
+            return split(value_in_periode, value_out_periode)
 
         return split([], values)
 
