@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.utils.utils import timestamp_to_datetime, datetime_to_timestamp, dict_merge
-from powerapi.utils.tree import Tree
-from powerapi.utils.stat_buffer import StatBuffer
 from .json_stream import JsonStream
+from .tree import Tree
+from .utils import timestamp_to_datetime
