@@ -173,8 +173,8 @@ class Node:
         aux(self, 1)
 
     def retrieve_leaf_values(self, path):
-        """retrieves all leafs value under the node designating by path
-
+        """
+        Retrieves all leafs value under the node designating by path
         :param path:
         :type path: list
         :rtype: list : list of leafs value
@@ -186,26 +186,25 @@ class Node:
                 return []
             # if the current node is a leaf return its value
             if depth == (len(path) - 1):
-                return node._get_leafs()
+                return node.get_leafs()
 
             # go down in all child nodes
             return reduce(lambda acc, child: acc + aux(child, depth + 1), node.childs, [])
         return aux(self, 0)
 
-    def _get_leafs(self):
+    def get_leafs(self):
         """
-        Retrives all leafs under this node
+        Retrieves all leafs under this node.
         """
         if self.is_leaf:
             return [self.val]
         # concat all leafs value of the node's childs
-        return reduce(lambda acc, child: acc + child._get_leafs(), self.childs,
-                      [])
+        return reduce(lambda acc, child: acc + child.get_leafs(), self.childs, [])
 
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
-        if (self.label != other.label or self.val != other.val or self.is_leaf != other.is_leaf):
+        if self.label != other.label or self.val != other.val or self.is_leaf != other.is_leaf:
             return False
         sorted_child = deepcopy(self.childs)
         sorted_child.sort(key=lambda node: node.label)
