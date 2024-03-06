@@ -151,10 +151,11 @@ class PowerReport(Report):
         power = report.power
         return filename, power
 
-    def _gen_tag(self, metadata_kept):
-        tags = {'sensor': self.sensor,
-                'target': self.target
-                }
+    def gen_tag(self, metadata_kept):
+        """
+        Generate the tags list of the report.
+        """
+        tags = {'sensor': self.sensor, 'target': self.target}
 
         for metadata_name in metadata_kept:
             if metadata_name not in self.metadata:
@@ -170,7 +171,7 @@ class PowerReport(Report):
         """
         return {
             'measurement': 'power_consumption',
-            'tags': report._gen_tag(tags),
+            'tags': report.gen_tag(tags),
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -183,7 +184,7 @@ class PowerReport(Report):
         :return: a dictionary, that can be stored into a prometheus instance, from a given PowerReport
         """
         return {
-            'tags': report._gen_tag(tags),
+            'tags': report.gen_tag(tags),
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }
