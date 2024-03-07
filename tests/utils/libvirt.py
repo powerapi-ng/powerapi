@@ -31,7 +31,9 @@ try:
     from libvirt import libvirtError
 except ImportError:
     class LibvirtException(Exception):
-        """"""
+        """
+        Exception raised when libvirt is not installed.
+        """
 
         def __init__(self, _):
             Exception.__init__(self)
