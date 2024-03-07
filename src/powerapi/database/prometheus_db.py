@@ -125,9 +125,8 @@ class PrometheusDB(BasePrometheusDB):
         return key, value
 
     def _update_exposed_measure(self):
-        for key in self.exposed_measure:
+        for key, args in self.exposed_measure.items():
             if key not in self.measure_for_current_period:
-                args = self.exposed_measure[key]
                 self.energy_metric.remove(*args)
         self.exposed_measure = self.measure_for_current_period
         self.measure_for_current_period = {}
