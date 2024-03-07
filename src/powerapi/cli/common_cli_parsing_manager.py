@@ -446,7 +446,9 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
     def parse_argv(self):
-        """ """
+        """
+        Parse command line arguments.
+        """
         try:
             return self.parse(sys.argv[1:])
 

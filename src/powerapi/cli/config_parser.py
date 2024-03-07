@@ -90,7 +90,9 @@ class ConfigurationArgument:
 
 
 class BaseConfigParser:
-    """"""
+    """
+    Base class for configuration parsers.
+    """
 
     def __init__(self):
         self.arguments = {}
@@ -416,7 +418,9 @@ class SubgroupConfigParser(BaseConfigParser):
 
 
 class RootConfigParser(BaseConfigParser):
-    """"""
+    """
+    Root configuration parser.
+    """
 
     def __init__(self, help_arg: bool = True, separator_env_vars_names: str = '_', separator_args_names: str = '-'):
         """
