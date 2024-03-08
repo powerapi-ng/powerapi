@@ -32,7 +32,8 @@ dependencies = [
     "pyzmq >= 18.1.0",
     "setproctitle >= 1.1.8",
     "flask >= 3.0.0",
-    "flask_httpauth >= 4.8.0"
+    "flask_httpauth >= 4.8.0",
+    "waitress >= 3.0.0"
 
 ]
 

@@ -30,14 +30,13 @@
 # pylint: disable=W0602
 
 import asyncio
+import logging
 import random
+from multiprocessing import Process, Manager
 
 from typing import Type, List
 
-from gevent import monkey
-
-from gevent.pywsgi import WSGIServer
-from gevent.threading import Thread
+from waitress import serve
 
 from flask import Flask, request
 from flask_httpauth import HTTPTokenAuth
@@ -53,7 +52,9 @@ CONTENT_TYPE_PROPERTY_NAME = 'Content-Type'
 
 APPLICATION_JSON_TYPE = 'application/json'
 
-DEFAULT_ANSWER = ''
+DEFAULT_ANSWER_STORED_REPORT = 'Report Stored'
+DEFAULT_ANSWER_MISSING_REPORT = 'Missing Report'
+DEFAULT_ANSWER_BAD_REPORT_TYPE = 'Json expected as Report Type'
 
 DEFAULT_TOKEN = 'default-token'
 
@@ -77,7 +78,6 @@ NOT_FOUND_CODE = 404
 UNAUTHORIZED_CODE = 401
 
 # Server
-monkey.patch_all(ssl=False)
 
 flask_app = Flask(import_name=DEFAULT_APPLICATION_NAME)
 
@@ -110,16 +110,24 @@ def verify_token(token):
     return verification_result
 
 
+@flask_app.route("/", methods=['POST', 'GET'])
+def hello_world():
+    """
+    Hello World
+    """
+    return "Hello, World!"
+
+
 @flask_app.post(HWPC_RESOURCE_PATH)
 @authentification.login_required
-async def process_hwpc_report():
+def process_hwpc_report():
     """
     Process a HWPC Report
     """
-    return await store_report(report_type=HWPCReport)
+    return store_report(report_type=HWPCReport)
 
 
-async def store_report(report_type):
+def store_report(report_type):
     """
     Store the provided report in a queue
     :param report_type: The report type related to the report
@@ -132,12 +140,12 @@ async def store_report(report_type):
         if report_json:
             global report_queue
             report = report_type.from_json(report_json)
-            await report_queue.put(report)
-            return DEFAULT_ANSWER, CREATED_CODE
+            report_queue.put(report)
+            return DEFAULT_ANSWER_STORED_REPORT, CREATED_CODE
         else:
-            return DEFAULT_ANSWER, BAD_REQUEST_CODE
+            return DEFAULT_ANSWER_MISSING_REPORT, BAD_REQUEST_CODE
     else:
-        return DEFAULT_ANSWER, BAD_REQUEST_CODE
+        return DEFAULT_ANSWER_BAD_REPORT_TYPE, BAD_REQUEST_CODE
 
 
 def get_flask_app():
@@ -156,19 +164,21 @@ class HttpServerDB(BaseDB):
     def __init__(self, report_type: Type[Report], port: int, host: str, token: str = None):
         BaseDB.__init__(self, report_type)
 
-        self.asynchrone = True
+        # self.asynchrone = False
 
         global flask_app, tokens, report_queue
         tokens = {}
-        report_queue = asyncio.Queue()
+
+        self.manager = Manager()
+        report_queue = self.manager.Queue(-1)
         self.flask_app = flask_app
         self.tokens = tokens
         self.port = port
         self.host = host
-        self.http_server = WSGIServer((host, port), self.flask_app)
+        self.logger = logging.getLogger()
         self.report_queue = report_queue
 
-        self.server_thread = None
+        self.server_process = None
 
         if not token:
             token = DEFAULT_TOKEN
@@ -177,18 +187,20 @@ class HttpServerDB(BaseDB):
 
     def connect(self):
         """
-        Start an HTTP server receiving the metrics
+        Start an HTTP server receiving the metrics (raw reports)
         """
 
         def run_wsgi():
             """
-            Start the http server
+            Start the HTPP server
             """
-            self.http_server.start()
-            print('finished')
+            self.logger.debug('Starting HTTP Server')
+            serve(self.flask_app, host=self.host, port=self.port)
+            self.logger.debug('HTTP Server stopped')
 
-        self.server_thread = Thread(run_wsgi())
-        self.server_thread.start()
+        self.server_process = Process(target=run_wsgi)
+
+        self.server_process.start()
 
     def disconnect(self):
         self._stop()
@@ -197,9 +209,9 @@ class HttpServerDB(BaseDB):
         """
         Stop the running http server and wait for the end of the thread running it
         """
-        self.http_server.stop()
-        if self.server_thread:
-            self.server_thread.join(2)
+        #
+        if self.server_process and self.server_process.is_alive():
+            self.server_process.kill()
 
     def iter(self, stream_mode: bool) -> IterDB:
         global report_queue
@@ -227,12 +239,12 @@ class IterHttpServerDB(IterDB):
 
         self.queue = queue
 
-    def __aiter__(self):
+    def __iter__(self):
         return self
 
-    async def __anext__(self):
+    def __next__(self):
         try:
-            report = await asyncio.wait_for(self.queue.get(), 2)
+            report = self.queue.get()
             return report
         except asyncio.TimeoutError:
             return None
