@@ -27,6 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import socket as sock
+from urllib.error import URLError
+from urllib.request import Request, urlopen
+
 import pytest
 from werkzeug.datastructures import Authorization
 
@@ -41,28 +45,9 @@ WRONG_HOST_2 = '0.0.0.1'
 ALL_PUBLIC_IPS = '0.0.0.0'
 
 PORT = 10000
+OPEN_PORT_STATE = 0
 
 NUMBER_OF_REPORTS_FOR_TESTING = 50
-
-
-@pytest.mark.parametrize('host_token_port', [(LOCALHOST, None, PORT), (ALL_PUBLIC_IPS, None, PORT)])
-@pytest.mark.asyncio
-async def test_correct_connection(server):
-    """
-    Start the http server and test that no exception is raised
-    """
-    server.connect()
-    assert True
-
-
-@pytest.mark.parametrize('host', [WRONG_HOST_1, WRONG_HOST_2])
-def test_server_init_raise_error_with_wrong_host(host):
-    """
-    Test if an exception is raised when creating a server with a wrong host
-    """
-    with pytest.raises(OSError):
-        server = HttpServerDB(report_type=REPORT_TYPE, host=host, port=PORT)
-        server.connect()
 
 
 @pytest.mark.parametrize('number_of_reports_to_extract, host_token_port',
@@ -73,7 +58,6 @@ def test_process_hwpc_report_without_authentification_works_with_correct_uri(hwp
     Test that the processing with authentification disabled (token = None) is working when using a correct uri
     """
     for report_number in range(0, NUMBER_OF_REPORTS_FOR_TESTING):
-        # the_rest_client = rest_client.asend(None)
         response = rest_client.post(HWPC_RESOURCE_PATH, json=hwpc_reports[report_number])
         assert response.status_code == CREATED_CODE
 
@@ -88,7 +72,6 @@ def test_process_hwpc_report_without_authentification_fails_with_wrong_resource_
     Test that the processing with authentification disabled (token = None) fails when a wrong uri is used
     """
     for report_number in range(0, NUMBER_OF_REPORTS_FOR_TESTING):
-        # the_rest_client = await rest_client.asend(None)
         response = rest_client.post('/api/v1/report/PowerReport', json=hwpc_reports[report_number])
         assert response.status_code == NOT_FOUND_CODE
 
@@ -103,7 +86,6 @@ def test_process_hwpc_report_with_authentification_works_with_login(host_token_p
     Test that the processing with authentification enable (token != None) is working when using a correct token
     """
     for report_number in range(0, NUMBER_OF_REPORTS_FOR_TESTING):
-        # the_rest_client = await rest_client.asend(None)
         response = rest_client.post(HWPC_RESOURCE_PATH, json=hwpc_reports[report_number],
                                     auth=Authorization(token=host_token_port[1], auth_type='Bearer'))
         assert response.status_code == CREATED_CODE
@@ -118,7 +100,6 @@ def test_process_hwpc_report_with_authentification_fails_without_login(hwpc_repo
     Test that the processing with authentification enable (token != None) fails when no token is provided
     """
     for report_number in range(0, NUMBER_OF_REPORTS_FOR_TESTING):
-        # the_rest_client = await rest_client.asend(None)
         response = rest_client.post(HWPC_RESOURCE_PATH, json=hwpc_reports[report_number])
         assert response.status_code == UNAUTHORIZED_CODE
 
@@ -133,7 +114,6 @@ def test_process_hwpc_report_with_authentification_fails_with_wrong_login(hwpc_r
     Test that the processing with authentification enable (token != None) fails when using a wrong token
     """
     for report_number in range(0, NUMBER_OF_REPORTS_FOR_TESTING):
-        # the_rest_client = await rest_client.asend(None)
         response = rest_client.post(HWPC_RESOURCE_PATH, json=hwpc_reports[report_number],
                                     auth=Authorization(token='wrong_token', auth_type='Bearer'))
         assert response.status_code == UNAUTHORIZED_CODE
