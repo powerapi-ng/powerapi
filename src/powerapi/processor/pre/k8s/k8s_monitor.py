@@ -27,6 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from signal import signal, SIGTERM, SIGINT
 from logging import Formatter, getLogger, StreamHandler, WARNING
 from multiprocessing import Manager, Process
 
@@ -151,10 +152,21 @@ class K8sMonitorAgent(Process):
         load_k8s_api_client_configuration(self.concerned_actor_state)
         return client.CoreV1Api()
 
+    def _setup_signal_handlers(self):
+        """
+        Setup signal handlers for the current Process.
+        """
+        def stop_monitor(_, __):
+            self.stop_monitoring.set()
+
+        signal(SIGTERM, stop_monitor)
+        signal(SIGINT, stop_monitor)
+
     def run(self):
         """
         Main code executed by the Monitor
         """
+        self._setup_signal_handlers()
         self.query_k8s()
 
     def query_k8s(self) -> None:
