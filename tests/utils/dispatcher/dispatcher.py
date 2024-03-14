@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Queue
+from multiprocessing import Manager
 
 from powerapi.dispatcher import DispatcherActor, RouteTable
 
@@ -39,8 +39,10 @@ class FakeDispatcher(DispatcherActor):
 
     def __init__(self, name: str):
         super().__init__(name, lambda *args: None, [], RouteTable())
-        self.control_mailbox = Queue()
-        self.data_mailbox = Queue()
+
+        self.manager = Manager()
+        self.control_mailbox = self.manager.Queue()
+        self.data_mailbox = self.manager.Queue()
 
     def run(self) -> None:
         return
