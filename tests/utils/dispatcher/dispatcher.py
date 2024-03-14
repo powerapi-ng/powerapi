@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Queue
+from multiprocessing import SimpleQueue
 
 from powerapi.dispatcher import DispatcherActor, RouteTable
 
@@ -39,8 +39,8 @@ class FakeDispatcher(DispatcherActor):
 
     def __init__(self, name: str):
         super().__init__(name, lambda *args: None, [], RouteTable())
-        self.control_mailbox = Queue()
-        self.data_mailbox = Queue()
+        self.control_mailbox = SimpleQueue()
+        self.data_mailbox = SimpleQueue()
 
     def run(self) -> None:
         return
@@ -68,14 +68,8 @@ class FakeDispatcher(DispatcherActor):
         Remove and returns the last control message received by the dispatcher.
         """
         if self.control_mailbox.empty():
-            return self.control_mailbox.get(timeout=timeout)
+            return self.control_mailbox.get()
         return None
-
-    def get_num_received_control(self):
-        """
-        Returns the number of control messages received by the dispatcher.
-        """
-        return self.control_mailbox.qsize()
 
     def send_data(self, msg):
         self.data_mailbox.put(msg)
@@ -84,15 +78,19 @@ class FakeDispatcher(DispatcherActor):
         """
         Remove and returns the last data message received by the dispatcher.
         """
+        _ = timeout
         if self.data_mailbox.empty():
-            return self.data_mailbox.get(timeout=timeout)
+            return self.data_mailbox.get()
         return None
 
     def get_num_received_data(self):
         """
         Returns the number of data messages received by the dispatcher.
         """
-        return self.data_mailbox.qsize()
+        res = []
+        while not self.data_mailbox.empty():
+            res.append(self.data_mailbox.get())
+        return len(res)
 
     def receive(self):
         if self.control_mailbox.empty():

@@ -107,7 +107,7 @@ class TestPusher(AbstractTestActorWithDB):
         Check that the pusher actor saves a report when the buffer size is 0.
         """
         started_actor_with_db.send_data(REPORT1)
-        assert fake_db.q.get(timeout=1) == [REPORT1]
+        assert fake_db.q.get() == [REPORT1]
 
     @staticmethod
     @define_buffer_size(1)
@@ -117,7 +117,7 @@ class TestPusher(AbstractTestActorWithDB):
         """
         started_actor_with_db.send_data(REPORT1)
         with pytest.raises(Empty):
-            fake_db.q.get(timeout=1)
+            fake_db.q.get()
 
     @staticmethod
     @define_buffer_size(1)
@@ -127,7 +127,7 @@ class TestPusher(AbstractTestActorWithDB):
         """
         started_actor_with_db.send_data(REPORT1)
         started_actor_with_db.send_data(REPORT2)
-        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
+        assert fake_db.q.get() == [REPORT1, REPORT2]
 
     @staticmethod
     @define_delay(0)
@@ -136,7 +136,7 @@ class TestPusher(AbstractTestActorWithDB):
         Check that the pusher actor saves a report when the delay is 0.
         """
         started_actor_with_db.send_data(REPORT1)
-        assert fake_db.q.get(timeout=1) == [REPORT1]
+        assert fake_db.q.get() == [REPORT1]
 
     @staticmethod
     @define_delay(2000)
@@ -147,7 +147,7 @@ class TestPusher(AbstractTestActorWithDB):
         started_actor_with_db.send_data(REPORT1)
         started_actor_with_db.send_data(REPORT2)
         with pytest.raises(Empty):
-            fake_db.q.get(timeout=1)
+            fake_db.q.get()
 
     @staticmethod
     @define_delay(2000)
@@ -158,7 +158,7 @@ class TestPusher(AbstractTestActorWithDB):
         started_actor_with_db.send_data(REPORT1)
         time.sleep(2)
         started_actor_with_db.send_data(REPORT2)
-        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
+        assert fake_db.q.get() == [REPORT1, REPORT2]
 
     @staticmethod
     @define_buffer_size(1)
@@ -168,4 +168,4 @@ class TestPusher(AbstractTestActorWithDB):
         """
         started_actor_with_db.send_data(REPORT2)
         started_actor_with_db.send_data(REPORT1)
-        assert fake_db.q.get(timeout=1) == [REPORT1, REPORT2]
+        assert fake_db.q.get() == [REPORT1, REPORT2]

@@ -26,7 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from multiprocessing import Queue
+from multiprocessing import SimpleQueue
 
 from powerapi.database import BaseDB, DBError
 from powerapi.report import Report
@@ -60,19 +60,19 @@ class FakeDB(BaseDB):
     def __init__(self, content=[]):
         BaseDB.__init__(self, Report, [FakeDBError])
         self._content = content
-        self.q = Queue()
+        self.q = SimpleQueue()
 
     def connect(self):
-        self.q.put('connected', block=False)
+        self.q.put('connected')
 
     def iter(self, stream_mode):
         return self._content.__iter__()
 
     def save(self, report):
-        self.q.put(report, block=False)
+        self.q.put(report)
 
     def save_many(self, reports):
-        self.q.put(reports, block=False)
+        self.q.put(reports)
 
 
 class SilentFakeDB(BaseDB):
@@ -83,7 +83,7 @@ class SilentFakeDB(BaseDB):
     def __init__(self, content=[]):
         BaseDB.__init__(self, Report)
         self._content = content
-        self.q = Queue()
+        self.q = SimpleQueue()
 
     def connect(self):
         pass
@@ -92,10 +92,10 @@ class SilentFakeDB(BaseDB):
         return self._content.__iter__()
 
     def save(self, report):
-        self.q.put(report, block=False)
+        self.q.put(report)
 
     def save_many(self, reports):
-        self.q.put(reports, block=False)
+        self.q.put(reports)
 
 
 class CrashDB(BaseDB):
