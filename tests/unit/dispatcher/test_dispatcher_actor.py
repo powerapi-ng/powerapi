@@ -285,7 +285,7 @@ class TestDispatcher:
 
     @staticmethod
     @pytest.fixture
-    def actor(dispatch_rules, started_fake_pusher_power_report):
+    def actor(request, dispatch_rules, started_fake_pusher_power_report):
         """
         Fixture for creating a DispatcherActor instance.
         """
@@ -300,7 +300,8 @@ class TestDispatcher:
             return DummyFormulaActor(name, pushers, 0, 0)
 
         reports_pusher = {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report}
-        actor = DispatcherActor('test-dispatcher', formula_factory, reports_pusher, route_table)
+        name = f'{request.node.name}_dispatcher'
+        actor = DispatcherActor(name, formula_factory, reports_pusher, route_table)
 
         return actor
 
@@ -395,6 +396,7 @@ class TestDispatcher:
         assert len(started_actor.state.formula_dict) == 0
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_Report1_with_dispatch_rule_for_Report1_and_no_formula_created_must_create_a_new_formula(started_actor, dummy_pipe_out):
         """
@@ -425,6 +427,7 @@ class TestDispatcher:
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)), (Report2, DispatchRule2A())])
     def test_send_Report2_with_dispatch_rule_for_Report1_Primary_and_two_formula_send_report_to_all_formula(dispatcher_with_two_formula, dummy_pipe_out):
         """
@@ -450,21 +453,22 @@ class TestDispatcher:
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_REPORT1_B2_with_dispatch_rule_1AB_must_create_two_formula(started_actor, dummy_pipe_out):
         """
         Check that two formulas are created by DispatcherActor
         """
         started_actor.send_data(REPORT_1_B2)
-        reports = []
 
-        for _ in range(2):
-            _, msg = recv_from_pipe(dummy_pipe_out, 0.5)
-            reports.append(msg)
+        _, msg1 = recv_from_pipe(dummy_pipe_out, 1)
+        _, msg2 = recv_from_pipe(dummy_pipe_out, 1)
 
-        assert len(reports) == 2
+        assert isinstance(msg1, PowerReport)
+        assert isinstance(msg2, PowerReport)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True)), (Report3, DispatchRule3())])
     def test_send_REPORT3_on_dispatcher_with_two_formula_and_dispatch_rule_1AB_send_report_to_one_formula(dispatcher_with_two_formula, dummy_pipe_out):
         """
@@ -484,6 +488,7 @@ class TestDispatcher:
         assert recv_from_pipe(dummy_pipe_out, 0.5) == (None, None)
 
     @staticmethod
+    @pytest.mark.usefixtures("shutdown_system")
     @define_dispatch_rules([(Report1, DispatchRule1AB(primary=True))])
     def test_send_PoisonPillMessage_make_dispatcher_forward_it_to_formula(dispatcher_with_two_formula):
         """
@@ -491,10 +496,11 @@ class TestDispatcher:
         """
         dispatcher_with_two_formula.send_control(PoisonPillMessage('system-test-dispatcher'))
 
-        sleep(10)
+        sleep(5)
 
         for _, formula in dispatcher_with_two_formula.state.formula_dict.items():
             assert not formula.is_alive()
+
         assert not dispatcher_with_two_formula.is_alive()
 
 
