@@ -200,21 +200,12 @@ class PostProcessorBindingManager(ProcessorBindingManager):
                 # We look for the pusher on each dispatcher in order to replace it by
                 # the processor
                 for _, puller in self.pullers:
-
                     for current_filter in puller.state.report_filter.filters:
                         dispatcher = current_filter[1]
-
-                        number_of_pushers = len(dispatcher.pusher)
-                        pusher_updated = False
-
-                        for index in range(number_of_pushers):
+                        for index in range(len(dispatcher.pusher)):
                             if dispatcher.pusher[index] == pusher_actor:
                                 dispatcher.pusher[index] = processor
-                                pusher_updated = True
                                 break
-
-                        if pusher_updated:
-                            dispatcher.update_state_formula_factory()
 
     def check_processor_targets(self, processor: ProcessorActor):
         """
