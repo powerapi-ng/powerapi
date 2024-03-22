@@ -33,7 +33,7 @@ from multiprocessing import Manager
 from powerapi.actor import Actor
 from powerapi.message import StartMessage, PoisonPillMessage
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
-from powerapi.report import Report
+from powerapi.report import HWPCReport
 from .handlers import K8sPreProcessorActorHWPCReportHandler
 from .handlers import K8sPreProcessorActorStartMessageHandler, K8sPreProcessorActorPoisonPillMessageHandler
 from .metadata_cache_manager import K8sMetadataCacheManager
@@ -70,5 +70,5 @@ class K8sPreProcessorActor(ProcessorActor):
         """
         super().setup()
         self.add_handler(StartMessage, K8sPreProcessorActorStartMessageHandler(state=self.state))
-        self.add_handler(Report, K8sPreProcessorActorHWPCReportHandler(state=self.state))
+        self.add_handler(HWPCReport, K8sPreProcessorActorHWPCReportHandler(state=self.state))
         self.add_handler(PoisonPillMessage, K8sPreProcessorActorPoisonPillMessageHandler(state=self.state))
