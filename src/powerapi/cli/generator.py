@@ -353,9 +353,9 @@ class PreProcessorGenerator(ProcessorGenerator):
         :return: Configured Kubernetes pre-processor actor
         """
         name = processor_config[ACTOR_NAME_KEY]
-        api_mode = processor_config[K8S_API_MODE_KEY] or None
-        api_host = processor_config[HOST_KEY] or None
-        api_key = processor_config[API_KEY_KEY] or None
+        api_mode = processor_config.get(K8S_API_MODE_KEY, 'manual')  # use manual mode by default
+        api_host = processor_config.get(HOST_KEY, None)
+        api_key = processor_config.get(API_KEY_KEY, None)
         target_actors_name = [processor_config[PULLER_NAME_KEY]]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)
