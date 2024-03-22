@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 
 from powerapi.actor import State, Actor
@@ -63,7 +64,7 @@ class ProcessorActor(Actor):
     """
 
     def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int = 5000):
-        Actor.__init__(self, name, level_logger, timeout)
+        super().__init__(name, level_logger, timeout)
         self.state = ProcessorState(actor=self, target_actors=[], target_actors_names=[])
 
     def setup(self):
