@@ -48,9 +48,22 @@ class K8sPreProcessorState(ProcessorState):
     def __init__(self, actor: Actor, target_actors: list, target_actors_names: list, api_mode: str, api_host: str, api_key: str):
         super().__init__(actor, target_actors, target_actors_names)
 
+        self.api_mode = api_mode
+        self.api_host = api_host
+        self.api_key = api_key
+
+        self.manager = None
+        self.metadata_cache_manager = None
+        self.monitor_agent = None
+
+    def initialize_metadata_cache_manager(self):
+        """
+        Initialize the metadata cache manager.
+        This method should **ONLY** be called from the pre-processor actor process.
+        """
         self.manager = Manager()
         self.metadata_cache_manager = K8sMetadataCacheManager(self.manager)
-        self.metadata_cache_monitor = K8sMonitorAgent(self.metadata_cache_manager, api_mode, api_host, api_key)
+        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, self.api_mode, self.api_host, self.api_key)
 
 
 class K8sPreProcessorActor(ProcessorActor):
@@ -66,9 +79,10 @@ class K8sPreProcessorActor(ProcessorActor):
 
     def setup(self):
         """
-        Define HWPCReportMessage handler, StartMessage handler and PoisonPillMessage Handler
+        Set up the Kubernetes pre-processor actor.
         """
-        super().setup()
-        self.add_handler(StartMessage, K8sPreProcessorActorStartMessageHandler(state=self.state))
-        self.add_handler(HWPCReport, K8sPreProcessorActorHWPCReportHandler(state=self.state))
-        self.add_handler(PoisonPillMessage, K8sPreProcessorActorPoisonPillMessageHandler(state=self.state))
+        self.state.initialize_metadata_cache_manager()
+
+        self.add_handler(StartMessage, K8sPreProcessorActorStartMessageHandler(self.state))
+        self.add_handler(HWPCReport, K8sPreProcessorActorHWPCReportHandler(self.state))
+        self.add_handler(PoisonPillMessage, K8sPreProcessorActorPoisonPillMessageHandler(self.state))

@@ -45,7 +45,7 @@ class K8sPreProcessorActorStartMessageHandler(StartHandler):
         for actor in self.state.target_actors:
             actor.connect_data()
 
-        self.state.metadata_cache_monitor.start()
+        self.state.monitor_agent.start()
 
 
 class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
@@ -76,7 +76,7 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
         """
         Teardown the Kubernetes processor.
         """
-        self.state.metadata_cache_monitor.terminate()
+        self.state.monitor_agent.terminate()
 
         for actor in self.state.target_actors:
             actor.close()
