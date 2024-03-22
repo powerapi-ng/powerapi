@@ -33,12 +33,10 @@ from copy import deepcopy
 import pytest
 import tests.utils.cli as test_files_module
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.cli.generator import PullerGenerator, PusherGenerator, COMPONENT_TYPE_KEY, \
-    LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, COMPONENT_TYPE_KEY, LISTENER_ACTOR_KEY, PreProcessorGenerator
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
-from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
-    generate_cli_configuration_from_json_file
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, generate_cli_configuration_from_json_file
 from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 
@@ -235,20 +233,6 @@ def several_k8s_pre_processors(several_k8s_pre_processors_config):
 
 
 @pytest.fixture
-def several_k8s_monitors_config(several_k8s_pre_processors):
-    """
-    Configuration with several k8s monitors derived from processor generators
-    """
-    monitors_config = {'monitor': {}}
-
-    for processor_name, processor in several_k8s_pre_processors.items():
-        monitors_config['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
-                                                                            LISTENER_ACTOR_KEY: processor}
-
-    return monitors_config
-
-
-@pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     Valid configuration with csv as input and output and stream mode disabled
@@ -323,23 +307,6 @@ def k8s_pre_processors(k8s_pre_processor_config):
     processors = generator.generate(k8s_pre_processor_config)
 
     return processors
-
-
-@pytest.fixture
-def k8s_monitor_config(k8s_pre_processors):
-    """
-    The configuration of k8s monitors is derived from processor generators
-    """
-
-    processors = k8s_pre_processors
-
-    monitors = {'monitor': {}}
-
-    for processor_name, processor in processors.items():
-        monitors['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
-                                                                     LISTENER_ACTOR_KEY: processor}
-
-    return monitors
 
 
 @pytest.fixture()
