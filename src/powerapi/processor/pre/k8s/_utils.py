@@ -28,10 +28,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def extract_container_id_from_cgroups_path(cgroups_path: str) -> str:
+def is_target_a_valid_k8s_cgroups_path(target: str) -> bool:
+    """
+    Checks if the provided target is a valid Kubernetes cgroups path.
+    """
+    return target.startswith('/kubepods')
+
+
+def extract_container_id_from_k8s_cgroups_path(cgroups_path: str) -> str:
     """
     Extract the container id from a Kubernetes cgroups path.
-    :param cgroups_path: Cgroups path of the container
+    :param cgroups_path: Cgroups path of the target
+    :return: The container id
     """
     container_id = cgroups_path.rsplit('/', 1)[1]
 

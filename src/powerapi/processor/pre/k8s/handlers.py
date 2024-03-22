@@ -30,7 +30,7 @@
 from powerapi.handler import StartHandler, PoisonPillMessageHandler
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
-from ._utils import extract_container_id_from_cgroups_path
+from ._utils import extract_container_id_from_k8s_cgroups_path, is_target_a_valid_k8s_cgroups_path
 
 
 class K8sPreProcessorActorStartMessageHandler(StartHandler):
@@ -57,12 +57,13 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
         """
         Process an HWPCReport to add the Kubernetes metadata.
         """
-        container_id = extract_container_id_from_cgroups_path(msg.target)
-        container_metadata = self.state.metadata_cache_manager.get_container_metadata(container_id)
+        if is_target_a_valid_k8s_cgroups_path(msg.target):
+            container_id = extract_container_id_from_k8s_cgroups_path(msg.target)
+            container_metadata = self.state.metadata_cache_manager.get_container_metadata(container_id)
 
-        if container_metadata is not None:
-            msg.target = container_metadata.container_name
-            msg.metadata = {**msg.metadata, **container_metadata.pod_labels}
+            if container_metadata is not None:
+                msg.target = container_metadata.container_name
+                msg.metadata = {**msg.metadata, **container_metadata.pod_labels}
 
         self._send_report(msg)
 
