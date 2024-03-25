@@ -182,7 +182,7 @@ class K8sMonitorAgent(Process):
         container_statuses = pod.status.container_statuses
         return [
             K8sContainerMetadata(container_id, container_name, namespace, pod_name, pod_labels)
-            for container_name, container_id in self._get_containers_id_name_from_statuses(container_statuses).items()
+            for container_id, container_name in self._get_containers_id_name_from_statuses(container_statuses).items()
         ]
 
     def _fetch_list_all_pod_for_all_namespaces(self) -> Optional[int]:
