@@ -77,3 +77,9 @@ class K8sMetadataCacheManager:
         :return: Container metadata entry
         """
         return self.metadata_cache.get(container_id)
+
+    def clear_metadata_cache(self):
+        """
+        Clears all container metadata entries from the cache.
+        """
+        self.metadata_cache.clear()

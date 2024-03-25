@@ -110,3 +110,18 @@ def test_container_metadata_cache_with_unknown_container_id(initialized_metadata
     entry = initialized_metadata_cache_manager.get_container_metadata(container_id)
 
     assert entry is None
+
+
+def test_container_metadata_cache_clear(initialized_metadata_cache_manager):
+    """
+    Test clearing the metadata cache.
+    """
+    container_id = '9c4b8e6491219cf5112bdc8c6aab02ff19ccc8870cda70f264a41add2dc57fbb'
+    entry = _generate_metadata_cache_entry(container_id)
+    initialized_metadata_cache_manager.update_container_metadata(ADDED_EVENT, entry)
+
+    assert len(initialized_metadata_cache_manager.metadata_cache) == 1
+
+    initialized_metadata_cache_manager.clear_metadata_cache()
+
+    assert len(initialized_metadata_cache_manager.metadata_cache) == 0
