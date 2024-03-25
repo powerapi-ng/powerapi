@@ -150,10 +150,11 @@ class Actor(multiprocessing.Process):
         Define how to handle signal interrupts
         """
 
-        def term_handler(_, __):
-            self.logger.debug("Term handler")
-            pp_handler = self.state.get_corresponding_handler(PoisonPillMessage())
-            pp_handler.handle(PoisonPillMessage(soft=False, sender_name='Term handler'))
+        def term_handler(signum, _):
+            signame = signal.Signals(signum).name
+            self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
+
+            self.state.alive = False
             self._kill_process()
             sys.exit(0)
 
