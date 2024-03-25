@@ -35,7 +35,7 @@ def _generate_metadata_cache_entry(container_id: str, counter: int = 0) -> K8sCo
     """
     Generate a K8sContainerMetadata object from the given parameters.
     """
-    container_name = f'powerapi-test-container'
+    container_name = 'powerapi-test-container'
     namespace = 'powerapi-test-namespace'
     pod_name = 'powerapi-test-pod'
     pod_labels = {
