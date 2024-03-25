@@ -80,5 +80,7 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
         self.state.monitor_agent.terminate()
         self.state.monitor_agent.join()
 
+        self.state.manager.shutdown()
+
         for actor in self.state.target_actors:
             actor.close()
