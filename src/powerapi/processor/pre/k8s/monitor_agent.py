@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import sys
 from multiprocessing import Process
 from signal import signal, SIGTERM, SIGINT
 from typing import Dict, Optional, List
@@ -138,6 +139,7 @@ class K8sMonitorAgent(Process):
         """
         def stop_monitor(_, __):
             self.stop_monitoring = True
+            sys.exit(0)
 
         signal(SIGTERM, stop_monitor)
         signal(SIGINT, stop_monitor)
