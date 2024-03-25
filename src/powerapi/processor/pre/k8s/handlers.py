@@ -78,6 +78,7 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
         Teardown the Kubernetes processor.
         """
         self.state.monitor_agent.terminate()
+        self.state.monitor_agent.join()
 
         for actor in self.state.target_actors:
             actor.close()
