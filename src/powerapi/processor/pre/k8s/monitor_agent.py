@@ -201,7 +201,7 @@ class K8sMonitorAgent(Process):
         except ApiException as e:
             logging.warning('API exception caught in fetch: %s %s', e.status, e.reason)
         except ProtocolError as e:
-            logging.warning('Protocol error caught in fetch: %s %s', e)
+            logging.warning('Protocol error caught in fetch: %s', e)
 
         return resource_version
 
