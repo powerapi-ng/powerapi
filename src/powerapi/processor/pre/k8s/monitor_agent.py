@@ -30,9 +30,10 @@
 import logging
 from multiprocessing import Process
 from signal import signal, SIGTERM, SIGINT
-from typing import Dict
+from typing import Dict, Optional, List
 
 from kubernetes import client, config, watch
+from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
 from kubernetes.client.configuration import Configuration
 from kubernetes.client.rest import ApiException
 from urllib3.exceptions import ProtocolError
@@ -143,15 +144,20 @@ class K8sMonitorAgent(Process):
 
     def run(self):
         """
-        Main code executed by the Monitor
+        Main code executed by the Kubernetes monitor agent.
         """
         self._setup_signal_handlers()
 
+        # Clearing the metadata cache before starting prevents having orphaned entries
+        # that will never be deleted because they no longer exist in the Kubernetes API.
+        self.metadata_cache_manager.clear_metadata_cache()
+
         while not self.stop_monitoring:
-            self.watch_list_pod_for_all_namespaces()
+            resource_id = self._fetch_list_all_pod_for_all_namespaces()
+            self._watch_list_pod_for_all_namespaces(resource_id)
 
     @staticmethod
-    def _extract_containers_id_name_from_statuses(container_statuses) -> Dict[str, str]:
+    def _get_containers_id_name_from_statuses(container_statuses: List[V1ContainerStatus]) -> Dict[str, str]:
         """
         Extract containers ID and name from the statuses.
         :param container_statuses: Container statuses object (from Kubernetes API)
@@ -162,26 +168,56 @@ class K8sMonitorAgent(Process):
             for container_status in container_statuses
         }
 
-    def watch_list_pod_for_all_namespaces(self):
+    def _build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> List[K8sContainerMetadata]:
         """
-        Watch k8s pods events for all namespaces and update the local metadata cache.
+        Build and return metadata cache entries from a Kubernetes pod object.
+        :param pod: Kubernetes pod
+        :return: List of metadata cache entries
+        """
+        pod_name = pod.metadata.name
+        pod_labels = pod.metadata.labels
+        namespace = pod.metadata.namespace
+        container_statuses = pod.status.container_statuses
+        return [
+            K8sContainerMetadata(container_id, container_name, namespace, pod_name, pod_labels)
+            for container_name, container_id in self._get_containers_id_name_from_statuses(container_statuses).items()
+        ]
+
+    def _fetch_list_all_pod_for_all_namespaces(self) -> Optional[int]:
+        """
+        Fetch all pod for all namespaces and populate the metadata cache.
+        :return: Resource version of the last fetched entry
+        """
+        resource_version = None
+        try:
+            pods: V1PodList = self.k8s_api.list_pod_for_all_namespaces(watch=False)
+            for pod in pods.items:
+                resource_version = pod.metadata.resource_version
+                for entry in self._build_metadata_cache_entries_from_pod(pod):
+                    self.metadata_cache_manager.update_container_metadata(ADDED_EVENT, entry)
+
+        except ApiException as e:
+            logging.warning('API exception caught in fetch: %s %s', e.status, e.reason)
+        except ProtocolError as e:
+            logging.warning('Protocol error caught in fetch: %s %s', e)
+
+        return resource_version
+
+    def _watch_list_pod_for_all_namespaces(self, resource_version: int = None):
+        """
+        Watch k8s pods events for all namespaces and update the local metadata cache accordingly.
+        :param resource_version: Resource version from where the watcher begin
         """
         try:
             w = watch.Watch()
-            for event in w.stream(self.k8s_api.list_pod_for_all_namespaces):
-                if event['type'] not in {ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT}:
-                    logging.warning('Unexpected pod event: %s', event['type'])
-                    continue
-
-                pod = event["object"]
+            for event in w.stream(self.k8s_api.list_pod_for_all_namespaces, resource_version=resource_version):
                 event_type = event["type"]
 
-                pod_name = pod.metadata.name
-                pod_labels = pod.metadata.labels
-                namespace = pod.metadata.namespace
-                pod_containers = self._extract_containers_id_name_from_statuses(pod.status.container_statuses)
-                for container_id, container_name in pod_containers.items():
-                    entry = K8sContainerMetadata(container_id, container_name, namespace, pod_name, pod_labels)
+                if event_type not in {ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT}:
+                    logging.warning('Unexpected pod event: %s', event_type)
+                    continue
+
+                for entry in self._build_metadata_cache_entries_from_pod(event["object"]):
                     self.metadata_cache_manager.update_container_metadata(event_type, entry)
 
         except ApiException as e:
