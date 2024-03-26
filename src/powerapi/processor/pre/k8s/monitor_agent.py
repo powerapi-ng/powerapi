@@ -162,12 +162,12 @@ class K8sMonitorAgent(Process):
     def _get_containers_id_name_from_statuses(container_statuses: List[V1ContainerStatus]) -> Dict[str, str]:
         """
         Extract containers ID and name from the statuses.
-        :param container_statuses: Container statuses object (from Kubernetes API)
-        :return: Dictionary mapping container id to its name
+        :param container_statuses: List of container statuses
+        :return: Dictionary mapping the containers ID to their name
         """
         return {
             container_status.container_id.split('://')[1]: container_status.name
-            for container_status in container_statuses
+            for container_status in container_statuses or [] if container_status.container_id is not None
         }
 
     def _build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> List[K8sContainerMetadata]:
