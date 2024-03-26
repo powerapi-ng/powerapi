@@ -56,13 +56,13 @@ COMPONENT_URI_KEY = 'uri'
 ACTOR_NAME_KEY = 'actor_name'
 TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
-K8S_API_MODE_KEY = 'k8s-api-mode'
-TIME_INTERVAL_KEY = 'time-interval'
-TIMEOUT_QUERY_KEY = 'timeout-query'
+
 PULLER_NAME_KEY = 'puller'
 PUSHER_NAME_KEY = 'pusher'
-API_KEY_KEY = 'api-key'
-HOST_KEY = 'host'
+
+K8S_API_MODE_KEY = 'api-mode'
+K8S_API_KEY_KEY = 'api-key'
+K8S_API_HOST_KEY = 'api-host'
 
 LISTENER_ACTOR_KEY = 'listener_actor'
 
@@ -354,8 +354,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         """
         name = processor_config[ACTOR_NAME_KEY]
         api_mode = processor_config.get(K8S_API_MODE_KEY, 'manual')  # use manual mode by default
-        api_host = processor_config.get(HOST_KEY, None)
-        api_key = processor_config.get(API_KEY_KEY, None)
+        api_host = processor_config.get(K8S_API_HOST_KEY, None)
+        api_key = processor_config.get(K8S_API_KEY_KEY, None)
         target_actors_name = [processor_config[PULLER_NAME_KEY]]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)

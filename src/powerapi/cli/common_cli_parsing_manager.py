@@ -406,7 +406,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
         subparser_k8s_pre_processor.add_argument(
-            "a", "k8s-api-mode", help_text="k8s api mode (local, manual or cluster)"
+            "a", "api-mode", help_text="k8s api mode (local, manual or cluster)"
         )
 
         subparser_k8s_pre_processor.add_argument(
@@ -417,7 +417,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_k8s_pre_processor.add_argument(
             "h",
-            "host",
+            "api-host",
             help_text="host required for k8s manual configuration",
         )
 

@@ -3,9 +3,7 @@
   "pre-processor": {
     "my_processor": {
       "type": "k8s",
-      "k8s-api-mode": "Manual",
-      "time-interval": 20,
-      "timeout-query": 30,
+      "api-mode": "manual",
       "puller": "my_puller"
     }
   }

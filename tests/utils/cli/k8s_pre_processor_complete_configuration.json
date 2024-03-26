@@ -22,9 +22,7 @@
   "pre-processor": {
       "my_processor": {
           "type": "k8s",
-          "k8s_api_mode": "Manual",
-          "time_interval": 50,
-          "timeout_query": 60,
+          "api_mode": "manual",
           "puller": "one_puller"
       }
   }
