@@ -56,14 +56,19 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
     def handle(self, msg: HWPCReport):
         """
         Process an HWPCReport to add the Kubernetes metadata.
+        :param msg: The HWPCReport to process
         """
         if is_target_a_valid_k8s_cgroups_path(msg.target):
             container_id = extract_container_id_from_k8s_cgroups_path(msg.target)
             container_metadata = self.state.metadata_cache_manager.get_container_metadata(container_id)
 
-            if container_metadata is not None:
-                msg.target = container_metadata.container_name
-                msg.metadata = {**msg.metadata, **container_metadata.pod_labels}
+            if container_metadata is None:
+                # Drop the report if the container metadata is not present in the cache.
+                # This is mainly to filter out the empty pause container present for every running POD.
+                return
+
+            msg.target = container_metadata.container_name
+            msg.metadata = {**msg.metadata, **container_metadata.pod_labels}
 
         self._send_report(msg)
 
