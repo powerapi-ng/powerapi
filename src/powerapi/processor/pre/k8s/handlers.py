@@ -68,7 +68,7 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
                 return
 
             msg.target = container_metadata.container_name
-            msg.metadata = {**msg.metadata, **container_metadata.pod_labels}
+            msg.metadata['k8s'] = vars(container_metadata)
 
         self._send_report(msg)
 
