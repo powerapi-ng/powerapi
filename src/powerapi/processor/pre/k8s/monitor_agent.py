@@ -193,8 +193,8 @@ class K8sMonitorAgent(Process):
         resource_version = None
         try:
             pods: V1PodList = self.k8s_api.list_pod_for_all_namespaces(watch=False)
+            resource_version = pods.metadata.resource_version
             for pod in pods.items:
-                resource_version = pod.metadata.resource_version
                 for entry in self._build_metadata_cache_entries_from_pod(pod):
                     self.metadata_cache_manager.update_container_metadata(ADDED_EVENT, entry)
 
@@ -221,6 +221,8 @@ class K8sMonitorAgent(Process):
 
                 for entry in self._build_metadata_cache_entries_from_pod(event["object"]):
                     self.metadata_cache_manager.update_container_metadata(event_type, entry)
+
+            w.stop()
 
         except ApiException as e:
             logging.warning('API exception caught in watcher: %s %s', e.status, e.reason)
