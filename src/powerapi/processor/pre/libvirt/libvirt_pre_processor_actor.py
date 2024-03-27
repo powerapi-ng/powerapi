@@ -26,16 +26,17 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 import re
 
-from powerapi.exception import LibvirtException
-from powerapi.message import StartMessage
-from powerapi.processor.pre.libvirt.libvirt_pre_processor_handlers import LibvirtPreProcessorReportHandler, \
-    LibvirtPreProcessorStartHandler
-from powerapi.report import Report
 from powerapi.actor import Actor
+from powerapi.exception import LibvirtException
+from powerapi.handler import PoisonPillMessageHandler
+from powerapi.message import StartMessage, PoisonPillMessage
 from powerapi.processor.processor_actor import ProcessorActor, ProcessorState
+from powerapi.report import Report
+from .libvirt_pre_processor_handlers import LibvirtPreProcessorReportHandler, LibvirtPreProcessorStartHandler
 
 try:
     from libvirt import openReadOnly
@@ -64,17 +65,15 @@ class LibvirtPreProcessorActor(ProcessorActor):
     """
 
     def __init__(self, name: str, uri: str, regexp: str, target_actors: list = None, target_actors_names: list = None,
-                 level_logger: int = logging.WARNING,
-                 timeout: int = 5000):
-        ProcessorActor.__init__(self, name=name, level_logger=level_logger,
-                                timeout=timeout)
-        self.state = LibvirtPreProcessorState(actor=self, uri=uri, regexp=regexp, target_actors=target_actors,
-                                              target_actors_names=target_actors_names)
+                 level_logger: int = logging.WARNING, timeout: int = 5000):
+        ProcessorActor.__init__(self, name=name, level_logger=level_logger, timeout=timeout)
+
+        self.state = LibvirtPreProcessorState(self, uri, regexp, target_actors, target_actors_names)
 
     def setup(self):
         """
         Define ReportMessage handler and StartMessage handler
         """
-        ProcessorActor.setup(self)
-        self.add_handler(message_type=StartMessage, handler=LibvirtPreProcessorStartHandler(state=self.state))
-        self.add_handler(message_type=Report, handler=LibvirtPreProcessorReportHandler(state=self.state))
+        self.add_handler(StartMessage, LibvirtPreProcessorStartHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
+        self.add_handler(Report, LibvirtPreProcessorReportHandler(self.state))

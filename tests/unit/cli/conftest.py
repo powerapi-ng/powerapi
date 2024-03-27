@@ -1,21 +1,21 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,21 +26,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import os
 import sys
 from copy import deepcopy
 
 import pytest
+
 import tests.utils.cli as test_files_module
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.cli.generator import PullerGenerator, PusherGenerator, COMPONENT_TYPE_KEY, \
-    LISTENER_ACTOR_KEY, MONITOR_NAME_SUFFIX, PreProcessorGenerator
+from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
+from powerapi.cli.generator import PullerGenerator, PusherGenerator, PreProcessorGenerator
+from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.filter import Filter
-from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
-    generate_cli_configuration_from_json_file
-from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
-from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
+from tests.utils.cli.base_config_parser import load_configuration_from_json_file, generate_cli_configuration_from_json_file
 
 
 @pytest.fixture(name="invalid_csv_io_stream_config")
@@ -235,20 +235,6 @@ def several_k8s_pre_processors(several_k8s_pre_processors_config):
 
 
 @pytest.fixture
-def several_k8s_monitors_config(several_k8s_pre_processors):
-    """
-    Configuration with several k8s monitors derived from processor generators
-    """
-    monitors_config = {'monitor': {}}
-
-    for processor_name, processor in several_k8s_pre_processors.items():
-        monitors_config['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
-                                                                            LISTENER_ACTOR_KEY: processor}
-
-    return monitors_config
-
-
-@pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     Valid configuration with csv as input and output and stream mode disabled
@@ -323,23 +309,6 @@ def k8s_pre_processors(k8s_pre_processor_config):
     processors = generator.generate(k8s_pre_processor_config)
 
     return processors
-
-
-@pytest.fixture
-def k8s_monitor_config(k8s_pre_processors):
-    """
-    The configuration of k8s monitors is derived from processor generators
-    """
-
-    processors = k8s_pre_processors
-
-    monitors = {'monitor': {}}
-
-    for processor_name, processor in processors.items():
-        monitors['monitor'][processor_name + MONITOR_NAME_SUFFIX] = {COMPONENT_TYPE_KEY: 'k8s',
-                                                                     LISTENER_ACTOR_KEY: processor}
-
-    return monitors
 
 
 @pytest.fixture()

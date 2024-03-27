@@ -33,20 +33,17 @@ import sys
 from typing import Dict, Type, Callable
 
 from powerapi.actor import Actor
+from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB, FileDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
-    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed, MonitorTypeDoesNotExist
+    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
-from powerapi.processor.pre.k8s.k8s_monitor import K8sMonitorAgent
-from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPreProcessorActor, TIME_INTERVAL_DEFAULT_VALUE, \
-    TIMEOUT_QUERY_DEFAULT_VALUE
+from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
-from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
-from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, \
-    VirtioFSDB, FileDB
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
+from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
 
 COMPONENT_TYPE_KEY = 'type'
 COMPONENT_MODEL_KEY = 'model'
@@ -59,22 +56,18 @@ COMPONENT_URI_KEY = 'uri'
 ACTOR_NAME_KEY = 'actor_name'
 TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
-K8S_API_MODE_KEY = 'k8s-api-mode'
-TIME_INTERVAL_KEY = 'time-interval'
-TIMEOUT_QUERY_KEY = 'timeout-query'
+
 PULLER_NAME_KEY = 'puller'
 PUSHER_NAME_KEY = 'pusher'
-API_KEY_KEY = 'api-key'
-HOST_KEY = 'host'
+
+K8S_API_MODE_KEY = 'api-mode'
+K8S_API_KEY_KEY = 'api-key'
+K8S_API_HOST_KEY = 'api-host'
 
 LISTENER_ACTOR_KEY = 'listener_actor'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
-
-MONITOR_NAME_SUFFIX = '_monitor'
-MONITOR_KEY = 'monitor'
-K8S_COMPONENT_TYPE_VALUE = 'k8s'
 
 
 class Generator:
@@ -332,39 +325,48 @@ class ProcessorGenerator(Generator):
 
 class PreProcessorGenerator(ProcessorGenerator):
     """
-    Generator that initialises the pre-processor from config
+    Generator that initialises the pre-processor from config.
     """
 
     def __init__(self):
-        ProcessorGenerator.__init__(self, 'pre-processor', self._get_default_processor_factories())
+        super().__init__('pre-processor', self._get_default_processor_factories())
 
     @staticmethod
-    def _get_default_processor_factories() -> Dict[str, Callable[[Dict], ProcessorActor]]:
+    def _libvirt_pre_processor_factory(processor_config: dict) -> LibvirtPreProcessorActor:
+        """
+        Libvirt pre-processor actor factory.
+        :param processor_config: Pre-Processor configuration
+        :return: Configured Libvirt pre-processor actor
+        """
+        name = processor_config[ACTOR_NAME_KEY]
+        uri = processor_config[COMPONENT_URI_KEY]
+        regexp = processor_config[REGEXP_KEY]
+        target_actors_name = [processor_config[PULLER_NAME_KEY]]
+        level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
+        return LibvirtPreProcessorActor(name, uri, regexp, [], target_actors_name, level_logger)
+
+    @staticmethod
+    def _k8s_pre_processor_factory(processor_config: Dict) -> K8sPreProcessorActor:
+        """
+        Kubernetes pre-processor actor factory.
+        :param processor_config: Pre-Processor configuration
+        :return: Configured Kubernetes pre-processor actor
+        """
+        name = processor_config[ACTOR_NAME_KEY]
+        api_mode = processor_config.get(K8S_API_MODE_KEY, 'manual')  # use manual mode by default
+        api_host = processor_config.get(K8S_API_HOST_KEY, None)
+        api_key = processor_config.get(K8S_API_KEY_KEY, None)
+        target_actors_name = [processor_config[PULLER_NAME_KEY]]
+        level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
+        return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)
+
+    def _get_default_processor_factories(self) -> Dict[str, Callable[[Dict], ProcessorActor]]:
+        """
+        Return the default pre-processors factory.
+        """
         return {
-            'libvirt': lambda processor_config: LibvirtPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
-                                                                         uri=processor_config[COMPONENT_URI_KEY],
-                                                                         regexp=processor_config[REGEXP_KEY],
-                                                                         target_actors_names=[processor_config
-                                                                                              [PULLER_NAME_KEY]]),
-            'k8s': lambda processor_config: K8sPreProcessorActor(name=processor_config[ACTOR_NAME_KEY],
-                                                                 ks8_api_mode=None if
-                                                                 K8S_API_MODE_KEY not in processor_config else
-                                                                 processor_config[K8S_API_MODE_KEY],
-                                                                 time_interval=TIME_INTERVAL_DEFAULT_VALUE if
-                                                                 TIME_INTERVAL_KEY not in processor_config else
-                                                                 processor_config[TIME_INTERVAL_KEY],
-                                                                 timeout_query=TIMEOUT_QUERY_DEFAULT_VALUE if
-                                                                 TIMEOUT_QUERY_KEY not in processor_config
-                                                                 else processor_config[TIMEOUT_QUERY_KEY],
-                                                                 api_key=None if API_KEY_KEY not in processor_config
-                                                                 else processor_config[API_KEY_KEY],
-                                                                 host=None if HOST_KEY not in processor_config
-                                                                 else processor_config[HOST_KEY],
-                                                                 level_logger=logging.DEBUG if
-                                                                 processor_config[GENERAL_CONF_VERBOSE_KEY] else
-                                                                 logging.INFO,
-                                                                 target_actors_names=[processor_config[PULLER_NAME_KEY]]
-                                                                 )
+            'libvirt': self._libvirt_pre_processor_factory,
+            'k8s': self._k8s_pre_processor_factory,
         }
 
 
@@ -379,48 +381,3 @@ class PostProcessorGenerator(ProcessorGenerator):
     @staticmethod
     def _get_default_processor_factories() -> Dict[str, Callable[[Dict], ProcessorActor]]:
         return {}
-
-
-class MonitorGenerator(Generator):
-    """
-    Generator that initialises the monitor by using a K8sPreProcessorActor
-    """
-
-    def __init__(self):
-        Generator.__init__(self, component_group_name=MONITOR_KEY)
-
-        self.monitor_factory = {
-            K8S_COMPONENT_TYPE_VALUE: lambda monitor_config: K8sMonitorAgent(
-                name=monitor_config[ACTOR_NAME_KEY],
-                concerned_actor_state=monitor_config[LISTENER_ACTOR_KEY].state,
-                level_logger=monitor_config[LISTENER_ACTOR_KEY].logger.getEffectiveLevel()
-            )
-
-        }
-
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
-
-        monitor_actor_type = component_config[COMPONENT_TYPE_KEY]
-
-        if monitor_actor_type not in self.monitor_factory:
-            raise MonitorTypeDoesNotExist(monitor_type=monitor_actor_type)
-
-        component_config[ACTOR_NAME_KEY] = component_name + MONITOR_NAME_SUFFIX
-        return self.monitor_factory[monitor_actor_type](component_config)
-
-    def generate_from_processors(self, processors: dict) -> dict:
-        """
-        Generates monitors associated with the given processors
-        :param dict processors: Dictionary with the processors for the generation
-        """
-
-        monitors_config = {MONITOR_KEY: {}}
-
-        for processor_name, processor in processors.items():
-
-            if isinstance(processor, K8sPreProcessorActor):
-                monitors_config[MONITOR_KEY][processor_name + MONITOR_NAME_SUFFIX] = {
-                    COMPONENT_TYPE_KEY: K8S_COMPONENT_TYPE_VALUE,
-                    LISTENER_ACTOR_KEY: processor}
-
-        return self.generate(main_config=monitors_config)

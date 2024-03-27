@@ -1,5 +1,5 @@
-# Copyright (c) 2023, INRIA
-# Copyright (c) 2023, University of Lille
+# Copyright (c) 2024, Inria
+# Copyright (c) 2024, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,4 +27,29 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from .actor import K8sPreProcessorActor
+from multiprocessing import Manager
+
+import pytest
+
+from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager
+from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
+
+
+@pytest.fixture(name='initialized_metadata_cache_manager')
+def fx_initialized_metadata_cache_manager():
+    """
+    Returns an initialized metadata cache manager.
+    """
+    manager = Manager()
+    yield K8sMetadataCacheManager(manager)
+
+    manager.shutdown()
+
+
+@pytest.fixture
+def initialized_monitor_agent(initialized_metadata_cache_manager):
+    """
+    Returns an initialized monitor agent.
+    """
+    agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
+    yield agent

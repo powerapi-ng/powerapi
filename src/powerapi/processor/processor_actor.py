@@ -26,19 +26,15 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 
 from powerapi.actor import State, Actor
-from powerapi.handler import PoisonPillMessageHandler
-from powerapi.message import PoisonPillMessage
 
 
 class ProcessorState(State):
     """
-    Processor Actor State
-
-    Contains in addition to State values :
-      - the targets actors
+    Processor Actor State.
     """
 
     def __init__(self, actor: Actor, target_actors: list, target_actors_names: list):
@@ -56,21 +52,19 @@ class ProcessorState(State):
 
 class ProcessorActor(Actor):
     """
-    ProcessorActor class
-
-    A processor modifies a report and sends the modified report to a list of targets
-    actor.
+    Processor actor class.
+    A processor modifies a report and sends the modified report to a list of targets actor.
     """
 
     def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int = 5000):
-        Actor.__init__(self, name, level_logger, timeout)
-        self.state = ProcessorState(actor=self, target_actors=[], target_actors_names=[])
+        super().__init__(name, level_logger, timeout)
+        self.state = ProcessorState(self, [], [])
 
     def setup(self):
         """
-        Define PoisonPillMessage handler
+        Set up the Processor actor.
         """
-        self.add_handler(message_type=PoisonPillMessage, handler=PoisonPillMessageHandler(state=self.state))
+        raise NotImplementedError
 
     def add_target_actor(self, actor: Actor):
         """

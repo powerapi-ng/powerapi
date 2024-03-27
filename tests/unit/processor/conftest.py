@@ -27,15 +27,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import multiprocessing
-
 from typing import Any, Dict
-
 from unittest.mock import Mock
 
 import pytest
-
-from powerapi.processor.pre.k8s.k8s_pre_processor_actor import K8sPodUpdateMetadata, K8sMetadataCacheManager
 
 
 @pytest.fixture(name='pods_list')
@@ -136,51 +131,6 @@ def basic_unknown_events_list_k8s(events_list_k8s):
     return events_list_k8s
 
 
-@pytest.fixture(name='expected_events_list_k8s')
-def expected_basic_events_list_k8s(events_list_k8s):
-    """
-    Return the expected list of event information according to a list of events
-    """
-    events = []
-
-    for event_infos in events_list_k8s:
-        events.append((event_infos['type'], event_infos['object'].metadata.namespace,
-                       event_infos['object'].metadata.name,
-                       extract_containers_ids(event_infos['object'].status.container_statuses),
-                       event_infos['object'].metadata.labels))
-
-    return events
-
-
-def extract_containers_ids(containers_status: list) -> list:
-    """
-    Return the containers ids by using the given list of containers status
-    """
-    containers_ids = []
-    for container_status in containers_status:
-        containers_ids.append(container_status.container_id[container_status.container_id.find('//') + 2:
-                                                            len(container_status.container_id)])
-
-    return containers_ids
-
-
-@pytest.fixture
-def expected_k8s_pod_update_metadata(expected_events_list_k8s):
-    """
-    Return a list of K8sPodUpdateMessage by using the provided events list
-    """
-    update_metadata = []
-
-    for event_type, namespace, name, containers_id, labels in expected_events_list_k8s:
-        update_metadata.append(K8sPodUpdateMetadata(event=event_type,
-                                                    namespace=namespace,
-                                                    pod=name,
-                                                    containers_id=containers_id,
-                                                    labels=labels))
-
-    return update_metadata
-
-
 class MockedWatch(Mock):
     """
     Mocked class for simulating the Watch class from K8s API
@@ -217,25 +167,3 @@ def mocked_watch_initialized_unknown_events(unknown_events_list_k8s):
     Return a MockedWatch with a list of unknown events
     """
     return MockedWatch(unknown_events_list_k8s)
-
-
-class PipeMetadataCacheManager(K8sMetadataCacheManager):
-    """
-    K8sMetadataCacheManager maintains a cache of pods' metadata
-    (namespace, labels and id of associated containers).
-    This metadata cache send itself via a pipe when an update is done
-    """
-
-    def __init__(self, name: str, level_logger: int, pipe):
-        K8sMetadataCacheManager.__init__(self, name=name, level_logger=level_logger,
-                                         process_manager=multiprocessing.Manager())
-        self.pipe = pipe
-
-    def update_cache(self, metadata: K8sPodUpdateMetadata):
-        """
-        Update the local cache for pods.
-
-        Send the metadata cache via the pipe
-        """
-        K8sMetadataCacheManager.update_cache(self, metadata=metadata)
-        self.pipe.send(self)

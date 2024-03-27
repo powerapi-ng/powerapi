@@ -406,19 +406,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
         subparser_k8s_pre_processor.add_argument(
-            "a", "k8s-api-mode", help_text="k8s api mode (local, manual or cluster)"
-        )
-        subparser_k8s_pre_processor.add_argument(
-            "t",
-            "time-interval",
-            help_text="time interval for the k8s monitoring",
-            argument_type=int
-        )
-        subparser_k8s_pre_processor.add_argument(
-            "o",
-            "timeout-query",
-            help_text="timeout for k8s queries",
-            argument_type=int
+            "a", "api-mode", help_text="k8s api mode (local, manual or cluster)"
         )
 
         subparser_k8s_pre_processor.add_argument(
@@ -429,7 +417,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_k8s_pre_processor.add_argument(
             "h",
-            "host",
+            "api-host",
             help_text="host required for k8s manual configuration",
         )
 
