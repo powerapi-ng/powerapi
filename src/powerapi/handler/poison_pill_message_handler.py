@@ -51,7 +51,6 @@ class PoisonPillMessageHandler(Handler):
         Handler.delegate_message_handling(self, msg)
 
     def _empty_mail_box(self):
-        print(str(self.state.actor.name) + " empty mail box")
         while True:
             self.state.actor.socket_interface.timeout = 0.1
             msg = self.state.actor.socket_interface.receive()
