@@ -27,10 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from multiprocessing import Manager
+
 import pytest
 
-from multiprocessing import Manager
-from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager, K8sContainerMetadata
+from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager
+from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
 
 
 @pytest.fixture
@@ -41,3 +43,14 @@ def initialized_metadata_cache_manager():
     manager = Manager()
     yield K8sMetadataCacheManager(manager)
 
+    manager.shutdown()
+
+
+@pytest.fixture
+def initialized_monitor_agent(initialized_metadata_cache_manager):
+    """
+    Returns an initialized monitor agent.
+    """
+    agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
+    agent.k8s_api
+    yield agent
