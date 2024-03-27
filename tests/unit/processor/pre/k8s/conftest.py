@@ -52,5 +52,4 @@ def initialized_monitor_agent(initialized_metadata_cache_manager):
     Returns an initialized monitor agent.
     """
     agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
-    agent.k8s_api
     yield agent
