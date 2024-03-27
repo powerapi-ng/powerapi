@@ -155,11 +155,11 @@ class K8sMonitorAgent(Process):
         self.metadata_cache_manager.clear_metadata_cache()
 
         while not self.stop_monitoring:
-            resource_id = self._fetch_list_all_pod_for_all_namespaces()
-            self._watch_list_pod_for_all_namespaces(resource_id)
+            resource_id = self.fetch_list_all_pod_for_all_namespaces()
+            self.watch_list_pod_for_all_namespaces(resource_id)
 
     @staticmethod
-    def _get_containers_id_name_from_statuses(container_statuses: List[V1ContainerStatus]) -> Dict[str, str]:
+    def get_containers_id_name_from_statuses(container_statuses: List[V1ContainerStatus]) -> Dict[str, str]:
         """
         Extract containers ID and name from the statuses.
         :param container_statuses: List of container statuses
@@ -170,7 +170,7 @@ class K8sMonitorAgent(Process):
             for container_status in container_statuses or [] if container_status.container_id is not None
         }
 
-    def _build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> List[K8sContainerMetadata]:
+    def build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> List[K8sContainerMetadata]:
         """
         Build and return metadata cache entries from a Kubernetes pod object.
         :param pod: Kubernetes pod
@@ -182,10 +182,10 @@ class K8sMonitorAgent(Process):
         container_statuses = pod.status.container_statuses
         return [
             K8sContainerMetadata(container_id, container_name, namespace, pod_name, pod_labels)
-            for container_id, container_name in self._get_containers_id_name_from_statuses(container_statuses).items()
+            for container_id, container_name in self.get_containers_id_name_from_statuses(container_statuses).items()
         ]
 
-    def _fetch_list_all_pod_for_all_namespaces(self) -> Optional[int]:
+    def fetch_list_all_pod_for_all_namespaces(self) -> Optional[int]:
         """
         Fetch all pod for all namespaces and populate the metadata cache.
         :return: Resource version of the last fetched entry
@@ -195,7 +195,7 @@ class K8sMonitorAgent(Process):
             pods: V1PodList = self.k8s_api.list_pod_for_all_namespaces(watch=False)
             resource_version = pods.metadata.resource_version
             for pod in pods.items:
-                for entry in self._build_metadata_cache_entries_from_pod(pod):
+                for entry in self.build_metadata_cache_entries_from_pod(pod):
                     self.metadata_cache_manager.update_container_metadata(ADDED_EVENT, entry)
 
         except ApiException as e:
@@ -205,7 +205,7 @@ class K8sMonitorAgent(Process):
 
         return resource_version
 
-    def _watch_list_pod_for_all_namespaces(self, resource_version: int = None):
+    def watch_list_pod_for_all_namespaces(self, resource_version: int = None):
         """
         Watch k8s pods events for all namespaces and update the local metadata cache accordingly.
         :param resource_version: Resource version from where the watcher begin
@@ -219,7 +219,7 @@ class K8sMonitorAgent(Process):
                     logging.warning('Unexpected pod event: %s', event_type)
                     continue
 
-                for entry in self._build_metadata_cache_entries_from_pod(event["object"]):
+                for entry in self.build_metadata_cache_entries_from_pod(event["object"]):
                     self.metadata_cache_manager.update_container_metadata(event_type, entry)
 
             w.stop()

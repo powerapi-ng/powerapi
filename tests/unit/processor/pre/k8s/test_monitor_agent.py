@@ -72,7 +72,7 @@ def test_extract_containers_id_name_from_statuses(initialized_monitor_agent):
 
     status = generate_container_status(container_id, container_name)
 
-    res = initialized_monitor_agent._get_containers_id_name_from_statuses([status])
+    res = initialized_monitor_agent.get_containers_id_name_from_statuses([status])
 
     assert res == {cid: container_name}
 
@@ -87,7 +87,7 @@ def test_extract_containers_id_name_from_statuses_with_none_container_id(initial
 
     status = generate_container_status(container_id, container_name)
 
-    res = initialized_monitor_agent._get_containers_id_name_from_statuses([status])
+    res = initialized_monitor_agent.get_containers_id_name_from_statuses([status])
 
     assert res == {}
 
@@ -108,7 +108,7 @@ def test_building_metadata_cache_entry_from_pod(initialized_monitor_agent):
     container_statuses = [generate_container_status(container_id, container_name)]
 
     pod = generate_pod(pod_name, pod_namespace, pod_labels, container_statuses)
-    cache_entries = initialized_monitor_agent._build_metadata_cache_entries_from_pod(pod)
+    cache_entries = initialized_monitor_agent.build_metadata_cache_entries_from_pod(pod)
     assert len(cache_entries) == 1
 
     cache_entry = cache_entries[0]
@@ -130,5 +130,5 @@ def test_building_metadata_cache_entry_from_pod_without_containers(initialized_m
     container_statuses = []
 
     pod = generate_pod(pod_name, pod_namespace, pod_labels, container_statuses)
-    cache_entries = initialized_monitor_agent._build_metadata_cache_entries_from_pod(pod)
+    cache_entries = initialized_monitor_agent.build_metadata_cache_entries_from_pod(pod)
     assert len(cache_entries) == 0
