@@ -30,7 +30,6 @@
 from typing import List
 
 from kubernetes.client import V1Pod, V1ContainerStatus, Configuration, V1ObjectMeta, V1PodStatus
-from powerapi.processor.pre.k8s.metadata_cache_manager import K8sContainerMetadata
 
 
 def generate_k8s_config_for_tests() -> Configuration:

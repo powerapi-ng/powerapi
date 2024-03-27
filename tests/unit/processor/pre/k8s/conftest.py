@@ -35,8 +35,8 @@ from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheMa
 from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
 
 
-@pytest.fixture
-def initialized_metadata_cache_manager():
+@pytest.fixture(name='initialized_metadata_cache_manager')
+def fx_initialized_metadata_cache_manager():
     """
     Returns an initialized metadata cache manager.
     """

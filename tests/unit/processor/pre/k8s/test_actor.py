@@ -29,7 +29,7 @@
 
 import logging
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -74,5 +74,5 @@ class TestK8sProcessor(AbstractTestActor):
         report = HWPCReport(datetime.now(), 'pytest', 'non-k8s-container', {}, {})
         started_actor.send_data(report)
 
-        source, result = recv_from_pipe(dummy_pipe_out, 5)
+        _, result = recv_from_pipe(dummy_pipe_out, 5)
         assert result == report
