@@ -88,4 +88,4 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
         self.state.manager.shutdown()
 
         for actor in self.state.target_actors:
-            actor.close()
+            actor.socket_interface.close()
