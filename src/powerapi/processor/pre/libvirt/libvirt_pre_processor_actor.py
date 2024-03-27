@@ -64,17 +64,14 @@ class LibvirtPreProcessorActor(ProcessorActor):
     """
 
     def __init__(self, name: str, uri: str, regexp: str, target_actors: list = None, target_actors_names: list = None,
-                 level_logger: int = logging.WARNING,
-                 timeout: int = 5000):
-        ProcessorActor.__init__(self, name=name, level_logger=level_logger,
-                                timeout=timeout)
-        self.state = LibvirtPreProcessorState(actor=self, uri=uri, regexp=regexp, target_actors=target_actors,
-                                              target_actors_names=target_actors_names)
+                 level_logger: int = logging.WARNING, timeout: int = 5000):
+        ProcessorActor.__init__(self, name=name, level_logger=level_logger, timeout=timeout)
+
+        self.state = LibvirtPreProcessorState(self, uri, regexp, target_actors, target_actors_names)
 
     def setup(self):
         """
         Define ReportMessage handler and StartMessage handler
         """
-        ProcessorActor.setup(self)
         self.add_handler(message_type=StartMessage, handler=LibvirtPreProcessorStartHandler(state=self.state))
         self.add_handler(message_type=Report, handler=LibvirtPreProcessorReportHandler(state=self.state))
