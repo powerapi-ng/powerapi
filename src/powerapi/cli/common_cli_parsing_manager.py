@@ -406,28 +406,36 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
         subparser_k8s_pre_processor.add_argument(
-            "a", "api-mode", help_text="k8s api mode (local, manual or cluster)"
+            "a",
+            "api-mode",
+            help_text="Kubernetes API mode (local, manual or cluster)",
+            default_value='cluster'
         )
 
         subparser_k8s_pre_processor.add_argument(
             "k",
             "api-key",
-            help_text="API key authorization required for k8s manual configuration",
+            help_text="Kubernetes Bearer Token (only for manual API mode)",
         )
 
         subparser_k8s_pre_processor.add_argument(
             "h",
             "api-host",
-            help_text="host required for k8s manual configuration",
+            help_text="Kubernetes API host (only for manual API mode)",
         )
 
         subparser_k8s_pre_processor.add_argument(
             "p",
             "puller",
-            help_text="target puller for the pre-processor",
+            help_text="Name of the puller to attach the pre-processor to",
         )
 
-        subparser_k8s_pre_processor.add_argument("n", "name", help_text="")
+        subparser_k8s_pre_processor.add_argument(
+            "n",
+            "name",
+            help_text="Name of the pre-processor"
+        )
+
         self.add_subgroup_parser(
             subgroup_name="pre-processor",
             subgroup_parser=subparser_k8s_pre_processor
