@@ -26,24 +26,10 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from powerapi.dispatch_rule import DispatchRule
 from powerapi.handler import InitHandler, PoisonPillMessageHandler
 from powerapi.exception import PowerAPIException
-
-
-def _clean_list(id_list):
-    """
-    return a list where all elements are unique
-    """
-
-    id_list.sort()
-    r_list = []
-    last_element = None
-    for x in id_list:
-        if x != last_element:
-            r_list.append(x)
-            last_element = x
-    return r_list
+from powerapi.report import Report
 
 
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
@@ -80,34 +66,20 @@ def match_report_id(report_id, dispatch_rule, primary_rule):
     return new_report_id
 
 
-def extract_formula_id(report, dispatch_rule, primary_dispatch_rule):
+def extract_formula_id(report: Report, dispatch_rule: DispatchRule, primary_dispatch_rule: DispatchRule):
     """
-    Use the dispatch rule to extract formula_id from the given report.
-    Formula id are then mapped to an identifier that match the primary
-    report identifier fields
-
-    ex: primary dispatch_rule (sensor, socket, core)
-        second  dispatch_rule (sensor)
-    The second dispatch_rule need to match with the primary if sensor are
-    equal.
-
-    :param powerapi.Report report:                 Report to split
-    :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
-
-    :return: List of formula_id associated to a sub-report of report
-    :rtype: [tuple]
+    Use the dispatch rule to extract the formula id from a given report.
+    :param dict report: The report to extract the formula id from
+    :param dispatch_rule: Dispatch rule to use
+    :param primary_dispatch_rule: Primary dispatch rule to use
+    :return: List of formula ID associated to a sub-report of report
     """
-
-    # List of tuple (id_report, report)
     id_list = dispatch_rule.get_formula_id(report)
 
     if dispatch_rule.is_primary:
         return id_list
 
-    def f(identifier):
-        return match_report_id(identifier, dispatch_rule, primary_dispatch_rule)
-
-    return _clean_list(list(map(f, id_list)))
+    return {match_report_id(report_id, dispatch_rule, primary_dispatch_rule) for report_id in id_list}
 
 
 class FormulaDispatcherReportHandler(InitHandler):
