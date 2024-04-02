@@ -38,7 +38,7 @@ from powerapi.exception import AlreadyAddedArgumentException, UnknownArgExceptio
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException, \
     SubgroupDoesNotExistException, AlreadyAddedSubgroupException
-from powerapi.utils.cli import find_longest_string_in_list, remove_first_characters, string_to_bool
+from powerapi.utils.cli import find_longest_string_in_list, string_to_bool
 
 
 def store_val(argument_name: str, val: Any, configuration: dict, args: list = None) -> (list, dict):
@@ -480,8 +480,8 @@ class RootConfigParser(BaseConfigParser):
             if 'requires' in exn.msg:
                 raise MissingValueException(exn.opt) from exn
 
-        # remove minus
-        args = list(map(lambda x: (remove_first_characters(x[0]), x[1]), args))
+        # Remove `-` and `--` prefix in argument name (`--test-arg` to `test-arg`)
+        args = [(arg[0].lstrip('-'), arg[1]) for arg in args]
 
         # verify if help argument exists in args
         if self.help_arg:

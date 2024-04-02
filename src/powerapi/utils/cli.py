@@ -27,15 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-def remove_first_characters(arg: str):
-    """
-    Remove the two first characters of arg if it has more than 2 characters, otherwise, it removes only the first one.
-    :param str arg: The string to remove the first characters
-    """
-    if len(arg) > 2:
-        return arg[2:]
-    return arg[1]
-
 
 def find_longest_string_in_list(string_list: list) -> str:
     """
