@@ -118,7 +118,7 @@ class CsvIterDB(IterDB):
         :param str filename: file name we want to read
         """
         try:
-            return self.tmp_read[filename]['reader'].__next__()
+            return next(self.tmp_read[filename]['reader'])
         except StopIteration:
             return None
 
