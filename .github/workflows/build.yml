@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.x"]
+        python-version: ["3.10", "3.x"]
 
     steps:
     - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
@@ -43,7 +43,7 @@ jobs:
         pytest --cov=powerapi --cov-report=term --cov-report=xml tests/unit
 
     - name: Upload coverage reports to Codecov
-      if: ${{ matrix.python-version }} == "3.8"
+      if: ${{ matrix.python-version }} == "3.10"
       uses: codecov/codecov-action@c16abc29c95fcf9174b58eb7e1abf4c866893bc8 # v4.1.1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
