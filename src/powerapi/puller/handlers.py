@@ -73,7 +73,7 @@ class DBPullerThread(Thread):
     def _pull_database(self):
         try:
             if self.state.asynchrone:
-                report = self.loop.run_until_complete(self.state.database_it.__anext__())
+                report = self.loop.run_until_complete(anext(self.state.database_it))
                 if report is None:
                     raise StopIteration()
                 return report
