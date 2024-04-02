@@ -60,16 +60,14 @@ def string_to_bool(bool_value: str):
 
 def merge_dictionaries(source: dict, destination: dict) -> dict:
     """
-    Merge the dictionary source into destination
+    Recursively merge the source dictionary into destination.
     :param source: Dictionary to be merged
-    :param destination: dictionary that will modify with the source content
+    :param destination: Dictionary where the source will be merged to
     """
-    if len(source) > 0:
-        for current_source_key, current_source_value in source.items():
-            if not isinstance(current_source_value, dict) or current_source_key not in destination:
-                destination[current_source_key] = current_source_value
-            else:
-                destination[current_source_key] = merge_dictionaries(current_source_value,
-                                                                     destination[current_source_key])
+    for key, value in source.items():
+        if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
+            destination[key] = merge_dictionaries(value, destination[key])
+        else:
+            destination[key] = value
 
     return destination
