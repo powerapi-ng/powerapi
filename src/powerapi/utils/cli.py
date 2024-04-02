@@ -28,18 +28,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def find_longest_string_in_list(string_list: list) -> str:
+def find_longest_string_in_list(strings: list[str]) -> str:
     """
-    Find the largest string contained in the given list
-    :param list string_list: list of strings
+    Find the longest string from a given list of string.
+    :param strings: List of strings
     """
-    max_len = 0
-    longest_string = ''
-    for name in string_list:
-        if len(name) > max_len:
-            longest_string = name
-            max_len = len(name)
-    return longest_string
+    return max(strings, key=len)
 
 
 def string_to_bool(bool_value: str):
