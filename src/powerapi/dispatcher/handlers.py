@@ -51,6 +51,6 @@ class FormulaDispatcherReportHandler(InitHandler):
         """
         dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
         for formula_id in dispatch_rule.get_formula_id(msg):
-            formula = self.state.get_direct_formula(formula_id)
+            formula = self.state.get_formula(formula_id)
             if formula.is_alive():
                 formula.send_data(msg)

@@ -33,42 +33,19 @@ from typing import Literal, Callable
 from powerapi.actor import Actor, State
 from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
 from powerapi.dispatcher.route_table import RouteTable
-from powerapi.exception import PowerAPIException
+from powerapi.formula import FormulaActor
 from powerapi.handler import StartHandler
-from powerapi.report import Report
 from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.utils import Tree
-
-
-class NoPrimaryDispatchRuleRuleException(PowerAPIException):
-    """
-    Exception raised when user want to get the primary dispatch_rule rule on a
-    formula dispatcher that doesn't have one
-    """
-
-
-class PrimaryDispatchRuleRuleAlreadyDefinedException(PowerAPIException):
-    """
-    Exception raised when user want to add a primary dispatch_rule rule on a
-    formula dispatcher that already have one
-    """
+from powerapi.pusher import PusherActor
+from powerapi.report import Report
 
 
 class DispatcherState(State):
     """
-    DispatcherState class herited from State.
-
-    State that encapsulate formula's dicionary and tree
-
-    :attr:`formula_dict
-    <powerapi.dispatcher.dispatcher_actor.DispatcherState.formula_dict>`
-    :attr:`formula_tree
-    <powerapi.dispatcher.dispatcher_actor.DispatcherState.formula_tree>`
-    :attr:`formula_factory
-    <powerapi.dispatcher.dispatcher_actor.DispatcherState.formula_factory>`
+    Dispatcher actor state.
     """
 
-    def __init__(self, actor, pushers, route_table):
+    def __init__(self, actor, pushers: dict[str, PusherActor], route_table: RouteTable):
         """
         :param actor: Dispatcher actor instance
         :param pushers: List of pushers
@@ -77,59 +54,49 @@ class DispatcherState(State):
         super().__init__(actor)
 
         self.formula_dict = {}
-        self.formula_tree = Tree()
 
         self.pushers = pushers
         self.route_table = route_table
 
-    def add_formula(self, formula_id):
+    def add_formula(self, formula_id: tuple) -> FormulaActor:
         """
-        Create a formula corresponding to the given formula id and add it in memory.
-        :param tuple formula_id: Define the key corresponding to a specific Formula
+        Create a new formula corresponding to the given ID.
+        :param formula_id: The formula ID
+        :return: The new formula actor
         """
         formula = self.actor.formula_init_function(name=str((self.actor.name,) + formula_id), pushers=self.pushers)
-        self.supervisor.launch_actor(formula, start_message=False)
-
+        self.supervisor.launch_actor(formula, False)
         self.formula_dict[formula_id] = formula
-        self.formula_tree.add(list(formula_id), formula)
+        return formula
 
-    def get_direct_formula(self, formula_id):
+    def get_formula(self, formula_id: tuple) -> FormulaActor:
         """
-        Get the formula corresponding to the given formula id
-        or create and return it if its didn't exist
-
-        :param tuple formula_id: Key corresponding to a Formula
-        :return: a Formula
-        :rtype: Formula or None
+        Get the formula corresponding to the given formula id.
+        The formula will be created if it does not exist.
+        :param formula_id: The formula id
+        :return: The formula actor
         """
         if formula_id not in self.formula_dict:
-            self.add_formula(formula_id)
+            return self.add_formula(formula_id)
+
         return self.formula_dict[formula_id]
-
-    def get_corresponding_formula(self, formula_id):
-        """
-        Get the Formulas which have id match with the given formula_id
-
-        :param tuple formula_id: Key corresponding to a Formula
-        :return: All Formulas that match with the key
-        :rtype: list(Formula)
-        """
-        return self.formula_tree.get(formula_id)
 
 
 class DispatcherActor(Actor):
     """
-    Dispatcher Actor.
+    Dispatcher actor.
+    This actor process the reports coming from the pullers and dispatches them to the formula actors according the
+    provided routing table. When a report doesn't have any formula assigned, the dispatcher will create a new formula.
     """
 
     def __init__(self, name: str, formula_init_function: Callable, pushers: [], route_table: RouteTable,
                  level_logger: Literal = logging.WARNING, timeout=None):
         """
-        :param str name: Actor name
-        :param func formula_init_function: Function for creating Formula
-        :param route_table: initialized route table of the DispatcherActor
-        :param int level_logger: Define the level of the logger
-        :param bool timeout: Define the time in millisecond to wait for a message before run timeout_handler
+        :param name: Actor name
+        :param formula_init_function: Factory function for creating Formula
+        :param route_table: Routing table to use for dispatching the reports
+        :param level_logger: Logging level
+        :param timeout: Time in millisecond to wait for a message before running the timeout handler
         """
         Actor.__init__(self, name, level_logger, timeout)
 
@@ -144,9 +111,6 @@ class DispatcherActor(Actor):
         Setup Dispatcher actor report handlers.
         """
         super().setup()
-
-        if self.state.route_table.primary_dispatch_rule is None:
-            raise NoPrimaryDispatchRuleRuleException()
 
         self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
         self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
