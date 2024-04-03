@@ -35,7 +35,7 @@ from collections.abc import Iterable
 import pytest
 
 from powerapi.dispatch_rule import DispatchRule
-from powerapi.dispatcher import DispatcherActor, RouteTable, extract_formula_id
+from powerapi.dispatcher import DispatcherActor, RouteTable
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.report import Report, HWPCReport, PowerReport
 from tests.unit.actor.abstract_test_actor import recv_from_pipe, is_actor_alive, \
@@ -502,76 +502,3 @@ class TestDispatcher:
             assert not formula.is_alive()
 
         assert not dispatcher_with_two_formula.is_alive()
-
-
-#############################################
-# TEST METIER DE L'EXTRACTION DU FORMULA ID #
-#############################################
-#                                           #
-# PGB = Primary group by rule               #
-# GB = group by rule                        #
-#                                           #
-#############################################
-def gen_test_extract_formula_id(primary_dispatch_rule, dispatch_rule, input_report, validation_id):
-    """
-    Generate a test with that extract a formula id from an input report with a given dispatch rule and a primary
-    dispatch rules test if the extracted formula_ids are the same that given validation report ids
-    """
-    formula_ids = extract_formula_id(input_report, dispatch_rule, primary_dispatch_rule)
-    formula_ids.sort()
-    validation_id.sort()
-    assert formula_ids == validation_id
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1A_on_REPORT_1_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1A(primary=True)
-    gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a',)])
-    gen_test_extract_formula_id(pgb, pgb, REPORT_1_B2, [('a',)])
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1A(primary=True)
-    gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
-    gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2_C2, [('a',)])
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1A_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1A(primary=True)
-    gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
-    gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2_C2, [('a',)])
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1AB_on_REPORT_1_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1AB(primary=True)
-    gen_test_extract_formula_id(pgb, pgb, REPORT_1, [('a', 'b')])
-    gen_test_extract_formula_id(pgb, pgb, REPORT_1_B2, [('a', 'b'), ('a', 'b2')])
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2A_on_REPORT_2_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1AB(primary=True)
-    gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2, [('a',)])
-    gen_test_extract_formula_id(pgb, DispatchRule2A(), REPORT_2_C2, [('a',)])
-
-
-def test_extract_formula_id_with_pgb_DispatchRule1AB_gb_DispatchRule2AC_on_REPORT_2_must_return_good_formula_id():
-    """
-    Check the formula id extraction
-    """
-    pgb = DispatchRule1AB(primary=True)
-    gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2, [('a',)])
-    gen_test_extract_formula_id(pgb, DispatchRule2AC(), REPORT_2_C2, [('a',)])
