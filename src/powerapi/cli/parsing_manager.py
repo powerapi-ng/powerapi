@@ -145,21 +145,10 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
         return self.cli_parser.parse(cli_line)
 
     def _parse_config_from_json_file(self, file_name: str, current_conf: dict) -> dict:
-
-        # Select for each argument, le long version name
-        conf = self.cli_parser.parse_config_dict(file_name=file_name)
-
-        conf = merge_dictionaries(source=current_conf, destination=conf)
-
-        return conf
+        return merge_dictionaries(current_conf, self.cli_parser.parse_config_dict(file_name))
 
     def _parse_config_from_environment_variables(self, current_conf: dict) -> dict:
-
-        conf = self.cli_parser.parse_config_environment_variables()
-
-        conf = merge_dictionaries(source=current_conf, destination=conf)
-
-        return conf
+        return merge_dictionaries(current_conf, self.cli_parser.parse_config_environment_variables())
 
     def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
                      help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
