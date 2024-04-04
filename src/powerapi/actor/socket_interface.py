@@ -27,10 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pickle
+import ctypes
 import logging
 import multiprocessing
-import ctypes
 
 import zmq
 
@@ -199,26 +198,22 @@ class SocketInterface:
             self.control_socket.close()
 
     @staticmethod
-    def _send_serialized(socket, msg):
+    def _send_serialized(socket: zmq.Socket, msg):
         """
-        Send a serialized msg with pickle to the given socket
-
-        :param zmq.Socket socket: socket used to send the message
-        :param Object msg: message to send
+        Send a message to the given socket.
+        :param socket: Socket to use
+        :param msg: Message to send
         """
-        socket.send(pickle.dumps(msg))
+        socket.send_pyobj(msg)
 
     @staticmethod
-    def _recv_serialized(socket):
+    def _recv_serialized(socket: zmq.Socket):
         """
-        Wait for a message from the given socket and return its deserialized
-        value (using pickle)
-
-        :param zmq.Socket socket: socket to wait for a reception
-        :return Object: the received message
+        Receive and returns a message from the given socket.
+        :param socket: Socket to use
+        :return: Message received
         """
-        msg = pickle.loads(socket.recv())
-        return msg
+        return socket.recv_pyobj()
 
     def connect_data(self):
         """
