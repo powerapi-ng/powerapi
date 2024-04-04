@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import time
-
 from powerapi.handler import Handler
 from powerapi.report import PowerReport
 
@@ -51,8 +49,7 @@ class ReportHandler(Handler):
         metadata['formula_name'] = self.state.actor.name
         metadata['socket'] = socket_id
 
-        result_msg = PowerReport(timestamp=report.timestamp, sensor=report.sensor, target=report.target, power=42,
-                                 metadata=metadata)
+        result_msg = PowerReport(report.timestamp, report.sensor, report.target, 42, metadata)
         return [result_msg]
 
     def handle(self, msg):
@@ -60,7 +57,6 @@ class ReportHandler(Handler):
         Process a report and send the result to the pusher actor
         :param powerapi.Report msg:  Received message
         """
-        time.sleep(self.state.sleep_time)
         results = self._estimate(msg)
         for _, actor_pusher in self.state.pushers.items():
             for result in results:
