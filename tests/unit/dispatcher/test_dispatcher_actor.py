@@ -94,10 +94,9 @@ class Report1(Report):
         return other.a == self.a and other.b == self.b and other.b2 == self.b2
 
     def __str__(self):
-        return 'Report1(' + str(self.a) + ',' + (str(self.b)
-                                          if self.b2 is None
-                                          else ('(' + str(self.b) + ',' + str(self.b2) +
-                                                ')')) + ')'
+        if self.b2 is None:
+            return f"Report1('{self.a}', '{self.b}')"
+        return f"Report1('{self.a}', ('{self.b}', '{self.b2}'))"
 
     def __repr__(self):
         return self.__str__()
@@ -154,10 +153,9 @@ class Report2(Report):
         return other.a == self.a and other.c == self.c and other.c2 == self.c2
 
     def __str__(self):
-        return 'Report2(' + str(self.a) + ',' + (str(self.c)
-                                          if self.c2 is None
-                                          else ('(' + self.c + ',' + self.c2 +
-                                                ')')) + ')'
+        if self.c2 is None:
+            return f"Report2('{self.a}', '{self.c}')"
+        return f"Report2('{self.a}', ('{self.c}', '{self.c2}'))"
 
     def __repr__(self):
         return self.__str__()
