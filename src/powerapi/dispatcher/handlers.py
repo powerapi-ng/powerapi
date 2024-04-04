@@ -28,22 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.handler import InitHandler, PoisonPillMessageHandler
-from powerapi.exception import PowerAPIException
-
-
-def _clean_list(id_list):
-    """
-    return a list where all elements are unique
-    """
-
-    id_list.sort()
-    r_list = []
-    last_element = None
-    for x in id_list:
-        if x != last_element:
-            r_list.append(x)
-            last_element = x
-    return r_list
+from powerapi.report import Report
 
 
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
@@ -51,100 +36,21 @@ class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
     Dispatcher Handler for PoisonPillMessage
     """
     def teardown(self, soft=False):
-        self.state.supervisor.kill_actors(soft=soft)
-
-
-class DispatcherSendMessageToDeadFormulaError(PowerAPIException):
-    """
-    Error when sending a message to a dead formula
-    """
-
-
-def match_report_id(report_id, dispatch_rule, primary_rule):
-    """
-    Return the new_report_id with the report_id by removing
-    every "useless" fields from it.
-
-    :param tuple report_id: Original report id
-    :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
-    :param Any primary_rule:
-    """
-    new_report_id = ()
-    for i in range(len(report_id)):
-        if i >= len(primary_rule.fields):
-            return new_report_id
-        if dispatch_rule.fields[i] == primary_rule.fields[i]:
-            new_report_id += (report_id[i],)
-        else:
-            return new_report_id
-    return new_report_id
-
-
-def extract_formula_id(report, dispatch_rule, primary_dispatch_rule):
-    """
-    Use the dispatch rule to extract formula_id from the given report.
-    Formula id are then mapped to an identifier that match the primary
-    report identifier fields
-
-    ex: primary dispatch_rule (sensor, socket, core)
-        second  dispatch_rule (sensor)
-    The second dispatch_rule need to match with the primary if sensor are
-    equal.
-
-    :param powerapi.Report report:                 Report to split
-    :param powerapi.DispatchRule dispatch_rule: DispatchRule rule
-
-    :return: List of formula_id associated to a sub-report of report
-    :rtype: [tuple]
-    """
-
-    # List of tuple (id_report, report)
-    id_list = dispatch_rule.get_formula_id(report)
-
-    if dispatch_rule.is_primary:
-        return id_list
-
-    def f(identifier):
-        return match_report_id(identifier, dispatch_rule, primary_dispatch_rule)
-
-    return _clean_list(list(map(f, id_list)))
+        self.state.supervisor.kill_actors(soft)
 
 
 class FormulaDispatcherReportHandler(InitHandler):
     """
-    Split received report into sub-reports (if needed) and return the sub
-    reports and formulas ids to send these reports.
+    Send the received reports to their corresponding formula.
     """
 
-    def handle(self, msg):
+    def handle(self, msg: Report):
         """
-        Split the received report into sub-reports (if needed) and send them to
-        their corresponding formula.
-
-        If the corresponding formula does not exist, create and return the
-        actor state, containing the new formula.
-
-        :param powerapi.Report msg:       Report message
-        :param powerapi.State state: Actor state
-
-        :return: List of the (formula_id, report) where formula_id is a tuple
-                 that identitfy the formula_actor
-        :rtype:  list(tuple(formula_id, report))
+        Send the report to its corresponding formula(s).
+        :param msg: The report to process
         """
         dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
-        primary_dispatch_rule = self.state.route_table.primary_dispatch_rule
-
-        for formula_id in extract_formula_id(msg, dispatch_rule, primary_dispatch_rule):
-            primary_rule_fields = primary_dispatch_rule.fields
-            if len(formula_id) == len(primary_rule_fields):
-                formula = self.state.get_direct_formula(formula_id)
-                if formula.is_alive():
-                    formula.send_data(msg)
-                else:
-                    raise DispatcherSendMessageToDeadFormulaError()
-            else:
-                for formula in self.state.get_corresponding_formula(list(formula_id)):
-                    if formula.is_alive():
-                        formula.send_data(msg)
-                    else:
-                        raise DispatcherSendMessageToDeadFormulaError()
+        for formula_id in dispatch_rule.get_formula_id(msg):
+            formula = self.state.get_formula(formula_id)
+            if formula.is_alive():
+                formula.send_data(msg)

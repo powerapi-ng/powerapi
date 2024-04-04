@@ -28,5 +28,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from .json_stream import JsonStream
-from .tree import Tree
 from .utils import timestamp_to_datetime
