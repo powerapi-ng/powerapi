@@ -277,14 +277,12 @@ class CsvDB(BaseDB):
                 expected_header = fixed_header + sorted(set(values[0].keys()) - set(fixed_header))
                 header_exist = False
 
+                csvfile.seek(0)  # Go to beginning of file before reading
                 reader = csv.DictReader(csvfile)
                 if reader.fieldnames:
                     header_exist = True
                     if reader.fieldnames != expected_header:
                         raise HeaderAreNotTheSameError(f"Header are not the same in {output_filename}")
-
-                # Go to EOF before writing rows
-                csvfile.seek(0, 2)
 
                 writer = csv.DictWriter(csvfile, fieldnames=expected_header)
                 if not header_exist:
