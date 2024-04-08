@@ -35,8 +35,8 @@ import traceback
 import setproctitle
 
 from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
-from powerapi.message import PoisonPillMessage
-from powerapi.handler import HandlerException
+from powerapi.message import PoisonPillMessage, Message
+from powerapi.handler import HandlerException, Handler
 
 from .socket_interface import SocketInterface
 from .state import State
@@ -137,7 +137,6 @@ class Actor(multiprocessing.Process):
                 if type(exn) in self.low_exception:
                     self.logger.error('Minor exception raised, restart actor !')
                     traceback.print_exc()
-                    self.state.reinit()
                 else:
                     self.state.alive = False
                     self.logger.error('Major Exception raised, stop actor')
@@ -189,7 +188,7 @@ class Actor(multiprocessing.Process):
         Can be overriden to use personal actor setup
         """
 
-    def add_handler(self, message_type, handler):
+    def add_handler(self, message_type: type[Message], handler: Handler):
         """
         Map a handler to a message type
 
