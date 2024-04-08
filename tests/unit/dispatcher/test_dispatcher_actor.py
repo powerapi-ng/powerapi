@@ -285,7 +285,7 @@ class TestDispatcher:
 
         route_table = RouteTable()
         for report_type, gbr in dispatch_rules:
-            route_table.dispatch_rule(report_type, gbr)
+            route_table.add_dispatch_rule(report_type, gbr)
 
         def formula_factory(name, pushers):
             return DummyFormulaActor(name, pushers, 0, 0)

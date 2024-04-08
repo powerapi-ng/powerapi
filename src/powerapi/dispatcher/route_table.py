@@ -27,57 +27,37 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIException
-
-
-class PrimaryDispatchRuleRuleAlreadyDefinedException(PowerAPIException):
-    """
-    Exception raised when trying to define a primary dispatch rule on a route table that have already one
-    """
+from powerapi.dispatch_rule import DispatchRule
+from powerapi.report import Report
 
 
 class RouteTable:
     """
-    Structure that map a :class:`Report<powerapi.report.Report>` type to a
-    :class:`DispatchRule<powerapi.dispatch_rule.DispatchRule>` rule
+    Routing Table used by the Dispatcher to map report types to dispatch rules.
     """
 
     def __init__(self):
-        #: (array): Array of tuple that link a Report type to a DispatchRule
-        # rule
-        self.route_table = []
-        #: (powerapi.DispatchRule): Allow to define how to create the Formula id
+        """
+        Initializes a new Routing Table.
+        """
+        self.route_table = {}
         self.primary_dispatch_rule = None
 
-    def get_dispatch_rule(self, msg):
+    def get_dispatch_rule(self, report: Report) -> DispatchRule | None:
         """
-        Return the corresponding group by rule mapped to the received message
-        type
-
-        :param type msg: the received message
-        :return: the dispatch_rule rule mapped to the received message type
-        :rtype: powerapi.dispatch_rule.DispatchRule
-        :raise: UnknowMessageTypeException if no group by rule is mapped to the
-                received message type
+        Return the corresponding dispatch rule for the given report.
+        param msg: The report to get the dispatch rule for
+        return: The corresponding dispatch rule or None if no dispatch rule exists for the report type.
         """
-        for (report_class, dispatch_rule) in self.route_table:
-            if isinstance(msg, report_class):
-                return dispatch_rule
+        return self.route_table.get(report.__class__.__name__, None)
 
-        return None
-
-    def dispatch_rule(self, report_class, dispatch_rule):
+    def add_dispatch_rule(self, report_type: type[Report], dispatch_rule: DispatchRule):
         """
-        Add a dispatch_rule rule to the route table
-
-        :param Type report_class: Type of the message that the
-                                  dispatch_rule rule must handle
-        :param dispatch_rule: Group_by rule to add
-        :type dispatch_rule:  powerapi.dispatch_rule.DispatchRule
+        Add a dispatch rule for the given report type.
+        :param report_type: The report type to which the dispatch rule should map to
+        :param dispatch_rule: The dispatch rule to handle the reports of the given type
         """
         if dispatch_rule.is_primary:
-            if self.primary_dispatch_rule is not None:
-                raise PrimaryDispatchRuleRuleAlreadyDefinedException()
             self.primary_dispatch_rule = dispatch_rule
 
-        self.route_table.append((report_class, dispatch_rule))
+        self.route_table[report_type.__name__] = dispatch_rule
