@@ -27,67 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import UnknownMessageTypeException
 from powerapi.actor.supervisor import Supervisor
+from powerapi.exception import UnknownMessageTypeException
+from powerapi.handler import Handler
+from powerapi.message import Message
 
 
 class State:
     """
-    A basic state class that encapsulate basic actor values :
-
-    :attr:`initialized <powerapi.actor.state.State.initialized>`
-    :attr:`alive <powerapi.actor.state.State.alive>`
-    :attr:`behaviour <powerapi.actor.state.State.behaviour>`
-    :attr:`handlers <powerapi.actor.state.State.handlers>`
-    :attr:`supervisor <powerapi.actor.state.State.supervisor>`
+    Base actor state.
     """
 
     def __init__(self, actor):
         """
-        :param powerapi.Actor actor: Actor
+        Initialize the actor state.
+        :param actor: The actor instance
         """
-        #: (bool): True if the actor is initialized and can handle all
-        #: message, False otherwise
-        self.initialized = False
-        #: (bool): True if the actor is alive, False otherwise
-        self.alive = True
-        #: ([(type, powerapi.handler.abstract_handler.AbstractHandler)]):
-        #: mapping between message type and handler that the mapped handler
-        #: must handle
-        self.handlers = []
-        #: (powerapi.actor.supervisor.Supervisor): object that supervise actors
-        #: that are handle by this actor
-        self.supervisor = Supervisor()
-        #: (powerapi.Actor): Actor
         self.actor = actor
 
-    def get_corresponding_handler(self, msg):
-        """
-        Return the handler corresponding to the given message type
+        self.initialized = False
+        self.alive = True
 
-        :param Object msg: the received message
-        :return: the handler corresponding to the given message type
-        :rtype: powerapi.handler.AbstractHandler
+        self.handlers = {}
+        self.supervisor = Supervisor()
 
-        :raises UnknowMessageTypeException: if no handler could be find
+    def get_corresponding_handler(self, msg: Message) -> Handler:
         """
-        for (msg_type, handler) in self.handlers:
-            if isinstance(msg, msg_type):
-                return handler
-        raise UnknownMessageTypeException()
+        Return the corresponding handler for the given message type.
+        :param msg: The message
+        :return: The handler for the given message type
+        :raises UnknownMessageTypeException: If the message type does not have a corresponding handler
+        """
+        try:
+            return self.handlers[msg.__class__.__name__]
+        except ValueError as e:
+            raise UnknownMessageTypeException() from e
 
-    def add_handler(self, message_type, handler):
+    def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True):
         """
-        Map a handler to a message type
+        Add a handler for the given message type.
+        :param message_type: The message type
+        :param handler: The corresponding handler
+        :param include_subclasses: Whether to include subclasses of the message type
+        """
+        self.handlers[message_type.__name__] = handler
 
-        :param type message_type: type of the message that the handler can
-                                  handle
-        :param handler: handler that will handle all messages of the given type
-        :type handler: powerapi.handler.AbstractHandler
-        """
-        self.handlers.append((message_type, handler))
-
-    def reinit(self):
-        """
-        Reinitialize the state
-        """
+        if include_subclasses:
+            for child_type in message_type.__subclasses__():
+                self.handlers[child_type.__name__] = handler

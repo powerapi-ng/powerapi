@@ -312,10 +312,8 @@ class AbstractTestActor:
     @staticmethod
     @pytest.fixture
     def actor_with_crash_handler(actor):
-        actor.state.handlers = [
-            (CrashMessage, CrashHandler(actor.state)),
-            (PingMessage, PingHandler(actor.state))
-        ]
+        actor.add_handler(CrashMessage, CrashHandler(actor.state))
+        actor.add_handler(PingMessage, PingHandler(actor.state))
 
         actor.start()
         actor.connect_data()
