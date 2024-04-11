@@ -50,8 +50,7 @@ class PullerState(State):
       - the Filter class
     """
 
-    def __init__(self, actor: Actor, database, report_filter, report_model, stream_mode, timeout_puller,
-                 asynchrone=False):
+    def __init__(self, actor: Actor, database, report_filter, report_model, stream_mode, timeout_puller):
         """
         :param BaseDB database: Allow to interact with a Database
         :param Filter report_filter: Filter of the Puller
@@ -79,9 +78,6 @@ class PullerState(State):
         #: (int): Counter for "sleeping mode"
         self.counter = 0
 
-        #: (bool): enable asynchronous driver
-        self.asynchrone = asynchrone
-
         self.loop = None
 
 
@@ -93,8 +89,7 @@ class PullerActor(Actor):
     to many Dispatcher depending on some rules.
     """
 
-    def __init__(self, name, database, report_filter, report_model, stream_mode=False,
-                 level_logger=logging.WARNING,
+    def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
                  timeout=5000, timeout_puller=100):
         """
         :param str name: Actor name.
@@ -102,13 +97,12 @@ class PullerActor(Actor):
         :param Filter report_filter: Filter of the Puller.
         :param int level_logger: Define the level of the logger
         :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
-        :param bool asynchrone: use asynchrone driver
         """
 
         Actor.__init__(self, name, level_logger, timeout)
+
         #: (State): Actor State.
-        self.state = PullerState(self, database=database, report_filter=report_filter, report_model=report_model,
-                                 stream_mode=stream_mode, timeout_puller=timeout_puller, asynchrone=database.asynchrone)
+        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller)
 
         self.low_exception += database.exceptions
 
