@@ -26,15 +26,15 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import List, Type
-from powerapi.report import Report
+
 from powerapi.exception import PowerAPIExceptionWithMessage
+from powerapi.report import Report
 
 
 class DBError(PowerAPIExceptionWithMessage):
 
     """
-    Error raised when an error occuried when using a database
+    Error raised when an error occurred when using a database.
     """
     def __init__(self, msg: str):
         PowerAPIExceptionWithMessage.__init__(self, msg)
@@ -42,70 +42,76 @@ class DBError(PowerAPIExceptionWithMessage):
 
 class IterDB:
     """
-    IterDB class
-
-    This class allows to browse a database as an iterable
+    This class define the interface of a database results iterator.
     """
 
-    def __init__(self, db, report_type, stream_mode):
+    def __init__(self, db, report_type: type[Report], stream_mode: bool):
         """
+        :param db: Database instance
+        :param report_type: Report type to convert the database results into
+        :param stream_mode: Define if the iterator should stop when there is no data
         """
         self.db = db
-        self.stream_mode = stream_mode
         self.report_type = report_type
+        self.stream_mode = stream_mode
 
     def __iter__(self):
         """
+        Return an iterator for the database results.
         """
         raise NotImplementedError()
 
     def __next__(self) -> Report:
         """
+        Return and consume the next database result available.
         """
         raise NotImplementedError()
 
 
 class BaseDB:
     """
-    Abstract class which define every common function for database uses.
-
-    This class define every common function that need to be implemented
-    by each DB module. A database module correspond to a kind of BDD.
-    For example, Mongodb, influxdb, csv are different kind of BDD.
+    This class define the interface needed to fetch/save reports from/to a database.
     """
-    def __init__(self, report_type: Type[Report], exceptions: List[Type[Exception]] = None, asynchrone: bool = False):
-        self.exceptions = exceptions or []
-        self.asynchrone = asynchrone
+
+    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] = None, is_async: bool = False):
+        """
+        :param report_type: The type of report expected
+        :param exceptions: List of exception type raised by the database module
+        :param is_async: Whether the database use asyncio or not
+        """
         self.report_type = report_type
+        self.exceptions = exceptions or []
+        self.is_async = is_async
 
     def connect(self):
         """
-        Function that allow to load the database. Depending of the type,
-        different process can happen.
-
-        .. note:: Need to be overrided
+        Connect to the database.
         """
         raise NotImplementedError()
 
-    def iter(self, stream_mode: bool) -> IterDB:
+    def disconnect(self):
         """
-        Create the iterator for get the data
-        :param stream_mode: Define if we read in stream mode
+        Disconnect from the database.
+        """
+        raise NotImplementedError()
+
+    def iter(self, stream_mode: bool = False) -> IterDB:
+        """
+        Create and returns a database results iterator.
+        :param stream_mode: Define if we read continuously (streaming) or stop when no data is available
         """
         raise NotImplementedError()
 
     def save(self, report: Report):
         """
-        Allow to save a json input in the db
-
-        :param report: Report
+        Save a report to the database.
+        :param report: Report to be saved
         """
         raise NotImplementedError()
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
-        Allow to save a batch of data
-
-        :param reports: Batch of Serialized Report
+        Save multiple reports to the database. (batch mode)
+        :param reports: List of Report to be saved
         """
         raise NotImplementedError()
