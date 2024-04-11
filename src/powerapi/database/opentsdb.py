@@ -91,6 +91,11 @@ class OpenTSDB(BaseDB):
         if not self.client.is_connected() and not self.client.is_alive():
             raise CantConnectToOpenTSDBException('connexion error')
 
+    def disconnect(self):
+        """
+        Disconnect from the OpenTSDB database.
+        """
+
     def save(self, report: PowerReport):
         """
         Override from BaseDB

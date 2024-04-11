@@ -75,8 +75,16 @@ class SocketDB(BaseDB):
         self.server = None
 
     async def connect(self):
+        """
+        Connect to the socket database.
+        """
         self.queue = asyncio.Queue()
         self.server = await asyncio.start_server(self._gen_server_callback(), host='127.0.0.1', port=self.port)
+
+    async def disconnect(self):
+        """
+        Disconnect from the socket database.
+        """
 
     async def stop(self):
         """

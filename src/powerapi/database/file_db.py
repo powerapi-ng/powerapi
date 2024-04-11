@@ -112,6 +112,11 @@ class FileDB(BaseDB):
         if not os.path.exists(self.filename):
             raise FileBadDBError(self.filename)
 
+    def disconnect(self):
+        """
+        Disconnect from the file database.
+        """
+
     def iter(self, stream_mode: bool = False) -> FileIterDB:
         """
         Create the iterator for get the data

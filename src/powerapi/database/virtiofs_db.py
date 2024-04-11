@@ -79,6 +79,11 @@ class VirtioFSDB(BaseDB):
         if not os.path.exists(self.root_directory_name):
             raise DirectoryDoesNotExistForVirtioFS(self.root_directory_name)
 
+    def disconnect(self):
+        """
+        Disconnect from the virtiosfs database.
+        """
+
     def save(self, report: Report):
         directory_name = self._generate_vm_directory_name(report.target)
         if directory_name is None:

@@ -253,9 +253,12 @@ class CsvDB(BaseDB):
 
     def connect(self):
         """
-        Override from BaseDB.
+        Connect to the csv database.
+        """
 
-        Nothing to do with CSV, because it's just files operations.
+    def disconnect(self):
+        """
+        Disconnect from the csv database.
         """
 
     def save(self, report: Report):
