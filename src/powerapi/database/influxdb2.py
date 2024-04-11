@@ -94,12 +94,7 @@ class InfluxDB2(BaseDB):
 
     def connect(self):
         """
-            Override from BaseDB.
-
-            Create the connection to the influxdb database with the current
-            configuration (url:port/bucket_name/org), then check if the connection has
-            been created without failure.
-
+        Connect to the influxdb2 database.
         """
         # close connection if reload
         if self.client is not None:
@@ -122,6 +117,11 @@ class InfluxDB2(BaseDB):
             return
 
         self.buckets_api.create_bucket(bucket_name=self.bucket_name)
+
+    def disconnect(self):
+        """
+        Disconnect from the influxdb2 database.
+        """
 
     def get_db_by_name(self, db_name: str):
         """

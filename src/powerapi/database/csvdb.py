@@ -245,7 +245,7 @@ class CsvDB(BaseDB):
     # Override from BaseDB #
     ########################
 
-    def iter(self, stream_mode: bool) -> CsvIterDB:
+    def iter(self, stream_mode: bool = False) -> CsvIterDB:
         """
         Create the iterator for get the data
         """
@@ -253,9 +253,12 @@ class CsvDB(BaseDB):
 
     def connect(self):
         """
-        Override from BaseDB.
+        Connect to the csv database.
+        """
 
-        Nothing to do with CSV, because it's just files operations.
+    def disconnect(self):
+        """
+        Disconnect from the csv database.
         """
 
     def save(self, report: Report):

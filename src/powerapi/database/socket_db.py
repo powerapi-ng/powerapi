@@ -31,13 +31,36 @@ import asyncio
 from typing import Type, List
 import json
 
-
 from powerapi.utils import JsonStream
 from powerapi.report import Report
 from .base_db import IterDB, BaseDB, DBError
 
-BUFFER_SIZE = 4096
-SOCKET_TIMEOUT = 0.5
+
+class IterSocketDB(IterDB):
+    """
+    iterator connected to a socket that receive report from a sensor
+    """
+
+    def __init__(self, report_type, stream_mode, queue):
+        """
+        """
+        IterDB.__init__(self, None, report_type, stream_mode)
+
+        self.queue = queue
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            json_str = await asyncio.wait_for(self.queue.get(), 2)
+            # json = self.queue.get_nowait()
+            # self.queue.get()
+            report = self.report_type.from_json(json.loads(json_str))
+            return report
+        # except Empty:
+        except asyncio.TimeoutError:
+            return None
 
 
 class SocketDB(BaseDB):
@@ -46,14 +69,22 @@ class SocketDB(BaseDB):
     """
 
     def __init__(self, report_type: Type[Report], port: int):
-        BaseDB.__init__(self, report_type, asynchrone=True)
+        BaseDB.__init__(self, report_type, is_async=True)
         self.queue = None
         self.port = port
         self.server = None
 
     async def connect(self):
+        """
+        Connect to the socket database.
+        """
         self.queue = asyncio.Queue()
         self.server = await asyncio.start_server(self._gen_server_callback(), host='127.0.0.1', port=self.port)
+
+    async def disconnect(self):
+        """
+        Disconnect from the socket database.
+        """
 
     async def stop(self):
         """
@@ -62,7 +93,7 @@ class SocketDB(BaseDB):
         self.server.close()
         await self.server.wait_closed()
 
-    def iter(self, stream_mode):
+    def iter(self, stream_mode: bool = False) -> IterSocketDB:
         return IterSocketDB(self.report_type, stream_mode, self.queue)
 
     def _gen_server_callback(self):
@@ -91,30 +122,3 @@ class SocketDB(BaseDB):
 
     def save_many(self, reports: List[Report]):
         raise DBError('Socket db don\'t support save_many method')
-
-
-class IterSocketDB(IterDB):
-    """
-    iterator connected to a socket that receive report from a sensor
-    """
-
-    def __init__(self, report_type, stream_mode, queue):
-        """
-        """
-        IterDB.__init__(self, None, report_type, stream_mode)
-
-        self.queue = queue
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        try:
-            json_str = await asyncio.wait_for(self.queue.get(), 2)
-            # json = self.queue.get_nowait()
-            # self.queue.get()
-            report = self.report_type.from_json(json.loads(json_str))
-            return report
-        # except Empty:
-        except asyncio.TimeoutError:
-            return None

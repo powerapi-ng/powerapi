@@ -72,7 +72,7 @@ class DBPullerThread(Thread):
 
     def _pull_database(self):
         try:
-            if self.state.asynchrone:
+            if self.state.database.is_async:
                 report = self.loop.run_until_complete(anext(self.state.database_it))
                 if report is None:
                     raise StopIteration()
@@ -95,7 +95,7 @@ class DBPullerThread(Thread):
 
         :param None msg: None.
         """
-        if self.state.asynchrone:
+        if self.state.database.is_async:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             self.state.loop = self.loop
@@ -200,7 +200,7 @@ class PullerStartHandler(StartHandler):
 
     def _database_connection(self):
         try:
-            if not self.state.asynchrone:
+            if not self.state.database.is_async:
                 self.state.database.connect()
                 self.state.database_it = self.state.database.iter(stream_mode=self.state.stream_mode)
 

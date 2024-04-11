@@ -67,7 +67,7 @@ class FakeDB(BaseDB):
     def connect(self):
         self.q.put('connected', block=False)
 
-    def iter(self, stream_mode):
+    def iter(self, stream_mode: bool = False):
         return iter(self._content)
 
     def save(self, report):
@@ -92,7 +92,7 @@ class SilentFakeDB(BaseDB):
     def connect(self):
         pass
 
-    def iter(self, stream_mode):
+    def iter(self, stream_mode: bool = False):
         return iter(self._content)
 
     def save(self, report):

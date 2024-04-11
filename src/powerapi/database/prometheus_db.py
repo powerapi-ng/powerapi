@@ -73,6 +73,11 @@ class BasePrometheusDB(BaseDB):
         """
         start_http_server(port=self.port, addr=self.address)
 
+    def disconnect(self):
+        """
+        Disconnect from the Prometheus database.
+        """
+
 
 class PrometheusDB(BasePrometheusDB):
     """

@@ -145,7 +145,12 @@ class MongoDB(BaseDB):
 
         self.collection = self.mongo_client[self.db_name][self.collection_name]
 
-    def iter(self, stream_mode: bool) -> MongoIterDB:
+    def disconnect(self):
+        """
+        Disconnect from the mongodb database.
+        """
+
+    def iter(self, stream_mode: bool = False) -> MongoIterDB:
         """
         Create the iterator for get the data
         """
