@@ -245,7 +245,7 @@ class CsvDB(BaseDB):
     # Override from BaseDB #
     ########################
 
-    def iter(self, stream_mode: bool) -> CsvIterDB:
+    def iter(self, stream_mode: bool = False) -> CsvIterDB:
         """
         Create the iterator for get the data
         """
