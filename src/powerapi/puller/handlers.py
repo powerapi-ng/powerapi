@@ -55,7 +55,7 @@ class DBPullerThread(Thread):
     """
 
     def __init__(self, state, timeout, handler):
-        Thread.__init__(self)
+        Thread.__init__(self, daemon=True)
         self.timeout = timeout
         self.state = state
         self.loop = None
