@@ -1,5 +1,5 @@
 ---
-title: 'PowerAPI: A toolkit for estimating power consumption of software'
+title: 'PowerAPI: A Python framework for building software-defined power meters'
 tags:
   - Python
   - C
@@ -12,9 +12,9 @@ authors:
   - name: Daniel Romero Acero
     orcid: 0000-0002-5317-2610
     affiliation: 1
-  - name: Mohammed Chakib Belgaid
-    orcid: 0000-0002-5264-7426
-    affiliation: 1
+  - name: Pierre Rust
+    orcid: 0000-0002-2761-4702
+    affiliation: 3
   - name: Romain Rouvoy
     orcid: 0000-0003-1771-8791
     affiliation: "1,2"
@@ -23,6 +23,8 @@ affiliations:
    index: 1
  - name: University of Lille, France
    index: 2
+ - name: Orange, France
+   index: 3
 date: 26 March 2024
 bibliography: paper.bib
 ---
