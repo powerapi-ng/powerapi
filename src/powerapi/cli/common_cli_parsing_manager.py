@@ -30,7 +30,7 @@
 import sys
 
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
-from powerapi.cli.config_parser import store_true
+from powerapi.cli.config_parser import store_true, extract_file_names
 from powerapi.cli.config_parser import MissingValueException
 from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
     DEFAULT_ADDRESS
@@ -43,14 +43,6 @@ POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIAB
 POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR'
 
 TAGS_ARGUMENT_HELP_TEXT = 'specify report tags'
-
-
-def extract_file_names(arg, val, args, acc):
-    """
-    action used to convert string from --files parameter into a list of file name
-    """
-    acc[arg] = val.split(",")
-    return args, acc
 
 
 class CommonCLIParsingManager(RootConfigParsingManager):
@@ -305,29 +297,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self.add_subgroup_parser(
             subgroup_name="output",
             subgroup_parser=subparser_csv_output
-        )
-
-        subparser_influx_output = SubgroupConfigParsingManager("influxdb")
-        subparser_influx_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
-        subparser_influx_output.add_argument(
-            "d", "db", help_text="specify InfluxDB database name"
-        )
-        subparser_influx_output.add_argument(
-            "p", "port", help_text="specify InfluxDB connection port", argument_type=int
-        )
-        subparser_influx_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
-        )
-        subparser_influx_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_influxdb"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="output",
-            subgroup_parser=subparser_influx_output
         )
 
         subparser_opentsdb_output = SubgroupConfigParsingManager("opentsdb")

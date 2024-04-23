@@ -202,15 +202,14 @@ class NotAllowedArgumentValueException(PowerAPIException):
     """
 
 
-class FileDoesNotExistException(PowerAPIException):
+class FileDoesNotExistException(PowerAPIExceptionWithMessage):
     """
     This exception happens when the configuration define a input file that does not exist or is not accessible
     """
 
     def __init__(self, file_name: str):
-        PowerAPIException.__init__(self)
+        PowerAPIExceptionWithMessage.__init__(self, "The File " + file_name + " does not exist or is not accessible")
         self.file_name = file_name
-        self.msg = "The File " + self.file_name + " does not exist or is not accessible"
 
 
 class SameLengthArgumentNamesException(ParserException):
