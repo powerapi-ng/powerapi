@@ -63,6 +63,14 @@ def store_true(argument_name: str, configuration: dict, val: Any = None, args: l
     return args, configuration
 
 
+def extract_file_names(argument_name: str, val: Any, configuration: dict, args: list = None):
+    """
+    Action used to convert string from --files parameter into a list of file name
+    """
+    configuration[argument_name] = val.split(",")
+    return args, configuration
+
+
 class ConfigurationArgument:
     """
     Argument provided by a formula configuration.
