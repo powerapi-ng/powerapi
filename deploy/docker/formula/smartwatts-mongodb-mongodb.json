@@ -1,0 +1,28 @@
+{
+    "verbose": true,
+    "stream": true,
+    "input": {
+      "puller_mongodb": {
+        "model": "HWPCReport",
+        "type": "mongodb",
+        "name": "puller_mongodb",
+        "uri": "mongodb://mongodb:27017",
+        "db": "db_sensor",
+        "collection": "prep"
+      }
+    },
+    "output": {
+      "pusher_mongodb": {
+        "model": "PowerReport",
+        "type": "mongodb",
+        "name": "pusher_mongodb",
+        "uri": "mongodb://mongodb:27017",
+        "db": "db_power",
+        "collection": "power"
+      }
+    },
+    "cpu-base-freq": 1900,
+    "cpu-error-threshold": 2.0,
+    "disable-dram-formula": true,
+    "sensor-reports-frequency": 1000
+  }

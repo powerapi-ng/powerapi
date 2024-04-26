@@ -1,0 +1,171 @@
+version: '3.8'
+
+services:
+  ############################################
+  #          SOURCES & DESTINATIONS          #
+  ############################################
+  # MongoDB
+  mongodb:
+    container_name: mongodb
+    image: ${MONGO_IMAGE}
+    networks:
+      - powerapi-network
+    profiles:
+      - mongodb
+  
+  # InluxDB2
+  influxdb2:
+    container_name: influxdb2
+    image: ${INFLUXDB_IMAGE}
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: "setup"
+      DOCKER_INFLUXDB_INIT_USERNAME: "powerapi"
+      DOCKER_INFLUXDB_INIT_PASSWORD: "powerapi"
+      DOCKER_INFLUXDB_INIT_BUCKET: "powerapi"
+      DOCKER_INFLUXDB_INIT_ORG: "powerapi"      
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: "powerapi"
+    ports: 
+      - "8086:8086"
+    volumes: 
+      - ${PWD}/influxdb:/var/lib/influxdb 
+    networks:
+      - powerapi-network
+    profiles:
+      - influxdb2
+
+  # Prometheus
+  prometheus:
+    container_name: prometheus
+    image: ${PROMETHEUS_IMAGE}
+    ports: 
+     - "9090:9090"
+    volumes: 
+      - ${PWD}/prometheus:/opt/bitnami/prometheus/data # Folder must be writable for UID 1001
+      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - powerapi-network
+    profiles:
+      - prometheus
+
+  # CSV (Default is a dummy image, can be used to add treatments on CSV files)
+  csv:
+    container_name: csv
+    image: ${CSV_IMAGE}
+    volumes:
+      - ${PWD}/csv:/tmp/csv
+    profiles:
+      - csv
+
+  # FileDB (Default is a dummy image, can be used to add treatments on data files)
+  filedb:
+    container_name: filedb
+    image: ${FILEDB_IMAGE}
+    volumes:
+      - ${PWD}/filedb:/tmp/filedb
+    profiles:
+      - filedb
+
+  # Socket (Default is a dummy image, can be used to add treatments on formula socket)
+  socket:
+    container_name: socket
+    image: ${SOCKET_IMAGE}
+    profiles:
+      - socket
+
+  ############################################
+  #                POWER API                 #
+  ############################################
+  # PowerAPI Sensor
+  sensor:
+    container_name: sensor
+    image: ${SENSOR_IMAGE}
+    privileged: true
+    command:
+      - "--config-file"
+      - "/etc/sensor.json"
+    volumes:
+      - ${PWD}/sensor/${SENSOR_TYPE}-${POWERAPI_SOURCE}.json:/etc/sensor.json
+      - ${PWD}/csv:/tmp/csv
+      - type: bind
+        source: /proc
+        target: /proc
+      - type: bind
+        source: /sys
+        target: /sys
+      - type: bind
+        source: /var/lib/docker/containers
+        target: /var/lib/docker/containers
+    depends_on:
+      - ${POWERAPI_SOURCE}
+    networks:
+      - powerapi-network
+    restart: unless-stopped
+    
+  # PowerAPI Formula
+  formula:
+    container_name: formula
+    image: ${FORMULA_IMAGE}
+    command:
+      - "--config-file"
+      - "/etc/formula.json"
+    volumes:
+      - ${PWD}/formula/${FORMULA_TYPE}-${POWERAPI_SOURCE}-${POWERAPI_DESTINATION}.json:/etc/formula.json
+      - ${PWD}/csv:/tmp/csv
+      - ${PWD}/filedb:/tmp/filedb
+    depends_on:
+      - ${POWERAPI_DESTINATION}
+    networks:
+      - powerapi-network     
+    restart: unless-stopped
+  
+  ############################################
+  #                  TOOLS                   #
+  ############################################
+  
+  # Grafana
+  grafana:
+    container_name: grafana
+    image: ${GRAFANA_IMAGE}
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "secret"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/etc/dashboards/power-api.json"
+    depends_on:
+      - ${POWERAPI_DESTINATION}
+    ports: 
+      - "3000:3000"
+    volumes:
+      - ${PWD}/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ${PWD}/grafana/datasource-${POWERAPI_DESTINATION}.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ${PWD}/grafana/power-api-${POWERAPI_DESTINATION}.json:/etc/dashboards/power-api.json
+    networks:
+      - powerapi-network
+    profiles:
+      - influxdb2
+      - prometheus
+
+  # Mongo Express
+  mongo-express:
+    container_name: mongo-express
+    image: ${MONGOEXPRESS_IMAGE}
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    ports: 
+      - "8081:8081"
+    networks:
+      - powerapi-network
+    profiles:
+      - mongodb
+
+############################################
+#                  DOCKER                  #
+############################################
+
+networks:
+  powerapi-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.34.0/24

@@ -1,0 +1,24 @@
+{
+    "verbose": true,
+    "stream": true,
+    "input": {
+      "puller_socket": {
+        "model": "HWPCReport",
+        "type": "socket",
+        "name": "puller_socket",
+        "port": 9080
+      }
+    },
+    "output": {
+      "pusher_filedb": {
+        "model": "PowerReport",
+        "type": "filedb",
+        "name": "pusher_filedb",
+        "filename": "/tmp/filedb/report.json"
+      }
+    },
+    "cpu-base-freq": 1900,
+    "cpu-error-threshold": 2.0,
+    "disable-dram-formula": true,
+    "sensor-reports-frequency": 1000
+  }

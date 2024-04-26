@@ -1,0 +1,19 @@
+apiVersion: 1
+datasources:
+- orgId: 1
+  version: 1
+  name: influx-powerapi
+  type: influxdb
+  access: proxy
+  url: http://influxdb2:8086
+  user: powerapi
+  isDefault: true
+  editable: true
+  jsonData:
+    dbName: powerapi
+    defaultBucket: powerapi
+    httpMode: POST
+    organization: powerapi
+    version: InfluxQL
+  secureJsonData:
+    password: powerapi
