@@ -279,13 +279,13 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
         elif pusher_type == 'opentsdb':
             assert db.port == current_pusher_infos['port']
             assert db.host == current_pusher_infos['uri']
-            assert db.metric_name == current_pusher_infos['metric_name']
+            assert db.metric_name == current_pusher_infos['metric-name']
 
         elif pusher_type == 'virtiofs':
-            assert db.vm_name_regexp == compile(current_pusher_infos['vm_name_regexp'])
-            assert db.root_directory_name == current_pusher_infos['root_directory_name']
-            assert db.vm_directory_name_prefix == current_pusher_infos['vm_directory_name_prefix']
-            assert db.vm_directory_name_suffix == current_pusher_infos['vm_directory_name_suffix']
+            assert db.vm_name_regexp == compile(current_pusher_infos['vm-name-regexp'])
+            assert db.root_directory_name == current_pusher_infos['root-directory-name']
+            assert db.vm_directory_name_prefix == current_pusher_infos['vm-directory-name-prefix']
+            assert db.vm_directory_name_suffix == current_pusher_infos['vm-directory-name-suffix']
 
         elif pusher_type == 'filedb':
             assert db.filename == current_pusher_infos['filename']

@@ -56,3 +56,35 @@ def merge_dictionaries(source: dict, destination: dict) -> dict:
             destination[key] = value
 
     return destination
+
+
+def get_longest_related_suffix(var: str, suffixes: list) -> str:
+    """
+    Search for the longest suffix of a string variable in a provided list. It returns None if a suffix is not found
+    :param var: A string for looking its longest suffix
+    :param suffixes: A list of suffixes
+    """
+    suffix = None
+
+    for current_suffix in suffixes:
+        if var.endswith(current_suffix):
+            if suffix is None:
+                suffix = current_suffix
+            elif len(current_suffix) > len(suffix):
+                suffix = current_suffix
+
+    return suffix
+
+
+def to_lower_case_and_replace_separators(strings: list, old_separator: str, new_separator: str) -> list:
+    """
+    Transform all strings in a provided list to lower case and replace a given separator for a new one
+    :param strings: List of string to be converted to lower case
+    :param old_separator: The old separator in the list of strings
+    :param new_separator: The new separator in the list of strings
+    """
+    new_strings = []
+    for current_string in strings:
+        new_strings.append(current_string.lower().replace(old_separator, new_separator))
+
+    return new_strings
