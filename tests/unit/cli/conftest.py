@@ -137,9 +137,9 @@ def several_inputs_outputs_stream_prometheus_without_some_arguments_config(sever
     """
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
         if current_output['type'] == 'prometheus':
-            current_output.pop('metric_name')
-            current_output.pop('metric_description')
-            current_output.pop('aggregation_period')
+            current_output.pop('metric-name')
+            current_output.pop('metric-description')
+            current_output.pop('aggregation-period')
 
     return several_inputs_outputs_stream_config
 
@@ -152,7 +152,7 @@ def several_inputs_outputs_stream_opentsdb_without_some_arguments_config(several
     """
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
         if current_output['type'] == 'opentsdb':
-            current_output.pop('metric_name')
+            current_output.pop('metric-name')
             current_output.pop('port')
             current_output.pop('uri')
 
@@ -167,10 +167,10 @@ def several_inputs_outputs_stream_virtiofs_without_some_arguments_config(several
     """
     for _, current_output in several_inputs_outputs_stream_config["output"].items():
         if current_output['type'] == 'virtiofs':
-            current_output.pop('vm_name_regexp')
-            current_output.pop('root_directory_name')
-            current_output.pop('vm_directory_name_prefix')
-            current_output.pop('vm_directory_name_suffix')
+            current_output.pop('vm-name-regexp')
+            current_output.pop('root-directory-name')
+            current_output.pop('vm-directory-name-prefix')
+            current_output.pop('vm-directory-name-suffix')
 
     return several_inputs_outputs_stream_config
 

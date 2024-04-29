@@ -36,9 +36,9 @@
           "model": "PowerReport",
           "uri": "127.0.0.1",
           "port": 2222,
-          "metric_name": "my_metric",
-          "metric_description": "a description",
-          "aggregation_period": 11
+          "metric-name": "my_metric",
+          "metric-description": "a description",
+          "aggregation-period": 11
       },
       "fourth_pusher": {
           "type": "csv",
@@ -60,15 +60,15 @@
           "model": "PowerReport",
           "uri": "127.0.0.1",
           "port": 1111,
-          "metric_name": "my metric opentsdb"
+          "metric-name": "my metric opentsdb"
       },
       "seventh": {
           "type": "virtiofs",
           "model": "PowerReport",
-          "vm_name_regexp": "vm_name$",
-          "root_directory_name": "my_dir",
-          "vm_directory_name_prefix": "prefix_1",
-          "vm_directory_name_suffix": "suffix_1"
+          "vm-name-regexp": "vm_name$",
+          "root-directory-name": "my_dir",
+          "vm-directory-name-prefix": "prefix_1",
+          "vm-directory-name-suffix": "suffix_1"
       },
       "eighth": {
           "type": "filedb",
