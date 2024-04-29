@@ -199,13 +199,13 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
         subparser_virtiofs_output.add_argument(
             "p",
-            "vm_directory_name_prefix",
+            "vm-directory-name-prefix",
             help_text="first part of the VM directory name",
             default_value="",
         )
         subparser_virtiofs_output.add_argument(
             "s",
-            "vm_directory_name_suffix",
+            "vm-directory-name-suffix",
             help_text="last part of the VM directory name",
             default_value="",
         )
@@ -254,11 +254,11 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "p", "port", help_text="specify server port", argument_type=int
         )
         subparser_prometheus_output.add_argument(
-            "M", "metric_name", help_text="specify metric name"
+            "M", "metric-name", help_text="specify metric name"
         )
         subparser_prometheus_output.add_argument(
             "d",
-            "metric_description",
+            "metric-description",
             help_text="specify metric description",
             default_value=DEFAULT_METRIC_DESCRIPTION
         )
@@ -305,7 +305,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "p", "port", help_text="specify openTSDB connection port", argument_type=int
         )
         subparser_opentsdb_output.add_argument(
-            "metric_name", help_text="specify metric name"
+            "metric-name", help_text="specify metric name"
         )
 
         subparser_opentsdb_output.add_argument(
