@@ -38,7 +38,8 @@ from powerapi.exception import AlreadyAddedArgumentException, UnknownArgExceptio
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException, \
     SubgroupDoesNotExistException, AlreadyAddedSubgroupException
-from powerapi.utils.cli import find_longest_string_in_list, string_to_bool
+from powerapi.utils.cli import find_longest_string_in_list, string_to_bool, to_lower_case_and_replace_separators, \
+    get_longest_related_suffix
 
 
 def store_val(argument_name: str, val: Any, configuration: dict, args: list = None) -> (list, dict):
@@ -732,37 +733,39 @@ class RootConfigParser(BaseConfigParser):
         """
         Extract from environment variables the ones starting with group_prefix.
         The returned dictionary contains the variables names as keys without prefix and in lower case
-        :param str group_prefix: Prefix to extract the group environment variables
-        :param list subgroups_variables_names: List of variables names related to the group
+        :param group: The subgroup related to the environment variables to be extracted
         """
         group_variables_with_prefix = {}
         group_prefix = group.get_prefix()
         subgroups_arguments_names = group.get_longest_arguments_names()
         subgroups_arguments_names.append('type')
+        subgroups_arguments_names = to_lower_case_and_replace_separators(subgroups_arguments_names,
+                                                                         self.default_separator_env_vars_names,
+                                                                         self.default_separator_args_names)
         for environ_var_name in os.environ:
             if environ_var_name.startswith(group_prefix):
                 # We remove the prefix and put the name in lower case
                 suffix_environ_var_name = environ_var_name[len(group_prefix) - len(environ_var_name):]. \
                     lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
-                for group_variable_name in subgroups_arguments_names:
-                    group_variable_name_lower_case = group_variable_name. \
-                        lower().replace(self.default_separator_env_vars_names, self.default_separator_args_names)
 
-                    # The group_variable_name_lower_case has to be at the end of the suffix
-                    if suffix_environ_var_name.endswith(group_variable_name_lower_case) and \
-                            suffix_environ_var_name[
-                                suffix_environ_var_name.rfind(group_variable_name_lower_case) - 1] == \
-                            self.default_separator_args_names:
-                        # The subgroup's name is at the beginning of the suffix
-                        subgroup_name = suffix_environ_var_name[0:
-                                                                suffix_environ_var_name.rfind(
-                                                                    group_variable_name_lower_case) - 1]
+                # We look for a related argument name in the subgroup
+                group_variable_name_lower_case = get_longest_related_suffix(suffix_environ_var_name,
+                                                                            subgroups_arguments_names)
 
-                        if subgroup_name not in group_variables_with_prefix:
-                            group_variables_with_prefix[subgroup_name] = {}
-                        group_variables_with_prefix[subgroup_name][group_variable_name_lower_case] = os.environ[
-                            environ_var_name]
-                        break
+                if group_variable_name_lower_case and \
+                        suffix_environ_var_name[
+                            suffix_environ_var_name.rfind(group_variable_name_lower_case) - 1] == \
+                        self.default_separator_args_names:
+
+                    # The subgroup's name is at the beginning of the suffix
+                    subgroup_name = suffix_environ_var_name[0:
+                                                            suffix_environ_var_name.rfind(
+                                                                group_variable_name_lower_case) - 1]
+
+                    if subgroup_name not in group_variables_with_prefix:
+                        group_variables_with_prefix[subgroup_name] = {}
+                    group_variables_with_prefix[subgroup_name][group_variable_name_lower_case] = os.environ[
+                        environ_var_name]
 
         return group_variables_with_prefix
 
