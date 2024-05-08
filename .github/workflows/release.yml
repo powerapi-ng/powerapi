@@ -137,6 +137,6 @@ jobs:
         git-chglog --config .github/chglog/config.yml --output CHANGELOG.md "${GITHUB_REF_NAME}"
 
     - name: Create GitHub release
-      uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2.0.4
+      uses: softprops/action-gh-release@69320dbe05506a9a39fc8ae11030b214ec2d1f87 # v2.0.5
       with:
         body_path: CHANGELOG.md
