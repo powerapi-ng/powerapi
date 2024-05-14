@@ -154,16 +154,12 @@ class SocketInterface:
         :return: the list of received messages or None if timeout
         :rtype: a list of Object or None
         """
-        events = self.poller.poll(self.timeout)
+        events = dict(self.poller.poll(self.timeout))
 
-        # If there is data available on both sockets, the control one has priority
-        if len(events) == 2:
-            return self._recv_serialized(self.control_socket)
+        if len(events) == 0:
+            return None
 
-        if len(events) == 1:
-            return self._recv_serialized(events[0][0])
-
-        return None
+        return self._recv_serialized(next(iter(events)))
 
     def receive_control(self, timeout):
         """
