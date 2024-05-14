@@ -49,7 +49,6 @@ class PusherStartHandler(StartHandler):
         except DBError as error:
             self.state.actor.send_control(ErrorMessage(self.state.actor.name, error.msg))
             self.state.alive = False
-            return
 
 
 class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
