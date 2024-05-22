@@ -5,6 +5,8 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/powerapi-ng/powerapi/build.yml)](https://github.com/powerapi-ng/powerapi/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/powerapi)](https://pypi.org/project/powerapi/)
 [![Codecov](https://codecov.io/gh/powerapi-ng/powerapi/branch/master/graph/badge.svg)](https://codecov.io/gh/powerapi-ng/powerapi)
+[![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/powerapi-ng/powerapi/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/powerapi-ng/powerapi)
+[![status](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e/status.svg)](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e)
 
 PowerAPI is a middleware toolkit for building software-defined power meters.
 Software-defined power meters are configurable software libraries that can estimate the power consumption of software in real-time.
