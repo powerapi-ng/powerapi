@@ -154,13 +154,18 @@ class PowerReport(Report):
     def gen_tag(self, metadata_kept):
         """
         Generate the tags list of the report.
+        :param metadata_kept: The metadata to keep
         """
+        # Always sensor and target are kept
         tags = {'sensor': self.sensor, 'target': self.target}
 
-        for metadata_name in metadata_kept:
-            if metadata_name not in self.metadata:
-                raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
-            tags[metadata_name] = self.metadata[metadata_name]
+        if metadata_kept:
+            for metadata_name in metadata_kept:
+                if metadata_name not in self.metadata:
+                    raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
+                tags[metadata_name] = self.metadata[metadata_name]
+        else:
+            tags.update(self.metadata)
 
         return tags
 
