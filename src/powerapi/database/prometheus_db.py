@@ -142,8 +142,6 @@ class PrometheusDB(BasePrometheusDB):
 
         :param report: Report to save
         """
-        if self.tags is None or not self.tags:
-            self.tags = list(report.metadata.keys())
         self._init_metrics()
 
         key, measure = self._report_to_measure_and_key(report)
