@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: "PowerAPI: A Python framework for building software-defined power meters"
+license: "BSD-3-Clause"
+type: software
+url: "https://powerapi.org"
+repository-code: "https://github.com/powerapi-ng/powerapi"
+keywords:
+  - powerapi
+  - energy
+  - green-computing
+  - python-framework
+authors:
+  - given-names: "Guillaume"
+    family-names: "Fieni"
+    affiliation: "Inria"
+    orcid: "https://orcid.org/0000-0002-0165-6824"
+  - given-names: "Daniel"
+    family-names: "Romero Acero"
+    affiliation: "Inria"
+    orcid: "https://orcid.org/0000-0002-5317-2610"
+  - given-names: "Pierre"
+    family-names: "Rust"
+    affiliation: "Orange Labs"
+    orcid: "https://orcid.org/0000-0002-2761-4702"
+  - given-names: "Romain"
+    family-names: "Rouvoy"
+    affiliation: "University of Lille"
+    orcid: "https://orcid.org/0000-0003-1771-8791"
