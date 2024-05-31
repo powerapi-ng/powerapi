@@ -23,7 +23,7 @@ affiliations:
    index: 1
  - name: University of Lille, France
    index: 2
- - name: Orange, France
+ - name: Orange Labs, France
    index: 3
 date: 26 March 2024
 bibliography: paper.bib
