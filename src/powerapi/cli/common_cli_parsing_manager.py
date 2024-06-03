@@ -118,7 +118,10 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_socket_input = SubgroupConfigParsingManager("socket")
         subparser_socket_input.add_argument(
-            "p", "port", argument_type=int, help_text="specify port to bind the socket"
+            "h", "host", help_text="Specify the host the socket should listen on", default_value='127.0.0.1'
+        )
+        subparser_socket_input.add_argument(
+            "p", "port", help_text="Specify the port the socket should listen on", argument_type=int, default_value=9080,
         )
         subparser_socket_input.add_argument(
             "n", "name", help_text="specify puller name", default_value="puller_socket"
