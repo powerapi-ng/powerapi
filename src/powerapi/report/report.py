@@ -109,15 +109,23 @@ class Report(Message):
 
     @staticmethod
     def _extract_timestamp(ts):
-        if isinstance(ts, str):
-            try:
-                return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
-            except ValueError:
-                return datetime.fromtimestamp(int(ts) / 1000)
+        # Unix timestamp format (in milliseconds)
+        if isinstance(ts, int):
+            return datetime.fromtimestamp(ts / 1000)
+
+        # datetime object
         if isinstance(ts, datetime):
             return ts
 
-        raise ValueError('timestamp must be a datetime.datetime or a string')
+        if isinstance(ts, str):
+            try:
+                # ISO 8601 date format
+                return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
+            except ValueError:
+                # Unix timestamp format (in milliseconds)
+                return datetime.fromtimestamp(int(ts) / 1000)
+
+        raise ValueError('Invalid timestamp format')
 
     @staticmethod
     def create_empty_report():
