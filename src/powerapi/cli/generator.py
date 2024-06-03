@@ -172,7 +172,7 @@ class DBActorGenerator(BaseGenerator):
         self.db_factory = {
             'mongodb': lambda db_config: MongoDB(report_type=db_config['model'], uri=db_config['uri'],
                                                  db_name=db_config['db'], collection_name=db_config['collection']),
-            'socket': lambda db_config: SocketDB(report_type=db_config['model'], port=db_config['port']),
+            'socket': lambda db_config: SocketDB(db_config['model'], db_config['host'], db_config['port']),
             'csv': lambda db_config: CsvDB(report_type=db_config['model'], tags=gen_tag_list(db_config),
                                            current_path=os.getcwd() if 'directory' not in db_config else db_config[
                                                'directory'],

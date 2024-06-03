@@ -68,9 +68,10 @@ class SocketDB(BaseDB):
     Database that act as a server that expose a socket where data source will push data
     """
 
-    def __init__(self, report_type: Type[Report], port: int):
+    def __init__(self, report_type: Type[Report], host: str, port: int):
         BaseDB.__init__(self, report_type, is_async=True)
         self.queue = None
+        self.host = host
         self.port = port
         self.server = None
 
@@ -79,7 +80,7 @@ class SocketDB(BaseDB):
         Connect to the socket database.
         """
         self.queue = asyncio.Queue()
-        self.server = await asyncio.start_server(self._gen_server_callback(), host='127.0.0.1', port=self.port)
+        self.server = await asyncio.start_server(self._gen_server_callback(), host=self.host, port=self.port)
 
     async def disconnect(self):
         """

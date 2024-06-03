@@ -19,6 +19,7 @@
       "puller3": {
           "model": "HWPCReport",
           "type": "socket",
+          "host": "localhost",
           "port": 1111,
           "name": "puller3"
       }
