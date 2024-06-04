@@ -5,6 +5,7 @@ license: "BSD-3-Clause"
 type: software
 url: "https://powerapi.org"
 repository-code: "https://github.com/powerapi-ng/powerapi"
+doi: 10.5281/zenodo.11453194
 keywords:
   - powerapi
   - energy
