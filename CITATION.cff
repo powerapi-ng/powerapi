@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it using the metadata from this file."
+message: "If you use this software, please cite our article in the Journal of Open Source Software."
 title: "PowerAPI: A Python framework for building software-defined power meters"
 license: "BSD-3-Clause"
 type: software
@@ -27,3 +27,30 @@ authors:
     family-names: "Rouvoy"
     affiliation: "University of Lille"
     orcid: "https://orcid.org/0000-0003-1771-8791"
+preferred-citation:
+  authors:
+    - given-names: "Guillaume"
+      family-names: "Fieni"
+      orcid: "https://orcid.org/0000-0002-0165-6824"
+    - given-names: "Daniel"
+      family-names: "Romero Acero"
+      orcid: "https://orcid.org/0000-0002-5317-2610"
+    - given-names: "Pierre"
+      family-names: "Rust"
+      orcid: "https://orcid.org/0000-0002-2761-4702"
+    - given-names: "Romain"
+      family-names: "Rouvoy"
+      orcid: "https://orcid.org/0000-0003-1771-8791"
+  date-published: 2024-06-04
+  doi: 10.21105/joss.06670
+  issn: 2475-9066
+  issue: 98
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 6670
+  title: "PowerAPI: A Python framework for building software-defined power meters"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.06670"
+  volume: 9
+
