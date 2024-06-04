@@ -1,12 +1,11 @@
 <img src="https://rawgit.com/Spirals-Team/powerapi/master/resources/logo/PowerAPI-logo.png" alt="Powerapi" width="300px">
 
-[![Join the chat at https://gitter.im/Spirals-Team/powerapi](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Spirals-Team/powerapi?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License: BSD 3](https://img.shields.io/pypi/l/powerapi.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/powerapi-ng/powerapi/build.yml)](https://github.com/powerapi-ng/powerapi/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/powerapi)](https://pypi.org/project/powerapi/)
 [![Codecov](https://codecov.io/gh/powerapi-ng/powerapi/branch/master/graph/badge.svg)](https://codecov.io/gh/powerapi-ng/powerapi)
-[![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/powerapi-ng/powerapi/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/powerapi-ng/powerapi)
-[![status](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e/status.svg)](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e)
+[![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.11453194.svg)](https://doi.org/10.5281/zenodo.11453194)
+[![JOSS paper](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e/status.svg)](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e)
 
 PowerAPI is a middleware toolkit for building software-defined power meters.
 Software-defined power meters are configurable software libraries that can estimate the power consumption of software in real-time.
@@ -28,6 +27,7 @@ If you would like to contribute code you can do so through GitHub by forking the
 When submitting code, please make every effort to [follow existing conventions and style](CONTRIBUTING.md) in order to keep the code as readable as possible.
 
 ## Publications
+- **[PowerAPI: A Python framework for building software-defined power meters](https://joss.theoj.org/papers/10.21105/joss.06670)**: G. Fieni, D. Romero Acero, P. Rust, R. Rouvoy. _Journal of Open Source Software_ (JOSS). The Open Journal, June 2024.
 - **[Evaluating the Impact of Java Virtual Machines on Energy Consumption](https://hal.inria.fr/hal-03275286v1)**: Z. Ournani, MC. Belgaid, R. Rouvoy, P. Rust, J. Penhoat. _15th ACM/IEEE International Symposium on Empirical Software Engineering and Measurement_ (ESEM). October 2021, Bari, Italy.
 - **[SelfWatts: On-the-fly Selection of Performance Events to Optimize Software-defined Power Meters](https://hal.inria.fr/hal-03173410v1)**: G. Fieni, R. Rouvoy, L. Seiturier. _20th IEEE/ACM International Symposium on Cluster, Cloud and Internet Computing_ (CCGRID 2021). May 2021, Melbourne, Australia.
 - **[SmartWatts: Self-Calibrating Software-Defined Power Meter for Containers](https://hal.inria.fr/hal-02470128v1)**: G. Fieni, R. Rouvoy, L. Seiturier. _20th IEEE/ACM International Symposium on Cluster, Cloud and Internet Computing_ (CCGRID 2020). May 2020, Melbourne, Australia.
