@@ -96,15 +96,13 @@ class PullerActor(Actor):
         :param BaseDB database: Allow to interact with a Database.
         :param Filter report_filter: Filter of the Puller.
         :param int level_logger: Define the level of the logger
-        :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
+        :param int timeout_puller: (require stream mode) time (in ms) between two database reading
         """
 
-        Actor.__init__(self, name, level_logger, timeout)
+        super().__init__(name, level_logger, timeout)
 
         #: (State): Actor State.
         self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller)
-
-        self.low_exception += database.exceptions
 
     def setup(self):
         """
