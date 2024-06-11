@@ -59,6 +59,9 @@ class Actor(multiprocessing.Process):
         self.state = State(self)
         self.logger = logging.getLogger(self.name)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}('{self.name}')"
+
     def _setup_logger(self):
         """
         Set up the actor logger.
@@ -94,7 +97,7 @@ class Actor(multiprocessing.Process):
         self._setup_logger()
         self.logger.debug('Starting actor "%s" process', self.name)
 
-        setproctitle(self.name)
+        setproctitle(repr(self))
         self._setup_signals_handler()
         self.socket_interface.setup()
 
