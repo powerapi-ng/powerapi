@@ -28,278 +28,190 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import signal
 import multiprocessing
-import sys
-import traceback
-import setproctitle
+import signal
 
-from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
-from powerapi.message import PoisonPillMessage, Message
+from setproctitle import setproctitle
+
+from powerapi.exception import UnknownMessageTypeException
 from powerapi.handler import HandlerException, Handler
-
+from powerapi.message import PoisonPillMessage, Message
 from .socket_interface import SocketInterface
 from .state import State
 
 
-class InitializationException(PowerAPIExceptionWithMessage):
-    """
-    Exception raised when an actor failed to initialize itself
-    """
-
-
 class Actor(multiprocessing.Process):
     """
-    Abstract class that exposes an interface to create, setup and handle actors
-
-    :Method Interface:
-
-    This table list from which interface each methods are accessible
-
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +=================================+============================================================================================+
-    | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                       |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-
-    :Attributes Interface:
-
-    This table list from wich interface each attributes are accessible
-
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`state <powerapi.actor.actor.Actor.state>`                                           |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
+    Actor class.
+    An actor is started in its own process and handles messages according to its set handlers.
     """
 
-    def __init__(self, name, level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name: str, level_logger: int = logging.WARNING, recv_timeout: int = None):
         """
-        Initialization and start of the process.
-
-        :param str name: unique name that will be used to indentify the actor
-                         processus
-        :param int level_logger: Define the level of the logger
-        :param int timeout: if defined, do something if no msg is recv every
-                            timeout (in ms)
+        :param name: Name of the actor. (should be unique)
+        :param level_logger: Define the level of the logger.
+        :param recv_timeout: Define the timeout for receiving messages. (None will block indefinitely)
         """
         multiprocessing.Process.__init__(self, name=name)
-        # self.daemon = True
-        #: (logging.Logger): Logger
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level_logger)
-        formatter = logging.Formatter(
-            '%(asctime)s || %(levelname)s || ' +
-            '%(process)d %(processName)s || %(message)s')
+
+        self.level_logger = level_logger
+        self.socket_interface = SocketInterface(name, recv_timeout)
+        self.state = State(self)
+        self.logger = logging.getLogger(self.name)
+
+    def _setup_logger(self):
+        """
+        Set up the actor logger.
+        """
+        self.logger.setLevel(self.level_logger)
+
+        log_format = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(message)s'
+        formatter = logging.Formatter(log_format)
+
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
 
-        # file logger
-        # handlerf = logging.FileHandler('powerapi.log')
-        # handlerf.setLevel(level_logger)
-        # handlerf.setFormatter(formatter)
-
         self.logger.addHandler(handler)
-        # self.logger.addHandler(handlerf)
 
-        #: (powerapi.State): Actor context
-        self.state = State(self)
-
-        #: (powerapi.SocketInterface): Actor's SocketInterface
-        self.socket_interface = SocketInterface(name, timeout)
-
-        #: (func): Actor behaviour
-        self.behaviour = Actor._initial_behaviour
-
-        #: (List): list of exception that restart the actor it they are raised
-        self.low_exception = []
-
-    def run(self):
+    def _setup_signals_handler(self):
         """
-        Main code executed by the actor
-        """
-        self._setup()
-
-        while self.state.alive:
-            try:
-                self.behaviour(self)
-            except Exception as exn:
-                if type(exn) in self.low_exception:
-                    self.logger.error('Minor exception raised, restart actor !')
-                    traceback.print_exc()
-                else:
-                    self.state.alive = False
-                    self.logger.error('Major Exception raised, stop actor')
-                    traceback.print_exc()
-
-        self._kill_process()
-
-    def _signal_handler_setup(self):
-        """
-        Define how to handle signal interrupts
+        Define how to handle signals interrupt.
         """
 
         def term_handler(signum, _):
             signame = signal.Signals(signum).name
             self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
-
             self.state.alive = False
-            self._kill_process()
-            sys.exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def _setup(self):
+    def _internal_setup(self):
         """
-        Set actor specific configuration:
-
-         - set the processus name
-         - setup the socket interface
-         - setup the signal handler
-
-        This method is called before entering on the behaviour loop
+        Define the steps to initialize the actor.
+        This method handles "behind the scene" steps to bring the actor up.
         """
-        # Name process
-        setproctitle.setproctitle(self.name)
+        self._setup_logger()
+        self.logger.debug('Starting actor "%s" process', self.name)
 
+        setproctitle(self.name)
+        self._setup_signals_handler()
         self.socket_interface.setup()
 
-        self.logger.debug('Actor "%s" process created', self.name)
-
-        self._signal_handler_setup()
-
+        # Actor-specific setup (can be overridden)
         self.setup()
 
     def setup(self):
         """
-        Function called before entering on the behaviour loop
-
-        Can be overriden to use personal actor setup
+        Define the steps to initialize the actor.
         """
 
-    def add_handler(self, message_type: type[Message], handler: Handler):
+    def _internal_teardown(self):
         """
-        Map a handler to a message type
-
-        :param type message_type: type of the message that the handler can
-                                  handle
-        :param handler: handler that will handle all messages of the given type
-        :type handler: powerapi.handler.Handler
+        Define the steps to teardown the actor.
+        This method handles "behind the scene" steps to bring the actor down.
         """
-        self.state.add_handler(message_type, handler)
+        self.logger.debug('Tearing down actor "%s" process', self.name)
 
-    def set_behaviour(self, new_behaviour):
+        self.socket_interface.close()
+
+        # Actor-specific teardown (can be overridden)
+        self.teardown()
+
+    def teardown(self):
         """
-        Set a new behaviour
-        :param new_behaviour: function
-        """
-        self.behaviour = new_behaviour
-
-    def _initial_behaviour(self):
-        """
-        Initial behaviour of an actor
-
-        Wait for a message, and handle it with the correct handler
-
-        If the message is None, call the timout_handler otherwise find the
-        handler correponding to the message type and call it on the message.
+        Define the steps to teardown the actor.
         """
 
+    def handle_received_message(self):
+        """
+        Handle messages received by the actor.
+        """
         msg = self.receive()
         if msg is None:
-            return  # Timeout
+            return
 
         try:
-            handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
+            self.state.get_corresponding_handler(msg).handle_message(msg)
         except UnknownMessageTypeException:
-            self.logger.warning("Unknown message type: %s", msg)
+            self.logger.warning("Received unknown message type: %s", msg)
         except HandlerException:
             self.logger.warning("Failed to handle message: %s", msg)
 
-    def _kill_process(self):
+    def run(self):
         """
-        Kill the actor (close sockets)
+        Main code executed by the actor.
         """
-        self.socket_interface.close()
-        self.logger.debug('Actor "%s" teardown', self.name)
+        self._internal_setup()
 
-    def connect_data(self):
+        while self.state.alive:
+            self.handle_received_message()
+
+        self._internal_teardown()
+
+    def add_handler(self, message_type: type[Message], handler: Handler):
         """
-        Open a canal that can be use for unidirectional communication to this
-        actor
+        Add a message handler for the given message type.
+        :param message_type: Type of the message.
+        :param handler: Handler to use for the given message type.
         """
-        self.socket_interface.connect_data()
+        self.state.add_handler(message_type, handler)
 
     def connect_control(self):
         """
-        Open a control canal with this actor. An actor can have only one
-        control open at the same time. Open a pair socket on the process
-        that want to control this actor
+        Connect to the control channel of the actor.
+        An actor can only have one control channel open at the same time.
         """
         self.socket_interface.connect_control()
 
-    def send_control(self, msg):
+    def send_control(self, msg: Message):
         """
-        Send a message to this actor on the control canal
-
-        :param Object msg: the message to send to this actor
+        Send a message to the control channel of the actor.
+        :param msg: Message to send.
         """
         self.socket_interface.send_control(msg)
         self.logger.debug('Send control to actor "%s" : %s', self.name, msg)
 
-    def receive_control(self, timeout=None):
+    def receive_control(self, timeout: int = None) -> Message:
         """
-        Receive a message from this actor on the control canal
+        Receive a message from the control channel of the actor.
+        :param timeout: Timeout in seconds.
         """
         msg = self.socket_interface.receive_control(timeout)
-        self.logger.debug('Actor "%s" received control : %s', self.name, msg)
+        self.logger.debug('Actor "%s" received control: %s', self.name, msg)
         return msg
 
-    def send_data(self, msg):
+    def connect_data(self):
         """
-        Send a msg to this actor using the data canal
+        Connect to the data channel of the actor.
+        """
+        self.socket_interface.connect_data()
 
-        :param Object msg: the message to send to this actor
+    def send_data(self, msg: Message):
+        """
+        Send a message to the data channel of the actor.
+        :param msg: Message to send.
         """
         self.socket_interface.send_data(msg)
-        self.logger.debug('Send data to actor "%s" : %s ', self.name, msg)
+        self.logger.debug('Send data to actor "%s": %s ', self.name, msg)
 
-    def receive(self):
+    def receive(self) -> Message:
         """
-        Block until a message was received (or until timeout) an return the
-        received messages
-
-        :return: the list of received messages or an empty list if timeout
-        :rtype: a list of Object
+        Receive a message from either the control channel or the data channel of the actor.
+        This call blocks until a message is received or the timeout is reached.
         """
         msg = self.socket_interface.receive()
-        self.logger.debug('Actor "%s" received data : %s', self.name, msg)
+        self.logger.debug('Actor "%s" received message: %s', self.name, msg)
         return msg
 
     def soft_kill(self):
-        """Kill this actor by sending a soft :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
+        """
+        Send a soft kill signal to the actor.
         """
         self.send_control(PoisonPillMessage(soft=True, sender_name='system'))
-        self.socket_interface.close()
 
     def hard_kill(self):
-        """Kill this actor by sending a hard :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
+        """
+        Send a hard kill signal to the actor.
         """
         self.send_control(PoisonPillMessage(soft=False, sender_name='system'))
-        self.socket_interface.close()
