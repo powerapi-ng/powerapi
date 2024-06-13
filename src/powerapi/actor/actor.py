@@ -28,8 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import multiprocessing
-import signal
+from multiprocessing import Process
+from signal import signal, Signals, SIGINT, SIGTERM
 
 from setproctitle import setproctitle
 
@@ -40,7 +40,7 @@ from .socket_interface import SocketInterface
 from .state import State
 
 
-class Actor(multiprocessing.Process):
+class Actor(Process):
     """
     Actor class.
     An actor is started in its own process and handles messages according to its set handlers.
@@ -52,10 +52,13 @@ class Actor(multiprocessing.Process):
         :param level_logger: Define the level of the logger.
         :param recv_timeout: Define the timeout for receiving messages. (None will block indefinitely)
         """
-        multiprocessing.Process.__init__(self, name=name)
+        super().__init__(name=name)
 
         self.level_logger = level_logger
-        self.socket_interface = SocketInterface(name, recv_timeout)
+
+        self.socket_interface = SocketInterface(name)
+        self.recv_timeout = recv_timeout
+
         self.state = State(self)
         self.logger = logging.getLogger(self.name)
 
@@ -68,7 +71,7 @@ class Actor(multiprocessing.Process):
         """
         self.logger.setLevel(self.level_logger)
 
-        log_format = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(message)s'
+        log_format = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(name)s || %(message)s'
         formatter = logging.Formatter(log_format)
 
         handler = logging.StreamHandler()
@@ -82,12 +85,12 @@ class Actor(multiprocessing.Process):
         """
 
         def term_handler(signum, _):
-            signame = signal.Signals(signum).name
+            signame = Signals(signum).name
             self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
             self.state.alive = False
 
-        signal.signal(signal.SIGTERM, term_handler)
-        signal.signal(signal.SIGINT, term_handler)
+        signal(SIGTERM, term_handler)
+        signal(SIGINT, term_handler)
 
     def _internal_setup(self):
         """
@@ -198,12 +201,12 @@ class Actor(multiprocessing.Process):
         self.socket_interface.send_data(msg)
         self.logger.debug('Send data to actor "%s": %s ', self.name, msg)
 
-    def receive(self) -> Message:
+    def receive(self, timeout: int | None = None) -> Message:
         """
         Receive a message from either the control channel or the data channel of the actor.
         This call blocks until a message is received or the timeout is reached.
         """
-        msg = self.socket_interface.receive()
+        msg = self.socket_interface.receive(timeout)
         self.logger.debug('Actor "%s" received message: %s', self.name, msg)
         return msg
 
