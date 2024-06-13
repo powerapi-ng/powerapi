@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -27,163 +27,125 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import ctypes
 import logging
-import multiprocessing
+from ctypes import c_wchar_p
+from multiprocessing import Value, Event
 
-import zmq
+from zmq import Context, Socket, Poller, PULL, PUSH, PAIR, POLLIN
 
 from powerapi.exception import PowerAPIException
-
-LOCAL_ADDR = 'tcp://127.0.0.1'
+from powerapi.message import Message
 
 
 class NotConnectedException(PowerAPIException):
     """
-    Exception raised when attempting to send/receinve a message on a socket
-    that is not conected
+    Exception raised when attempting to send/receive a message on a socket that is not connected.
     """
 
 
 class SocketInterface:
     """
-    Interface to handle comunication to/from the actor
-
-    general methods :
-
-    - :meth:`send_control <powerapi.actor.socket_interface.SocketInterface.send_control>`
-
-    client interface methods :
-
-    - :meth:`connect_data <powerapi.actor.socket_interface.SocketInterface.connect_data>`
-    - :meth:`connect_control <powerapi.actor.socket_interface.SocketInterface.connect_control>`
-    - :meth:`send_data <powerapi.actor.socket_interface.SocketInterface.send_data>`
-    - :meth:`close <powerapi.actor.socket_interface.SocketInterface.close>`
-
-    server interface methods :
-
-    - :meth:`setup <powerapi.actor.socket_interface.SocketInterface.setup>`
-    - :meth:`receive <powerapi.actor.socket_interface.SocketInterface.receive>`
-    - :meth:`close <powerapi.actor.socket_interface.SocketInterface.close>`
+    Socket Interface class.
+    Handles the inter-actor (multiprocessing) communication using ZeroMQ sockets.
     """
 
-    def __init__(self, name, timeout):
+    def __init__(self, actor_name: str):
         """
-        :param str name: name of the actor using this interface
-        :param int timeout: time in millisecond to wait for a message
+        :param str actor_name: name of the actor using this interface
         """
-        self.logger = logging.getLogger(name)
+        self.actor_name = actor_name
 
-        #: (int): Time in millisecond to wait for a message before execute
-        #:        timeout_handler
-        self.timeout = timeout
+        # Socket used to send/receive control messages to an actor.
+        self.control_socket: Socket | None = None
 
-        #: (str): Address of the pull socket
-        self.pull_socket_address = None
+        # Shared memory value used to store the control socket listen address.
+        self.control_socket_addr = Value(c_wchar_p)
 
-        #: (str): Address of the control socket
-        self.control_socket_address = None
+        # Socket used to receive data messages from other actors.
+        self.pull_socket: Socket | None = None
 
-        #: (zmq.Poller): ZMQ Poller for read many socket at same time
-        self.poller = zmq.Poller()
+        # Shared memory used to store the pull socket listen address.
+        self.pull_socket_addr = Value(c_wchar_p)
 
-        #: (zmq.Socket): ZMQ Pull socket for receiving data message
-        self.pull_socket = None
+        # Socket used to send data messages to the actor.
+        self.push_socket: Socket | None = None
 
-        #: (zmq.Socket): ZMQ Pair socket for receiving control message
-        self.control_socket = None
+        # Sockets poller used to know when either (control/data) sockets have message(s) waiting.
+        self.poller: Poller | None = None
 
-        # This socket is used to connect to the pull socket of this actor. It
-        # won't be created on the actor's process but on the process that want
-        # to connect to the pull socket of this actor
-        #: (zmq.Socket): ZMQ Push socket for sending message to this actor
-        self.push_socket = None
+        # Event used to know when a socket interface have been initialized and should be operational.
+        self._is_setup_event = Event()
 
-        # Shared memory used to communicate the port used to bind sockets
-        self._pull_port = multiprocessing.Value(ctypes.c_int)
-        self._ctrl_port = multiprocessing.Value(ctypes.c_int)
-        self._values_available = multiprocessing.Event()
+    def __repr__(self):
+        return f"{self.__class__.__name__}('{self.actor_name}')"
 
-        self._pull_port.value = -1
-        self._ctrl_port.value = -1
+    @staticmethod
+    def _bind_socket_random_port(socket_type: int, address: str = 'tcp://localhost') -> tuple[Socket, str]:
+        """
+        Create a socket of the given type and bind it to the given address and a random port.
+        :param socket_type: Type of socket to create
+        :param address: Address to bind the socket to
+        :return: Initialized socket and the address (proto://addr:port) it is listening to.
+        """
+        ctx = Context.instance()
+
+        socket: Socket = ctx.socket(socket_type)
+        port_number = socket.bind_to_random_port(address)
+
+        return socket, f'{address}:{port_number}'
+
+    @staticmethod
+    def _connect_socket(socket_type: int, address: str) -> Socket:
+        """
+        Create a socket of the given type and connect it to the given address.
+        :param socket_type: Type of socket to create
+        :param address: Address to connect the socket to
+        :return: Initialized socket
+        """
+        ctx = Context.instance()
+
+        socket: Socket = ctx.socket(socket_type)
+        socket.connect(address)
+
+        return socket
 
     def setup(self):
         """
-        Initialize sockets and send the selected port number to the father
-        process with a Pipe
+        Initialize the socket interface.
         """
-        # create the pull socket (to communicate with this actor, others
-        # process have to connect a push socket to this socket)
-        self.pull_socket, pull_port = self._create_socket(zmq.PULL, -1)
+        if self._is_setup_event.is_set():
+            logging.warning('The socket interface of "%s" is already initialized.', self.actor_name)
+            return
 
-        # create the control socket (to control this actor, a process have to
-        # connect a pair socket to this socket with the `control` method)
-        self.control_socket, ctrl_port = self._create_socket(zmq.PAIR, 0)
+        logging.debug('Setting up "%s" socket interface...', self.actor_name)
 
-        self.pull_socket_address = LOCAL_ADDR + ':' + str(pull_port)
-        self.control_socket_address = LOCAL_ADDR + ':' + str(ctrl_port)
+        # Create the PULL socket used to receive data messages from other actors.
+        # Other actors needs to connect a PUSH socket to do so.
+        self.pull_socket, self.pull_socket_addr.value = self._bind_socket_random_port(PULL)
+        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.pull_socket_addr.value)
 
-        self._pull_port.value = pull_port
-        self._ctrl_port.value = ctrl_port
-        self._values_available.set()
+        # Create the PAIR socket used to receive control messages from other actors.
+        # Other actors needs to connect a PAIR socket to do so.
+        self.control_socket, self.control_socket_addr.value = self._bind_socket_random_port(PAIR)
+        logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.value)
 
-    def _create_socket(self, socket_type, linger_value):
-        """
-        Create a socket of the given type, bind it to a random port and
-        register it to the poller
+        # Register the "data" and "control" sockets to the poller. (order *IS* important)
+        self.poller = Poller()
+        self.poller.register(self.control_socket, POLLIN)
+        self.poller.register(self.pull_socket, POLLIN)
 
-        :param int socket_type: type of the socket to open
-        :param int linger_value: -1 mean wait for receive all msg and block
-                                 closing 0 mean hardkill the socket even if msg
-                                 are still here.
-        :return (zmq.Socket, int): the initialized socket and the port where the
-                                   socket is bound
-        """
-        socket = zmq.Context.instance().socket(socket_type)
-        socket.setsockopt(zmq.LINGER, linger_value)
-        port_number = socket.bind_to_random_port(LOCAL_ADDR)
-        self.poller.register(socket, zmq.POLLIN)
-        self.logger.debug('Bind socket to %s:%d', LOCAL_ADDR, port_number)
-        return (socket, port_number)
-
-    def receive(self):
-        """
-        Block until a message was received (or until timeout) an return the
-        received messages
-
-        :return: the list of received messages or None if timeout
-        :rtype: a list of Object or None
-        """
-        events = dict(self.poller.poll(self.timeout))
-
-        if len(events) == 0:
-            return None
-
-        return self._recv_serialized(next(iter(events)))
-
-    def receive_control(self, timeout):
-        """
-        Block until a message was received on the control canal (client side)
-        (or until timeout) an return the received messages
-
-        :return: the received message or an None if timeout
-        :rtype: a list of Object
-
-        """
-        if self.control_socket is None:
-            raise NotConnectedException
-
-        event = self.control_socket.poll(timeout)
-
-        if event == 0:
-            return None
-
-        return self._recv_serialized(self.control_socket)
+        self._is_setup_event.set()
 
     def close(self):
         """
-        Close all socket handle by this interface
+        Close the socket interface.
         """
+        if not self._is_setup_event.is_set():
+            logging.warning('The socket interface of "%s" is already closed.', self.actor_name)
+            return
+
+        logging.debug('Closing "%s" socket interface...', self.actor_name)
+
         if self.push_socket is not None:
             self.push_socket.close()
 
@@ -193,80 +155,89 @@ class SocketInterface:
         if self.control_socket is not None:
             self.control_socket.close()
 
-    @staticmethod
-    def _send_serialized(socket: zmq.Socket, msg):
+    def receive(self, timeout: int | None = None) -> Message | None:
         """
-        Send a message to the given socket.
-        :param socket: Socket to use
-        :param msg: Message to send
+        Receive a message from either the control or the data socket.
+        :param timeout: Time in millisecond to wait for a message (None for waiting forever)
+        :return: Received message or None when timeout is reached
         """
-        socket.send_pyobj(msg)
+        events = dict(self.poller.poll(timeout))
+        if len(events) == 0:
+            return None
 
-    @staticmethod
-    def _recv_serialized(socket: zmq.Socket):
-        """
-        Receive and returns a message from the given socket.
-        :param socket: Socket to use
-        :return: Message received
-        """
+        socket: Socket = next(iter(events))
         return socket.recv_pyobj()
-
-    def connect_data(self):
-        """
-        Connect to the pull socket of this actor
-
-        Open a push socket on the process that want to communicate with this
-        actor
-
-        this method shouldn't be called if socket interface was not initialized
-        with the setup method
-        """
-
-        if self.pull_socket_address is None:
-            self._values_available.wait()
-            self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
-            self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
-
-        self.push_socket = zmq.Context.instance().socket(zmq.PUSH)
-        self.push_socket.setsockopt(zmq.LINGER, -1)
-        self.push_socket.connect(self.pull_socket_address)
-        self.logger.debug('Connected data socket to %s', self.pull_socket_address)
 
     def connect_control(self):
         """
-        Connect to the control socket of this actor
-
-        Open a pair socket on the process that want to control this actor
-        this method shouldn't be called if socket interface was not initialized
-        with the setup method
+        Connect to the control socket of the interface.
+        This channel should be used to send lifecycle messages to the actor.
         """
-        if self.pull_socket_address is None:
-            self._values_available.wait()
-            self.pull_socket_address = LOCAL_ADDR + ':' + str(self._pull_port.value)
-            self.control_socket_address = LOCAL_ADDR + ':' + str(self._ctrl_port.value)
+        if not self._is_setup_event.is_set():
+            logging.error('Socket interface of "%s" is not initialized', self.actor_name)
+            raise NotConnectedException
 
-        self.control_socket = zmq.Context.instance().socket(zmq.PAIR)
-        self.control_socket.setsockopt(zmq.LINGER, 0)
-        self.control_socket.connect(self.control_socket_address)
-        self.logger.debug('Connected control socket to %s', self.control_socket_address)
+        self.control_socket = self._connect_socket(PAIR, self.control_socket_addr.value)
+        logging.debug('Connected to "%s" control socket (%s)', self.actor_name, self.control_socket_addr.value)
 
-    def send_control(self, msg):
+    def receive_control(self, timeout: int | None = None) -> Message | None:
         """
-        Send a message on the control canal
-
-        :param Object msg: message to send
+        Receive a message from the control socket.
+        :param timeout: Time in millisecond to wait for a message (None for waiting forever)
+        :return: Received message or None when timeout is reached
         """
-
         if self.control_socket is None:
-            raise NotConnectedException()
-        self._send_serialized(self.control_socket, msg)
+            raise NotConnectedException
 
-    def send_data(self, msg):
+        event = self.control_socket.poll(timeout)
+        if event == 0:
+            return None
+
+        return self.control_socket.recv_pyobj()
+
+    def send_control(self, msg: Message):
         """
-        Send a message on data canal
+        Send a message to the control socket.
+        :param msg: Message to send
+        """
+        if self.control_socket is None:
+            raise NotConnectedException
 
-        :param Object msg: message to send
+        self.control_socket.send_pyobj(msg)
+
+    def connect_data(self):
+        """
+        Connect to the data socket of the interface.
+        This channel should be used to send data messages to be processed by the actor.
+        """
+        if not self._is_setup_event.is_set():
+            logging.error('Socket interface of "%s" is not initialized', self.actor_name)
+            raise NotConnectedException
+
+        self.push_socket = self._connect_socket(PUSH, self.pull_socket_addr.value)
+        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, self.pull_socket_addr.value)
+
+    def receive_data(self, timeout: int | None = None) -> Message | None:
+        """
+        Receive a message from the data socket.
+        :param timeout: Time in millisecond to wait for a message (None for waiting forever)
+        :return: Received message or None when timeout is reached
+        """
+        if self.pull_socket is None:
+            raise NotConnectedException
+
+        event = self.pull_socket.poll(timeout)
+        if event == 0:
+            return None
+
+        return self.pull_socket.recv_pyobj()
+
+    def send_data(self, msg: Message):
+        """
+        Send a message to the data socket.
+        :param msg: Message to send
         """
         if self.push_socket is None:
-            raise NotConnectedException()
-        self._send_serialized(self.push_socket, msg)
+            raise NotConnectedException
+
+        self.push_socket.send_pyobj(msg)

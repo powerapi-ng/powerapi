@@ -55,7 +55,7 @@ def socket_interface():
     """Return a socket interface not initialized
 
     """
-    return SocketInterface(ACTOR_NAME, 100)
+    return SocketInterface(ACTOR_NAME)
 
 
 @pytest.fixture()
@@ -122,16 +122,16 @@ def test_setup(initialized_socket_interface):
     assert isinstance(initialized_socket_interface.poller, zmq.Poller)
 
     check_socket(initialized_socket_interface.pull_socket, zmq.PULL,
-                 initialized_socket_interface.pull_socket_address)
+                 initialized_socket_interface.pull_socket_addr)
     check_socket(initialized_socket_interface.control_socket, zmq.PAIR,
-                 initialized_socket_interface.control_socket_address)
+                 initialized_socket_interface.control_socket_addr)
 
 
 def test_push_connection(connected_interface):
     """test if the push socket is open
 
     """
-    check_socket(connected_interface.push_socket, zmq.PUSH, connected_interface.pull_socket_address)
+    check_socket(connected_interface.push_socket, zmq.PUSH, connected_interface.pull_socket_addr)
 
 
 def test_push_disconnection(connected_interface):
@@ -157,7 +157,7 @@ def test_control_connection(controlled_interface):
 
     """
     check_socket(controlled_interface.control_socket, zmq.PAIR,
-                 controlled_interface.control_socket_address)
+                 controlled_interface.control_socket_addr)
 
 
 def test_control_disconnection(controlled_interface):
