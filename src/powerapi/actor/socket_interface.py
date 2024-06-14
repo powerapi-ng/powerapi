@@ -28,8 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from ctypes import c_wchar_p
-from multiprocessing import Value, Event
+from ctypes import c_wchar
+from multiprocessing import Array, Event
 
 from zmq import Context, Socket, Poller, PULL, PUSH, PAIR, POLLIN, LAST_ENDPOINT
 
@@ -58,8 +58,8 @@ class SocketInterface:
         # Socket used to receive control messages from an actor.
         self.control_socket_pull: Socket | None = None
 
-        # Shared memory value used to store the control socket listen address.
-        self.control_socket_addr = Value(c_wchar_p)
+        # Shared memory value used to store the control socket listen address. ('proto://addr:port')
+        self.control_socket_addr = Array(c_wchar, 255)
 
         # Socket used to send control messages to the actor.
         self.control_socket_push: Socket | None = None
@@ -67,8 +67,8 @@ class SocketInterface:
         # Socket used to receive data messages from other actors.
         self.data_socket_pull: Socket | None = None
 
-        # Shared memory used to store the pull socket listen address.
-        self.data_socket_addr = Value(c_wchar_p)
+        # Shared memory used to store the pull socket listen address. ('proto://addr:port')
+        self.data_socket_addr = Array(c_wchar, 255)
 
         # Socket used to send data messages to the actor.
         self.data_socket_push: Socket | None = None
@@ -125,14 +125,14 @@ class SocketInterface:
         # Create the PULL socket used to receive data messages from other actors.
         # Other actors needs to connect a PUSH socket to do so.
         self.data_socket_pull = self._bind_socket_random_port(PULL)
-        self.data_socket_addr.value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.value)
+        self.data_socket_addr.get_obj().value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.get_obj().value)
 
         # Create the PAIR socket used to receive control messages from other actors.
         # Other actors needs to connect a PAIR socket to do so.
         self.control_socket_pull = self._bind_socket_random_port(PAIR)
-        self.control_socket_addr.value = self.control_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.value)
+        self.control_socket_addr.get_obj().value = self.control_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.get_obj().value)
 
         # Register the "data" and "control" sockets to the poller. (order *IS* important)
         self.poller = Poller()
@@ -182,8 +182,9 @@ class SocketInterface:
             logging.error('Socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
-        self.control_socket_push = self._connect_socket(PAIR, self.control_socket_addr.value)
-        logging.debug('Connected to "%s" control socket (%s)', self.actor_name, self.control_socket_addr.value)
+        dst_address = self.control_socket_addr.get_obj().value
+        self.control_socket_push = self._connect_socket(PAIR, dst_address)
+        logging.debug('Connected to "%s" control socket (%s)', self.actor_name, dst_address)
 
     def receive_control(self, timeout: int | None = None) -> Message | None:
         """
@@ -219,8 +220,9 @@ class SocketInterface:
             logging.error('Socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
-        self.data_socket_push = self._connect_socket(PUSH, self.data_socket_addr.value)
-        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, self.data_socket_addr.value)
+        dst_address = self.data_socket_addr.get_obj().value
+        self.data_socket_push = self._connect_socket(PUSH, dst_address)
+        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, dst_address)
 
     def receive_data(self, timeout: int | None = None) -> Message | None:
         """

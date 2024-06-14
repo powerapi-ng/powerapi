@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Value
+from multiprocessing import Array
 
 import pytest
 from zmq import Socket, Poller, PAIR, PULL, PUSH, TYPE, LAST_ENDPOINT
@@ -55,7 +55,7 @@ class DummyMessage(Message):
         return False
 
 
-def check_socket(socket: Socket, socket_type: int, bind_address: Value):
+def check_socket(socket: Socket, socket_type: int, bind_address: Array):
     """
     Check if a socket have the expected type and is connected to a specific address.
     """
@@ -64,7 +64,7 @@ def check_socket(socket: Socket, socket_type: int, bind_address: Value):
     assert socket.get(TYPE) == socket_type
 
     socket_address = socket.get(LAST_ENDPOINT).decode("utf-8")
-    assert socket_address == bind_address.value
+    assert socket_address == bind_address.get_obj().value
 
 
 @pytest.fixture()
