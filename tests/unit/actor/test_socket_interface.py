@@ -27,43 +27,58 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from multiprocessing import Value
+
 import pytest
-import zmq
+from zmq import Socket, Poller, PAIR, PULL, PUSH, TYPE, LAST_ENDPOINT
 
 from powerapi.actor import SocketInterface
-
-ACTOR_NAME = 'dummy_actor'
-PULL_SOCKET_ADDRESS = 'ipc://@' + ACTOR_NAME
-CONTROL_SOCKET_ADDRESS = 'ipc://@' + 'control_' + ACTOR_NAME
+from powerapi.message import Message
 
 
-def check_socket(socket, socket_type, bind_address):
-    """check if the given socket is open, binded to the correct address and have
-    the correct type
-
+class DummyMessage(Message):
     """
-    assert isinstance(socket, zmq.Socket)
-    assert socket.closed is False
-    assert socket.get(zmq.TYPE) == socket_type
+    Message type used for testing the socket interface.
+    """
 
-    socket_address = socket.get(zmq.LAST_ENDPOINT).decode("utf-8")
-    assert socket_address == bind_address
+    def __init__(self, content: str):
+        super().__init__('pytest')
+        self.content = content
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}('{self.sender_name}', '{self.content}')"
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return self.sender_name == other.sender_name and self.content == other.content
+
+        return False
+
+
+def check_socket(socket: Socket, socket_type: int, bind_address: Value):
+    """
+    Check if a socket have the expected type and is connected to a specific address.
+    """
+    assert isinstance(socket, Socket)
+    assert socket.closed is False
+    assert socket.get(TYPE) == socket_type
+
+    socket_address = socket.get(LAST_ENDPOINT).decode("utf-8")
+    assert socket_address == bind_address.value
 
 
 @pytest.fixture()
 def socket_interface():
-    """Return a socket interface not initialized
-
     """
-    return SocketInterface(ACTOR_NAME)
+    Return a socket interface that haven't been initialized.
+    """
+    return SocketInterface('test-socket-interface')
 
 
 @pytest.fixture()
 def initialized_socket_interface(socket_interface):
-    """Return an initialized socket interface
-
-    close the socket interface after testing
-
+    """
+    Return an initialized socket interface.
     """
     socket_interface.setup()
     yield socket_interface
@@ -72,9 +87,8 @@ def initialized_socket_interface(socket_interface):
 
 @pytest.fixture()
 def connected_interface(initialized_socket_interface):
-    """ Return an initialized socket interface with an open connection to the
-    push socket
-
+    """
+    Return an initialized socket interface where only the data socket is connected.
     """
     initialized_socket_interface.connect_data()
     yield initialized_socket_interface
@@ -83,9 +97,8 @@ def connected_interface(initialized_socket_interface):
 
 @pytest.fixture()
 def controlled_interface(initialized_socket_interface):
-    """ Return an initialized socket interface with an open connection to the
-    control socket
-
+    """
+    Return an initialized socket interface where only the control socket is connected.
     """
     initialized_socket_interface.connect_control()
     yield initialized_socket_interface
@@ -94,8 +107,8 @@ def controlled_interface(initialized_socket_interface):
 
 @pytest.fixture()
 def fully_connected_interface(initialized_socket_interface):
-    """ Return an initialized socket interface with an open connection to the
-    control and the push socket
+    """
+    Return an initialized socket interface where the control and data socket are connected.
 
     """
     initialized_socket_interface.connect_data()
@@ -105,7 +118,8 @@ def fully_connected_interface(initialized_socket_interface):
 
 
 def test_close(initialized_socket_interface):
-    """ test if the close method close the control and pull socket
+    """
+    Test if the close method successfully close the connected control and data sockets.
     """
     assert initialized_socket_interface.pull_socket.closed is False
     assert initialized_socket_interface.control_socket.closed is False
@@ -116,53 +130,51 @@ def test_close(initialized_socket_interface):
     assert initialized_socket_interface.control_socket.closed is True
 
 
-def test_setup(initialized_socket_interface):
-    """ test if the setup method open the control and pull socket
+def test_data_control_sockets_setup(initialized_socket_interface):
     """
-    assert isinstance(initialized_socket_interface.poller, zmq.Poller)
-
-    check_socket(initialized_socket_interface.pull_socket, zmq.PULL,
-                 initialized_socket_interface.pull_socket_addr)
-    check_socket(initialized_socket_interface.control_socket, zmq.PAIR,
-                 initialized_socket_interface.control_socket_addr)
-
-
-def test_push_connection(connected_interface):
-    """test if the push socket is open
-
+    Test if the setup method successfully open the control and data sockets.
     """
-    check_socket(connected_interface.push_socket, zmq.PUSH, connected_interface.pull_socket_addr)
+    check_socket(initialized_socket_interface.pull_socket, PULL, initialized_socket_interface.pull_socket_addr)
+    check_socket(initialized_socket_interface.control_socket, PAIR, initialized_socket_interface.control_socket_addr)
+    assert isinstance(initialized_socket_interface.poller, Poller)
 
 
-def test_push_disconnection(connected_interface):
-    """test if the disconnect method close the push socket
+def test_push_socket_setup(connected_interface):
+    """
+    Test if the push socket is open and connected to the data socket.
+    """
+    check_socket(connected_interface.push_socket, PUSH, connected_interface.pull_socket_addr)
 
+
+def test_data_disconnect(connected_interface):
+    """
+    Test if the disconnect method successfully close the data socket.
     """
     assert connected_interface.push_socket.closed is False
     connected_interface.close()
     assert connected_interface.push_socket.closed is True
 
 
-def test_push_receive(connected_interface):
-    """test to send and receive a message from the push/pull socket
-
+def test_send_receive_data(connected_interface):
     """
-    msg = 'toto'
+    Test to send and receive a message from the data (PUSH/PULL) socket.
+    """
+    msg = DummyMessage('test-data-message')
+
     connected_interface.send_data(msg)
-    assert connected_interface.receive() == msg
+    assert connected_interface.receive_data(1000) == msg
 
 
-def test_control_connection(controlled_interface):
-    """test if the control socket is open
-
+def test_control_connect(controlled_interface):
     """
-    check_socket(controlled_interface.control_socket, zmq.PAIR,
-                 controlled_interface.control_socket_addr)
+    Test if the control socket is successfully open.
+    """
+    check_socket(controlled_interface.control_socket, PAIR, controlled_interface.control_socket_addr)
 
 
-def test_control_disconnection(controlled_interface):
-    """test if the disconnect method close the control socket
-
+def test_control_disconnect(controlled_interface):
+    """
+    Test if the close method successfully disconnect the control socket.
     """
     assert controlled_interface.control_socket.closed is False
     controlled_interface.close()
@@ -170,23 +182,24 @@ def test_control_disconnection(controlled_interface):
 
 
 def test_control_receive(controlled_interface):
-    """test to send and receive a message from the control socket
-
     """
-    msg = 'toto'
+    Test to send and receive a message from the control (PAIR) socket.
+    """
+    msg = DummyMessage('test-control-message')
+
     controlled_interface.send_control(msg)
-    assert controlled_interface.receive() == msg
+    assert controlled_interface.receive_control(1000) == msg
 
 
-def test_multiple_receive(fully_connected_interface):
-    """test to send and receive a message from the control and the push/pull
-    socket
-
+def test_multiple_send_receive(fully_connected_interface):
     """
-    controlled_msg = 'controlled_msg'
-    push_msg = 'push_msg'
-    fully_connected_interface.send_control(controlled_msg)
-    assert fully_connected_interface.receive() == controlled_msg
+    Test to send and receive messages from the control (PAIR) and data (PUSH/PULL) sockets.
+    """
+    control_msg = DummyMessage('test-control-message')
+    data_msg = DummyMessage('test-data-message')
 
-    fully_connected_interface.send_control(push_msg)
-    assert fully_connected_interface.receive() == push_msg
+    fully_connected_interface.send_control(control_msg)
+    assert fully_connected_interface.receive(1000) == control_msg
+
+    fully_connected_interface.send_control(data_msg)
+    assert fully_connected_interface.receive(1000) == data_msg
