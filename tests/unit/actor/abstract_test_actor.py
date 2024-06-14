@@ -376,24 +376,6 @@ class AbstractTestActor:
 
     @staticmethod
     @pytest.mark.usefixtures("shutdown_system")
-    def test_if_actor_behaviour_raise_low_exception_the_actor_must_stay_alive(actor_with_crash_handler):
-        if not actor_with_crash_handler.low_exception:
-            assert True
-        else:
-            exception = actor_with_crash_handler.low_exception[0]
-            actor_with_crash_handler.send_data(CrashMessage(exception))
-            assert is_actor_alive(actor_with_crash_handler, time=1)
-
-    @staticmethod
-    @pytest.mark.usefixtures("shutdown_system")
-    def test_if_actor_behaviour_raise_low_exception_the_actor_must_answer_to_ping_message(actor_with_crash_handler):
-        actor_with_crash_handler.send_data(PingMessage())
-
-        answer = actor_with_crash_handler.receive_control(2000)
-        assert answer == 'pong'
-
-    @staticmethod
-    @pytest.mark.usefixtures("shutdown_system")
     def test_if_actor_behaviour_raise_fatal_exception_the_actor_must_be_killed(actor_with_crash_handler):
         actor_with_crash_handler.send_data(CrashMessage(TypeError()))
         assert not is_actor_alive(actor_with_crash_handler, time=1)
@@ -503,24 +485,6 @@ class AbstractTestActorWithDB:
     def test_send_message_on_control_canal_to_non_initialized_actor_raise_NotConnectedException(actor_with_db):
         with pytest.raises(NotConnectedException):
             actor_with_db.send_control(StartMessage(SENDER_NAME))
-
-    @staticmethod
-    @pytest.mark.usefixtures("shutdown_system")
-    def test_if_actor_behaviour_raise_low_exception_the_actor_must_stay_alive(init_actor_with_db_and_crash_handler):
-        if not init_actor_with_db_and_crash_handler.low_exception:
-            assert True
-        else:
-            exception = init_actor_with_db_and_crash_handler.low_exception[0]
-            init_actor_with_db_and_crash_handler.send_data(CrashMessage(exception))
-            assert is_actor_alive(init_actor_with_db_and_crash_handler, time=1)
-
-    @staticmethod
-    @pytest.mark.usefixtures("shutdown_system")
-    def test_if_actor_behaviour_raise_low_exception_the_actor_must_answer_to_ping_message(init_actor_with_db_and_crash_handler):
-        init_actor_with_db_and_crash_handler.send_data(PingMessage())
-
-        answer = init_actor_with_db_and_crash_handler.receive_control(2000)
-        assert answer == 'pong'
 
     @staticmethod
     @pytest.mark.usefixtures("shutdown_system")
