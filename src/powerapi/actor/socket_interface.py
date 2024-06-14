@@ -31,7 +31,7 @@ import logging
 from ctypes import c_wchar_p
 from multiprocessing import Value, Event
 
-from zmq import Context, Socket, Poller, PULL, PUSH, PAIR, POLLIN
+from zmq import Context, Socket, Poller, PULL, PUSH, PAIR, POLLIN, LAST_ENDPOINT
 
 from powerapi.exception import PowerAPIException
 from powerapi.message import Message
@@ -80,19 +80,19 @@ class SocketInterface:
         return f"{self.__class__.__name__}('{self.actor_name}')"
 
     @staticmethod
-    def _bind_socket_random_port(socket_type: int, address: str = 'tcp://localhost') -> tuple[Socket, str]:
+    def _bind_socket_random_port(socket_type: int, address: str = 'tcp://localhost') -> Socket:
         """
         Create a socket of the given type and bind it to the given address and a random port.
         :param socket_type: Type of socket to create
         :param address: Address to bind the socket to
-        :return: Initialized socket and the address (proto://addr:port) it is listening to.
+        :return: Initialized socket listening to the given address
         """
         ctx = Context.instance()
 
         socket: Socket = ctx.socket(socket_type)
-        port_number = socket.bind_to_random_port(address)
+        socket.bind_to_random_port(address)
 
-        return socket, f'{address}:{port_number}'
+        return socket
 
     @staticmethod
     def _connect_socket(socket_type: int, address: str) -> Socket:
@@ -100,7 +100,7 @@ class SocketInterface:
         Create a socket of the given type and connect it to the given address.
         :param socket_type: Type of socket to create
         :param address: Address to connect the socket to
-        :return: Initialized socket
+        :return: Initialized socket connected to the given address
         """
         ctx = Context.instance()
 
@@ -121,12 +121,14 @@ class SocketInterface:
 
         # Create the PULL socket used to receive data messages from other actors.
         # Other actors needs to connect a PUSH socket to do so.
-        self.pull_socket, self.pull_socket_addr.value = self._bind_socket_random_port(PULL)
+        self.pull_socket = self._bind_socket_random_port(PULL)
+        self.pull_socket_addr.value = self.pull_socket.get(LAST_ENDPOINT).decode('utf-8')
         logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.pull_socket_addr.value)
 
         # Create the PAIR socket used to receive control messages from other actors.
         # Other actors needs to connect a PAIR socket to do so.
-        self.control_socket, self.control_socket_addr.value = self._bind_socket_random_port(PAIR)
+        self.control_socket = self._bind_socket_random_port(PAIR)
+        self.control_socket_addr.value = self.control_socket.get(LAST_ENDPOINT).decode('utf-8')
         logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.value)
 
         # Register the "data" and "control" sockets to the poller. (order *IS* important)
