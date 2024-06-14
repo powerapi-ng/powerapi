@@ -55,20 +55,23 @@ class SocketInterface:
         """
         self.actor_name = actor_name
 
-        # Socket used to send/receive control messages to an actor.
-        self.control_socket: Socket | None = None
+        # Socket used to receive control messages from an actor.
+        self.control_socket_pull: Socket | None = None
 
         # Shared memory value used to store the control socket listen address.
         self.control_socket_addr = Value(c_wchar_p)
 
+        # Socket used to send control messages to the actor.
+        self.control_socket_push: Socket | None = None
+
         # Socket used to receive data messages from other actors.
-        self.pull_socket: Socket | None = None
+        self.data_socket_pull: Socket | None = None
 
         # Shared memory used to store the pull socket listen address.
-        self.pull_socket_addr = Value(c_wchar_p)
+        self.data_socket_addr = Value(c_wchar_p)
 
         # Socket used to send data messages to the actor.
-        self.push_socket: Socket | None = None
+        self.data_socket_push: Socket | None = None
 
         # Sockets poller used to know when either (control/data) sockets have message(s) waiting.
         self.poller: Poller | None = None
@@ -121,20 +124,20 @@ class SocketInterface:
 
         # Create the PULL socket used to receive data messages from other actors.
         # Other actors needs to connect a PUSH socket to do so.
-        self.pull_socket = self._bind_socket_random_port(PULL)
-        self.pull_socket_addr.value = self.pull_socket.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.pull_socket_addr.value)
+        self.data_socket_pull = self._bind_socket_random_port(PULL)
+        self.data_socket_addr.value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.value)
 
         # Create the PAIR socket used to receive control messages from other actors.
         # Other actors needs to connect a PAIR socket to do so.
-        self.control_socket = self._bind_socket_random_port(PAIR)
-        self.control_socket_addr.value = self.control_socket.get(LAST_ENDPOINT).decode('utf-8')
+        self.control_socket_pull = self._bind_socket_random_port(PAIR)
+        self.control_socket_addr.value = self.control_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
         logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.value)
 
         # Register the "data" and "control" sockets to the poller. (order *IS* important)
         self.poller = Poller()
-        self.poller.register(self.control_socket, POLLIN)
-        self.poller.register(self.pull_socket, POLLIN)
+        self.poller.register(self.control_socket_pull, POLLIN)
+        self.poller.register(self.data_socket_pull, POLLIN)
 
         self._is_setup_event.set()
 
@@ -148,14 +151,14 @@ class SocketInterface:
 
         logging.debug('Closing "%s" socket interface...', self.actor_name)
 
-        if self.push_socket is not None:
-            self.push_socket.close()
+        if self.data_socket_push is not None:
+            self.data_socket_push.close()
 
-        if self.pull_socket is not None:
-            self.pull_socket.close()
+        if self.data_socket_pull is not None:
+            self.data_socket_pull.close()
 
-        if self.control_socket is not None:
-            self.control_socket.close()
+        if self.control_socket_pull is not None:
+            self.control_socket_pull.close()
 
     def receive(self, timeout: int | None = None) -> Message | None:
         """
@@ -179,7 +182,7 @@ class SocketInterface:
             logging.error('Socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
-        self.control_socket = self._connect_socket(PAIR, self.control_socket_addr.value)
+        self.control_socket_push = self._connect_socket(PAIR, self.control_socket_addr.value)
         logging.debug('Connected to "%s" control socket (%s)', self.actor_name, self.control_socket_addr.value)
 
     def receive_control(self, timeout: int | None = None) -> Message | None:
@@ -188,24 +191,24 @@ class SocketInterface:
         :param timeout: Time in millisecond to wait for a message (None for waiting forever)
         :return: Received message or None when timeout is reached
         """
-        if self.control_socket is None:
+        if self.control_socket_pull is None:
             raise NotConnectedException
 
-        event = self.control_socket.poll(timeout)
+        event = self.control_socket_pull.poll(timeout)
         if event == 0:
             return None
 
-        return self.control_socket.recv_pyobj()
+        return self.control_socket_pull.recv_pyobj()
 
     def send_control(self, msg: Message):
         """
         Send a message to the control socket.
         :param msg: Message to send
         """
-        if self.control_socket is None:
+        if self.control_socket_push is None:
             raise NotConnectedException
 
-        self.control_socket.send_pyobj(msg)
+        self.control_socket_push.send_pyobj(msg)
 
     def connect_data(self):
         """
@@ -216,8 +219,8 @@ class SocketInterface:
             logging.error('Socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
-        self.push_socket = self._connect_socket(PUSH, self.pull_socket_addr.value)
-        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, self.pull_socket_addr.value)
+        self.data_socket_push = self._connect_socket(PUSH, self.data_socket_addr.value)
+        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, self.data_socket_addr.value)
 
     def receive_data(self, timeout: int | None = None) -> Message | None:
         """
@@ -225,21 +228,21 @@ class SocketInterface:
         :param timeout: Time in millisecond to wait for a message (None for waiting forever)
         :return: Received message or None when timeout is reached
         """
-        if self.pull_socket is None:
+        if self.data_socket_pull is None:
             raise NotConnectedException
 
-        event = self.pull_socket.poll(timeout)
+        event = self.data_socket_pull.poll(timeout)
         if event == 0:
             return None
 
-        return self.pull_socket.recv_pyobj()
+        return self.data_socket_pull.recv_pyobj()
 
     def send_data(self, msg: Message):
         """
         Send a message to the data socket.
         :param msg: Message to send
         """
-        if self.push_socket is None:
+        if self.data_socket_push is None:
             raise NotConnectedException
 
-        self.push_socket.send_pyobj(msg)
+        self.data_socket_push.send_pyobj(msg)

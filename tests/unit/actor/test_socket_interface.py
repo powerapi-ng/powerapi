@@ -121,21 +121,21 @@ def test_close(initialized_socket_interface):
     """
     Test if the close method successfully close the connected control and data sockets.
     """
-    assert initialized_socket_interface.pull_socket.closed is False
-    assert initialized_socket_interface.control_socket.closed is False
+    assert initialized_socket_interface.data_socket_pull.closed is False
+    assert initialized_socket_interface.control_socket_pull.closed is False
 
     initialized_socket_interface.close()
 
-    assert initialized_socket_interface.pull_socket.closed is True
-    assert initialized_socket_interface.control_socket.closed is True
+    assert initialized_socket_interface.data_socket_pull.closed is True
+    assert initialized_socket_interface.control_socket_pull.closed is True
 
 
 def test_data_control_sockets_setup(initialized_socket_interface):
     """
     Test if the setup method successfully open the control and data sockets.
     """
-    check_socket(initialized_socket_interface.pull_socket, PULL, initialized_socket_interface.pull_socket_addr)
-    check_socket(initialized_socket_interface.control_socket, PAIR, initialized_socket_interface.control_socket_addr)
+    check_socket(initialized_socket_interface.data_socket_pull, PULL, initialized_socket_interface.data_socket_addr)
+    check_socket(initialized_socket_interface.control_socket_pull, PAIR, initialized_socket_interface.control_socket_addr)
     assert isinstance(initialized_socket_interface.poller, Poller)
 
 
@@ -143,16 +143,16 @@ def test_push_socket_setup(connected_interface):
     """
     Test if the push socket is open and connected to the data socket.
     """
-    check_socket(connected_interface.push_socket, PUSH, connected_interface.pull_socket_addr)
+    check_socket(connected_interface.data_socket_push, PUSH, connected_interface.data_socket_addr)
 
 
 def test_data_disconnect(connected_interface):
     """
     Test if the disconnect method successfully close the data socket.
     """
-    assert connected_interface.push_socket.closed is False
+    assert connected_interface.data_socket_push.closed is False
     connected_interface.close()
-    assert connected_interface.push_socket.closed is True
+    assert connected_interface.data_socket_push.closed is True
 
 
 def test_send_receive_data(connected_interface):
@@ -169,16 +169,16 @@ def test_control_connect(controlled_interface):
     """
     Test if the control socket is successfully open.
     """
-    check_socket(controlled_interface.control_socket, PAIR, controlled_interface.control_socket_addr)
+    check_socket(controlled_interface.control_socket_pull, PAIR, controlled_interface.control_socket_addr)
 
 
 def test_control_disconnect(controlled_interface):
     """
     Test if the close method successfully disconnect the control socket.
     """
-    assert controlled_interface.control_socket.closed is False
+    assert controlled_interface.control_socket_pull.closed is False
     controlled_interface.close()
-    assert controlled_interface.control_socket.closed is True
+    assert controlled_interface.control_socket_pull.closed is True
 
 
 def test_control_receive(controlled_interface):
