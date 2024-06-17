@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -27,95 +27,70 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
-
-if TYPE_CHECKING:
-    from powerapi.database import BaseDB
-    from powerapi.filter import Filter
-    from powerapi.dispatcher import RouteTable
-    from powerapi.formula import FormulaActor, FormulaState
-
-
 class Message:
     """
-    Abstract Message class
+    Base Message class.
     """
 
     def __init__(self, sender_name: str):
+        """
+        :param sender_name: Name of the sender
+        """
         self.sender_name = sender_name
 
-    def __str__(self):
-        raise NotImplementedError()
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.sender_name})"
 
 
 class OKMessage(Message):
     """
-    Message sends to acknowledge last received message
+    Message sent by actors when it had been successfully initialized.
     """
 
     def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "OKMessage"
+        """
+        :param sender_name: Name of the sender
+        """
+        super().__init__(sender_name)
 
 
 class ErrorMessage(Message):
     """
-    Message used to indicate that an error as occuried
+    Message sent by actors when an error occurs during initialization.
     """
 
     def __init__(self, sender_name: str, error_message: str):
         """
-        :param str error_code: message associated to the error
+        :param sender_name: Name of the sender
+        :param error_message: Error message
         """
-        Message.__init__(self, sender_name)
+        super().__init__(sender_name)
         self.error_message = error_message
-
-    def __str__(self):
-        return "ErrorMessage : " + self.error_message
 
 
 class StartMessage(Message):
     """
-    Message that asks the actor to launch its initialisation process
+    Message that asks the actor to launch its initialization process.
     """
 
     def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "StartMessage"
-
-
-class EndMessage(Message):
-    """
-    Message sent by actor to its parent when it terminates itself
-    """
-
-    def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "EndMessage"
+        super().__init__(sender_name)
 
 
 class PoisonPillMessage(Message):
     """
-    Message which allow to kill an actor
+    Message that asks the actor to launch its teardown process.
     """
 
-    def __init__(self, soft: bool = True, sender_name: str = ''):
-        Message.__init__(self, sender_name=sender_name)
-        self.is_soft = soft
-        self.is_hard = not soft
+    def __init__(self, sender_name: str, soft_kill: bool = True):
+        """
+        :param sender_name: Name of the sender
+        :param soft_kill: Whether to use a soft or hard kill
+        """
+        super().__init__(sender_name)
+        self.is_soft = soft_kill
 
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
+            return self.sender_name == other.sender_name and other.is_soft == self.is_soft
         return False
