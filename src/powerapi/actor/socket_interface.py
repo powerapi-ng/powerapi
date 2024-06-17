@@ -112,21 +112,17 @@ class SocketInterface:
 
         return socket
 
-    def setup(self):
+    def bind(self):
         """
-        Initialize the socket interface.
+        Bind the control and data sockets of the actor.
+        This method should only be called when the actor is initializing.
+        :return: True if successful, False otherwise.
         """
         if self._is_setup_event.is_set():
             logging.warning('The socket interface of "%s" is already initialized.', self.actor_name)
-            return
+            return False
 
-        logging.debug('Setting up "%s" socket interface...', self.actor_name)
-
-        # Create the PULL socket used to receive data messages from other actors.
-        # Other actors needs to connect a PUSH socket to do so.
-        self.data_socket_pull = self._bind_socket_random_port(PULL)
-        self.data_socket_addr.get_obj().value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.get_obj().value)
+        logging.debug('Setting up "%s" control and data sockets...', self.actor_name)
 
         # Create the PAIR socket used to receive control messages from other actors.
         # Other actors needs to connect a PAIR socket to do so.
@@ -134,31 +130,68 @@ class SocketInterface:
         self.control_socket_addr.get_obj().value = self.control_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
         logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.get_obj().value)
 
-        # Register the "data" and "control" sockets to the poller. (order *IS* important)
+        # Create the PULL socket used to receive data messages from other actors.
+        # Other actors needs to connect a PUSH socket to do so.
+        self.data_socket_pull = self._bind_socket_random_port(PULL)
+        self.data_socket_addr.get_obj().value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.get_obj().value)
+
+        # Register the sockets to the poller. (order *IS* important, control socket should have priority)
         self.poller = Poller()
         self.poller.register(self.control_socket_pull, POLLIN)
         self.poller.register(self.data_socket_pull, POLLIN)
 
         self._is_setup_event.set()
 
-    def close(self):
+    def unbind(self):
         """
-        Close the socket interface.
+        Unbind the control and data sockets of the actor.
+        This method should only be called when the actor is terminated.
         """
         if not self._is_setup_event.is_set():
-            logging.warning('The socket interface of "%s" is already closed.', self.actor_name)
+            logging.warning('The socket interface of "%s" is not uninitialized.', self.actor_name)
             return
 
-        logging.debug('Closing "%s" socket interface...', self.actor_name)
-
-        if self.data_socket_push is not None:
-            self.data_socket_push.close()
-
-        if self.data_socket_pull is not None:
-            self.data_socket_pull.close()
+        logging.debug('Unbinding "%s" socket interface...', self.actor_name)
 
         if self.control_socket_pull is not None:
-            self.control_socket_pull.close()
+            self.control_socket_pull = None
+
+        if self.data_socket_pull is not None:
+            self.data_socket_pull = None
+
+        self._is_setup_event.clear()
+
+    def connect(self):
+        """
+        Connect to the control and data sockets of the actor.
+        This method should be called by other actors wanting to communicate with this actor.
+        :return: True if successful, False otherwise.
+        """
+        if not self._is_setup_event.is_set():
+            logging.error('The socket interface of "%s" is not initialized.', self.actor_name)
+            return False
+
+        logging.debug('Connecting to "%s" socket interface...', self.actor_name)
+        self.connect_control()
+        self.connect_data()
+
+    def disconnect(self):
+        """
+        Disconnect from the control and data sockets of the actor.
+        This method should be called by other actors wanting to close their sockets connected to the actor.
+        """
+        if not self._is_setup_event.is_set():
+            logging.error('The socket interface of "%s" is not initialized.', self.actor_name)
+            return
+
+        logging.debug('Disconnecting from "%s" socket interface...', self.actor_name)
+
+        if self.control_socket_push is not None:
+            self.control_socket_push = None
+
+        if self.data_socket_push is not None:
+            self.data_socket_push = None
 
     def receive(self, timeout: int | None = None) -> Message | None:
         """
@@ -179,7 +212,7 @@ class SocketInterface:
         This channel should be used to send lifecycle messages to the actor.
         """
         if not self._is_setup_event.is_set():
-            logging.error('Socket interface of "%s" is not initialized', self.actor_name)
+            logging.error('The socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
         dst_address = self.control_socket_addr.get_obj().value
@@ -217,7 +250,7 @@ class SocketInterface:
         This channel should be used to send data messages to be processed by the actor.
         """
         if not self._is_setup_event.is_set():
-            logging.error('Socket interface of "%s" is not initialized', self.actor_name)
+            logging.error('The socket interface of "%s" is not initialized', self.actor_name)
             raise NotConnectedException
 
         dst_address = self.data_socket_addr.get_obj().value

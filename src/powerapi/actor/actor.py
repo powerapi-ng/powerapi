@@ -102,7 +102,7 @@ class Actor(Process):
 
         setproctitle(repr(self))
         self._setup_signals_handler()
-        self.socket_interface.setup()
+        self.socket_interface.bind()
 
         # Actor-specific setup (can be overridden)
         self.setup()
@@ -119,7 +119,7 @@ class Actor(Process):
         """
         self.logger.debug('Tearing down actor "%s" process', self.name)
 
-        self.socket_interface.close()
+        self.socket_interface.unbind()
 
         # Actor-specific teardown (can be overridden)
         self.teardown()
