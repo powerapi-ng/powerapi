@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import pickle
 from ctypes import c_wchar
 from multiprocessing import Array, Event
 
@@ -37,9 +38,21 @@ from powerapi.exception import PowerAPIException
 from powerapi.message import Message
 
 
+class NotBoundException(PowerAPIException):
+    """
+    Exception raised when trying to connect to a socket that has not been bound.
+    """
+
+
 class NotConnectedException(PowerAPIException):
     """
     Exception raised when attempting to send/receive a message on a socket that is not connected.
+    """
+
+
+class AlreadyConnectedException(PowerAPIException):
+    """
+    Exception raised when attempting to connect to a socket that has already been connected.
     """
 
 
@@ -56,28 +69,22 @@ class SocketInterface:
         self.actor_name = actor_name
 
         # Socket used to receive control messages from an actor.
-        self.control_socket_pull: Socket | None = None
+        self.control_socket: Socket | None = None
 
         # Shared memory value used to store the control socket listen address. ('proto://addr:port')
         self.control_socket_addr = Array(c_wchar, 255)
 
-        # Socket used to send control messages to the actor.
-        self.control_socket_push: Socket | None = None
-
         # Socket used to receive data messages from other actors.
-        self.data_socket_pull: Socket | None = None
+        self.data_socket: Socket | None = None
 
         # Shared memory used to store the pull socket listen address. ('proto://addr:port')
         self.data_socket_addr = Array(c_wchar, 255)
 
-        # Socket used to send data messages to the actor.
-        self.data_socket_push: Socket | None = None
-
         # Sockets poller used to know when either (control/data) sockets have message(s) waiting.
         self.poller: Poller | None = None
 
-        # Event used to know when a socket interface have been initialized and should be operational.
-        self._is_setup_event = Event()
+        # Event used to know when the control and data sockets have been bound and should be able to receive data.
+        self._is_bound_event = Event()
 
     def __repr__(self):
         return f"{self.__class__.__name__}('{self.actor_name}')"
@@ -94,7 +101,6 @@ class SocketInterface:
 
         socket: Socket = ctx.socket(socket_type)
         socket.bind_to_random_port(address)
-
         return socket
 
     @staticmethod
@@ -109,7 +115,6 @@ class SocketInterface:
 
         socket: Socket = ctx.socket(socket_type)
         socket.connect(address)
-
         return socket
 
     def bind(self):
@@ -118,61 +123,57 @@ class SocketInterface:
         This method should only be called when the actor is initializing.
         :return: True if successful, False otherwise.
         """
-        if self._is_setup_event.is_set():
-            logging.warning('The socket interface of "%s" is already initialized.', self.actor_name)
-            return False
+        if self._is_bound_event.is_set():
+            logging.warning('The sockets of "%s" actor are already bound', self.actor_name)
+            return
 
-        logging.debug('Setting up "%s" control and data sockets...', self.actor_name)
+        logging.debug('Setting up "%s" actor control and data sockets...', self.actor_name)
 
         # Create the PAIR socket used to receive control messages from other actors.
         # Other actors needs to connect a PAIR socket to do so.
-        self.control_socket_pull = self._bind_socket_random_port(PAIR)
-        self.control_socket_addr.get_obj().value = self.control_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" control socket to : %s', self.actor_name, self.control_socket_addr.get_obj().value)
+        self.control_socket = self._bind_socket_random_port(PAIR)
+        self.control_socket_addr.get_obj().value = self.control_socket.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" actor control socket to: %s', self.actor_name, self.control_socket_addr.get_obj().value)
 
         # Create the PULL socket used to receive data messages from other actors.
         # Other actors needs to connect a PUSH socket to do so.
-        self.data_socket_pull = self._bind_socket_random_port(PULL)
-        self.data_socket_addr.get_obj().value = self.data_socket_pull.get(LAST_ENDPOINT).decode('utf-8')
-        logging.debug('Bound "%s" pull socket to : %s', self.actor_name, self.data_socket_addr.get_obj().value)
+        self.data_socket = self._bind_socket_random_port(PULL)
+        self.data_socket_addr.get_obj().value = self.data_socket.get(LAST_ENDPOINT).decode('utf-8')
+        logging.debug('Bound "%s" actor data socket to: %s', self.actor_name, self.data_socket_addr.get_obj().value)
 
         # Register the sockets to the poller. (order *IS* important, control socket should have priority)
         self.poller = Poller()
-        self.poller.register(self.control_socket_pull, POLLIN)
-        self.poller.register(self.data_socket_pull, POLLIN)
+        self.poller.register(self.control_socket, POLLIN)
+        self.poller.register(self.data_socket, POLLIN)
 
-        self._is_setup_event.set()
+        self._is_bound_event.set()
 
     def unbind(self):
         """
         Unbind the control and data sockets of the actor.
         This method should only be called when the actor is terminated.
         """
-        if not self._is_setup_event.is_set():
-            logging.warning('The socket interface of "%s" is not uninitialized.', self.actor_name)
-            return
+        if not self._is_bound_event.is_set():
+            raise NotBoundException
 
-        logging.debug('Unbinding "%s" socket interface...', self.actor_name)
+        logging.debug('Unbinding "%s" actor control and data sockets...', self.actor_name)
+        self.control_socket.close()
+        self.control_socket = None
+        self.data_socket.close()
+        self.data_socket = None
 
-        if self.control_socket_pull is not None:
-            self.control_socket_pull = None
-
-        if self.data_socket_pull is not None:
-            self.data_socket_pull = None
-
-        self._is_setup_event.clear()
+        self._is_bound_event.clear()
 
     def connect(self):
         """
         Connect to the control and data sockets of the actor.
         This method should be called by other actors wanting to communicate with this actor.
-        :return: True if successful, False otherwise.
+        :raises NotBoundException: When attempting to connect to sockets that are not bound.
         """
-        if not self._is_setup_event.is_set():
-            logging.error('The socket interface of "%s" is not initialized.', self.actor_name)
-            return False
+        if not self._is_bound_event.is_set():
+            raise NotBoundException
 
-        logging.debug('Connecting to "%s" socket interface...', self.actor_name)
+        logging.debug('Connecting sockets to "%s" actor...', self.actor_name)
         self.connect_control()
         self.connect_data()
 
@@ -181,17 +182,14 @@ class SocketInterface:
         Disconnect from the control and data sockets of the actor.
         This method should be called by other actors wanting to close their sockets connected to the actor.
         """
-        if not self._is_setup_event.is_set():
-            logging.error('The socket interface of "%s" is not initialized.', self.actor_name)
-            return
+        if not self._is_bound_event.is_set():
+            raise NotBoundException
 
-        logging.debug('Disconnecting from "%s" socket interface...', self.actor_name)
-
-        if self.control_socket_push is not None:
-            self.control_socket_push = None
-
-        if self.data_socket_push is not None:
-            self.data_socket_push = None
+        logging.debug('Disconnecting sockets from "%s" actor...', self.actor_name)
+        self.control_socket.close()
+        self.control_socket = None
+        self.data_socket.close()
+        self.data_socket = None
 
     def receive(self, timeout: int | None = None) -> Message | None:
         """
@@ -204,20 +202,19 @@ class SocketInterface:
             return None
 
         socket: Socket = next(iter(events))
-        return socket.recv_pyobj()
+        return pickle.loads(socket.recv())
 
     def connect_control(self):
         """
         Connect to the control socket of the interface.
         This channel should be used to send lifecycle messages to the actor.
         """
-        if not self._is_setup_event.is_set():
-            logging.error('The socket interface of "%s" is not initialized', self.actor_name)
-            raise NotConnectedException
+        if not self._is_bound_event.is_set():
+            raise NotBoundException
 
         dst_address = self.control_socket_addr.get_obj().value
-        self.control_socket_push = self._connect_socket(PAIR, dst_address)
-        logging.debug('Connected to "%s" control socket (%s)', self.actor_name, dst_address)
+        self.control_socket = self._connect_socket(PAIR, dst_address)
+        logging.debug('Connected control socket (%s) to "%s" actor', dst_address, self.actor_name)
 
     def receive_control(self, timeout: int | None = None) -> Message | None:
         """
@@ -225,37 +222,36 @@ class SocketInterface:
         :param timeout: Time in millisecond to wait for a message (None for waiting forever)
         :return: Received message or None when timeout is reached
         """
-        if self.control_socket_pull is None:
+        if self.control_socket is None:
             raise NotConnectedException
 
-        event = self.control_socket_pull.poll(timeout)
+        event = self.control_socket.poll(timeout)
         if event == 0:
             return None
 
-        return self.control_socket_pull.recv_pyobj()
+        return pickle.loads(self.control_socket.recv())
 
     def send_control(self, msg: Message):
         """
         Send a message to the control socket.
         :param msg: Message to send
         """
-        if self.control_socket_push is None:
+        if self.control_socket is None:
             raise NotConnectedException
 
-        self.control_socket_push.send_pyobj(msg)
+        self.control_socket.send(pickle.dumps(msg, pickle.HIGHEST_PROTOCOL))
 
     def connect_data(self):
         """
         Connect to the data socket of the interface.
         This channel should be used to send data messages to be processed by the actor.
         """
-        if not self._is_setup_event.is_set():
-            logging.error('The socket interface of "%s" is not initialized', self.actor_name)
-            raise NotConnectedException
+        if not self._is_bound_event.is_set():
+            raise NotBoundException
 
         dst_address = self.data_socket_addr.get_obj().value
-        self.data_socket_push = self._connect_socket(PUSH, dst_address)
-        logging.debug('Connected to "%s" data socket (%s)', self.actor_name, dst_address)
+        self.data_socket = self._connect_socket(PUSH, dst_address)
+        logging.debug('Connected data socket (%s) to "%s" actor', dst_address, self.actor_name)
 
     def receive_data(self, timeout: int | None = None) -> Message | None:
         """
@@ -263,21 +259,21 @@ class SocketInterface:
         :param timeout: Time in millisecond to wait for a message (None for waiting forever)
         :return: Received message or None when timeout is reached
         """
-        if self.data_socket_pull is None:
+        if self.data_socket is None or self.data_socket.type is not PULL:
             raise NotConnectedException
 
-        event = self.data_socket_pull.poll(timeout)
+        event = self.data_socket.poll(timeout)
         if event == 0:
             return None
 
-        return self.data_socket_pull.recv_pyobj()
+        return pickle.loads(self.data_socket.recv())
 
     def send_data(self, msg: Message):
         """
         Send a message to the data socket.
         :param msg: Message to send
         """
-        if self.data_socket_push is None:
+        if self.data_socket is None or self.data_socket.type is not PUSH:
             raise NotConnectedException
 
-        self.data_socket_push.send_pyobj(msg)
+        self.data_socket.send(pickle.dumps(msg, pickle.HIGHEST_PROTOCOL))
