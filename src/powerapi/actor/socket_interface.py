@@ -90,7 +90,7 @@ class SocketInterface:
         return f"{self.__class__.__name__}('{self.actor_name}')"
 
     @staticmethod
-    def _bind_socket_random_port(socket_type: int, address: str = 'tcp://localhost') -> Socket:
+    def _bind_socket_random_port(socket_type: int, address: str = 'tcp://127.0.0.1') -> Socket:
         """
         Create a socket of the given type and bind it to the given address and a random port.
         :param socket_type: Type of socket to create
