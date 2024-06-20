@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import sys
 from multiprocessing import Process
 from signal import signal, Signals, SIGINT, SIGTERM
 
@@ -88,6 +89,7 @@ class Actor(Process):
             signame = Signals(signum).name
             self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
             self.state.alive = False
+            sys.exit(0)
 
         signal(SIGTERM, term_handler)
         signal(SIGINT, term_handler)
