@@ -216,10 +216,10 @@ class Actor(Process):
         """
         Send a soft kill signal to the actor.
         """
-        self.send_control(PoisonPillMessage(soft=True, sender_name='system'))
+        self.send_control(PoisonPillMessage('system'))
 
     def hard_kill(self):
         """
         Send a hard kill signal to the actor.
         """
-        self.send_control(PoisonPillMessage(soft=False, sender_name='system'))
+        self.send_control(PoisonPillMessage('system'))
