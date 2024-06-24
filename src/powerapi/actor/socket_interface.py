@@ -84,7 +84,7 @@ class SocketInterface:
         self.poller: Poller | None = None
 
         # Event used to know when the control and data sockets have been bound and should be able to receive data.
-        self._is_bound_event = Event()
+        self.is_bound_event = Event()
 
     def __repr__(self):
         return f"{self.__class__.__name__}('{self.actor_name}')"
@@ -123,8 +123,7 @@ class SocketInterface:
         This method should only be called when the actor is initializing.
         :return: True if successful, False otherwise.
         """
-        if self._is_bound_event.is_set():
-            logging.warning('The sockets of "%s" actor are already bound', self.actor_name)
+        if self.is_bound_event.is_set():
             return
 
         logging.debug('Setting up "%s" actor control and data sockets...', self.actor_name)
@@ -146,23 +145,27 @@ class SocketInterface:
         self.poller.register(self.control_socket, POLLIN)
         self.poller.register(self.data_socket, POLLIN)
 
-        self._is_bound_event.set()
+        self.is_bound_event.set()
 
     def unbind(self):
         """
         Unbind the control and data sockets of the actor.
         This method should only be called when the actor is terminated.
         """
-        if not self._is_bound_event.is_set():
-            raise NotBoundException
+        if not self.is_bound_event.is_set():
+            return
 
         logging.debug('Unbinding "%s" actor control and data sockets...', self.actor_name)
+
         self.control_socket.close()
         self.control_socket = None
+        self.control_socket_addr.get_obj().value = ''
+
         self.data_socket.close()
         self.data_socket = None
+        self.data_socket_addr.get_obj().value = ''
 
-        self._is_bound_event.clear()
+        self.is_bound_event.clear()
 
     def connect(self):
         """
@@ -170,7 +173,7 @@ class SocketInterface:
         This method should be called by other actors wanting to communicate with this actor.
         :raises NotBoundException: When attempting to connect to sockets that are not bound.
         """
-        if not self._is_bound_event.is_set():
+        if not self.is_bound_event.is_set():
             raise NotBoundException
 
         logging.debug('Connecting sockets to "%s" actor...', self.actor_name)
@@ -182,14 +185,11 @@ class SocketInterface:
         Disconnect from the control and data sockets of the actor.
         This method should be called by other actors wanting to close their sockets connected to the actor.
         """
-        if not self._is_bound_event.is_set():
+        if not self.is_bound_event.is_set():
             raise NotBoundException
 
-        logging.debug('Disconnecting sockets from "%s" actor...', self.actor_name)
-        self.control_socket.close()
-        self.control_socket = None
-        self.data_socket.close()
-        self.data_socket = None
+        self.disconnect_control()
+        self.disconnect_data()
 
     def receive(self, timeout: int | None = None) -> Message | None:
         """
@@ -197,6 +197,9 @@ class SocketInterface:
         :param timeout: Time in millisecond to wait for a message (None for waiting forever)
         :return: Received message or None when timeout is reached
         """
+        if self.poller is None:
+            raise NotBoundException
+
         events = dict(self.poller.poll(timeout))
         if len(events) == 0:
             return None
@@ -209,12 +212,23 @@ class SocketInterface:
         Connect to the control socket of the interface.
         This channel should be used to send lifecycle messages to the actor.
         """
-        if not self._is_bound_event.is_set():
+        if not self.is_bound_event.is_set():
             raise NotBoundException
 
         dst_address = self.control_socket_addr.get_obj().value
         self.control_socket = self._connect_socket(PAIR, dst_address)
         logging.debug('Connected control socket (%s) to "%s" actor', dst_address, self.actor_name)
+
+    def disconnect_control(self):
+        """
+        Disconnect from the control socket of the interface.
+        """
+        if self.control_socket is None:
+            return
+
+        self.control_socket.close()
+        self.control_socket = None
+        logging.debug('Disconnected control socket to "%s" actor', self.actor_name)
 
     def receive_control(self, timeout: int | None = None) -> Message | None:
         """
@@ -246,12 +260,23 @@ class SocketInterface:
         Connect to the data socket of the interface.
         This channel should be used to send data messages to be processed by the actor.
         """
-        if not self._is_bound_event.is_set():
+        if not self.is_bound_event.is_set():
             raise NotBoundException
 
         dst_address = self.data_socket_addr.get_obj().value
         self.data_socket = self._connect_socket(PUSH, dst_address)
         logging.debug('Connected data socket (%s) to "%s" actor', dst_address, self.actor_name)
+
+    def disconnect_data(self):
+        """
+        Disconnect from the data socket of the interface.
+        """
+        if self.data_socket is None:
+            return
+
+        self.data_socket.close()
+        self.data_socket = None
+        logging.debug('Disconnected data socket to "%s" actor', self.actor_name)
 
     def receive_data(self, timeout: int | None = None) -> Message | None:
         """
