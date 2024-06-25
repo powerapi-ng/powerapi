@@ -26,8 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
-import time
 from multiprocessing import Pipe
 
 import pytest
@@ -330,7 +330,7 @@ class AbstractTestActor:
     @pytest.mark.usefixtures("shutdown_system")
     def test_send_PoisonPillMessage_set_actor_alive_to_False(init_actor):
         init_actor.send_control(PoisonPillMessage('pytest'))
-        time.sleep(0.1)
+        init_actor.join(timeout=5)
         assert not init_actor.is_alive()
 
     @staticmethod
@@ -338,7 +338,6 @@ class AbstractTestActor:
     def test_send_StartMessage_answer_OkMessage(init_actor):
         init_actor.send_control(StartMessage('pytest'))
         msg = init_actor.receive_control(2000)
-        print('message start', str(msg))
         assert isinstance(msg, OKMessage)
 
     @staticmethod
@@ -437,7 +436,7 @@ class AbstractTestActorWithDB:
     @pytest.mark.usefixtures("shutdown_system")
     def test_send_PoisonPillMessage_set_actor_alive_to_False(init_actor_with_db):
         init_actor_with_db.send_control(PoisonPillMessage('system-abstract-test'))
-        time.sleep(0.1)
+        init_actor_with_db.join(timeout=5)
         assert not init_actor_with_db.is_alive()
 
     @staticmethod
@@ -445,7 +444,6 @@ class AbstractTestActorWithDB:
     def test_send_StartMessage_answer_OkMessage(init_actor_with_db):
         init_actor_with_db.send_control(StartMessage('pytest'))
         msg = init_actor_with_db.receive_control(2000)
-        print('message start', str(msg))
         assert isinstance(msg, OKMessage)
 
     @staticmethod
