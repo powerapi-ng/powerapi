@@ -67,6 +67,9 @@ class ErrorMessage(Message):
         super().__init__(sender_name)
         self.error_message = error_message
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.sender_name}, '{self.error_message}')"
+
 
 class StartMessage(Message):
     """
@@ -94,3 +97,6 @@ class PoisonPillMessage(Message):
         if isinstance(other, PoisonPillMessage):
             return self.sender_name == other.sender_name and other.is_soft == self.is_soft
         return False
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.sender_name}, {'Soft' if self.is_soft else 'Hard'}-Kill)"
