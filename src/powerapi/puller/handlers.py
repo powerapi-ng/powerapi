@@ -27,19 +27,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import time
-import asyncio
 import logging
+import time
 from threading import Thread
 
 from powerapi.actor import State
-from powerapi.message import Message
-from powerapi.exception import PowerAPIException, BadInputData
+from powerapi.database import DBError
+from powerapi.exception import PowerAPIException
 from powerapi.filter import FilterUselessError
 from powerapi.handler import StartHandler, PoisonPillMessageHandler
-from powerapi.database import DBError
 from powerapi.message import ErrorMessage, PoisonPillMessage
-from powerapi.report.report import DeserializationFail
+from powerapi.message import Message
+from powerapi.report import BadInputData
 
 
 class NoReportExtractedException(PowerAPIException):
@@ -55,36 +54,10 @@ class DBPullerThread(Thread):
     """
 
     def __init__(self, state, timeout, handler):
-        Thread.__init__(self, daemon=True)
+        super().__init__(daemon=True)
         self.timeout = timeout
         self.state = state
-        self.loop = None
         self.handler = handler
-
-    def _connect(self):
-        try:
-            self.state.database.connect()
-            self.loop.run_until_complete(self.state.database.connect())
-            self.state.database_it = self.state.database.iter(self.state.stream_mode)
-        except DBError as error:
-            self.state.actor.send_control(ErrorMessage(sender_name='system', error_message=error.msg))
-            self.state.alive = False
-
-    def _pull_database(self):
-        try:
-            if self.state.database.is_async:
-                report = self.loop.run_until_complete(anext(self.state.database_it))
-                if report is None:
-                    raise StopIteration()
-                return report
-
-            return next(self.state.database_it)
-
-        except (StopIteration, BadInputData, DeserializationFail) as database_problem:
-            raise NoReportExtractedException() from database_problem
-
-    def _get_dispatchers(self, report):
-        return self.state.report_filter.route(report)
 
     def run(self):
         """
@@ -95,37 +68,26 @@ class DBPullerThread(Thread):
 
         :param None msg: None.
         """
-        if self.state.database.is_async:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-            self.state.loop = self.loop
-            self.loop.set_debug(enabled=True)
-            logging.basicConfig(level=logging.DEBUG)
-
-            self._connect()
-
         while self.state.alive:
             try:
-                raw_report = self._pull_database()
-
-                dispatchers = self._get_dispatchers(raw_report)
+                raw_report = next(self.state.database_it)
+                dispatchers = self.state.report_filter.route(raw_report)
                 for dispatcher in dispatchers:
                     dispatcher.send_data(raw_report)
 
-            except NoReportExtractedException:
-                time.sleep(self.state.timeout_puller / 1000)
-                self.state.actor.logger.debug('NoReportExtractedException with stream mode ' +
-                                              str(self.state.stream_mode))
-                if not self.state.stream_mode:
-                    self.handler.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
-                    return
-
             except FilterUselessError:
-                self.handler.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
+                self.handler.handle_internal_msg(PoisonPillMessage(False, self.name))
                 return
 
+            except BadInputData as exn:
+                logging.error('Received malformed report from database: %s', exn.msg)
+                logging.debug('Raw report value: %s', exn.input_data)
+
             except StopIteration:
-                continue
+                time.sleep(self.state.timeout_puller / 1000)
+                if not self.state.stream_mode:
+                    self.handler.handle_internal_msg(PoisonPillMessage(False, self.name))
+                    return
 
 
 class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
@@ -166,14 +128,14 @@ class PullerStartHandler(StartHandler):
         StartHandler.delegate_message_handling(self, msg)
 
     def initialization(self):
-
-        self._database_connection()
-
         if not self.state.report_filter.filters:
             raise PullerInitializationException('No filters')
+
         # Connect to all dispatcher
         for _, dispatcher in self.state.report_filter.filters:
             dispatcher.connect_data()
+
+        self._connect_database()
 
     def handle(self, msg: Message):
         try:
@@ -183,7 +145,7 @@ class PullerStartHandler(StartHandler):
 
         self.pull_db()
 
-        self.handle_internal_msg(PoisonPillMessage(soft=False, sender_name='system'))
+        self.handle_internal_msg(PoisonPillMessage(False, self.state.actor.name))
 
     def pull_db(self):
         """
@@ -198,12 +160,10 @@ class PullerStartHandler(StartHandler):
             if msg is not None:
                 self.handle_internal_msg(msg)
 
-    def _database_connection(self):
+    def _connect_database(self):
         try:
-            if not self.state.database.is_async:
-                self.state.database.connect()
-                self.state.database_it = self.state.database.iter(stream_mode=self.state.stream_mode)
-
+            self.state.database.connect()
+            self.state.database_it = self.state.database.iter(self.state.stream_mode)
         except DBError as error:
-            self.state.actor.send_control(ErrorMessage(self.state.actor.name, error.msg))
             self.state.alive = False
+            self.state.actor.send_control(ErrorMessage(self.state.actor.name, error.msg))
