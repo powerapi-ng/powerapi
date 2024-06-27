@@ -108,7 +108,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
 
         elif current_puller_infos['type'] == 'socket':
             assert isinstance(db, SocketDB)
-            assert db.port == current_puller_infos['port']
+            assert db.server_address == (current_puller_infos['host'], current_puller_infos['port'])
 
         else:
             assert False

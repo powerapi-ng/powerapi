@@ -28,17 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+
 from powerapi.actor import Actor, State
-from powerapi.exception import PowerAPIException
 from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.puller.handlers import PullerPoisonPillMessageHandler, PullerStartHandler
-
-
-class NoReportExtractedException(PowerAPIException):
-    """
-    Exception raised when we can't extract a report from the given
-    database
-    """
 
 
 class PullerState(State):

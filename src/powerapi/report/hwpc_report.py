@@ -104,10 +104,12 @@ class HWPCReport(Report):
             ts = Report._extract_timestamp(data[TIMESTAMP_KEY])
             metadata = {} if METADATA_KEY not in data else data[METADATA_KEY]
             return HWPCReport(ts, data[SENSOR_KEY], data[TARGET_KEY], data[GROUPS_KEY], metadata)
+        except TypeError as exn:
+            raise BadInputData(f'Invalid input document: {exn.args[0]}', data) from exn
         except KeyError as exn:
-            raise BadInputData('HWPC report require field ' + str(exn.args[0]) + ' in json document', data) from exn
+            raise BadInputData(f'Missing required field "{exn.args[0]}" from input document', data) from exn
         except ValueError as exn:
-            raise BadInputData(exn.args[0], data) from exn
+            raise BadInputData(f'Unexpected field value in input document: {exn.args}', data) from exn
 
     @staticmethod
     def to_json(report: HWPCReport) -> Dict:
