@@ -174,9 +174,12 @@ class PowerReport(Report):
         """
         :return: a dictionary, that can be stored into an influxdb, from a given PowerReport
         """
+        report_tags = report.gen_tag(tags)
+        sanitized_tags_name = report.sanitize_tags_name(report_tags.keys())
+        sanitized_tags = {sanitized_tags_name[k]: v for k, v in report_tags.items()}
         return {
             'measurement': 'power_consumption',
-            'tags': report.gen_tag(tags),
+            'tags': sanitized_tags,
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -188,8 +191,11 @@ class PowerReport(Report):
         """
         :return: a dictionary, that can be stored into a prometheus instance, from a given PowerReport
         """
+        report_tags = report.gen_tag(tags)
+        sanitized_tags_name = report.sanitize_tags_name(report_tags.keys())
+        sanitized_tags = {sanitized_tags_name[k]: v for k, v in report_tags.items()}
         return {
-            'tags': report.gen_tag(tags),
+            'tags': sanitized_tags,
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }
