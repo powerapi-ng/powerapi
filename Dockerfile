@@ -1,10 +1,12 @@
 FROM python:3-slim@sha256:d5f16749562233aa4bd26538771d76bf0dfd0a0ea7ea8771985e267451397ae4
 
-RUN useradd -d /opt/powerapi -m powerapi
-WORKDIR /opt/powerapi
-USER powerapi
+RUN useradd -m -s /bin/bash powerapi
+WORKDIR /home/powerapi
+
+RUN python -m venv --clear /opt/powerapi-venv
+ENV VIRTUAL_ENV=/opt/powerapi-venv PATH="/opt/powerapi-venv/bin:$PATH"
 
 COPY --chown=powerapi . /tmp/powerapi
-RUN pip3 install --user --no-cache-dir "/tmp/powerapi[everything]" && rm -r /tmp/powerapi
+RUN pip install --no-cache-dir "/tmp/powerapi[everything]" && rm -r /tmp/powerapi
 
-ENTRYPOINT ["/bin/echo", "This Docker image should be used as a base for another image and should not be executed directly."]
+ENTRYPOINT ["sh", "-c", "echo 'This container image should be used as a base image for a formula and is not intended to be run directly.' >&2; exit 1"]
