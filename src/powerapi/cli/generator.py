@@ -124,7 +124,7 @@ def gen_tag_list(db_config: dict):
     """
     Generate tag list from tag string
     """
-    if 'tags' not in db_config:
+    if 'tags' not in db_config or not db_config['tags']:
         return []
     return db_config['tags'].split(',')
 

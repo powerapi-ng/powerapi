@@ -121,8 +121,7 @@ class PrometheusDB(BasePrometheusDB):
     def _init_tags(self, metadata_keys):
         """
         Initializes the prometheus tags if required by using the provided metadata keys
-        :param metadata_keys: Report's metadata used for initilialising the tags 
-
+        :param metadata_keys: Report's metadata used for initialising the tags
         """
         # Check if the list of tags is empty (no filter tags defined during the configuration)
         # In this case, we have to use metric metadata as tags
@@ -138,8 +137,6 @@ class PrometheusDB(BasePrometheusDB):
                     self.tags.append(current_tag)
                     tag_added = True
             self.metrics_initialized = not tag_added
-
-
 
     def _expose_data(self, _, measure):
         kwargs = {label: measure[TAGS_KEY][label] for label in measure[TAGS_KEY]}
