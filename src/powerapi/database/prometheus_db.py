@@ -128,8 +128,10 @@ class PrometheusDB(BasePrometheusDB):
         if self.tags is None or not self.tags:
             self.tags = metadata_keys
             self.are_config_tags = False
-        elif not self.are_config_tags and sorted(metadata_keys) != sorted(self.tags):  # We check if we need to add
-            # new metadata and therefore create again the metrics
+        elif not self.are_config_tags and sorted(metadata_keys) != sorted(self.tags):
+            # We check if we need to add
+            # new metadata and therefore
+            # create again the metrics
             tag_added = False
             for current_tag in metadata_keys:
                 # We check what metadata needs to be added
@@ -148,12 +150,12 @@ class PrometheusDB(BasePrometheusDB):
 
     def _add_default_values_missing_tags(self, tags_values):
         """
-        Add 0 as default value for tags that are not defined in tags_values
+        Add "" as default value for tags that are not defined in tags_values
         :param tags_values: A dictionary with the tags values
         """
         for current_tag in self.energy_metric_labels_names:
             if current_tag not in tags_values.keys():
-                tags_values[current_tag] = 0
+                tags_values[current_tag] = ""
 
     def _report_to_measure_and_key(self, report):
         value = self.report_type.to_prometheus(report, self.tags)
