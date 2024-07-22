@@ -103,38 +103,64 @@ class PrometheusDB(BasePrometheusDB):
                                   tags=tags)
 
         self.energy_metric = None
+        self.energy_metric_labels_names = None
 
-        self.current_ts = 0
-        self.exposed_measure = {}
-        self.measure_for_current_period = {}
         self.metrics_initialized = False
+        self.are_config_tags = True
 
     def __iter__(self):
         raise NotImplementedError()
 
     def _init_metrics(self):
+
         if not self.metrics_initialized:
-            self.energy_metric = Gauge(self.metric_name, self.metric_description, [SENSOR_TAG, TARGET_TAG] + self.tags)
+            self.energy_metric_labels_names = [SENSOR_TAG, TARGET_TAG] + self.tags
+            self.energy_metric = Gauge(self.metric_name, self.metric_description, self.energy_metric_labels_names)
             self.metrics_initialized = True
+
+    def _init_tags(self, metadata_keys):
+        """
+        Initializes the prometheus tags if required by using the provided metadata keys
+        :param metadata_keys: Report's metadata used for initialising the tags
+        """
+        # Check if the list of tags is empty (no filter tags defined during the configuration)
+        # In this case, we have to use metric metadata as tags
+        if self.tags is None or not self.tags:
+            self.tags = metadata_keys
+            self.are_config_tags = False
+        elif not self.are_config_tags and sorted(metadata_keys) != sorted(self.tags):
+            # We check if we need to add
+            # new metadata and therefore
+            # create again the metrics
+            tag_added = False
+            for current_tag in metadata_keys:
+                # We check what metadata needs to be added
+                if current_tag not in self.tags:
+                    self.tags.append(current_tag)
+                    tag_added = True
+            self.metrics_initialized = not tag_added
 
     def _expose_data(self, _, measure):
         kwargs = {label: measure[TAGS_KEY][label] for label in measure[TAGS_KEY]}
+
         try:
             self.energy_metric.labels(**kwargs).set(measure[VALUE_KEY])
         except TypeError:
             self.energy_metric.labels(kwargs).set(measure[VALUE_KEY])
 
+    def _add_default_values_missing_tags(self, tags_values):
+        """
+        Add "" as default value for tags that are not defined in tags_values
+        :param tags_values: A dictionary with the tags values
+        """
+        for current_tag in self.energy_metric_labels_names:
+            if current_tag not in tags_values.keys():
+                tags_values[current_tag] = ""
+
     def _report_to_measure_and_key(self, report):
         value = self.report_type.to_prometheus(report, self.tags)
         key = ''.join([str(value[TAGS_KEY][tag]) for tag in value[TAGS_KEY]])
         return key, value
-
-    def _update_exposed_measure(self):
-        for key, args in self.exposed_measure.items():
-            if key not in self.measure_for_current_period:
-                self.energy_metric.remove(*args)
-        self.exposed_measure = self.measure_for_current_period
-        self.measure_for_current_period = {}
 
     def save(self, report: Report):
         """
@@ -142,17 +168,13 @@ class PrometheusDB(BasePrometheusDB):
 
         :param report: Report to save
         """
+        self._init_tags([*report.metadata.keys()])
         self._init_metrics()
 
         key, measure = self._report_to_measure_and_key(report)
-        if self.current_ts != measure[TIME_KEY]:
-            self.current_ts = measure[TIME_KEY]
-            self._update_exposed_measure()
+        self._add_default_values_missing_tags(measure[TAGS_KEY])
 
         self._expose_data(key, measure)
-        if key not in self.measure_for_current_period:
-            args = [measure[TAGS_KEY][label] for label in measure[TAGS_KEY]]
-            self.measure_for_current_period[key] = args
 
     def save_many(self, reports: List[Report]):
         """
