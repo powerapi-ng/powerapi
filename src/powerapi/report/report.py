@@ -143,6 +143,7 @@ class Report(Message):
     def sanitize_tags_name(tags: Iterable[str]) -> dict[str, str]:
         """
         Generate a dict containing the tags name and theirs corresponding sanitized version.
+
         The tags name are sanitized according to InfluxDB and Prometheus restrictions.
         If a sanitized tag have conflicts (`tag-name` and `tag.name` -> `tag_name`) a hash of the input tag will be
         appended at the end of the sanitized tag name. This allows to have stable tags name in the destination database.
@@ -154,4 +155,23 @@ class Report(Message):
         return {
             tag_orig: (tag_new if conflict_count[tag_new] == 1 else f'{tag_new}_{crc32(tag_orig.encode()):x}')
             for tag_orig, tag_new in sanitized_tags.items()
+        }
+
+    @staticmethod
+    def flatten_tags(tags: dict[str, Any], separator: str = '_') -> dict[str, Any]:
+        """
+        Flatten nested dictionaries within a tags dictionary.
+
+        This method takes a dictionary of tags, which may contain nested dictionaries as values, and flattens them into
+        a single-level dictionary. Each key in the flattened dictionary is constructed by concatenating the keys from
+        the nested dictionaries with their parent keys, separated by the specified separator.
+
+        This is particularly useful for databases that only support canonical (non-nested) types as values.
+        :param tags: Input tags dict
+        :param separator: Separator to use for the flattened tags name
+        :return: Flattened tags dict
+        """
+        return {
+            f"{pkey}{separator}{ckey}" if isinstance(pvalue, dict) else pkey: cvalue for pkey, pvalue in tags.items()
+            for ckey, cvalue in (pvalue.items() if isinstance(pvalue, dict) else {pkey: pvalue}.items())
         }
