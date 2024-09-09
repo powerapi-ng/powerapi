@@ -121,21 +121,12 @@ jobs:
     needs: [pre-checks, pypi-package, docker-image]
     permissions:
       contents: write
-    env:
-      CHGLOG_VERSION: "0.15.4"
 
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
         fetch-depth: 0
 
-    - name: Generate version changelog
-      run: |
-        set -euo pipefail
-        export BASE_URL="https://github.com/git-chglog/git-chglog/releases/download"
-        export FILENAME="git-chglog_${CHGLOG_VERSION}_linux_amd64.tar.gz"
-        curl -fsSL "${BASE_URL}/v${CHGLOG_VERSION}/${FILENAME}" |sudo tar xz --no-same-owner -C /usr/local/bin git-chglog
-        git-chglog --config .github/chglog/config.yml --output CHANGELOG.md "${GITHUB_REF_NAME}"
 
     - name: Create GitHub release
       uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
