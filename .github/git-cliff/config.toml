@@ -1,0 +1,73 @@
+[git]
+# parse the commits based on https://www.conventionalcommits.org
+conventional_commits = true
+
+# filter out the commits that are not conventional
+filter_unconventional = true
+
+# filter out the commits that are not matched by commit parsers
+filter_commits = true
+
+# sort the commits inside sections by oldest/newest order
+sort_commits = "newest"
+
+# regex for matching git tags
+tag_pattern = "v[0-9].*"
+
+# regex for parsing and grouping commits
+commit_parsers = [
+    { message = "^build\\(deps\\)", skip = true },
+    { message = "^build: Bump PowerAPI package version", skip = true },
+    { message = "^chore\\(release\\)", skip = true },
+
+    { message = "^feat", group = "<!-- 0 -->🚀 Features" },
+    { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
+    { message = "^perf", group = "<!-- 2 -->⚡ Performance Improvements" },
+    { message = "^refactor", group = "<!-- 3 -->🚜 Code Refactoring" },
+    { message = "^test", group = "<!-- 4 -->🧪 Testing" },
+    { message = "^build", group = "<!-- 5 -->📦 Build System" },
+    { message = "^ci", group = "<!-- 6 -->🔄 Continuous Integration" },
+    { message = "^doc", group = "<!-- 7 -->📚 Documentation" },
+    { message = "^chore", group = "<!-- 8 -->📋 Miscellaneous Tasks" },
+    { message = "^revert", group = "<!-- 9 -->⏪ Reverts" }
+]
+
+[changelog]
+# remove the leading and trailing whitespace from the templates
+trim = true
+
+# template for the changelog header
+header = """
+<img src="https://rawgit.com/Spirals-Team/powerapi/master/resources/logo/PowerAPI-logo.png" alt="Powerapi" width="300px">\n
+"""
+
+# template for the changelog body
+body = """
+{% if version %}
+    # [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}
+    # [unreleased]
+{% endif -%}
+{% if version -%}
+    {% if previous.version -%}
+      **Full Changelog**: https://github.com/powerapi-ng/powerapi/compare/{{ previous.version }}...{{ version }}
+    {% endif -%}
+{% endif -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+    ## {{ group | striptags | trim | upper_first }}
+    {% for commit in commits -%}
+        - {% if commit.scope -%}*({{ commit.scope }})* {% endif -%}
+            {% if commit.breaking -%}[**breaking**] {% endif -%}
+            {{ commit.message | upper_first }}
+    {% endfor -%}
+{% endfor %}
+"""
+
+# template for the changelog footer
+footer = """
+{% for release in releases %}
+    {% if release.version -%}
+        [{{ release.version }}]: https://github.com/powerapi-ng/powerapi/releases/tag/{{ release.version }}\
+    {% endif -%}
+{% endfor %}
+"""

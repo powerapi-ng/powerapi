@@ -127,6 +127,10 @@ jobs:
       with:
         fetch-depth: 0
 
+    - uses: orhun/git-cliff-action@9f34d775d33d958da57115f4a2c7cfe9cff4a464 # v4.0.2
+      with:
+        config: .github/git-cliff/config.toml
+        output: CHANGELOG.md
 
     - name: Create GitHub release
       uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
