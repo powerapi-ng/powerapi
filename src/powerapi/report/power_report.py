@@ -151,21 +151,19 @@ class PowerReport(Report):
         power = report.power
         return filename, power
 
-    def gen_tag(self, metadata_kept):
+    def gen_tag(self, metadata_kept: None | list[str]) -> dict[str, Any]:
         """
         Generate the tags list of the report.
         :param metadata_kept: The metadata to keep
         """
-        # Always sensor and target are kept
         tags = {'sensor': self.sensor, 'target': self.target}
+        if not metadata_kept:
+            return tags | self.metadata
 
-        if metadata_kept:
-            for metadata_name in metadata_kept:
-                if metadata_name not in self.metadata:
-                    raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
-                tags[metadata_name] = self.metadata[metadata_name]
-        else:
-            tags.update(self.metadata)
+        for metadata_name in metadata_kept:
+            if metadata_name not in self.metadata:
+                raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
+            tags[metadata_name] = self.metadata[metadata_name]
 
         return tags
 
@@ -177,9 +175,10 @@ class PowerReport(Report):
         report_tags = report.gen_tag(tags)
         sanitized_tags_name = report.sanitize_tags_name(report_tags.keys())
         sanitized_tags = {sanitized_tags_name[k]: v for k, v in report_tags.items()}
+        flattened_tags = report.flatten_tags(sanitized_tags)
         return {
             'measurement': 'power_consumption',
-            'tags': sanitized_tags,
+            'tags': flattened_tags,
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -194,8 +193,9 @@ class PowerReport(Report):
         report_tags = report.gen_tag(tags)
         sanitized_tags_name = report.sanitize_tags_name(report_tags.keys())
         sanitized_tags = {sanitized_tags_name[k]: v for k, v in report_tags.items()}
+        flattened_tags = report.flatten_tags(sanitized_tags)
         return {
-            'tags': sanitized_tags,
+            'tags': flattened_tags,
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }
