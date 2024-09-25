@@ -151,32 +151,22 @@ class PowerReport(Report):
         power = report.power
         return filename, power
 
-    def gen_tags(self, selected_tags: None | list[str]) -> dict[str, Any]:
+    def generate_tags(self, selected_tags: None | list[str] = None) -> dict[str, Any]:
         """
-        Generate the metadata tags of the report.
-        :param selected_tags: List of tags to be included, None to include everything
-        :return: a dictionary containing the tags
+        Generate the report tags from its metadata.
+        :param selected_tags: List of tags to be included (in flattened/sanitized form), None to include everything
+        :return: a single level dictionary containing the tags of the report
         """
-        fixed_tags = {'sensor': self.sensor, 'target': self.target}
-
-        if not selected_tags:
-            return fixed_tags | self.metadata
-
-        return fixed_tags | {tag_name: self.metadata[tag_name] for tag_name in selected_tags}
-
-    def gen_flattened_sanitized_tags(self, selected_tags: None | list[str]) -> dict[str, Any]:
-        """
-        Generate the flattened and sanitized tags list of the report.
-        :param selected_tags: List of tags to be included, None to include everything
-        :return: a dictionary containing the flattened and sanitized tags
-        """
-        tags = self.gen_tags(selected_tags)
-
-        flattened_tags = self.flatten_tags(tags)
+        flattened_tags = self.flatten_tags(self.metadata)
         sanitized_tags_name = self.sanitize_tags_name(flattened_tags)
         sanitized_tags = {sanitized_tags_name[k]: v for k, v in flattened_tags.items()}
 
-        return sanitized_tags
+        if selected_tags:
+            tags = {k: v for k, v in sanitized_tags.items() if k in selected_tags}
+        else:
+            tags = sanitized_tags
+
+        return {'sensor': self.sensor, 'target': self.target} | tags
 
     @staticmethod
     def to_influxdb(report: PowerReport, tags: None | list[str]) -> dict[str, Any]:
@@ -185,7 +175,7 @@ class PowerReport(Report):
         """
         return {
             'measurement': 'power_consumption',
-            'tags': report.gen_flattened_sanitized_tags(tags),
+            'tags': report.generate_tags(tags),
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -198,7 +188,7 @@ class PowerReport(Report):
         :return: a dictionary, that can be stored into a prometheus instance, from a given PowerReport
         """
         return {
-            'tags': report.gen_flattened_sanitized_tags(tags),
+            'tags': report.generate_tags(tags),
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }
