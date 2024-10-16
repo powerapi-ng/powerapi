@@ -39,7 +39,6 @@ from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, Database
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
-from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -332,20 +331,6 @@ class PreProcessorGenerator(ProcessorGenerator):
         super().__init__('pre-processor', self._get_default_processor_factories())
 
     @staticmethod
-    def _libvirt_pre_processor_factory(processor_config: dict) -> LibvirtPreProcessorActor:
-        """
-        Libvirt pre-processor actor factory.
-        :param processor_config: Pre-Processor configuration
-        :return: Configured Libvirt pre-processor actor
-        """
-        name = processor_config[ACTOR_NAME_KEY]
-        uri = processor_config[COMPONENT_URI_KEY]
-        regexp = processor_config[REGEXP_KEY]
-        target_actors_name = [processor_config[PULLER_NAME_KEY]]
-        level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return LibvirtPreProcessorActor(name, uri, regexp, [], target_actors_name, level_logger)
-
-    @staticmethod
     def _k8s_pre_processor_factory(processor_config: Dict) -> K8sPreProcessorActor:
         """
         Kubernetes pre-processor actor factory.
@@ -365,7 +350,6 @@ class PreProcessorGenerator(ProcessorGenerator):
         Return the default pre-processors factory.
         """
         return {
-            'libvirt': self._libvirt_pre_processor_factory,
             'k8s': self._k8s_pre_processor_factory,
         }
 
