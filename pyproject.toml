@@ -58,7 +58,6 @@ opentsdb = ["opentsdb-py >= 0.6.0"]
 prometheus = ["prometheus-client >= 0.9.0"]
 
 # Plaforms:
-libvirt = ["libvirt-python >= 6.1.0"]  # requires libvirt lib/headers, do not include by default.
 kubernetes = ["kubernetes >= 27.0.2"]
 
 # Aliases:
