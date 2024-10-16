@@ -31,7 +31,6 @@ from typing import Dict, List
 
 import tests.utils.report as parent_module
 from powerapi.report import HWPCReport
-from tests.utils.libvirt import LIBVIRT_TARGET_NAME1, LIBVIRT_TARGET_NAME2
 
 
 def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
@@ -64,30 +63,6 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Di
     with open(f'{path}/hwpc_all_events_2_socket.json', 'r', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return reports['reports'][:number_of_reports]
-
-
-def extract_all_events_reports_with_vm_name(number_of_reports: int) -> List[Dict]:
-    """
-    Extract the number_of_reports first reports of the file hwpc_all_vm_target.json
-
-    This file contain hwpc reports , recorded on a two socket host, with events :
-    - RAPL_PKG
-    - MPERF
-    - APERF
-    - TSC
-    - CPU_CLK_THREAD_UNHALTED:THREAD_P
-    - CPU_CLK_THREAD_UNHALTED:REF_P
-    - LLC_MISSES
-    - INSTRUCTIONS_RETIRED
-
-    ! only reports with target LIBVIRT_TARGET_NAME1 or LIBVIRT_TARGET_NAME2 are returned !
-
-    :return: a list of reports. Each reports is a json dictionary. Only reports with vm name as target is returned
-    """
-    path = parent_module.__path__[0]
-    with open(f'{path}/hwpc_all_vm_target.json', 'r', encoding='utf-8') as json_file:
-        reports = json.load(json_file)
-        return list(filter(lambda r: r['target'] == LIBVIRT_TARGET_NAME1 or r['target'] == LIBVIRT_TARGET_NAME2, reports['reports']))[:number_of_reports]
 
 
 def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:

@@ -37,7 +37,6 @@ from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGene
 from powerapi.database import MongoDB, CsvDB, SocketDB, PrometheusDB, InfluxDB2
 from powerapi.exception import PowerAPIException
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
-from powerapi.processor.pre.libvirt.libvirt_pre_processor_actor import LibvirtPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -390,56 +389,6 @@ def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
-
-
-@pytest.mark.skip(reason='libvirt is disable by default')
-def test_generate_pre_processor_from_libvirt_config(libvirt_pre_processor_config):
-    """
-    Test that generation for libvirt pre-processor from a config works correctly
-    """
-    generator = PreProcessorGenerator()
-
-    processors = generator.generate(libvirt_pre_processor_config)
-
-    assert len(processors) == len(libvirt_pre_processor_config['pre-processor'])
-    assert 'my_processor' in processors
-    processor = processors['my_processor']
-
-    assert isinstance(processor, LibvirtPreProcessorActor)
-
-    assert processor.state.daemon_uri is None
-    assert isinstance(processor.state.regexp, Pattern)
-
-
-@pytest.mark.skip(reason='libvirt is disable by default')
-def test_generate_several_libvirt_pre_processors_from_config(several_libvirt_pre_processors_config):
-    """
-    Test that several libvirt pre-processors are correctly generated
-    """
-    generator = PreProcessorGenerator()
-
-    processors = generator.generate(several_libvirt_pre_processors_config)
-
-    assert len(processors) == len(several_libvirt_pre_processors_config['pre-processor'])
-
-    for processor_name, current_processor_infos in several_libvirt_pre_processors_config['pre-processor'].items():
-        assert processor_name in processors
-        assert isinstance(processors[processor_name], LibvirtPreProcessorActor)
-
-        assert processors[processor_name].state.daemon_uri is None
-        assert isinstance(processors[processor_name].state.regexp, Pattern)
-
-
-@pytest.mark.skip(reason='libvirt is disable by default')
-def test_generate_libvirt_pre_processor_raise_exception_when_missing_arguments(
-        several_libvirt_processors_without_some_arguments_config):
-    """
-     Test that PreProcessorGenerator raises a PowerAPIException when some arguments are missing for libvirt processor
-     """
-    generator = PreProcessorGenerator()
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_libvirt_processors_without_some_arguments_config)
 
 
 def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, expected_pre_processor_info: dict):
