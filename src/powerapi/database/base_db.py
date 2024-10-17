@@ -73,15 +73,13 @@ class BaseDB:
     This class define the interface needed to fetch/save reports from/to a database.
     """
 
-    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] = None, is_async: bool = False):
+    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] = None):
         """
         :param report_type: The type of report expected
         :param exceptions: List of exception type raised by the database module
-        :param is_async: Whether the database use asyncio or not
         """
         self.report_type = report_type
         self.exceptions = exceptions or []
-        self.is_async = is_async
 
     def connect(self):
         """
