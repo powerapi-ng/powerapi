@@ -280,15 +280,6 @@ class InvalidPrefixException(PowerAPIException):
                    + self.existing_prefix
 
 
-class LibvirtException(PowerAPIException):
-    """
-    Exception raised when there are issues regarding the import of LibvirtException
-    """
-
-    def __init__(self, _):
-        PowerAPIException.__init__(self)
-
-
 class ProcessorTypeDoesNotExist(PowerAPIException):
     """
     Exception raised when attempting to remove to a ProcessorActorGenerator a processor factory with a type that is not

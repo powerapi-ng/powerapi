@@ -189,23 +189,6 @@ def several_inputs_outputs_stream_filedb_without_some_arguments_config(several_i
 
 
 @pytest.fixture
-def several_libvirt_pre_processors_config():
-    """
-    Configuration with several libvirt processors
-    """
-    return load_configuration_from_json_file(file_name='several_libvirt_pre_processors_configuration.json')
-
-
-@pytest.fixture
-def several_libvirt_processors_without_some_arguments_config():
-    """
-    Configuration with several libvirt processors
-    """
-    return load_configuration_from_json_file(
-        file_name='several_libvirt_processors_without_some_arguments_configuration.json')
-
-
-@pytest.fixture
 def several_k8s_pre_processors_config():
     """
     Configuration with several k8s processors
@@ -281,14 +264,6 @@ def config_without_output(csv_io_postmortem_config):
     csv_io_postmortem_config.pop('output')
 
     return csv_io_postmortem_config
-
-
-@pytest.fixture
-def libvirt_pre_processor_config():
-    """
-    Configuration with libvirt as pre-processor
-    """
-    return load_configuration_from_json_file(file_name='libvirt_pre_processor_configuration.json')
 
 
 @pytest.fixture
@@ -669,7 +644,7 @@ def dispatcher_actor_in_dictionary():
 @pytest.fixture
 def pre_processor_binding_manager(pre_processor_pullers_and_processors_dictionaries):
     """
-    Return a ProcessorBindingManager with a libvirt/K8s Processor
+    Return a ProcessorBindingManager with a Processor
     """
     pullers = pre_processor_pullers_and_processors_dictionaries[0]
     processors = pre_processor_pullers_and_processors_dictionaries[1]

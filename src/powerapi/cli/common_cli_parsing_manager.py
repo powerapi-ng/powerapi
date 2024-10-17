@@ -354,28 +354,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_influx2_output
         )
 
-        subparser_libvirt_pre_processor = SubgroupConfigParsingManager("libvirt")
-        subparser_libvirt_pre_processor.add_argument(
-            "u", "uri", help_text="libvirt daemon uri", default_value=""
-        )
-        subparser_libvirt_pre_processor.add_argument(
-            "d",
-            "domain-regexp",
-            help_text="regexp used to extract domain from cgroup string",
-        )
-
-        subparser_libvirt_pre_processor.add_argument(
-            "p",
-            "puller",
-            help_text="target puller for the pre-processor",
-        )
-
-        subparser_libvirt_pre_processor.add_argument("n", "name", help_text="")
-        self.add_subgroup_parser(
-            subgroup_name="pre-processor",
-            subgroup_parser=subparser_libvirt_pre_processor
-        )
-
         subparser_k8s_pre_processor = SubgroupConfigParsingManager("k8s")
         subparser_k8s_pre_processor.add_argument(
             "a",
