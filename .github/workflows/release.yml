@@ -100,7 +100,7 @@ jobs:
           name: "python-build-dist"
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@fb13cb306901256ace3dab689990e13a5550ffaa # v1.11.0
+        uses: pypa/gh-action-pypi-publish@61da13deb5f5124fb1536194f82ed3d9bbc7e8f3 # v1.12.0
         with:
           print-hash: true
           attestations: true
