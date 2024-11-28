@@ -26,10 +26,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from datetime import datetime
+
 import pytest
 
 from powerapi.report import PowerReport
-from tests.utils.report.power import gen_json_power_report
 
 
 @pytest.fixture
@@ -37,36 +38,56 @@ def power_report_without_metadata() -> PowerReport:
     """
     Generates a power_power
     """
-    json_input = gen_json_power_report(1)[0]
-    report = PowerReport.from_json(json_input)
-
-    return report
+    ts = datetime(2020, 1, 1, 0, 0, 0)
+    sensor = 'pytest'
+    target = 'test'
+    power = 42
+    metadata = {}
+    return PowerReport(ts, sensor, target, power, metadata)
 
 
 @pytest.fixture
 def power_report_with_metadata(power_report_without_metadata) -> PowerReport:
     """
-    Generates a power_power
+    Generates a power report with single-level metadata.
     """
-    power_report_without_metadata.metadata = {'k1': 'v1',
-                                              'k2': 'v2',
-                                              'k3': 333,
-                                              'k4': 'vv4'}
-
+    power_report_without_metadata.metadata = {
+        'scope': 'cpu',
+        'socket': 0,
+        'formula': '0000000000000000000000000000000000000000'
+    }
     return power_report_without_metadata
+
+
+@pytest.fixture
+def power_report_with_metadata_expected_tags(power_report_with_metadata) -> set[str]:
+    """
+    Returns the expected tags for the power report with single-level metadata.
+    """
+    return {'sensor', 'target', 'scope', 'socket', 'formula'}
 
 
 @pytest.fixture
 def power_report_with_nested_metadata(power_report_without_metadata) -> PowerReport:
     """
-    Generates a power_power
+    Generates a power report with nested metadata.
     """
-    power_report_without_metadata.metadata = {'k1': {'k1_k1': 1},
-                                              'k2': 'v2',
-                                              'k3': 333,
-                                              'k4': {'k4_k1': 'v1',
-                                                     'k4_k2': {'k4_k2_k1': 'v2'}
-                                                     }
-                                              }
-
+    power_report_without_metadata.metadata = {
+        'scope': 'cpu',
+        'socket': 0,
+        'formula': '0000000000000000000000000000000000000000',
+        'k8s': {
+            'app.kubernetes.io/name': 'test',
+            'app.kubernetes.io/managed-by': 'pytest',
+            'helm.sh/chart': 'powerapi-pytest-1.0.0'
+        }
+    }
     return power_report_without_metadata
+
+
+@pytest.fixture
+def power_report_with_nested_metadata_expected_tags(power_report_with_nested_metadata) -> set[str]:
+    """
+    Returns the expected tags for the power report with nested metadata.
+    """
+    return {'sensor', 'target', 'scope', 'socket', 'formula', 'k8s_app_kubernetes_io_name', 'k8s_app_kubernetes_io_managed_by', 'k8s_helm_sh_chart'}

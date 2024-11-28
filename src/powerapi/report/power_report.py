@@ -151,32 +151,31 @@ class PowerReport(Report):
         power = report.power
         return filename, power
 
-    def gen_tag(self, metadata_kept):
+    def generate_tags(self, selected_tags: None | list[str] = None) -> dict[str, Any]:
         """
-        Generate the tags list of the report.
-        :param metadata_kept: The metadata to keep
+        Generate the report tags from its metadata.
+        :param selected_tags: List of tags to be included (in flattened/sanitized form), None to include everything
+        :return: a single level dictionary containing the tags of the report
         """
-        # Always sensor and target are kept
-        tags = {'sensor': self.sensor, 'target': self.target}
+        flattened_tags = self.flatten_tags(self.metadata)
+        sanitized_tags_name = self.sanitize_tags_name(flattened_tags)
+        sanitized_tags = {sanitized_tags_name[k]: v for k, v in flattened_tags.items()}
 
-        if metadata_kept:
-            for metadata_name in metadata_kept:
-                if metadata_name not in self.metadata:
-                    raise BadInputData(f'No tag "{metadata_name}" found in power report', self)
-                tags[metadata_name] = self.metadata[metadata_name]
+        if selected_tags:
+            tags = {k: v for k, v in sanitized_tags.items() if k in selected_tags}
         else:
-            tags.update(self.metadata)
+            tags = sanitized_tags
 
-        return tags
+        return {'sensor': self.sensor, 'target': self.target} | tags
 
     @staticmethod
-    def to_influxdb(report: PowerReport, tags: List[str]) -> Dict:
+    def to_influxdb(report: PowerReport, tags: None | list[str]) -> dict[str, Any]:
         """
         :return: a dictionary, that can be stored into an influxdb, from a given PowerReport
         """
         return {
             'measurement': 'power_consumption',
-            'tags': report.gen_tag(tags),
+            'tags': report.generate_tags(tags),
             'time': str(report.timestamp),
             'fields': {
                 'power': report.power
@@ -184,12 +183,12 @@ class PowerReport(Report):
         }
 
     @staticmethod
-    def to_prometheus(report: PowerReport, tags: List[str]) -> Dict:
+    def to_prometheus(report: PowerReport, tags: None | list[str]) -> dict[str, Any]:
         """
         :return: a dictionary, that can be stored into a prometheus instance, from a given PowerReport
         """
         return {
-            'tags': report.gen_tag(tags),
+            'tags': report.generate_tags(tags),
             'time': int(report.timestamp.timestamp()),
             'value': report.power
         }
