@@ -1,4 +1,4 @@
-FROM python:3-slim@sha256:0de818129b26ed8f46fd772f540c80e277b67a28229531a1ba0fdacfaed19bcb
+FROM python:3-slim@sha256:f41a75c9cee9391c09e0139f7b49d4b1fbb119944ec740ecce4040626dc07bed
 
 RUN useradd -m -s /bin/bash powerapi
 WORKDIR /home/powerapi
