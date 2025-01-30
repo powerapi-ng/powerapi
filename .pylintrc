@@ -27,6 +27,7 @@ disable=raw-checker-failed,
         invalid-overridden-method,
         abstract-method,
         broad-exception-caught,
+        deprecated-module
 
 
 [REPORTS]
