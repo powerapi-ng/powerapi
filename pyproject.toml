@@ -33,6 +33,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Databases:
+mongodb = ["pymongo >= 3.7.2"]
+influxdb = ["influxdb-client >= 1.30.0"]
+opentsdb = ["opentsdb-py >= 0.6.0"]
+prometheus = ["prometheus-client >= 0.9.0"]
+
+# Plaforms:
+kubernetes = ["kubernetes >= 27.0.2"]
+
+# Aliases:
+all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
+all-platforms = ["powerapi[kubernetes]"]
+everything = ["powerapi[all-databases, all-platforms]"]
+
+[dependency-groups]
 test = [
     "pytest >= 7.0.1",
     "pytest-timeout >= 1.4.2",
@@ -50,20 +65,11 @@ lint = [
     "pylint >= 2.16.0"
 ]
 
-# Databases:
-mongodb = ["pymongo >= 3.7.2"]
-influxdb = ["influxdb-client >= 1.30.0"]
-opentsdb = ["opentsdb-py >= 0.6.0"]
-prometheus = ["prometheus-client >= 0.9.0"]
-
-# Plaforms:
-kubernetes = ["kubernetes >= 27.0.2"]
-
-# Aliases:
-all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
-all-platforms = ["powerapi[kubernetes]"]
-everything = ["powerapi[all-databases, all-platforms]"]
-devel = ["powerapi[everything, test, docs, lint]"]
+dev = [
+    {include-group = 'test'},
+    {include-group = 'docs'},
+    {include-group = 'lint'}
+]
 
 [project.urls]
 homepage = "https://powerapi.org"
@@ -72,4 +78,3 @@ repository = "https://github.com/powerapi-ng/powerapi"
 
 [tool.setuptools.dynamic]
 version = {attr = "powerapi.__version__"}
-
