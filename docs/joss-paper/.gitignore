@@ -1,0 +1,4 @@
+# Ignore inara output files.
+# https://github.com/openjournals/inara
+jats/*
+paper.pdf
