@@ -32,15 +32,19 @@ jobs:
       run: |
         uv sync --extra everything --dev
 
-    - name: Lint with flake8
+    - name: Run flake8
       run: |
         uv run flake8 --count --show-source --statistics src/ tests/
 
-    - name: Static code analysis with pylint
+    - name: Run pylint
       run: |
         uv run pylint src/ tests/
 
-    - name: Test with pytest
+    - name: Run ruff
+      run: |
+        uv run ruff check --output-format=github src/ tests/
+
+    - name: Run unit tests with coverage
       run: |
         uv run pytest --cov=powerapi --cov-report=term --cov-report=xml tests/unit
 

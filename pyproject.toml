@@ -62,7 +62,8 @@ docs = [
 
 lint = [
     "flake8 >= 3.9.2",
-    "pylint >= 2.16.0"
+    "pylint >= 2.16.0",
+    "ruff >= 0.9.6"
 ]
 
 dev = [
