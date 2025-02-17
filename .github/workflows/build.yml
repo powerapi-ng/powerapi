@@ -32,10 +32,6 @@ jobs:
       run: |
         uv sync --extra everything --dev
 
-    - name: Run flake8
-      run: |
-        uv run flake8 --count --show-source --statistics src/ tests/
-
     - name: Run pylint
       run: |
         uv run pylint src/ tests/
