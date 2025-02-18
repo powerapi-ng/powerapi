@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
-    name: Build project and run tests
+  run-tests:
+    name: Run linters and unit tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -45,11 +45,9 @@ jobs:
         uv run pytest --cov=powerapi --cov-report=term --cov-report=xml tests/unit
 
     - name: Upload coverage reports to Codecov
-      if: ${{ matrix.python-version }} == "3.10"
       uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: coverage.xml
 
   build-container-image:
     name: Build container image
