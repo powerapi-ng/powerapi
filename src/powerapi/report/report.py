@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import datetime
-from typing import Dict, NewType, Tuple, List, Any, Iterable
+from typing import NewType, Any, Iterable
 from zlib import crc32
 
 from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
@@ -44,7 +44,7 @@ METADATA_KEY = 'metadata'
 GROUPS_KEY = 'groups'
 
 CSV_HEADER_COMMON = [TIMESTAMP_KEY, SENSOR_KEY, TARGET_KEY]
-CsvLines = NewType('CsvLines', Tuple[List[str], Dict[str, str]])
+CsvLines = NewType('CsvLines', tuple[list[str], dict[str, str]])
 
 TAGS_NAME_TRANSLATION_TABLE = str.maketrans('.-/', '___')
 
@@ -71,7 +71,7 @@ class Report(Message):
     Report abtract class.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: Dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] = {}):
         """
         Initialize a report using the given parameters.
         :param datetime timestamp: Timestamp
@@ -101,7 +101,7 @@ class Report(Message):
                 self.metadata == other.metadata)
 
     @staticmethod
-    def to_json(report: Report) -> Dict:
+    def to_json(report: Report) -> dict:
         """
         :return: a json dictionary, that can be converted into json format, from a given Report
         """

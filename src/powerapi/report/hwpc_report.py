@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines, SENSOR_KEY, TARGET_KEY, \
     TIMESTAMP_KEY, METADATA_KEY, GROUPS_KEY
@@ -69,8 +69,8 @@ class HWPCReport(Report):
         }
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: Dict[str, Dict],
-                 metadata: Dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: dict[str, dict],
+                 metadata: dict[str, Any] = {}):
         """
         Initialize an HWPC report using the given parameters.
         :param datetime timestamp: Timestamp of the report
@@ -94,7 +94,7 @@ class HWPCReport(Report):
         return super().__eq__(other) and self.groups == other.groups
 
     @staticmethod
-    def from_json(data: Dict) -> HWPCReport:
+    def from_json(data: dict) -> HWPCReport:
         """
         Generate a report using the given data.
         :param data: Dictionary containing the report attributes
@@ -112,18 +112,18 @@ class HWPCReport(Report):
             raise BadInputData(f'Unexpected field value in input document: {exn.args}', data) from exn
 
     @staticmethod
-    def to_json(report: HWPCReport) -> Dict:
+    def to_json(report: HWPCReport) -> dict:
         return report.__dict__
 
     @staticmethod
-    def from_mongodb(data: Dict) -> HWPCReport:
+    def from_mongodb(data: dict) -> HWPCReport:
         """
         :return: a HWPCReport from a dictionary pulled from mongodb
         """
         return HWPCReport.from_json(data)
 
     @staticmethod
-    def to_mongodb(report: HWPCReport) -> Dict:
+    def to_mongodb(report: HWPCReport) -> dict:
         """
         :return: a dictionary, that can be stored into a mongodb, from a given HWPCReport
         """

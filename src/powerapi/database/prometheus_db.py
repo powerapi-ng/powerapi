@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from typing import List, Type
 
 try:
     from prometheus_client import start_http_server, Gauge
@@ -55,8 +54,8 @@ class BasePrometheusDB(BaseDB):
     Base class to expose data to prometheus instance
     """
 
-    def __init__(self, report_type: Type[Report], port: int, metric_name: str,
-                 tags: List[str], metric_description: str = DEFAULT_METRIC_DESCRIPTION, address: str = DEFAULT_ADDRESS):
+    def __init__(self, report_type: type[Report], port: int, metric_name: str,
+                 tags: list[str], metric_description: str = DEFAULT_METRIC_DESCRIPTION, address: str = DEFAULT_ADDRESS):
         BaseDB.__init__(self, report_type)
         self.address = address
         self.port = port
@@ -85,8 +84,8 @@ class PrometheusDB(BasePrometheusDB):
     It can only be used with a pusher actor
     """
 
-    def __init__(self, report_type: Type[Report], port: int, address: str, metric_name: str, metric_description: str,
-                 tags: List[str]):
+    def __init__(self, report_type: type[Report], port: int, address: str, metric_name: str, metric_description: str,
+                 tags: list[str]):
         """
         :param address: address that exposes the metric
         :param port: port used to expose the metric
@@ -176,7 +175,7 @@ class PrometheusDB(BasePrometheusDB):
 
         self._expose_data(key, measure)
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
         Save a batch of data
 

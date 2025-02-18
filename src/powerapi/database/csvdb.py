@@ -26,13 +26,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import csv
 import os
 
-from typing import List, Type
-from powerapi.report.report import Report, CSV_HEADER_COMMON
 from powerapi.database.base_db import BaseDB, IterDB
 from powerapi.exception import PowerAPIException
+from powerapi.report.report import Report, CSV_HEADER_COMMON
 from powerapi.utils import utils
 
 # Array of field that will not be considered as a group
@@ -192,7 +192,7 @@ class CsvDB(BaseDB):
     a CsvDB instance can be define by its current path
     """
 
-    def __init__(self, report_type: Type[Report], tags: List[str], current_path="/tmp/csvdbtest", files=[]):
+    def __init__(self, report_type: type[Report], tags: list[str], current_path="/tmp/csvdbtest", files=[]):
         """
         :param current_path: Current path where read/write files
         """
@@ -294,7 +294,7 @@ class CsvDB(BaseDB):
                 for row in values:
                     writer.writerow(row)
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
         Allow to save a batch of report
 

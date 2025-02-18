@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import List
-
 from kubernetes.client import V1Pod, V1ContainerStatus, Configuration, V1ObjectMeta, V1PodStatus
 
 
@@ -50,7 +48,7 @@ def generate_container_status(container_id, container_name) -> V1ContainerStatus
     return status
 
 
-def generate_pod(pod_name, pod_namespace, pod_labels, container_statuses: List[V1ContainerStatus]) -> V1Pod:
+def generate_pod(pod_name, pod_namespace, pod_labels, container_statuses: list[V1ContainerStatus]) -> V1Pod:
     """
     Generate an initialized POD object.
     """

@@ -27,10 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import re
 import os
-
-from typing import List, Type
+import re
 
 from powerapi.report import Report
 from .base_db import BaseDB, DBError
@@ -52,7 +50,7 @@ class VirtioFSDB(BaseDB):
 
     A regular expression must be given by the VM manager to extract vm name from target name. VM name is used to find directory that contains the output file.
     """
-    def __init__(self, report_type: Type[Report], vm_name_regexp: str, root_directory_name: str,
+    def __init__(self, report_type: type[Report], vm_name_regexp: str, root_directory_name: str,
                  vm_directory_name_prefix: str = '', vm_directory_name_suffix: str = ''):
         """
         :param vm_name_regexp:           regexp used to extract vm name from report. The regexp must match the name of the target
@@ -97,6 +95,6 @@ class VirtioFSDB(BaseDB):
         with open(vm_filename_path + vm_filename, 'w', encoding='utf-8') as vm_file:
             vm_file.write(str(power))
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         for report in reports:
             self.save(report)

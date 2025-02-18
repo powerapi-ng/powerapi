@@ -26,6 +26,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 try:
     import pymongo
@@ -33,7 +34,6 @@ try:
 except ImportError:
     logging.getLogger().info("PyMongo is not installed.")
 
-from typing import List, Type
 from powerapi.database.base_db import BaseDB, DBError, IterDB
 from powerapi.report import Report
 
@@ -93,7 +93,7 @@ class MongoDB(BaseDB):
     Allow to handle a MongoDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], uri: str, db_name: str, collection_name: str):
+    def __init__(self, report_type: type[Report], uri: str, db_name: str, collection_name: str):
         """
         :param report_type:        Type of the report handled by this database
         :param uri:             URI of the MongoDB server
@@ -164,7 +164,7 @@ class MongoDB(BaseDB):
         """
         self.collection.insert_one(self.report_type.to_mongodb(report))
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
         Allow to save a batch of data
 

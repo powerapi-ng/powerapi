@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData, CsvLines
 
@@ -42,7 +42,7 @@ class PowerReport(Report):
     PowerReport stores the power estimation information.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: Dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: dict[str, Any] = {}):
         """
         Initialize a Power report using the given parameters.
         :param datetime timestamp: Report timestamp
@@ -66,7 +66,7 @@ class PowerReport(Report):
         return super().__eq__(other) and self.power == other.power
 
     @staticmethod
-    def from_json(data: Dict) -> Report:
+    def from_json(data: dict) -> Report:
         """
         Generate a report using the given data.
         :param data: Dictionary containing the report attributes
@@ -111,7 +111,7 @@ class PowerReport(Report):
             raise BadInputData(exn.args[0], row) from exn
 
     @staticmethod
-    def to_csv_lines(report: PowerReport, tags: List[str]) -> CsvLines:
+    def to_csv_lines(report: PowerReport, tags: list[str]) -> CsvLines:
         """
         convert a power report into csv lines
         :param report: Report that will be converted into csv lines
@@ -141,7 +141,7 @@ class PowerReport(Report):
         return CSV_HEADER_POWER, final_dict
 
     @staticmethod
-    def to_virtiofs_db(report: PowerReport) -> Tuple[str, str]:
+    def to_virtiofs_db(report: PowerReport) -> tuple[str, str]:
         """
         return a tuple containing the power value and the name of the file to store the value.
         """
@@ -194,14 +194,14 @@ class PowerReport(Report):
         }
 
     @staticmethod
-    def to_mongodb(report: PowerReport) -> Dict:
+    def to_mongodb(report: PowerReport) -> dict:
         """
         :return: a dictionary, that can be stored into a mongodb, from a given PowerReport
         """
         return PowerReport.to_json(report)
 
     @staticmethod
-    def from_mongodb(data: Dict) -> Report:
+    def from_mongodb(data: dict) -> Report:
         """
         :return: a PowerReport from a dictionary pulled from mongodb
         """

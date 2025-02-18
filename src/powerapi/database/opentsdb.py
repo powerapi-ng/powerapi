@@ -26,13 +26,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import logging
 try:
     from opentsdb import TSDBClient
 except ImportError:
     logging.getLogger().info("opentsdb-py is not installed.")
-
-from typing import List, Type
 
 from powerapi.report import PowerReport, Report
 from .base_db import BaseDB, DBError
@@ -51,7 +50,7 @@ class OpenTSDB(BaseDB):
     Allow to handle an OpenTSDB database to save PowerReport.
     """
 
-    def __init__(self, report_type: Type[Report], host: str, port, metric_name: str):
+    def __init__(self, report_type: type[Report], host: str, port, metric_name: str):
         """
         :param host:             host of the OpenTSDB server
         :param port:            port of the OpenTSDB server
@@ -105,7 +104,7 @@ class OpenTSDB(BaseDB):
         self.client.send(self.metric_name, report.power, timestamp=int(report.timestamp.timestamp()),
                          host=report.target)
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
         Save a batch of data
 

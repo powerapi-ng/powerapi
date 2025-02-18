@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from powerapi.actor import Actor
 from powerapi.formula.formula_actor import FormulaActor, FormulaState
@@ -40,7 +40,7 @@ class AbstractCpuDramFormulaState(FormulaState):
     Formula values with configurable sleeping time for dummy formula
     """
 
-    def __init__(self, actor: Actor, pushers: Dict[str, Actor], metadata: Dict[str, Any], socket: str, core: str):
+    def __init__(self, actor: Actor, pushers: dict[str, Actor], metadata: dict[str, Any], socket: str, core: str):
         FormulaState.__init__(self, actor, pushers, metadata)
         self.socket = socket
         self.core = core
@@ -52,7 +52,7 @@ class AbstractCpuDramFormula(FormulaActor):
     It can be launched to handle data from a specific part of a cpu (whole cpu, a socket or a core)
     """
 
-    def __init__(self, name, pushers: Dict[str, PusherActor], socket: str, core: str, level_logger=logging.WARNING,
+    def __init__(self, name, pushers: dict[str, PusherActor], socket: str, core: str, level_logger=logging.WARNING,
                  timeout=None):
         FormulaActor.__init__(self, name, pushers, level_logger, timeout)
         self.state = AbstractCpuDramFormulaState(self, pushers, self.formula_metadata, socket, core)

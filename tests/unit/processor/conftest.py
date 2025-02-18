@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -46,7 +46,7 @@ class FakeMetadata:
     Fake metadata class related to an event
     """
 
-    def __init__(self, name: str, namespace: str, labels: Dict[str, str]):
+    def __init__(self, name: str, namespace: str, labels: dict[str, str]):
         self.name = name
         self.namespace = namespace
         self.labels = labels

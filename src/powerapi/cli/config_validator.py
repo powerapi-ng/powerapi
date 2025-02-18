@@ -30,8 +30,6 @@
 import logging
 import os
 
-from typing import Dict
-
 from powerapi.exception import MissingArgumentException, NotAllowedArgumentValueException, FileDoesNotExistException, \
     UnexistingActorException
 
@@ -42,7 +40,7 @@ class ConfigValidator:
     """
 
     @staticmethod
-    def validate(config: Dict):
+    def validate(config: dict):
         """
         Validate powerapi config and initialize missing default values
         """
@@ -101,7 +99,7 @@ class ConfigValidator:
         ConfigValidator._validate_input(config)
 
     @staticmethod
-    def _validate_input(config: Dict):
+    def _validate_input(config: dict):
         """
         Check that csv input type has files that exist
         """
@@ -118,7 +116,7 @@ class ConfigValidator:
                         raise FileDoesNotExistException(file_name=file_name)
 
     @staticmethod
-    def _validate_binding(config: Dict):
+    def _validate_binding(config: dict):
         """
         Check that defined bindings use existing actors defined by the configuration
         """

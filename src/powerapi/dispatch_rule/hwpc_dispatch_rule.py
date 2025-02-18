@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from enum import IntEnum
-from typing import List
 
 from .dispatch_rule import DispatchRule
 
@@ -57,7 +56,7 @@ class HWPCDispatchRule(DispatchRule):
         self.depth = depth
 
     @staticmethod
-    def _get_fields_by_depth(depth: HWPCDepthLevel) -> List[str]:
+    def _get_fields_by_depth(depth: HWPCDepthLevel) -> list[str]:
         if depth == HWPCDepthLevel.TARGET:
             return ['target']
 
