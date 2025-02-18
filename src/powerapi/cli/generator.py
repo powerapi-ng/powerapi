@@ -30,7 +30,7 @@
 import logging
 import os
 import sys
-from typing import Dict, Type, Callable
+from typing import Callable
 
 from powerapi.actor import Actor
 from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB, FileDB
@@ -93,7 +93,7 @@ class Generator:
     def __init__(self, component_group_name):
         self.component_group_name = component_group_name
 
-    def generate(self, main_config: dict) -> Dict[str, Type[Actor]]:
+    def generate(self, main_config: dict) -> dict[str, type[Actor]]:
         """
         Generate an actor class and actor start message from config dict
         """
@@ -115,7 +115,7 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> Type[Actor]:
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> type[Actor]:
         raise NotImplementedError()
 
 
@@ -213,7 +213,7 @@ class DBActorGenerator(BaseGenerator):
             raise DatabaseNameDoesNotExist(database_name)
         del self.db_factory[database_name]
 
-    def add_report_class(self, model_name: str, report_class: Type[Report]):
+    def add_report_class(self, model_name: str, report_class: type[Report]):
         """
         add a report class to generator
         """
@@ -287,7 +287,7 @@ class ProcessorGenerator(Generator):
     Generator that initialises the processor from config
     """
 
-    def __init__(self, component_group_name: str, processor_factory: Dict[str, Callable[[Dict], ProcessorActor]] = None):
+    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]] = None):
         Generator.__init__(self, component_group_name)
 
         self.processor_factory = processor_factory
@@ -331,7 +331,7 @@ class PreProcessorGenerator(ProcessorGenerator):
         super().__init__('pre-processor', self._get_default_processor_factories())
 
     @staticmethod
-    def _k8s_pre_processor_factory(processor_config: Dict) -> K8sPreProcessorActor:
+    def _k8s_pre_processor_factory(processor_config: dict) -> K8sPreProcessorActor:
         """
         Kubernetes pre-processor actor factory.
         :param processor_config: Pre-Processor configuration
@@ -345,7 +345,7 @@ class PreProcessorGenerator(ProcessorGenerator):
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)
 
-    def _get_default_processor_factories(self) -> Dict[str, Callable[[Dict], ProcessorActor]]:
+    def _get_default_processor_factories(self) -> dict[str, Callable[[dict], ProcessorActor]]:
         """
         Return the default pre-processors factory.
         """
@@ -363,5 +363,5 @@ class PostProcessorGenerator(ProcessorGenerator):
         ProcessorGenerator.__init__(self, 'post-processor', self._get_default_processor_factories())
 
     @staticmethod
-    def _get_default_processor_factories() -> Dict[str, Callable[[Dict], ProcessorActor]]:
+    def _get_default_processor_factories() -> dict[str, Callable[[dict], ProcessorActor]]:
         return {}

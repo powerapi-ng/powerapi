@@ -26,14 +26,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import json
-from typing import Dict, List
 
 import tests.utils.report as parent_module
 from powerapi.report import HWPCReport
 
 
-def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
+def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> list[dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
     This file contain hwpc reports with only RAPL_PKG events, recorded on a two socket host
@@ -45,7 +45,7 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
         return reports['reports'][:number_of_reports]
 
 
-def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Dict]:
+def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> list[dict]:
     """
     Extract the number_of_reports first reports of the file hwpc_rapl_2_socket.json
     This file contain hwpc reports , recorded on a two socket host, with events :
@@ -65,7 +65,7 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> List[Di
         return reports['reports'][:number_of_reports]
 
 
-def gen_HWPCReports(number_of_reports: int) -> List[HWPCReport]:
+def gen_HWPCReports(number_of_reports: int) -> list[HWPCReport]:
     """
     generate number_of_reports HWPCReport extracted from the file hwpc.json
     :return: a list of HWPCReport

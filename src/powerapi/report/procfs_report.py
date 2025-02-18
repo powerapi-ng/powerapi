@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from typing import Dict, Any
+from typing import Any
 
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
 
@@ -53,7 +53,7 @@ class ProcfsReport(Report):
 
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: Dict, global_cpu_usage: float, metadata: Dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, usage: dict, global_cpu_usage: float, metadata: dict[str, Any] = {}):
         """
         Initialize an Procfs report using the given parameters.
         :param datetime timestamp: Timestamp of the report
@@ -78,7 +78,7 @@ class ProcfsReport(Report):
         return super().__eq__(other) and self.usage == other.usage and self.global_cpu_usage == other.global_cpu_usage
 
     @staticmethod
-    def from_json(data: Dict) -> ProcfsReport:
+    def from_json(data: dict) -> ProcfsReport:
         """
         Generate a report using the given data.
         :param data: Dictionary containing the report attributes
@@ -94,16 +94,16 @@ class ProcfsReport(Report):
             raise BadInputData(exn.args[0], data) from exn
 
     @staticmethod
-    def to_json(report: ProcfsReport) -> Dict:
+    def to_json(report: ProcfsReport) -> dict:
         return report.__dict__
 
     @staticmethod
-    def from_mongodb(data: Dict) -> ProcfsReport:
+    def from_mongodb(data: dict) -> ProcfsReport:
         """ Extract a PorcfsReport fropm a mongo DB"""
         return ProcfsReport.from_json(data)
 
     @staticmethod
-    def to_mongodb(report: ProcfsReport) -> Dict:
+    def to_mongodb(report: ProcfsReport) -> dict:
         """ Export a ProcfsReport to a mongo DB"""
         return ProcfsReport.to_json(report)
 

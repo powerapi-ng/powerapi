@@ -28,16 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from powerapi.actor import Actor
-
-from powerapi.handler import StartHandler
-from powerapi.report import Report
-from powerapi.message import PoisonPillMessage, StartMessage
-
 from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula, AbstractCpuDramFormulaState
 from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
+from powerapi.handler import StartHandler
+from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.report import Report
 from tests.utils.formula.dummy.dummy_handlers import ReportHandler
 
 
@@ -46,7 +44,7 @@ class DummyFormulaState(AbstractCpuDramFormulaState):
     Formula values with configurable sleeping time for dummy formula
     """
 
-    def __init__(self, actor: Actor, pushers: Dict[str, Actor], metadata: Dict[str, Any], socket: str, core: str,
+    def __init__(self, actor: Actor, pushers: dict[str, Actor], metadata: dict[str, Any], socket: str, core: str,
                  sleep_time: int):
         AbstractCpuDramFormulaState.__init__(self, actor, pushers, metadata, socket, core)
         self.sleep_time = sleep_time

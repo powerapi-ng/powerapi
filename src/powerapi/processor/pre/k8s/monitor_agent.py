@@ -31,7 +31,7 @@ import logging
 import sys
 from multiprocessing import Process
 from signal import signal, SIGTERM, SIGINT
-from typing import Dict, Optional, List
+from typing import Optional
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
@@ -159,7 +159,7 @@ class K8sMonitorAgent(Process):
             self.watch_list_pod_for_all_namespaces(resource_id)
 
     @staticmethod
-    def get_containers_id_name_from_statuses(container_statuses: List[V1ContainerStatus]) -> Dict[str, str]:
+    def get_containers_id_name_from_statuses(container_statuses: list[V1ContainerStatus]) -> dict[str, str]:
         """
         Extract containers ID and name from the statuses.
         :param container_statuses: List of container statuses
@@ -170,7 +170,7 @@ class K8sMonitorAgent(Process):
             for container_status in container_statuses or [] if container_status.container_id is not None
         }
 
-    def build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> List[K8sContainerMetadata]:
+    def build_metadata_cache_entries_from_pod(self, pod: V1Pod) -> list[K8sContainerMetadata]:
         """
         Build and return metadata cache entries from a Kubernetes pod object.
         :param pod: Kubernetes pod

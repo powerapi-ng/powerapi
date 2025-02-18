@@ -27,11 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime
-import logging
-from typing import List, Type
-import os
 import json
+import logging
+import os
+from datetime import datetime
+
 from powerapi.database.base_db import BaseDB, DBError, IterDB
 from powerapi.report import Report
 
@@ -93,7 +93,7 @@ class FileDB(BaseDB):
     Allow to handle a FileDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], filename: str):
+    def __init__(self, report_type: type[Report], filename: str):
         """
         :param report_type:        Type of the report handled by this database
         :param filename:        Name of the file containing the report
@@ -142,7 +142,7 @@ class FileDB(BaseDB):
         with open(self.filename, 'w', encoding='utf-8') as file_object:
             file_object.write(str(final_dict))
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
         Allow to save a batch of data
 

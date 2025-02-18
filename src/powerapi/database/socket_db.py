@@ -32,7 +32,7 @@ from json import JSONDecoder, JSONDecodeError
 from queue import SimpleQueue, Empty
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 from threading import Thread
-from typing import Type, Iterator
+from typing import Iterator
 
 from powerapi.database.base_db import IterDB, BaseDB
 from powerapi.report import Report
@@ -135,7 +135,7 @@ class SocketDB(BaseDB):
     Database implementation that exposes a TCP socket the clients can connect to.
     """
 
-    def __init__(self, report_type: Type[Report], host: str, port: int):
+    def __init__(self, report_type: type[Report], host: str, port: int):
         """
         :param report_type: The type of report to create
         :param host: The host address to listen on

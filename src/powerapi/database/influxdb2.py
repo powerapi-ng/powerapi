@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from typing import List, Type
 from urllib.parse import urlparse
 try:
     from influxdb_client import InfluxDBClient, WriteOptions
@@ -54,7 +53,7 @@ class InfluxDB2(BaseDB):
         Allow to handle a InfluxDB database in reading or writing.
     """
 
-    def __init__(self, report_type: Type[Report], url: str, org: str, bucket_name: str, token: str, tags: List[str],
+    def __init__(self, report_type: type[Report], url: str, org: str, bucket_name: str, token: str, tags: list[str],
                  port=None):
         """
             :param report_type:     Type of the report handled by this database
@@ -140,7 +139,7 @@ class InfluxDB2(BaseDB):
         """
         self.save_many([report])
 
-    def save_many(self, reports: List[Report]):
+    def save_many(self, reports: list[Report]):
         """
             Save a batch of data
 

@@ -27,11 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Tuple, List
 from enum import IntEnum
 
 from powerapi.report import ProcfsReport
-
 from .dispatch_rule import DispatchRule
 
 
@@ -44,7 +42,7 @@ class ProcfsDepthLevel(IntEnum):
     SENSOR = 0
 
 
-def extract_id_from_report(report: ProcfsReport, depth: ProcfsDepthLevel) -> Tuple:
+def extract_id_from_report(report: ProcfsReport, depth: ProcfsDepthLevel) -> tuple:
     """
     :return: a report id generated from the report and the given depth
     """
@@ -67,7 +65,7 @@ class ProcfsDispatchRule(DispatchRule):
         self.depth = depth
 
     @staticmethod
-    def _get_fields_by_depth(depth: ProcfsDepthLevel) -> List[str]:
+    def _get_fields_by_depth(depth: ProcfsDepthLevel) -> list[str]:
         if depth == ProcfsDepthLevel.TARGET:
             return ['target']
 

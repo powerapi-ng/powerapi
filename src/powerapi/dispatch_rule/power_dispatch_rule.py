@@ -27,11 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Tuple, List
 from enum import IntEnum
 
 from powerapi.report import PowerReport
-
 from .dispatch_rule import DispatchRule
 
 
@@ -46,7 +44,7 @@ class PowerDepthLevel(IntEnum):
     CORE = 2
 
 
-def extract_id_from_report(report: PowerReport, depth: PowerDepthLevel) -> Tuple:
+def extract_id_from_report(report: PowerReport, depth: PowerDepthLevel) -> tuple:
     """
     :return: a report id generated from the report and the given depth
     """
@@ -75,7 +73,7 @@ class PowerDispatchRule(DispatchRule):
         self.depth = depth
 
     @staticmethod
-    def _get_fields_by_depth(depth: PowerDepthLevel) -> List[str]:
+    def _get_fields_by_depth(depth: PowerDepthLevel) -> list[str]:
         if depth == PowerDepthLevel.TARGET:
             return ['target']
 

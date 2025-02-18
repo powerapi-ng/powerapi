@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any
 
 from .report import Report
 
@@ -41,7 +41,7 @@ class ControlReport(Report):
     This is useful to control external tools via a producer/consumer job queue.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: List, metadata: Dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: list, metadata: dict[str, Any] = {}):
         """
         Initialize a Control Event report using the given parameters.
         :param timestamp: Report timestamp
@@ -64,7 +64,7 @@ class ControlReport(Report):
         return super().__eq__(other) and self.action == other.action and self.parameters == other.parameters
 
     @staticmethod
-    def from_json(data: Dict) -> ControlReport:
+    def from_json(data: dict) -> ControlReport:
         """
         :return: a dictionary, that can be converted into json format, from a given ControlReport
         """
@@ -72,14 +72,14 @@ class ControlReport(Report):
         return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'], metadata)
 
     @staticmethod
-    def from_mongodb(data: Dict) -> ControlReport:
+    def from_mongodb(data: dict) -> ControlReport:
         """
         :return: a ControlReport from a dictionary pulled from mongodb
         """
         return ControlReport.from_json(data)
 
     @staticmethod
-    def to_mongodb(report: ControlReport) -> Dict:
+    def to_mongodb(report: ControlReport) -> dict:
         """
         :return: a dictionary, that can be stored into a mongodb, from a given ControlReport
         """

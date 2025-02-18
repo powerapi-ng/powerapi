@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON
 
@@ -44,7 +44,7 @@ class FormulaReport(Report):
     This is useful to gather information about a running formula in order to debug or compute statistics.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: Dict[str, Any]):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any]):
         """
         Initialize a Formula report using the given parameters.
         :param timestamp: Report timestamp
@@ -58,7 +58,7 @@ class FormulaReport(Report):
         return f'FormulaReport({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
 
     @staticmethod
-    def to_csv_lines(report: FormulaReport, **_) -> (List[str], Dict[str, Any]):
+    def to_csv_lines(report: FormulaReport, **_) -> (list[str], dict[str, Any]):
         """
         Convert a Formula report into a csv line.
         :param report: Formula report that will be converted
@@ -75,7 +75,7 @@ class FormulaReport(Report):
         return CSV_HEADER_FORMULA_REPORT, {'FormulaReport': [line]}
 
     @staticmethod
-    def to_mongodb(report: FormulaReport) -> Dict[str, Any]:
+    def to_mongodb(report: FormulaReport) -> dict[str, Any]:
         """
         Convert a Formula report into a json document that can be stored into mongodb.
         :return: a dictionary, that can be stored into a mongodb
@@ -83,7 +83,7 @@ class FormulaReport(Report):
         return FormulaReport.to_json(report)
 
     @staticmethod
-    def to_influxdb(report: FormulaReport, **_) -> Dict[str, Any]:
+    def to_influxdb(report: FormulaReport, **_) -> dict[str, Any]:
         """
         Convert a Formula report into a dict that can be stored into influxdb.
         param report: Formula report that will be converted
