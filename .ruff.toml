@@ -16,7 +16,6 @@ select = [
 ignore = [
     "E501",   # line too long
     
-    "UP015",  # redundant-open-modes
     "UP031",  # printf-string-formatting
     "UP035",  # deprecated-import
     "B006",   # mutable-argument-default
