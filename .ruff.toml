@@ -26,7 +26,7 @@ ignore = [
     "RUF013", # implicit-optional
     "RUF015", # unnecessary-iterable-allocation-for-first-element
 
-    "UP026",  # deprecated-mock-import
+    # "UP026",  # deprecated-mock-import
     "B005",   # strip-with-multi-characters
     "B010",   # set-attr-with-constant
     "B011",   # assert-false
