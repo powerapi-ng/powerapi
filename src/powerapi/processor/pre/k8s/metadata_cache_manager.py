@@ -29,7 +29,6 @@
 
 from dataclasses import dataclass
 from multiprocessing import Manager
-from typing import Optional
 
 ADDED_EVENT = 'ADDED'
 DELETED_EVENT = 'DELETED'
@@ -70,7 +69,7 @@ class K8sMetadataCacheManager:
         if event == DELETED_EVENT:
             self.metadata_cache.pop(container_metadata.container_id, None)
 
-    def get_container_metadata(self, container_id: str) -> Optional[K8sContainerMetadata]:
+    def get_container_metadata(self, container_id: str) -> K8sContainerMetadata | None:
         """
         Get metadata for a specific container from the cache.
         :param container_id: Container ID (hexadecimal string of 64 characters, short format is not supported)
