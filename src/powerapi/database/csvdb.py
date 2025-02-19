@@ -70,13 +70,6 @@ class CsvIterDB(IterDB):
         super().__init__(db, report_type, stream_mode)
 
         self.filenames = filenames
-
-        # intern memory for reading
-        # path_file: {
-        #     'next_line': [],
-        #     'reader': None,
-        #     'file': None
-        # }
         self.tmp_read = {}
 
         # Add it in the tmp

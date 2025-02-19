@@ -706,8 +706,7 @@ class RootConfigParser(BaseConfigParser):
         are separated by self.default_separator_env_vars_names and the group name is composed by a single word
 
         """
-        # prefix.split = ['<prefix-begining>', '<group-name>', '']
-        return prefix.split(self.default_separator_env_vars_names)[1].lower()
+        return prefix.split(self.default_separator_env_vars_names)[1].lower()  # [<prefix-beginning>, <group-name>, '']
 
     def _extract_simple_environment_variables_with_prefix(self, simple_variables_prefix: str,
                                                           groups_variables_prefix: list) -> dict:

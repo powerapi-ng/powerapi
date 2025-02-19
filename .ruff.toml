@@ -19,14 +19,12 @@ ignore = [
     "B006",   # mutable-argument-default
     "B008",   # function-call-in-default-argument
     "F401",   # unused-import
-    "ERA001", # commented-out-code
     "G003",   # logging-string-concat
     "G004",   # logging-f-string
     "RUF005", # collection-literal-concatenation
     "RUF013", # implicit-optional
     "RUF015", # unnecessary-iterable-allocation-for-first-element
 
-    # "UP026",  # deprecated-mock-import
     "B005",   # strip-with-multi-characters
     "B010",   # set-attr-with-constant
     "B011",   # assert-false

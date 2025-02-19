@@ -94,7 +94,7 @@ class Actor(multiprocessing.Process):
                             timeout (in ms)
         """
         multiprocessing.Process.__init__(self, name=name)
-        # self.daemon = True
+
         #: (logging.Logger): Logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level_logger)
@@ -103,14 +103,7 @@ class Actor(multiprocessing.Process):
             '%(process)d %(processName)s || %(message)s')
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
-
-        # file logger
-        # handlerf = logging.FileHandler('powerapi.log')
-        # handlerf.setLevel(level_logger)
-        # handlerf.setFormatter(formatter)
-
         self.logger.addHandler(handler)
-        # self.logger.addHandler(handlerf)
 
         #: (powerapi.State): Actor context
         self.state = State(self)
