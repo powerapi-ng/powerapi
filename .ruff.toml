@@ -15,8 +15,7 @@ select = [
 
 ignore = [
     "E501",   # line too long
-
-    "UP007",  # non-pep604-annotation-union
+    
     "UP015",  # redundant-open-modes
     "UP031",  # printf-string-formatting
     "UP035",  # deprecated-import
