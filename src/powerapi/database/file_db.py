@@ -71,7 +71,7 @@ class FileIterDB(IterDB):
         :raise: StopIteration in stream mode when no report was found.
         """
 
-        with open(self.filename, 'r', encoding='utf-8') as file_object:
+        with open(self.filename, encoding='utf-8') as file_object:
             json_str = file_object.read()
 
             if json_str is None:

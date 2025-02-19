@@ -40,7 +40,7 @@ def extract_rapl_reports_with_2_sockets(number_of_reports: int) -> list[dict]:
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    with open(f'{path}/hwpc_rapl_2_socket.json', 'r', encoding='utf-8') as json_file:
+    with open(f'{path}/hwpc_rapl_2_socket.json', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return reports['reports'][:number_of_reports]
 
@@ -60,7 +60,7 @@ def extract_all_events_reports_with_2_sockets(number_of_reports: int) -> list[di
     :return: a list of reports. Each reports is a json dictionary
     """
     path = parent_module.__path__[0]
-    with open(f'{path}/hwpc_all_events_2_socket.json', 'r', encoding='utf-8') as json_file:
+    with open(f'{path}/hwpc_all_events_2_socket.json', encoding='utf-8') as json_file:
         reports = json.load(json_file)
         return reports['reports'][:number_of_reports]
 
@@ -71,6 +71,6 @@ def gen_HWPCReports(number_of_reports: int) -> list[HWPCReport]:
     :return: a list of HWPCReport
     """
     path = parent_module.__path__[0]
-    with open(f'{path}/hwpc.json', 'r', encoding='utf-8') as json_file:
+    with open(f'{path}/hwpc.json', encoding='utf-8') as json_file:
         reports = list(map(HWPCReport.from_json, json.load(json_file)['reports']))
         return reports[:number_of_reports]
