@@ -30,7 +30,8 @@
 import json
 import logging
 import sys
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
 from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
 from powerapi.exception import MissingArgumentException, BadTypeException, AlreadyAddedSubparserException, \

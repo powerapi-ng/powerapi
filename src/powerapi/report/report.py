@@ -30,8 +30,9 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from datetime import datetime
-from typing import NewType, Any, Iterable
+from typing import NewType, Any
 from zlib import crc32
 
 from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException

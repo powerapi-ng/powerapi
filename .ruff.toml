@@ -16,7 +16,6 @@ select = [
 ignore = [
     "E501",   # line too long
     
-    "UP035",  # deprecated-import
     "B006",   # mutable-argument-default
     "B008",   # function-call-in-default-argument
     "F401",   # unused-import

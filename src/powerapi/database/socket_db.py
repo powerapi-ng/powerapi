@@ -28,11 +28,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+from collections.abc import Iterator
 from json import JSONDecoder, JSONDecodeError
 from queue import SimpleQueue, Empty
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 from threading import Thread
-from typing import Iterator
 
 from powerapi.database.base_db import IterDB, BaseDB
 from powerapi.report import Report

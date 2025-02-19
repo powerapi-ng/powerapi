@@ -30,7 +30,7 @@
 import logging
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 from powerapi.actor import Actor
 from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB, FileDB
