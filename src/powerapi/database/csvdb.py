@@ -90,7 +90,7 @@ class CsvIterDB(IterDB):
         # Open all files with csv and read first line
         for filename in self.filenames:
             try:
-                self.tmp_read[filename]['file'] = open(filename, 'r', encoding='utf-8')
+                self.tmp_read[filename]['file'] = open(filename, encoding='utf-8')
                 self.tmp_read[filename]['reader'] = csv.DictReader(self.tmp_read[filename]['file'])
             except FileNotFoundError as error:
                 raise CsvBadFilePathError(error) from error

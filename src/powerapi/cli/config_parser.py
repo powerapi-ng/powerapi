@@ -510,7 +510,7 @@ class RootConfigParser(BaseConfigParser):
         Return a configuration dict that has all the arguments' names in the long form.
         If an argument does not exist, a UnknownArgException is raised
         """
-        with open(file_name, 'r', encoding='utf-8') as config_file:
+        with open(file_name, encoding='utf-8') as config_file:
             conf = json.load(config_file)
             return self.normalize_configuration(conf=conf)
 

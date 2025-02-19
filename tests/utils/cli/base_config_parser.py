@@ -40,7 +40,7 @@ def load_configuration_from_json_file(file_name: str) -> dict:
     """
     configuration = {}
     path = parent_module.__path__[0]
-    with open(path + '/' + file_name, 'r', encoding='utf-8') as json_file:
+    with open(path + '/' + file_name, encoding='utf-8') as json_file:
         configuration = json.load(json_file)
     return configuration
 
