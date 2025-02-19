@@ -31,7 +31,6 @@ import logging
 import sys
 from multiprocessing import Process
 from signal import signal, SIGTERM, SIGINT
-from typing import Optional
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
@@ -185,7 +184,7 @@ class K8sMonitorAgent(Process):
             for container_id, container_name in self.get_containers_id_name_from_statuses(container_statuses).items()
         ]
 
-    def fetch_list_all_pod_for_all_namespaces(self) -> Optional[int]:
+    def fetch_list_all_pod_for_all_namespaces(self) -> int | None:
         """
         Fetch all pod for all namespaces and populate the metadata cache.
         :return: Resource version of the last fetched entry

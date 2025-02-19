@@ -27,14 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import Optional
-
 
 class DispatchRule:
     """
     Group by rule
     """
-    def __init__(self, primary: bool = False, fields: Optional[list[str]] = None):
+    def __init__(self, primary: bool = False, fields: list[str] | None = None):
         self.is_primary = primary
         self.fields = fields
 
