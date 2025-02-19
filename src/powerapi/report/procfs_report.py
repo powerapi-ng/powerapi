@@ -69,7 +69,7 @@ class ProcfsReport(Report):
         self.global_cpu_usage = global_cpu_usage
 
     def __repr__(self) -> str:
-        return 'ProcfsReport(%s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, sorted(self.usage.keys()), str(self.metadata))
+        return f'ProcfsReport({self.timestamp}, {self.sensor}, {self.target}, {sorted(self.usage.keys())}, {self.metadata})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ProcfsReport):

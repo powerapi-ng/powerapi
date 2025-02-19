@@ -56,8 +56,7 @@ class PowerReport(Report):
         self.power = power
 
     def __repr__(self) -> str:
-        return 'PowerReport(%s, %s, %s, %f, %s)' % (
-            self.timestamp, self.sensor, self.target, self.power, str(self.metadata))
+        return f'PowerReport({self.timestamp}, {self.sensor}, {self.target}, {self.power}, {self.metadata})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, PowerReport):

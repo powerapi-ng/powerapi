@@ -84,8 +84,7 @@ class HWPCReport(Report):
         self.groups = groups
 
     def __repr__(self) -> str:
-        return 'HWCPReport(%s, %s, %s, %s)' % (
-            self.timestamp, self.sensor, self.target, sorted(self.groups.keys()))
+        return f'HWPCReport({self.timestamp}, {self.sensor}, {self.target}, {sorted(self.groups.keys())}, {self.metadata})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, HWPCReport):
