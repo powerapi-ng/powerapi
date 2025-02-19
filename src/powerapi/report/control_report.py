@@ -55,7 +55,7 @@ class ControlReport(Report):
         self.parameters = parameters
 
     def __repr__(self) -> str:
-        return 'ControlReport(%s, %s, %s, %s, %s, %s)' % (self.timestamp, self.sensor, self.target, self.action, self.parameters, str(self.metadata))
+        return f'ControlReport({self.timestamp}, {self.sensor}, {self.target}, {self.action}, {self.parameters}, {self.metadata})'
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ControlReport):

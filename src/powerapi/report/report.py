@@ -88,10 +88,10 @@ class Report(Message):
         self.dispatcher_report_id = None
 
     def __str__(self):
-        return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
+        return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
 
     def __repr__(self):
-        return '%s(%s, %s, %s)' % (self.__class__.__name__, self.timestamp, self.sensor, self.target)
+        return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and
