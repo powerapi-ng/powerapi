@@ -31,7 +31,7 @@ import time
 from multiprocessing import Pipe
 
 import pytest
-from mock import Mock
+from unittest.mock import Mock
 
 from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
