@@ -30,7 +30,6 @@ ignore = [
     "B011",   # assert-false
     "B017",   # assert-raises-exception
     "B905",   # zip-without-explicit-strict
-    "E721",   # type-comparison
     "PT001",  # pytest-fixture-incorrect-parentheses-style
     "PT011",  # pytest-raises-too-broad
     "PT012",  # pytest-raises-with-multiple-statements
