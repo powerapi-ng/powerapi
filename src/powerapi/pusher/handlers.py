@@ -91,7 +91,7 @@ class ReportHandler(InitHandler):
 
             try:
                 self.state.database.save_many(self.state.buffer)
-                self.state.actor.logger.debug('save ' + str(len(self.state.buffer)) + ' reports in database')
+                self.state.actor.logger.debug('Saved %d reports in the database', len(self.state.buffer))
                 self.state.buffer = []
             except BadInputData as ex:
-                self.state.actor.logger.warning(f"The report cannot be saved: {ex.msg}")
+                self.state.actor.logger.warning('The report cannot be saved: %s', ex.msg)
