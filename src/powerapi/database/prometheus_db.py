@@ -113,7 +113,7 @@ class PrometheusDB(BasePrometheusDB):
     def _init_metrics(self):
 
         if not self.metrics_initialized:
-            self.energy_metric_labels_names = [SENSOR_TAG, TARGET_TAG] + self.tags
+            self.energy_metric_labels_names = [SENSOR_TAG, TARGET_TAG, *self.tags]
             self.energy_metric = Gauge(self.metric_name, self.metric_description, self.energy_metric_labels_names)
             self.metrics_initialized = True
 

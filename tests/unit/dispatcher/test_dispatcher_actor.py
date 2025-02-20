@@ -133,7 +133,7 @@ class DispatchRule1AB(DispatchRule):
 
     def get_formula_id(self, report):
         b2_id = [] if report.b2 is None else [(report.a, report.b2)]
-        return [(report.a, report.b)] + b2_id
+        return [(report.a, report.b), *b2_id]
 
 
 class Report2(Report):
@@ -191,7 +191,7 @@ class DispatchRule2AC(DispatchRule):
 
     def get_formula_id(self, report):
         c2_ids = [] if report.c2 is None else [(report.a, report.c2)]
-        return [(report.a, report.c)] + c2_ids
+        return [(report.a, report.c), *c2_ids]
 
 
 class Report3(Report):

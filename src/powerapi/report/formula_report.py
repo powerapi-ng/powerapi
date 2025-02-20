@@ -35,7 +35,7 @@ from typing import Any
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON
 
-CSV_HEADER_FORMULA_REPORT = CSV_HEADER_COMMON + ['metadata']
+CSV_HEADER_FORMULA_REPORT = [*CSV_HEADER_COMMON, 'metadata']
 
 
 class FormulaReport(Report):
