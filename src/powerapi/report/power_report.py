@@ -34,7 +34,7 @@ from typing import Any
 
 from powerapi.report.report import Report, CSV_HEADER_COMMON, BadInputData, CsvLines
 
-CSV_HEADER_POWER = CSV_HEADER_COMMON + ['power', 'socket']
+CSV_HEADER_POWER = [*CSV_HEADER_COMMON, 'power', 'socket']
 
 
 class PowerReport(Report):

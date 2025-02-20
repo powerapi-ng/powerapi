@@ -36,7 +36,7 @@ from typing import Any
 from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvLines
 
 
-CSV_HEADER_PROCFS = CSV_HEADER_COMMON + ['socket', 'cpu', 'usage', 'global_cpu_usage']
+CSV_HEADER_PROCFS = [*CSV_HEADER_COMMON, 'socket', 'cpu', 'usage', 'global_cpu_usage']
 
 
 class ProcfsReport(Report):

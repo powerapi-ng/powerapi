@@ -38,7 +38,7 @@ from powerapi.report.report import Report, BadInputData, CSV_HEADER_COMMON, CsvL
 SOCKET_KEY = 'socket'
 CPU_KEY = 'cpu'
 
-CSV_HEADER_HWPC = CSV_HEADER_COMMON + [SOCKET_KEY, CPU_KEY]
+CSV_HEADER_HWPC = [*CSV_HEADER_COMMON, SOCKET_KEY, CPU_KEY]
 
 
 class HWPCReport(Report):

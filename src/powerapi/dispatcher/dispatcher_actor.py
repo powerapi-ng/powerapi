@@ -65,7 +65,7 @@ class DispatcherState(State):
         :param formula_id: The formula ID
         :return: The new formula actor
         """
-        formula = self.actor.formula_init_function(name=str((self.actor.name,) + formula_id), pushers=self.pushers)
+        formula = self.actor.formula_init_function(name=str((self.actor.name, *formula_id)), pushers=self.pushers)
         self.supervisor.launch_actor(formula, False)
         self.formula_dict[formula_id] = formula
         return formula
