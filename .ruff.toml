@@ -23,7 +23,6 @@ ignore = [
     "RUF013", # implicit-optional
     "RUF015", # unnecessary-iterable-allocation-for-first-element
 
-    "B005",   # strip-with-multi-characters
     "B010",   # set-attr-with-constant
     "B011",   # assert-false
     "B017",   # assert-raises-exception
