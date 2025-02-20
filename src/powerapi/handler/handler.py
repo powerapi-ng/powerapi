@@ -84,9 +84,9 @@ class Handler:
             handler = self.state.get_corresponding_handler(msg)
             handler.handle_message(msg)
         except UnknownMessageTypeException:
-            self.state.actor.logger.warning("UnknowMessageTypeException: " + str(msg))
+            self.state.actor.logger.warning("UnknownMessageTypeException: %s", msg)
         except HandlerException:
-            self.state.actor.logger.warning("HandlerException")
+            self.state.actor.logger.warning("HandlerException: %s", msg)
 
 
 class InitHandler(Handler):
