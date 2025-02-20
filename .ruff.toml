@@ -19,8 +19,6 @@ ignore = [
     "B006",   # mutable-argument-default
     "B008",   # function-call-in-default-argument
     "F401",   # unused-import
-    "G003",   # logging-string-concat
-    "G004",   # logging-f-string
     "RUF005", # collection-literal-concatenation
     "RUF013", # implicit-optional
     "RUF015", # unnecessary-iterable-allocation-for-first-element
