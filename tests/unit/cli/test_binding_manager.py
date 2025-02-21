@@ -131,7 +131,7 @@ def test_check_processors_targets_are_unique_pass_without_reused_puller_in_bindi
     try:
         pre_processor_binding_manager.check_processors_targets_are_unique()
     except TargetActorAlreadyUsed:
-        assert False
+        pytest.fail("Processors targets are not unique")
 
 
 def test_check_processor_targets_raise_exception_with_no_existing_puller(
@@ -163,7 +163,7 @@ def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding
     try:
         for _, processor in pre_processor_binding_manager.processors.items():
             pre_processor_binding_manager.check_processor_targets(processor=processor)
-    except UnsupportedActorTypeException:
-        assert False
-    except UnexistingActorException:
-        assert False
+    except UnsupportedActorTypeException as e:
+        pytest.fail(f'Unsupported actor type: {e}')
+    except UnexistingActorException as e:
+        pytest.fail(f'Actor does not exist: {e}')

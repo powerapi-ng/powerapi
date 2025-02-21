@@ -30,7 +30,7 @@ import pytest
 
 from powerapi.cli import ConfigValidator
 from powerapi.exception import NotAllowedArgumentValueException, MissingArgumentException, FileDoesNotExistException, \
-    UnexistingActorException
+    UnexistingActorException, PowerAPIException
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file
 
 
@@ -62,8 +62,8 @@ def test_config_in_postmortem_mode_with_csv_input_is_validated(create_empty_file
 
         assert csv_io_postmortem_config == expected_result
 
-    except NotAllowedArgumentValueException:
-        assert False
+    except NotAllowedArgumentValueException as e:
+        pytest.fail(f'Invalid argument value: {e}')
 
 
 def test_valid_config_postmortem_csv_input_without_optional_arguments_is_validated(create_empty_files_from_config,
@@ -135,9 +135,8 @@ def test_config_with_empty_pre_processor_pass_validation(empty_pre_processor_con
     """
     try:
         ConfigValidator.validate(empty_pre_processor_config)
-
-    except MissingArgumentException:
-        assert False
+    except MissingArgumentException as e:
+        pytest.fail(f'Missing argument: {e}')
 
 
 def test_config_with_pre_processor_with_unexisting_puller_actor_raise_an_exception(
@@ -158,8 +157,8 @@ def test_validation_of_correct_configuration_with_pre_processors(pre_processor_c
     """
     try:
         ConfigValidator.validate(pre_processor_complete_configuration)
-    except Exception:
-        assert False
+    except PowerAPIException as e:
+        pytest.fail(f'Configuration validation failed: {e}')
 
 
 def test_validation_of_correct_configuration_without_pre_processors_and_bindings(output_input_configuration):
@@ -168,5 +167,5 @@ def test_validation_of_correct_configuration_without_pre_processors_and_bindings
     """
     try:
         ConfigValidator.validate(output_input_configuration)
-    except Exception:
-        assert False
+    except PowerAPIException as e:
+        pytest.fail(f'Configuration validation failed: {e}')

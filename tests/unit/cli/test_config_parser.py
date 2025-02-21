@@ -155,9 +155,8 @@ def test_validate_check_mandatory_arguments_on_configuration(base_config_parser)
     try:
         validated_config = base_config_parser.validate(conf)
         assert validated_config == config_longest_names
-
-    except MissingArgumentException:
-        assert False
+    except MissingArgumentException as e:
+        pytest.fail(f'Missing arguments: {e}')
 
     with pytest.raises(MissingArgumentException):
         _ = base_config_parser.validate(conf_without_mandatory_arguments)
@@ -172,9 +171,8 @@ def test_validate_accept_configuration_when_no_mandatory_arguments_exist(base_co
     try:
         validated_config = base_config_parser_no_mandatory_arguments.validate(conf)
         assert validated_config == conf
-
-    except MissingArgumentException:
-        assert False
+    except MissingArgumentException as e:
+        pytest.fail(f'Missing argument: {e}')
 
 
 def test_validate_adds_default_values_for_no_arguments_defined_in_configuration_that_have_one(base_config_parser):
