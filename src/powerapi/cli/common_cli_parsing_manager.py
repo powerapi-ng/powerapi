@@ -32,7 +32,7 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true, extract_file_names
 from powerapi.cli.config_parser import MissingValueException
-from powerapi.database.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
+from powerapi.database.prometheus.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
     DEFAULT_ADDRESS
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
