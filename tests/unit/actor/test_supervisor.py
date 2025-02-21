@@ -131,7 +131,7 @@ def test_launch_an_actor_that_crash_dont_increase_supervised_actor_list(supervis
     list_length = len(supervisor.supervised_actors)
     actor = FakeActorConnectError()
 
-    with pytest.raises(Exception):
+    with pytest.raises(zmq.error.ZMQError):
         supervisor.launch_actor(actor)
 
     assert len(supervisor.supervised_actors) == list_length
