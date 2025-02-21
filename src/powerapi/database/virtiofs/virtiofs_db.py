@@ -31,7 +31,7 @@ import os
 import re
 
 from powerapi.report import Report
-from .base_db import BaseDB, DBError
+from powerapi.database.base_db import BaseDB, DBError
 
 
 class DirectoryDoesNotExistForVirtioFS(DBError):
