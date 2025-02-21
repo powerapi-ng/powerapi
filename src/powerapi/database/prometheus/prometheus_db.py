@@ -35,7 +35,7 @@ except ImportError:
     logging.getLogger().info("prometheus-client is not installed.")
 
 from powerapi.report import Report
-from .base_db import BaseDB
+from powerapi.database.base_db import BaseDB
 
 DEFAULT_ADDRESS = '127.0.0.1'
 DEFAULT_METRIC_DESCRIPTION = 'energy consumption'
