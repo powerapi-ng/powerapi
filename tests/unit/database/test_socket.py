@@ -29,7 +29,7 @@
 
 import pytest
 
-from powerapi.database.socket_db import JsonRequestHandler
+from powerapi.database.socket.socket_db import JsonRequestHandler
 
 
 def test_parse_json_empty_document():
