@@ -23,8 +23,6 @@ ignore = [
     "RUF015", # unnecessary-iterable-allocation-for-first-element
 
     "B010",   # set-attr-with-constant
-    "B011",   # assert-false
-    "B017",   # assert-raises-exception
     "B905",   # zip-without-explicit-strict
     "PT001",  # pytest-fixture-incorrect-parentheses-style
     "PT011",  # pytest-raises-too-broad

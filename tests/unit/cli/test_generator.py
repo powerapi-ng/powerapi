@@ -110,7 +110,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
             assert db.server_address == (current_puller_infos['host'], current_puller_infos['port'])
 
         else:
-            assert False
+            pytest.fail(f'Unsupported puller type: {current_puller_infos["type"]}')
 
 
 def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
@@ -290,7 +290,7 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert db.filename == current_pusher_infos['filename']
 
         else:
-            assert False
+            pytest.fail(f'Unsupported pusher type: {pusher_type}')
 
 
 def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(
