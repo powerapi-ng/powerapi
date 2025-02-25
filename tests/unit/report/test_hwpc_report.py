@@ -149,6 +149,17 @@ def test_create_hwpc_report_from_csv_without_socket_field_raise_BadInputData():
         _ = HWPCReport.from_csv_lines(csv_lines)
 
 
+def test_create_hwpc_report_from_csv_without_some_values_raise_BadInputData():
+    csv_lines = [('rapl',
+                  {'sensor': 'toto', 'timestamp': '1970-09-01T09:09:09.543', 'target': 'all', 'socket': '0', 'cpu': '7',
+                   'RAPL_VALUE': None}),
+                 ('rapl',
+                  {'sensor': 'toto', 'timestamp': '1970-09-01T09:09:09.543', 'target': 'all', 'socket': '1', 'cpu': '7',
+                   'RAPL_VALUE': None})]
+    with pytest.raises(BadInputData):
+        _ = HWPCReport.from_csv_lines(csv_lines)
+
+
 ############
 # EVENTS   #
 ############
