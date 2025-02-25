@@ -156,6 +156,10 @@ class HWPCReport(Report):
                     if timestamp != HWPCReport._extract_timestamp(row[TIMESTAMP_KEY]):
                         raise BadInputData('csv line with different timestamp are mixed into one report', row)
 
+                for _, value in row.items():
+                    if not value:
+                        raise BadInputData('csv line incomplete', row)
+
                 HWPCReport._create_group(row, groups, group_name)
 
             except KeyError as exn:
