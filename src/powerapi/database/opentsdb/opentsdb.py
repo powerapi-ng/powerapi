@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+from datetime import timezone
 try:
     from opentsdb import TSDBClient
 except ImportError:
@@ -101,8 +102,8 @@ class OpenTSDB(BaseDB):
 
         :param report: Report to save
         """
-        self.client.send(self.metric_name, report.power, timestamp=int(report.timestamp.timestamp()),
-                         host=report.target)
+        self.client.send(self.metric_name, report.power,
+                         timestamp=int(report.timestamp.replace(tzinfo=timezone.utc).timestamp()), host=report.target)
 
     def save_many(self, reports: list[Report]):
         """
