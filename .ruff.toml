@@ -17,12 +17,10 @@ ignore = [
     "E501",   # line too long
     
     "B006",   # mutable-argument-default
-    # "B008",   # function-call-in-default-argument
     "F401",   # unused-import
     "RUF013", # implicit-optional
 
     "B010",   # set-attr-with-constant
-    "B905",   # zip-without-explicit-strict
     "PT001",  # pytest-fixture-incorrect-parentheses-style
     "PT011",  # pytest-raises-too-broad
     "PT012",  # pytest-raises-with-multiple-statements
