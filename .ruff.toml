@@ -17,7 +17,7 @@ ignore = [
     "E501",   # line too long
     
     "B006",   # mutable-argument-default
-    "B008",   # function-call-in-default-argument
+    # "B008",   # function-call-in-default-argument
     "F401",   # unused-import
     "RUF013", # implicit-optional
 

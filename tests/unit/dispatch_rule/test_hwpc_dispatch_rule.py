@@ -73,8 +73,8 @@ def create_group_report(group_id, socket_list):
     return (group_id, group)
 
 
-def create_report_root(group_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='system'):
-    sensor = HWPCReport(timestamp=timestamp, sensor=sensor, target=target, groups={})
+def create_report_root(group_list, timestamp=None, sensor='toto', target='system'):
+    sensor = HWPCReport(timestamp=timestamp or datetime.now(), sensor=sensor, target=target, groups={})
     for (group_id, group) in group_list:
         sensor.groups[group_id] = group
     return sensor

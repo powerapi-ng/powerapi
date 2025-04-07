@@ -82,8 +82,8 @@ class Report1(Report):
         Fake report that can contain 2 or three values *a*, *b*, and *b2*
     """
 
-    def __init__(self, a, b, b2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
-        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
+    def __init__(self, a, b, b2=None, timestamp=None, sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp or datetime.now(), target=target, sensor=sensor)
         self.a = a
         self.b = b
         self.b2 = b2
@@ -141,8 +141,8 @@ class Report2(Report):
         Fake report that can contains two or three values : *a*, *c*, *c2*
     """
 
-    def __init__(self, a, c, c2=None, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
-        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
+    def __init__(self, a, c, c2=None, timestamp=None, sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp or datetime.now(), target=target, sensor=sensor)
         self.a = a
         self.c = c
         self.c2 = c2
@@ -199,8 +199,8 @@ class Report3(Report):
         Fake report that contains same values as Report 1 and an other value
     """
 
-    def __init__(self, a, b, d, timestamp=datetime.now(), sensor='test_sensor', target='test_target'):
-        Report.__init__(self, timestamp=timestamp, target=target, sensor=sensor)
+    def __init__(self, a, b, d, timestamp=None, sensor='test_sensor', target='test_target'):
+        Report.__init__(self, timestamp=timestamp or datetime.now(), target=target, sensor=sensor)
         self.a = a
         self.b = b
         self.d = d

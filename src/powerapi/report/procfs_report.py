@@ -153,9 +153,9 @@ class ProcfsReport(Report):
             usage[cgroup_name] = {}
 
 
-def create_report_root(cgroup_list, timestamp=datetime.fromtimestamp(0), sensor='toto', target='all'):
+def create_report_root(cgroup_list, timestamp=None, sensor='toto', target='all'):
     """ Create a default procfs report """
-    sensor = ProcfsReport(timestamp=timestamp, sensor=sensor, target=target, usage={}, global_cpu_usage=0)
+    sensor = ProcfsReport(timestamp=timestamp or datetime.now(), sensor=sensor, target=target, usage={}, global_cpu_usage=0)
     for (cgroup_id, cpu_usage) in cgroup_list:
         sensor.usage[cgroup_id] = cpu_usage
     return sensor
