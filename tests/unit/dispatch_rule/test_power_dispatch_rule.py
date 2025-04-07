@@ -43,15 +43,12 @@ def report1_socket0():
 
 def validate_formula_id(formula_id_list, validation_list):
     """
-    assert if every element in formula_id_list are in validation list and
-    vice versa
-
-    validation_list must be sorted
+    assert if every element in formula_id_list are in validation list and vice versa
     """
-    assert len(formula_id_list) == len(validation_list)
     formula_id_list.sort()
+    validation_list.sort()
 
-    for a, b in zip(formula_id_list, validation_list):
+    for a, b in zip(formula_id_list, validation_list, strict=True):
         assert a == b
 
 
