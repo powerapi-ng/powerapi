@@ -98,7 +98,7 @@ def _number_of_core_per_socket(group):
     :type group: Dict
     :rtype: int : the number of core per socket in this group
     """
-    return len(list(group.values())[0])
+    return len(next(iter(group.values())))
 
 
 def _extract_non_shared_group(report):
