@@ -126,7 +126,7 @@ class Report(Message):
         if isinstance(ts, str):
             try:
                 # ISO 8601 date format
-                return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
+                return datetime.fromisoformat(ts)
             except ValueError:
                 # Unix timestamp format (in milliseconds)
                 return datetime.fromtimestamp(int(ts) / 1000)
