@@ -96,10 +96,30 @@ def test_create_procfs_report_from_csv_with_one_lines_create_an_procfs_report():
     assert isinstance(report, ProcfsReport)
 
 
-def test_create_procfs_report_from_csv_with_bad_timestamp_format_raise_BadInputData():
+def test_create_procfs_report_from_csv_with_good_timestamp_format():
     csv_lines = [("procfs",
                   {
                       "timestamp": "2021-09-14T123737.669237",
+                      "sensor": "formula_group",
+                      "target": ["firefox_cgroup", "emacs_cgroup",
+                                 "zsh_cgroup", "mongo_cgroup"],
+                      "usage": {
+                          "firefox_cgroup": 8.36,
+                          "emacs_cgroup": 5.52,
+                          "zsh_cgroup": 0.01,
+                          "mongo_cgroup": 0.64,
+                      },
+                      "global_cpu_usage": 27.600000000000012,
+                  }
+                  )
+                 ]
+    report = ProcfsReport.from_csv_lines(csv_lines)
+    assert isinstance(report, ProcfsReport)    
+
+def test_create_procfs_report_from_csv_with_good_timestamp_format_raise_BadInputData():
+    csv_lines = [("procfs",
+                  {
+                      "timestamp": "2021-09-14T1234737.669237",
                       "sensor": "formula_group",
                       "target": ["firefox_cgroup", "emacs_cgroup",
                                  "zsh_cgroup", "mongo_cgroup"],
