@@ -76,7 +76,7 @@ def test_create_power_report_from_json_with_datetime_timestamp_format_create_a_P
 
 def test_create_power_report_from_json_with_str_timestamp_with_bad_format_raise_BadInputData():
     json_input = gen_json_power_report(1)[0]
-    json_input['timestamp'] = '1970-09-01T090909.543'
+    json_input['timestamp'] = '1970-09-01T0909099.543'
     with pytest.raises(BadInputData):
         _ = PowerReport.from_json(json_input)
 
@@ -112,7 +112,7 @@ def test_create_power_report_from_csv_with_one_lines_create_an_power_report():
 def test_create_power_report_from_csv_with_bad_timestamp_format_raise_BadInputData():
     csv_lines = [("power",
                   {
-                      "timestamp": '1970-09-01T090909.543',
+                      "timestamp": '1970-09-01T0909099.543',
                       "sensor": "formula_group",
                       "target": "all",
                       "power": 42
