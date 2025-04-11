@@ -61,7 +61,7 @@ def test_create_procfs_report_from_json_with_str_timestamp_with_bad_format_raise
     procfs_timeline,
 ):
     json_input = gen_json_procfs_report(1, procfs_timeline[0])[0]
-    json_input["timestamp"] = "1970-09-01T090909.543"
+    json_input["timestamp"] = "1970-09-01T0909099.543"
     with pytest.raises(BadInputData):
         _ = ProcfsReport.from_json(json_input)
 
@@ -141,7 +141,7 @@ def test_create_procfs_report_from_csv_with_good_timestamp_format():
     assert isinstance(report, ProcfsReport)
 
 
-def test_create_procfs_report_from_csv_with_good_timestamp_format_raise_BadInputData():
+def test_create_procfs_report_from_csv_with_bad_timestamp_format_raise_BadInputDat():
     csv_lines = [
         (
             "procfs",

@@ -53,7 +53,7 @@ def test_create_hwpc_report_from_json_with_datetime_timestamp_format_create_a_HW
 
 def test_create_hwpc_report_from_json_with_str_timestamp_with_bad_format_raise_BadInputData():
     json_input = extract_rapl_reports_with_2_sockets(1)[0]
-    json_input['timestamp'] = '1970-09-01T090909.543'
+    json_input['timestamp'] = '1970-09-01T0909099.543'
     with pytest.raises(BadInputData):
         _ = HWPCReport.from_json(json_input)
 
