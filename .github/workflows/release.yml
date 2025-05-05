@@ -110,7 +110,7 @@ jobs:
   docker-image:
     name: Publish Docker image
     runs-on: ubuntu-latest
-    needs: [pre-checks]
+    needs: [pre-checks, publish-python-package]
     permissions:
       contents: read
       packages: write
@@ -154,6 +154,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            POWERAPI_INSTALL_METHOD=pypi
+            POWERAPI_VERSION=${{ steps.meta.outputs.version }}
 
   github-release:
     name: Publish GitHub release
