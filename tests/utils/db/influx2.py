@@ -63,7 +63,7 @@ INFLUX2_DEFAULT_START_DATE = '1970-01-01T00:00:00Z'
 INFLUX2_MEASUREMENT_NAME = 'power_consumption'
 
 
-@pytest.fixture()
+@pytest.fixture
 def influx2_database():
     """
         connect to a local influx database (localhost:8086) and store data contained in the list influxdb_content
