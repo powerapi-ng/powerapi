@@ -99,7 +99,7 @@ def supervisor(request):
     """
     supervisor = Supervisor()
     supervisor.actor_list = request.param
-    yield supervisor
+    return supervisor
 
 
 ###############
