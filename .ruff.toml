@@ -23,5 +23,4 @@ ignore = [
     "B010",   # set-attr-with-constant
     "PT001",  # pytest-fixture-incorrect-parentheses-style
     "PT012",  # pytest-raises-with-multiple-statements
-    "PT022",  # pytest-useless-yield-fixture
 ]
