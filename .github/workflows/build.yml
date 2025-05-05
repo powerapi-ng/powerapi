@@ -64,3 +64,5 @@ jobs:
           provenance: false
           load: true
           tags: localbuild/powerapi:sha-${{ github.sha }}
+          build-args: |
+            POWERAPI_INSTALL_METHOD=local
