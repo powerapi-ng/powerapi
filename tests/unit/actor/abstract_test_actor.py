@@ -140,7 +140,7 @@ def pytest_generate_tests_abstract(metafunc):
             metafunc.parametrize('content', [[]])
 
 
-@pytest.fixture()
+@pytest.fixture
 def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end

@@ -50,7 +50,7 @@ def check_socket(socket, socket_type, bind_address):
     assert socket_address == bind_address
 
 
-@pytest.fixture()
+@pytest.fixture
 def socket_interface():
     """Return a socket interface not initialized
 
@@ -58,7 +58,7 @@ def socket_interface():
     return SocketInterface(ACTOR_NAME, 100)
 
 
-@pytest.fixture()
+@pytest.fixture
 def initialized_socket_interface(socket_interface):
     """Return an initialized socket interface
 
@@ -70,7 +70,7 @@ def initialized_socket_interface(socket_interface):
     socket_interface.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def connected_interface(initialized_socket_interface):
     """ Return an initialized socket interface with an open connection to the
     push socket
@@ -81,7 +81,7 @@ def connected_interface(initialized_socket_interface):
     initialized_socket_interface.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def controlled_interface(initialized_socket_interface):
     """ Return an initialized socket interface with an open connection to the
     control socket
@@ -92,7 +92,7 @@ def controlled_interface(initialized_socket_interface):
     initialized_socket_interface.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def fully_connected_interface(initialized_socket_interface):
     """ Return an initialized socket interface with an open connection to the
     control and the push socket

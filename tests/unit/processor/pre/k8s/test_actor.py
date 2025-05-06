@@ -63,7 +63,7 @@ class TestK8sProcessor(AbstractTestActor):
         actor.state.metadata_cache_manager = fx_initialized_metadata_cache_manager
         actor.state.manager = Mock()
         actor.state.monitor_agent = Mock()
-        yield actor
+        return actor
 
     @staticmethod
     @pytest.mark.usefixtures("shutdown_system")

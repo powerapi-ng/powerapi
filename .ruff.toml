@@ -21,9 +21,4 @@ ignore = [
     "RUF013", # implicit-optional
 
     "B010",   # set-attr-with-constant
-    "PT001",  # pytest-fixture-incorrect-parentheses-style
-    "PT011",  # pytest-raises-too-broad
-    "PT012",  # pytest-raises-with-multiple-statements
-    "PT015",  # pytest-assert-always-false
-    "PT022",  # pytest-useless-yield-fixture
 ]

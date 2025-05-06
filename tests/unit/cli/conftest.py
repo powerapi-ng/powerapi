@@ -286,7 +286,7 @@ def k8s_pre_processors(k8s_pre_processor_config):
     return processors
 
 
-@pytest.fixture()
+@pytest.fixture
 def subgroup_parser():
     """
     A subgroup parser with one argument "-a"
@@ -505,7 +505,7 @@ def test_files_path():
     return test_files_module.__path__[0]
 
 
-@pytest.fixture()
+@pytest.fixture
 def cli_configuration(config_file: str):
     """
     Load in sys.argv a configuration with arguments extracted from a json file
@@ -517,7 +517,7 @@ def cli_configuration(config_file: str):
     sys.argv = []
 
 
-@pytest.fixture()
+@pytest.fixture
 def empty_cli_configuration():
     """
     Clean the CLI arguments
