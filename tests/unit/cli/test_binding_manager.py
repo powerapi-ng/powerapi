@@ -34,8 +34,7 @@ import pytest
 
 from powerapi.cli.binding_manager import PreProcessorBindingManager
 from powerapi.dispatcher import DispatcherActor
-from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, \
-    TargetActorAlreadyUsed
+from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, TargetActorAlreadyUsed
 from powerapi.processor.processor_actor import ProcessorActor
 
 
@@ -134,26 +133,28 @@ def test_check_processors_targets_are_unique_pass_without_reused_puller_in_bindi
         pytest.fail("Processors targets are not unique")
 
 
-def test_check_processor_targets_raise_exception_with_no_existing_puller(
-        pre_processor_binding_manager_with_unexisting_puller):
+def check_all_processors_targets(preprocessor_binding_manager: PreProcessorBindingManager):
+    """
+    Helper function that checks the processors targets of the given binding manager.
+    """
+    for processor in preprocessor_binding_manager.processors.values():
+        preprocessor_binding_manager.check_processor_targets(processor)
+
+
+def test_check_processor_targets_raise_exception_with_no_existing_puller(pre_processor_binding_manager_with_unexisting_puller):
     """
     Test that an exception is raised with a puller that doesn't exist
     """
-    pre_processor_binding_manager = pre_processor_binding_manager_with_unexisting_puller
     with pytest.raises(UnexistingActorException):
-        for _, processor in pre_processor_binding_manager.processors.items():
-            pre_processor_binding_manager.check_processor_targets(processor=processor)
+        check_all_processors_targets(pre_processor_binding_manager_with_unexisting_puller)
 
 
-def test_check_processor_targets_raise_exception_with_raise_exception_with_wrong_binding_types(
-        pre_processor_binding_manager_with_wrong_binding_types):
+def test_check_processor_targets_raise_exception_with_raise_exception_with_wrong_binding_types(pre_processor_binding_manager_with_wrong_binding_types):
     """
     Test that an exception is raised with a puller that doesn't exist
     """
-    pre_processor_binding_manager = pre_processor_binding_manager_with_wrong_binding_types
     with pytest.raises(UnsupportedActorTypeException):
-        for _, processor in pre_processor_binding_manager.processors.items():
-            pre_processor_binding_manager.check_processor_targets(processor=processor)
+        check_all_processors_targets(pre_processor_binding_manager_with_wrong_binding_types)
 
 
 def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding_manager):
@@ -161,8 +162,7 @@ def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding
     Test that validation of a configuration with existing targets of the correct type
     """
     try:
-        for _, processor in pre_processor_binding_manager.processors.items():
-            pre_processor_binding_manager.check_processor_targets(processor=processor)
+        check_all_processors_targets(pre_processor_binding_manager)
     except UnsupportedActorTypeException as e:
         pytest.fail(f'Unsupported actor type: {e}')
     except UnexistingActorException as e:
