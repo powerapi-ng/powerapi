@@ -21,5 +21,4 @@ ignore = [
     "RUF013", # implicit-optional
 
     "B010",   # set-attr-with-constant
-    "PT012",  # pytest-raises-with-multiple-statements
 ]
