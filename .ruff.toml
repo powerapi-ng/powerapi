@@ -19,6 +19,4 @@ ignore = [
     "B006",   # mutable-argument-default
     "F401",   # unused-import
     "RUF013", # implicit-optional
-
-    "B010",   # set-attr-with-constant
 ]
