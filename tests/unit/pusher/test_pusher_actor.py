@@ -46,7 +46,7 @@ def define_buffer_size(size):
     """
 
     def wrap(func):
-        setattr(func, '_buffer_size', size)
+        func._buffer_size = size
         return func
 
     return wrap
@@ -59,7 +59,7 @@ def define_delay(delay):
     """
 
     def wrap(func):
-        setattr(func, '_delay', delay)
+        func._delay = delay
         return func
 
     return wrap

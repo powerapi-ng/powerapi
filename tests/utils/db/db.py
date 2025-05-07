@@ -37,7 +37,7 @@ def define_database_content(content):
     Decorator for defining a database content
     """
     def wrap(func):
-        setattr(func, '_content', content)
+        func._content = content
         return func
 
     return wrap
@@ -124,7 +124,7 @@ def define_database(database):
     """
 
     def wrap(func):
-        setattr(func, '_database', database)
+        func._database = database
         return func
 
     return wrap
@@ -140,7 +140,7 @@ def define_report_type(report_type):
     """
 
     def wrap(func):
-        setattr(func, '_report_type', report_type)
+        func._report_type = report_type
         return func
 
     return wrap

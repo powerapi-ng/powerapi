@@ -51,7 +51,7 @@ def define_dispatch_rules(rules):
     """
 
     def wrap(func):
-        setattr(func, '_dispatch_rules', rules)
+        func._dispatch_rules = rules
         return func
 
     return wrap

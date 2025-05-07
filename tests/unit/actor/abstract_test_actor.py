@@ -117,7 +117,7 @@ def define_database_content(content):
     """
 
     def wrap(func):
-        setattr(func, '_content', content)
+        func._content = content
         return func
 
     return wrap
