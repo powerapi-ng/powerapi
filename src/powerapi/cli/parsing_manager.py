@@ -190,7 +190,7 @@ class RootConfigParsingManager(BaseConfigParsingManagerInterface):
 
         return conf
 
-    def parse(self, args: list = None) -> dict:
+    def parse(self, args: list | None = None) -> dict:
         """
         Parse the configurations defined via le CLI, Environment Variables and configuration file.
         The priority of defined values is the following:

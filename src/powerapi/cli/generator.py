@@ -287,7 +287,7 @@ class ProcessorGenerator(Generator):
     Generator that initialises the processor from config
     """
 
-    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]] = None):
+    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]] | None = None):
         Generator.__init__(self, component_group_name)
 
         self.processor_factory = processor_factory

@@ -43,7 +43,7 @@ from powerapi.utils.cli import find_longest_string_in_list, string_to_bool, to_l
     get_longest_related_suffix
 
 
-def store_val(argument_name: str, val: Any, configuration: dict, args: list = None) -> (list, dict):
+def store_val(argument_name: str, val: Any, configuration: dict, args: list | None = None) -> (list, dict):
     """
     Action that stores the value of the argument on the parser result
 
@@ -55,7 +55,7 @@ def store_val(argument_name: str, val: Any, configuration: dict, args: list = No
     return args, configuration
 
 
-def store_true(argument_name: str, configuration: dict, val: Any = None, args: list = None) -> (list, dict):
+def store_true(argument_name: str, configuration: dict, val: Any = None, args: list | None = None) -> (list, dict):
     """
     Action that stores a True boolean value on the parser result
 
@@ -65,7 +65,7 @@ def store_true(argument_name: str, configuration: dict, val: Any = None, args: l
     return args, configuration
 
 
-def extract_file_names(argument_name: str, val: Any, configuration: dict, args: list = None):
+def extract_file_names(argument_name: str, val: Any, configuration: dict, args: list | None = None):
     """
     Action used to convert string from --files parameter into a list of file name
     """
@@ -79,7 +79,7 @@ class ConfigurationArgument:
     """
 
     def __init__(self, names: list, is_flag: bool, default_value: Any, help_text: str, argument_type: type,
-                 is_mandatory: bool, action: Callable = None):
+                 is_mandatory: bool, action: Callable | None = None):
         self.names = names
         self.is_flag = is_flag
         self.default_value = default_value

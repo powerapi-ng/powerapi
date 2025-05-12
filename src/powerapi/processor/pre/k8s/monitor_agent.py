@@ -204,7 +204,7 @@ class K8sMonitorAgent(Process):
 
         return resource_version
 
-    def watch_list_pod_for_all_namespaces(self, resource_version: int = None):
+    def watch_list_pod_for_all_namespaces(self, resource_version: int | None = None):
         """
         Watch k8s pods events for all namespaces and update the local metadata cache accordingly.
         :param resource_version: Resource version from where the watcher begin
