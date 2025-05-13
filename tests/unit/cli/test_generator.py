@@ -280,12 +280,6 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
             assert db.host == current_pusher_infos['uri']
             assert db.metric_name == current_pusher_infos['metric-name']
 
-        elif pusher_type == 'virtiofs':
-            assert db.vm_name_regexp == compile(current_pusher_infos['vm-name-regexp'])
-            assert db.root_directory_name == current_pusher_infos['root-directory-name']
-            assert db.vm_directory_name_prefix == current_pusher_infos['vm-directory-name-prefix']
-            assert db.vm_directory_name_suffix == current_pusher_infos['vm-directory-name-suffix']
-
         else:
             pytest.fail(f'Unsupported pusher type: {pusher_type}')
 
@@ -321,17 +315,6 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_outp
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_opentsdb_without_some_arguments_config)
-
-
-def test_generate_pusher_raise_exception_when_missing_arguments_in_virtiofs_output(
-        several_inputs_outputs_stream_virtiofs_without_some_arguments_config):
-    """
-    Test that PusherGenerator raises a PowerAPIException when some arguments are missing for virtiofs output
-    """
-    generator = PusherGenerator()
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_virtiofs_without_some_arguments_config)
 
 
 def test_generate_pusher_when_missing_arguments_in_csv_output_generate_related_actors(

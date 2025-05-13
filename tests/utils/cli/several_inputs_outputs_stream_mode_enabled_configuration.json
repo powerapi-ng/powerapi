@@ -62,14 +62,6 @@
           "uri": "127.0.0.1",
           "port": 1111,
           "metric-name": "my metric opentsdb"
-      },
-      "seventh": {
-          "type": "virtiofs",
-          "model": "PowerReport",
-          "vm-name-regexp": "vm_name$",
-          "root-directory-name": "my_dir",
-          "vm-directory-name-prefix": "prefix_1",
-          "vm-directory-name-suffix": "suffix_1"
       }
   }
 }
