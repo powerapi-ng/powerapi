@@ -176,19 +176,6 @@ def several_inputs_outputs_stream_virtiofs_without_some_arguments_config(several
 
 
 @pytest.fixture
-def several_inputs_outputs_stream_filedb_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of filedb output are removed
-    """
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'filedb':
-            current_output.pop('filename')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
 def several_k8s_pre_processors_config():
     """
     Configuration with several k8s processors

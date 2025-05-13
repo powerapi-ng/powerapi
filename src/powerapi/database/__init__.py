@@ -34,4 +34,3 @@ from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.database.prometheus import PrometheusDB
 from powerapi.database.virtiofs import VirtioFSDB
 from powerapi.database.socket import SocketDB
-from powerapi.database.file import FileDB

@@ -159,38 +159,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_csv_input
         )
 
-        subparser_file_input = SubgroupConfigParsingManager("filedb")
-        subparser_file_input.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="HWPCReport",
-        )
-        subparser_file_input.add_argument("f", "filename", help_text="specify file name")
-        subparser_file_input.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="input",
-            subgroup_parser=subparser_file_input
-        )
-
-        subparser_file_output = SubgroupConfigParsingManager("filedb")
-        subparser_file_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
-        )
-        subparser_file_output.add_argument("f", "filename", help_text="specify file name")
-        subparser_file_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_filedb"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="output",
-            subgroup_parser=subparser_file_output
-        )
-
         subparser_virtiofs_output = SubgroupConfigParsingManager("virtiofs")
         help_text = "regexp used to extract vm name from report."
         help_text += "The regexp must match the name of the target in the HWPC-report and a group must"
