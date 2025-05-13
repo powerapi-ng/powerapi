@@ -159,41 +159,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_csv_input
         )
 
-        subparser_virtiofs_output = SubgroupConfigParsingManager("virtiofs")
-        help_text = "regexp used to extract vm name from report."
-        help_text += "The regexp must match the name of the target in the HWPC-report and a group must"
-        subparser_virtiofs_output.add_argument("r", "vm_name_regexp", help_text=help_text)
-        subparser_virtiofs_output.add_argument(
-            "d",
-            "root_directory_name",
-            help_text="directory where VM directory will be stored",
-        )
-        subparser_virtiofs_output.add_argument(
-            "p",
-            "vm-directory-name-prefix",
-            help_text="first part of the VM directory name",
-            default_value="",
-        )
-        subparser_virtiofs_output.add_argument(
-            "s",
-            "vm-directory-name-suffix",
-            help_text="last part of the VM directory name",
-            default_value="",
-        )
-        subparser_virtiofs_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value="PowerReport",
-        )
-        subparser_virtiofs_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value="pusher_virtiofs"
-        )
-        self.add_subgroup_parser(
-            subgroup_name="output",
-            subgroup_parser=subparser_virtiofs_output
-        )
-
         subparser_mongo_output = SubgroupConfigParsingManager("mongodb")
         subparser_mongo_output.add_argument("u", "uri", help_text="specify MongoDB uri")
         subparser_mongo_output.add_argument(

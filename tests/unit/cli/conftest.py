@@ -160,22 +160,6 @@ def several_inputs_outputs_stream_opentsdb_without_some_arguments_config(several
 
 
 @pytest.fixture
-def several_inputs_outputs_stream_virtiofs_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of virtiofs output are removed
-    """
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'virtiofs':
-            current_output.pop('vm-name-regexp')
-            current_output.pop('root-directory-name')
-            current_output.pop('vm-directory-name-prefix')
-            current_output.pop('vm-directory-name-suffix')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
 def several_k8s_pre_processors_config():
     """
     Configuration with several k8s processors

@@ -26,11 +26,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from powerapi.database.base_db import BaseDB, IterDB, DBError
 from powerapi.database.csv import CsvDB
 from powerapi.database.mongodb import MongoDB
 from powerapi.database.opentsdb import OpenTSDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.database.prometheus import PrometheusDB
-from powerapi.database.virtiofs import VirtioFSDB
 from powerapi.database.socket import SocketDB
