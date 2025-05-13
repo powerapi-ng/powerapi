@@ -45,7 +45,7 @@ class K8sPreProcessorState(ProcessorState):
     State of the Kubernetes pre-processor actor.
     """
 
-    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list, api_mode: str, api_host: str, api_key: str):
+    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list, api_mode: str | None, api_host: str | None, api_key: str | None):
         super().__init__(actor, target_actors, target_actors_names)
 
         self.api_mode = api_mode
@@ -71,8 +71,8 @@ class K8sPreProcessorActor(ProcessorActor):
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """
 
-    def __init__(self, name: str, target_actors: list, target_actors_names: list, api_mode: str = None, api_host: str = None,
-                 api_key: str = None, level_logger: int = logging.WARNING, timeout: int = 5000):
+    def __init__(self, name: str, target_actors: list, target_actors_names: list, api_mode: str | None = None,
+                 api_host: str | None = None, api_key: str | None = None, level_logger: int = logging.WARNING, timeout: int = 5000):
         super().__init__(name, level_logger, timeout)
 
         self.state = K8sPreProcessorState(self, target_actors, target_actors_names, api_mode, api_key, api_host)

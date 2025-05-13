@@ -73,7 +73,7 @@ class BaseDB:
     This class define the interface needed to fetch/save reports from/to a database.
     """
 
-    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] = None):
+    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] | None = None):
         """
         :param report_type: The type of report expected
         :param exceptions: List of exception type raised by the database module
