@@ -70,13 +70,6 @@
           "root-directory-name": "my_dir",
           "vm-directory-name-prefix": "prefix_1",
           "vm-directory-name-suffix": "suffix_1"
-      },
-      "eighth": {
-          "type": "filedb",
-          "model": "PowerReport",
-          "filename": "myname.txt"
       }
   }
 }
-
-

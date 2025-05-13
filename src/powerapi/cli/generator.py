@@ -33,7 +33,7 @@ import sys
 from collections.abc import Callable
 
 from powerapi.actor import Actor
-from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB, FileDB
+from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB, VirtioFSDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
@@ -194,7 +194,6 @@ class DBActorGenerator(BaseGenerator):
                                                      root_directory_name=db_config['root-directory-name'],
                                                      vm_directory_name_prefix=db_config['vm-directory-name-prefix'],
                                                      vm_directory_name_suffix=db_config['vm-directory-name-suffix']),
-            'filedb': lambda db_config: FileDB(report_type=db_config['model'], filename=db_config['filename'])
         }
 
     def remove_report_class(self, model_name: str):
