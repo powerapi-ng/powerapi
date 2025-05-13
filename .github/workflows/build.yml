@@ -32,10 +32,6 @@ jobs:
       run: |
         uv sync --extra everything --dev
 
-    - name: Run pylint
-      run: |
-        uv run pylint src/ tests/
-
     - name: Run ruff
       run: |
         uv run ruff check --output-format=github src/ tests/
