@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,3 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from .control_report import ControlReport
-from .formula_report import FormulaReport
-from .hwpc_report import HWPCReport
-from .power_report import PowerReport
-from .report import Report, BadInputData

@@ -27,11 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from datetime import datetime
+
 import pytest
 
 from powerapi.report import PowerReport, BadInputData
-from datetime import datetime
-
 from tests.utils.report.power import gen_json_power_report
 
 
@@ -62,95 +62,128 @@ def get_expected_metadata_power_report_with_tags(report: PowerReport, tags: list
 
 
 def test_create_power_report_from_json_wit_str_timestamp_create_a_PowerReport():
+    """
+    Test to create a PowerReport from a json document.
+    """
     json_input = gen_json_power_report(1)[0]
+
     report = PowerReport.from_json(json_input)
     assert isinstance(report, PowerReport)
 
 
 def test_create_power_report_from_json_with_datetime_timestamp_format_create_a_PowerReport():
+    """
+    Test to create a PowerReport from a json document with a timestamp in ISO8601 format.
+    """
     json_input = gen_json_power_report(1)[0]
     json_input['timestamp'] = datetime.strptime(json_input['timestamp'], "%Y-%m-%dT%H:%M:%S.%f")
+
     report = PowerReport.from_json(json_input)
     assert isinstance(report, PowerReport)
 
 
 def test_create_power_report_from_json_with_str_timestamp_with_bad_format_raise_BadInputData():
+    """
+    Test that creating a PowerReport from a json document with invalid timestamp raises BadInputData.
+    """
     json_input = gen_json_power_report(1)[0]
     json_input['timestamp'] = '1970-09-01T090909.543'
+
     with pytest.raises(BadInputData):
         _ = PowerReport.from_json(json_input)
 
 
 def test_create_power_report_from_json_without_timestamp_field_raise_BadInputData():
+    """
+    Test that creating a PowerReport from a json document without timestamp field raises BadInputData.
+    """
     json_input = gen_json_power_report(1)[0]
     del json_input['timestamp']
+
     with pytest.raises(BadInputData):
         _ = PowerReport.from_json(json_input)
 
 
 def test_create_power_report_from_json_without_sensor_field_raise_BadInputData():
+    """
+    Test that creating a PowerReport from a json document with no sensor field raises BadInputData.
+    """
     json_input = gen_json_power_report(1)[0]
     del json_input['sensor']
+
     with pytest.raises(BadInputData):
         _ = PowerReport.from_json(json_input)
 
 
 def test_create_power_report_from_csv_with_one_lines_create_an_power_report():
-    csv_lines = [("power",
-                  {
-                      "timestamp": "2021-09-14T12:37:37.168817",
-                      "sensor": "formula_group",
-                      "target": "all",
-                      "power": 42
-                  }
-                  )
-                 ]
+    """
+    Test to create a PowerReport from a CSV line.
+    """
+    csv_lines = [
+        ("power", {
+            "timestamp": "2021-09-14T12:37:37.168817",
+            "sensor": "formula_group",
+            "target": "all",
+            "power": 42
+        })
+    ]
+
     report = PowerReport.from_csv_lines(csv_lines)
     assert isinstance(report, PowerReport)
 
 
 def test_create_power_report_from_csv_with_bad_timestamp_format_raise_BadInputData():
-    csv_lines = [("power",
-                  {
-                      "timestamp": '1970-09-01T090909.543',
-                      "sensor": "formula_group",
-                      "target": "all",
-                      "power": 42
-                  }
-                  )
-                 ]
+    """
+    Test that creating a PowerReport from a CSV line with a bad timestamp raises BadInputData.
+    """
+    csv_lines = [
+        ("power", {
+            "timestamp": '1970-09-01T090909.543',
+            "sensor": "formula_group",
+            "target": "all",
+            "power": 42
+        })
+    ]
+
     with pytest.raises(BadInputData):
         _ = PowerReport.from_csv_lines(csv_lines)
 
 
 def test_create_power_report_from_csv_with_two_lines_raise_BadInputData():
-    csv_lines = [("power",
-                  {
-                      "timestamp": "2021-09-14T12:37:37.168817",
-                      "sensor": "formula_group",
-                      "target": "all",
-                      "power": 42
-                  }
-                  ),
-                 ("power",
-                  {
-                      "timestamp": "2021-09-14T12:37:37.168817",
-                      "sensor": "formula_group",
-                      "target": "all",
-                      "power": 42
-                  }
-                  )
-                 ]
+    """
+    Test that creating a PowerReport with two lines raises BadInputData.
+    """
+    csv_lines = [
+        ("power", {
+            "timestamp": "2021-09-14T12:37:37.168817",
+            "sensor": "formula_group",
+            "target": "all",
+            "power": 42
+        }),
+        ("power", {
+            "timestamp": "2021-09-14T12:37:37.168817",
+            "sensor": "formula_group",
+            "target": "all",
+            "power": 42
+        })
+    ]
+
     with pytest.raises(BadInputData):
         _ = PowerReport.from_csv_lines(csv_lines)
 
 
 def test_creating_report_with_metadata():
-    report = PowerReport(('1970-09-01T09:09:10.543'), 'toto', 'all', 42, {"tag": 1})
+    """
+    Test to create a PowerReport with metadata.
+    """
+    report = PowerReport(datetime.fromisoformat('1970-09-01T09:09:10.543'), 'toto', 'all', 42, {"tag": 1})
     assert report.metadata["tag"] == 1
 
 
 def test_create_report_from_json_with_metadata():
+    """
+    Test to create a PowerReport with metadata from a json document.
+    """
     json_input = gen_json_power_report(1)[0]
     json_input["metadata"] = {}
     json_input["metadata"]["tag"] = 1
@@ -159,16 +192,18 @@ def test_create_report_from_json_with_metadata():
 
 
 def test_create_report_from_csv_with_metadata():
-    csv_lines = [("power",
-                  {
-                      "timestamp": "2021-09-14T12:37:37.168817",
-                      "sensor": "formula_group",
-                      "target": "all",
-                      "power": 42,
-                      "tag": 1
-                  }
-                  )
-                 ]
+    """
+    Test to create a PowerReport with metadata from a CSV line.
+    """
+    csv_lines = [
+        ("power", {
+            "timestamp": "2021-09-14T12:37:37.168817",
+            "sensor": "formula_group",
+            "target": "all",
+            "power": 42,
+            "tag": 1
+        })
+    ]
     report = PowerReport.from_csv_lines(csv_lines)
     assert report.metadata["tag"] == 1
 
