@@ -75,9 +75,9 @@ def test_flatten_metadata_dict():
     report_metadata = {
         'scope': 'cpu',
         'socket': 0,
-        'formula': '0000000000000000000000000000000000000000',
+        'formula': '13edcdfbd3743bec4002a092cb39fbff20a175eb',
         'k8s': {
-            'app.kubernetes.io/name': 'test',
+            'app.kubernetes.io/name': 'test-flatten',
             'app.kubernetes.io/instance': 'test-abcxyz',
             'app.kubernetes.io/managed-by': 'pytest',
             'helm.sh/chart': 'powerapi-pytest-1.0.0'
@@ -87,8 +87,8 @@ def test_flatten_metadata_dict():
 
     assert flattened_metadata['scope'] == 'cpu'
     assert flattened_metadata['socket'] == 0
-    assert flattened_metadata['formula'] == '0000000000000000000000000000000000000000'
-    assert flattened_metadata['k8s/app.kubernetes.io/name'] == 'test'
+    assert flattened_metadata['formula'] == '13edcdfbd3743bec4002a092cb39fbff20a175eb'
+    assert flattened_metadata['k8s/app.kubernetes.io/name'] == 'test-flatten'
     assert flattened_metadata['k8s/app.kubernetes.io/instance'] == 'test-abcxyz'
     assert flattened_metadata['k8s/app.kubernetes.io/managed-by'] == 'pytest'
     assert flattened_metadata['k8s/helm.sh/chart'] == 'powerapi-pytest-1.0.0'

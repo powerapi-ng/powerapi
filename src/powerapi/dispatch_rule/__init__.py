@@ -30,4 +30,3 @@
 from powerapi.dispatch_rule.dispatch_rule import DispatchRule
 from powerapi.dispatch_rule.hwpc_dispatch_rule import HWPCDispatchRule, HWPCDepthLevel
 from powerapi.dispatch_rule.power_dispatch_rule import PowerDispatchRule, PowerDepthLevel
-from powerapi.dispatch_rule.procfs_dispatch_rule import ProcfsDispatchRule, ProcfsDepthLevel

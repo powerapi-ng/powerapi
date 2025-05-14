@@ -139,17 +139,6 @@ class PowerReport(Report):
         final_dict = {'PowerReport': [line]}
         return CSV_HEADER_POWER, final_dict
 
-    @staticmethod
-    def to_virtiofs_db(report: PowerReport) -> tuple[str, str]:
-        """
-        return a tuple containing the power value and the name of the file to store the value.
-        """
-        if 'socket' not in report:
-            raise BadInputData('no tag socket in power report', report)
-        filename = 'power_consumption_package' + str(report['socket'])
-        power = report.power
-        return filename, power
-
     def generate_tags(self, selected_tags: None | list[str] = None) -> dict[str, Any]:
         """
         Generate the report tags from its metadata.
@@ -205,10 +194,3 @@ class PowerReport(Report):
         :return: a PowerReport from a dictionary pulled from mongodb
         """
         return PowerReport.from_json(data)
-
-    @staticmethod
-    def create_empty_report():
-        """
-        Creates an empty report
-        """
-        return PowerReport(None, None, None, 0)

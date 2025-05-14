@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,50 +26,3 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from enum import IntEnum
-
-from powerapi.report import ProcfsReport
-from .dispatch_rule import DispatchRule
-
-
-class ProcfsDepthLevel(IntEnum):
-    """
-    Enumeration that specify which report level use to group by the reports
-    """
-
-    TARGET = -1
-    SENSOR = 0
-
-
-def extract_id_from_report(report: ProcfsReport, depth: ProcfsDepthLevel) -> tuple:
-    """
-    :return: a report id generated from the report and the given depth
-    """
-    if depth == ProcfsDepthLevel.TARGET:
-        return (report.target,)
-
-    return (report.sensor,)
-
-
-class ProcfsDispatchRule(DispatchRule):
-    """
-    Group by rule for Procfs report
-    """
-    def __init__(self, depth: ProcfsDepthLevel, primary: bool = False):
-        """
-        :param depth:
-        :type depth: ProcfsDepthLevel
-        """
-        DispatchRule.__init__(self, primary, self._get_fields_by_depth(depth))
-        self.depth = depth
-
-    @staticmethod
-    def _get_fields_by_depth(depth: ProcfsDepthLevel) -> list[str]:
-        if depth == ProcfsDepthLevel.TARGET:
-            return ['target']
-
-        return ['sensor']
-
-    def get_formula_id(self, report):
-        return [extract_id_from_report(report, self.depth)]

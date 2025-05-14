@@ -134,13 +134,6 @@ class Report(Message):
         raise ValueError('Invalid timestamp format')
 
     @staticmethod
-    def create_empty_report():
-        """
-        Creates an empty report
-        """
-        return Report(None, None, None)
-
-    @staticmethod
     def sanitize_tags_name(tags: Iterable[str]) -> dict[str, str]:
         """
         Generate a dict containing the tags name and theirs corresponding sanitized version.
