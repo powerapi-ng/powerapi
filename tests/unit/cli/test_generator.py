@@ -169,12 +169,12 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
     """
     generator = DBActorGenerator('input')
 
-    assert len(generator.report_classes) == 5
+    assert len(generator.report_classes) == 4
 
     with pytest.raises(ModelNameDoesNotExist):
         generator.remove_report_class('model')
 
-    assert len(generator.report_classes) == 5
+    assert len(generator.report_classes) == 4
 
 
 def test_remove_hwpc_report_model_and_generate_puller_from_a_config_with_hwpc_report_model_raise_an_exception(

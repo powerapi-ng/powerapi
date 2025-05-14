@@ -42,7 +42,7 @@ from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.report import HWPCReport, PowerReport, ControlReport, ProcfsReport, Report, FormulaReport
+from powerapi.report import HWPCReport, PowerReport, ControlReport, Report, FormulaReport
 
 COMPONENT_TYPE_KEY = 'type'
 COMPONENT_MODEL_KEY = 'model'
@@ -135,7 +135,7 @@ class BaseGenerator(Generator):
 
     def __init__(self, component_group_name: str):
         Generator.__init__(self, component_group_name)
-        self.report_classes = {
+        self.report_classes: dict[str, type[Report]] = {
             'HWPCReport': HWPCReport,
             'PowerReport': PowerReport
         }
@@ -166,7 +166,6 @@ class DBActorGenerator(BaseGenerator):
         BaseGenerator.__init__(self, component_group_name)
         self.report_classes['FormulaReport'] = FormulaReport
         self.report_classes['ControlReport'] = ControlReport
-        self.report_classes['ProcfsReport'] = ProcfsReport
 
         self.db_factory = {
             'mongodb': lambda db_config: MongoDB(report_type=db_config['model'], uri=db_config['uri'],
