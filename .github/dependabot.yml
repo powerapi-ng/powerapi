@@ -4,11 +4,9 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - "dependencies"
-    reviewers:
-      - "powerapi-ng/oss-maintainers"
 
   - package-ecosystem: "pip"
     directory: "/"
@@ -16,8 +14,6 @@ updates:
       interval: "daily"
     labels:
       - "dependencies"
-    reviewers:
-      - "powerapi-ng/oss-maintainers"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -25,5 +21,3 @@ updates:
       interval: "daily"
     labels:
       - "dependencies"
-    reviewers:
-      - "powerapi-ng/oss-maintainers"
