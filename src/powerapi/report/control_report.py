@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -41,21 +41,21 @@ class ControlReport(Report):
     This is useful to control external tools via a producer/consumer job queue.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: list, metadata: dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: list, metadata: dict[str, Any] | None = None):
         """
-        Initialize a Control Event report using the given parameters.
         :param timestamp: Report timestamp
         :param sensor: Sensor name
         :param target: Target name
         :param action: Action name
         :param parameters: Parameter values
         """
-        Report.__init__(self, timestamp, sensor, target, metadata)
+        super().__init__(timestamp, sensor, target, metadata)
+
         self.action = action
         self.parameters = parameters
 
     def __repr__(self) -> str:
-        return f'ControlReport({self.timestamp}, {self.sensor}, {self.target}, {self.action}, {self.parameters}, {self.metadata})'
+        return f'ControlReport({self.timestamp}, {self.sensor}, {self.target}, {self.action}, {self.parameters})'
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ControlReport):
@@ -83,4 +83,4 @@ class ControlReport(Report):
         """
         :return: a dictionary, that can be stored into a mongodb, from a given ControlReport
         """
-        return report.__dict__
+        return vars(report)

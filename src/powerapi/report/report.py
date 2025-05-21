@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -35,7 +35,7 @@ from datetime import datetime
 from typing import NewType, Any
 from zlib import crc32
 
-from powerapi.exception import PowerAPIExceptionWithMessage, PowerAPIException
+from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
 TIMESTAMP_KEY = 'timestamp'
@@ -60,58 +60,31 @@ class BadInputData(PowerAPIExceptionWithMessage):
         self.input_data = input_data
 
 
-class DeserializationFail(PowerAPIException):
-    """
-    Exception raised when the
-    in the good format
-    """
-
-
 class Report(Message):
     """
-    Report abtract class.
+    Report abstract class.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
         """
-        Initialize a report using the given parameters.
-        :param datetime timestamp: Timestamp
-        :param str sensor: Sensor name.
-        :param str target: Target name.
+        :param timestamp: Timestamp of the measurements.
+        :param sensor: Name of the sensor from which the measurements were taken.
+        :param target: Name of the target that the measurements refer to.
         """
-        Message.__init__(self, None)
         self.timestamp = timestamp
         self.sensor = sensor
         self.target = target
-        self.metadata = dict(metadata)
+        self.metadata = metadata if metadata is not None else {}
 
-        #: id given by the dispatcher actor in order manage report order
-        self.dispatcher_report_id = None
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target})'
 
-    def __str__(self):
-        return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
-
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (isinstance(other, type(self)) and
                 self.timestamp == other.timestamp and
                 self.sensor == other.sensor and
                 self.target == other.target and
                 self.metadata == other.metadata)
-
-    @staticmethod
-    def to_json(report: Report) -> dict:
-        """
-        :return: a json dictionary, that can be converted into json format, from a given Report
-        """
-        json = report.__dict__
-        # sender_name and dispatcher_report_id are not used
-        json.pop('sender_name')
-        json.pop('dispatcher_report_id')
-
-        return json
 
     @staticmethod
     def _extract_timestamp(ts):

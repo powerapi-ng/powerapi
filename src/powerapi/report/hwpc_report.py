@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -69,22 +69,19 @@ class HWPCReport(Report):
         }
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: dict[str, dict],
-                 metadata: dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: dict[str, dict], metadata: dict[str, Any] | None = None):
         """
-        Initialize an HWPC report using the given parameters.
-        :param datetime timestamp: Timestamp of the report
-        :param str sensor: Sensor name
-        :param str target: Target name
-        :param Dict groups: Events groups
+        :param timestamp: Timestamp of the report
+        :param sensor: Sensor name
+        :param target: Target name
+        :param groups: Events groups
         """
-        Report.__init__(self, timestamp, sensor, target, metadata)
+        super().__init__(timestamp, sensor, target, metadata)
 
-        #: (dict): Events groups
         self.groups = groups
 
     def __repr__(self) -> str:
-        return f'HWPCReport({self.timestamp}, {self.sensor}, {self.target}, {sorted(self.groups.keys())}, {self.metadata})'
+        return f'HWPCReport({self.timestamp}, {self.sensor}, {self.target}, {sorted(self.groups.keys())})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, HWPCReport):
@@ -112,7 +109,7 @@ class HWPCReport(Report):
 
     @staticmethod
     def to_json(report: HWPCReport) -> dict:
-        return report.__dict__
+        return vars(report)
 
     @staticmethod
     def from_mongodb(data: dict) -> HWPCReport:

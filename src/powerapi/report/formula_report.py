@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -44,18 +44,14 @@ class FormulaReport(Report):
     This is useful to gather information about a running formula in order to debug or compute statistics.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any]):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
         """
-        Initialize a Formula report using the given parameters.
         :param timestamp: Report timestamp
         :param sensor: Sensor name
         :param target: Target name
         :param metadata: Metadata values, can be anything but should be json serializable
         """
-        Report.__init__(self, timestamp, sensor, target, metadata)
-
-    def __repr__(self) -> str:
-        return f'FormulaReport({self.timestamp}, {self.sensor}, {self.target}, {self.metadata})'
+        super().__init__(timestamp, sensor, target, metadata)
 
     @staticmethod
     def to_csv_lines(report: FormulaReport, **_) -> (list[str], dict[str, Any]):
@@ -100,3 +96,10 @@ class FormulaReport(Report):
         }
 
         return document
+
+    @staticmethod
+    def to_json(report: FormulaReport) -> dict[str, Any]:
+        """
+        Convert a Formula report into a json document that can be stored into json.
+        """
+        return vars(report)
