@@ -68,7 +68,7 @@ class FakeActor(Actor):
         self.send_msg.append(msg)
 
     def receive_control(self, timeout=None):
-        return OKMessage("FakeActor")
+        return OKMessage()
 
 
 class FakeActorConnectError(FakeActor):
@@ -86,7 +86,7 @@ class FakeActorInitError(FakeActor):
     """
 
     def receive_control(self, timeout=None):
-        return ErrorMessage('error', 'FakeActorConnectError')
+        return ErrorMessage('FakeActorConnectError')
 
 
 ############

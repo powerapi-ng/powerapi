@@ -76,7 +76,7 @@ class DBPullerThread(Thread):
                     dispatcher.send_data(raw_report)
 
             except FilterUselessError:
-                self.handler.handle_internal_msg(PoisonPillMessage(False, self.name))
+                self.handler.handle_internal_msg(PoisonPillMessage(False))
                 return
 
             except BadInputData as exn:
@@ -86,7 +86,7 @@ class DBPullerThread(Thread):
             except StopIteration:
                 time.sleep(self.state.timeout_puller / 1000)
                 if not self.state.stream_mode:
-                    self.handler.handle_internal_msg(PoisonPillMessage(False, self.name))
+                    self.handler.handle_internal_msg(PoisonPillMessage(False))
                     return
 
 
@@ -141,11 +141,11 @@ class PullerStartHandler(StartHandler):
         try:
             StartHandler.handle(self, msg)
         except PullerInitializationException as e:
-            self.state.actor.send_control(ErrorMessage(self.state.actor.name, e.msg))
+            self.state.actor.send_control(ErrorMessage(e.msg))
 
         self.pull_db()
 
-        self.handle_internal_msg(PoisonPillMessage(False, self.state.actor.name))
+        self.handle_internal_msg(PoisonPillMessage(False))
 
     def pull_db(self):
         """
@@ -166,4 +166,4 @@ class PullerStartHandler(StartHandler):
             self.state.database_it = self.state.database.iter(self.state.stream_mode)
         except DBError as error:
             self.state.alive = False
-            self.state.actor.send_control(ErrorMessage(self.state.actor.name, error.msg))
+            self.state.actor.send_control(ErrorMessage(error.msg))

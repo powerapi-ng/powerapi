@@ -319,7 +319,7 @@ class TestDispatcher:
         """
         Fixture for starting a DispatcherActor.
         """
-        init_actor.send_control(StartMessage('test_case'))
+        init_actor.send_control(StartMessage())
         _ = init_actor.receive_control(2000)
         yield init_actor
 
@@ -481,7 +481,7 @@ class TestDispatcher:
         """
         Check that a PoissonPillMessage stops the DispatcherActor as well as their formulas
         """
-        dispatcher_with_two_formula.send_control(PoisonPillMessage(True, 'system-test-dispatcher'))
+        dispatcher_with_two_formula.send_control(PoisonPillMessage())
 
         sleep(2)
 

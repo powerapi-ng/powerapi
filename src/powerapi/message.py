@@ -30,82 +30,41 @@
 
 class Message:
     """
-    Abstract Message class
+    Abstract actor Message class.
     """
-
-    def __init__(self, sender_name: str):
-        self.sender_name = sender_name
-
-    def __str__(self):
-        raise NotImplementedError()
 
 
 class OKMessage(Message):
     """
-    Message sends to acknowledge last received message
+    Message sent by an actor after a successful startup.
     """
-
-    def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "OKMessage"
 
 
 class ErrorMessage(Message):
     """
-    Message used to indicate that an error as occuried
+    Message sent by an actor when an error occurs during startup.
     """
 
-    def __init__(self, sender_name: str, error_message: str):
+    def __init__(self, error_message: str):
         """
-        :param str error_code: message associated to the error
+        :param error_message: Message associated to the encountered error.
         """
-        Message.__init__(self, sender_name)
         self.error_message = error_message
-
-    def __str__(self):
-        return "ErrorMessage : " + self.error_message
 
 
 class StartMessage(Message):
     """
-    Message that asks the actor to launch its initialisation process
+    Message sent to an actor to initiate its startup.
     """
-
-    def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "StartMessage"
-
-
-class EndMessage(Message):
-    """
-    Message sent by actor to its parent when it terminates itself
-    """
-
-    def __init__(self, sender_name: str):
-        Message.__init__(self, sender_name)
-
-    def __str__(self):
-        return "EndMessage"
 
 
 class PoisonPillMessage(Message):
     """
-    Message which allow to kill an actor
+    Message sent to an actor to initiate its shutdown.
     """
 
-    def __init__(self, soft: bool = True, sender_name: str = ''):
-        Message.__init__(self, sender_name=sender_name)
+    def __init__(self, soft: bool = True):
+        """
+        :param bool soft: Indicate whether the actor should process all its messages before shutting down.
+        """
         self.is_soft = soft
-        self.is_hard = not soft
-
-    def __str__(self):
-        return "PoisonPillMessage"
-
-    def __eq__(self, other):
-        if isinstance(other, PoisonPillMessage):
-            return other.is_soft == self.is_soft and other.is_hard == self.is_hard
-        return False
