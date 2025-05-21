@@ -65,7 +65,7 @@ def test_puller_start_message_empty_filter():
     puller = _setup_puller_actor('puller_test_start_message_empty_filter', _setup_fake_database(), report_filter)
     assert puller.is_alive() is True
 
-    puller.send_control(StartMessage('pytest'))
+    puller.send_control(StartMessage())
     message = puller.receive_control()
     assert isinstance(message, ErrorMessage)
 
@@ -85,7 +85,7 @@ def test_puller_send_reports_to_dispatcher():
     puller = _setup_puller_actor('puller_test_send_reports_to_dispatcher', database, report_filter)
     assert puller.is_alive() is True
 
-    puller.send_control(StartMessage('pytest'))
+    puller.send_control(StartMessage())
     message = puller.receive_control()
     assert isinstance(message, OKMessage)
 
@@ -113,7 +113,7 @@ def test_puller_with_multiple_reports_filter():
     puller = _setup_puller_actor('puller_test_with_multiple_reports_filter', database, report_filter)
     assert puller.is_alive() is True
 
-    puller.send_control(StartMessage('pytest'))
+    puller.send_control(StartMessage())
     message = puller.receive_control()
     assert isinstance(message, OKMessage)
 
@@ -139,7 +139,7 @@ def test_puller_with_stream_mode():
     puller = _setup_puller_actor('puller_test_with_stream_mode', database, report_filter, stream_mode=True)
     assert puller.is_alive() is True
 
-    puller.send_control(StartMessage('pytest'))
+    puller.send_control(StartMessage())
     message = puller.receive_control()
     assert isinstance(message, OKMessage)
 

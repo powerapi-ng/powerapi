@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -42,21 +42,20 @@ class PowerReport(Report):
     PowerReport stores the power estimation information.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: dict[str, Any] = {}):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, power: float, metadata: dict[str, Any] | None = None):
         """
-        Initialize a Power report using the given parameters.
         :param datetime timestamp: Report timestamp
         :param str sensor: Sensor name
         :param str target: Target name
         :param float power: Power value
         :param dict metadata: Metadata values, can be anything that add useful information
         """
-        Report.__init__(self, timestamp, sensor, target, metadata)
+        super().__init__(timestamp, sensor, target, metadata)
 
         self.power = power
 
     def __repr__(self) -> str:
-        return f'PowerReport({self.timestamp}, {self.sensor}, {self.target}, {self.power}, {self.metadata})'
+        return f'PowerReport({self.timestamp}, {self.sensor}, {self.target}, {self.power})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, PowerReport):

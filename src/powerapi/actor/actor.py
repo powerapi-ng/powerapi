@@ -286,7 +286,7 @@ class Actor(multiprocessing.Process):
         <powerapi.message.message.PoisonPillMessage>`
 
         """
-        self.send_control(PoisonPillMessage(soft=True, sender_name='system'))
+        self.send_control(PoisonPillMessage())
         self.socket_interface.close()
 
     def hard_kill(self):
@@ -294,5 +294,5 @@ class Actor(multiprocessing.Process):
         <powerapi.message.message.PoisonPillMessage>`
 
         """
-        self.send_control(PoisonPillMessage(soft=False, sender_name='system'))
+        self.send_control(PoisonPillMessage(soft=False))
         self.socket_interface.close()
