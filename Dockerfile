@@ -4,7 +4,7 @@ ARG POWERAPI_COMPONENTS="everything"
 ARG POWERAPI_VERSION=""
 
 # ---- Base stage (common setup):
-FROM python:3-slim@sha256:a14b83d9103fe55bdfea0c12fb8a17a7a61e0e36794a7a0914529122ef133a31 AS base
+FROM python:3-slim@sha256:56a11364ffe0fee3bd60af6d6d5209eba8a99c2c16dc4c7c5861dc06261503cc AS base
 
 RUN useradd -m -s /bin/bash powerapi
 WORKDIR /home/powerapi
