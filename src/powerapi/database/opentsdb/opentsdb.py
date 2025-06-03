@@ -29,88 +29,75 @@
 
 import logging
 from datetime import timezone
+
+from powerapi.database.base_db import BaseDB
+from powerapi.database.exception import ConnectionFailed, WriteFailed
+from powerapi.report import PowerReport, Report
+
 try:
-    from opentsdb import TSDBClient
+    from opentsdb import TSDBClient, TSDBClientException
 except ImportError:
     logging.getLogger().info("opentsdb-py is not installed.")
-
-from powerapi.report import PowerReport, Report
-from powerapi.database.base_db import BaseDB, DBError
-
-
-class CantConnectToOpenTSDBException(DBError):
-    """
-    Exception raised to notify that connection to the opentsdb database is impossible
-    """
 
 
 class OpenTSDB(BaseDB):
     """
-    OpenTSDB class herited from BaseDB
-
-    Allow to handle an OpenTSDB database to save PowerReport.
+    OpenTSDB database.
     """
 
     def __init__(self, report_type: type[Report], host: str, port, metric_name: str):
         """
-        :param host:             host of the OpenTSDB server
-        :param port:            port of the OpenTSDB server
-
-        :param metric_name:         mectric name to store
-
-
-        :param report_type:        type of report handled by this database
-
+        :param report_type: Type of report handled by this database
+        :param host: Host of the OpenTSDB server
+        :param port: Port of the OpenTSDB server
+        :param metric_name: Name of the metric where the data will be saved
         """
-        BaseDB.__init__(self, report_type)
+        super().__init__(report_type)
+
         self.host = host
         self.port = port
         self.metric_name = metric_name
 
-        self.client = None
+        self.client = TSDBClient(self.host, self.port, run_at_once=False)
 
     def __iter__(self):
         raise NotImplementedError()
 
     def connect(self):
         """
-        Override from BaseDB.
-
         Create the connection to the openTSDB database with the current
         configuration (hostname/port), then check if the connection has
         been created without failure.
-
+        :raise ConnectionFailed: If connection to the server was not successful
         """
-        # close connection if reload
-        if self.client is not None:
-            self.client.close()
-            self.client.wait()
-
-        self.client = TSDBClient(host=self.host, port=self.port)
-
-        if not self.client.is_connected() and not self.client.is_alive():
-            raise CantConnectToOpenTSDBException('connexion error')
+        try:
+            self.client.init_client(self.host, self.port)
+            self.client.is_alive()
+        except TSDBClientException as exn:
+            raise ConnectionFailed(f'Failed to connect to the OpenTSDB server: {exn}') from exn
 
     def disconnect(self):
         """
         Disconnect from the OpenTSDB database.
         """
+        self.client.close()
 
     def save(self, report: PowerReport):
         """
-        Override from BaseDB
-
+        Save a report into the OpenTSDB database.
         :param report: Report to save
+        :raise WriteFailed: If the report was not successfully saved by the database
         """
-        self.client.send(self.metric_name, report.power,
-                         timestamp=int(report.timestamp.replace(tzinfo=timezone.utc).timestamp()), host=report.target)
+        try:
+            timestamp = int(report.timestamp.replace(tzinfo=timezone.utc).timestamp())
+            self.client.send(self.metric_name, report.power, timestamp=timestamp, host=report.target)
+        except TSDBClientException as exn:
+            raise WriteFailed(f'Failed to save report to OpenTSDB: {exn}') from exn
 
-    def save_many(self, reports: list[Report]):
+    def save_many(self, reports: list[PowerReport]):
         """
-        Save a batch of data
-
-        :param reports: Batch of data.
+        Save multiple reports into the OpenTSDB database.
+        :param reports: List of reports to save
         """
-
         for report in reports:
             self.save(report)
