@@ -28,35 +28,29 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-try:
-    import pymongo
-    import pymongo.errors
-except ImportError:
-    logging.getLogger().info("PyMongo is not installed.")
 
-from powerapi.database.base_db import BaseDB, DBError, IterDB
+from powerapi.database.base_db import BaseDB, IterDB
+from powerapi.database.exception import ConnectionFailed, WriteFailed
 from powerapi.report import Report
 
-
-class MongoBadDBError(DBError):
-    """
-    Error raised when hostname/port fail
-    """
-    def __init__(self, hostname):
-        DBError.__init__(self, 'Mongo DB error : can\'t connect to ' + hostname)
+try:
+    from pymongo import MongoClient
+    from pymongo.errors import PyMongoError
+except ImportError:
+    logging.getLogger().info("PyMongo is not installed.")
 
 
 class MongoIterDB(IterDB):
     """
-    MongoIterDB class
-
-    Class for iterating in a MongoDB class
+    MongoDB Iterator.
     """
 
     def __init__(self, db, report_type, stream_mode):
         """
+        :param db: MongoDB instance
+        :param report_type: Report type
         """
-        IterDB.__init__(self, db, report_type, stream_mode)
+        super().__init__(db, report_type, stream_mode)
 
         #: (pymongo.Cursor): Cursor which return data
         self.cursor = None
@@ -95,60 +89,32 @@ class MongoDB(BaseDB):
 
     def __init__(self, report_type: type[Report], uri: str, db_name: str, collection_name: str):
         """
-        :param report_type:        Type of the report handled by this database
-        :param uri:             URI of the MongoDB server
-
-        :param db_name:         database name in the mongodb
-                                (ex: "powerapi")
-
-        :param collection_name: collection name in the mongodb
-                                    (ex: "sensor")
+        :param report_type: Type of the report handled by this database
+        :param uri: URI of the MongoDB server
+        :param db_name: Database name
+        :param collection_name: Collection name
         """
-        BaseDB.__init__(self, report_type, [pymongo.errors.PyMongoError])
+        super().__init__(report_type)
 
-        #: (str): URI of the mongodb server
-        self.uri = uri
-
-        #: (str): Database name in the mongodb
-        self.db_name = db_name
-
-        #: (str): Collection name in the mongodb
-        self.collection_name = collection_name
-
-        #: (pymongo.MongoClient): MongoClient instance of the server
-        self.mongo_client = None
-
-        #: (pymongo.MongoClient): MongoClient pointed to the
-        #: targeted collection
-        self.collection = None
+        self.mongo_client = MongoClient(uri, connect=False)
+        self.collection = self.mongo_client[db_name][collection_name]
 
     def connect(self):
         """
-        Override from BaseDB.
-
-        It create the connection to the mongodb database with the current
-        configuration (hostname/port/db_name/collection_name), then check
-        if the connection has been created without failure.
+        Connect to the MongoDB server.
+        :raise: ConnectionFailed if the connection to the MongoDB server fails.
         """
-
-        # close connection if reload
-        if self.mongo_client is not None:
-            self.mongo_client.close()
-
-        self.mongo_client = pymongo.MongoClient(self.uri, serverSelectionTimeoutMS=5)
-
-        # Check if hostname:port work
         try:
-            self.mongo_client.admin.command('ismaster')
-        except pymongo.errors.ServerSelectionTimeoutError as exn:
-            raise MongoBadDBError(self.uri) from exn
-
-        self.collection = self.mongo_client[self.db_name][self.collection_name]
+            # The client will establish a connection on the first operation.
+            self.mongo_client.admin.command('ping')
+        except PyMongoError as exn:
+            raise ConnectionFailed(f'Failed to connect to the MongoDB server: {exn}') from exn
 
     def disconnect(self):
         """
-        Disconnect from the mongodb database.
+        Disconnect from the MongoDB database.
         """
+        self.mongo_client.close()
 
     def iter(self, stream_mode: bool = False) -> MongoIterDB:
         """
@@ -158,17 +124,21 @@ class MongoDB(BaseDB):
 
     def save(self, report: Report):
         """
-        Override from BaseDB
-
+        Save the report into the database.
         :param report: Report to save
         """
-        self.collection.insert_one(self.report_type.to_mongodb(report))
+        try:
+            self.collection.insert_one(self.report_type.to_mongodb(report))
+        except PyMongoError as exn:
+            raise WriteFailed(f'Failed to save report to MongoDB: {exn}') from exn
 
     def save_many(self, reports: list[Report]):
         """
-        Allow to save a batch of data
-
-        :param reports: Batch of data.
+        Saves multiple reports into the database.
+        :param reports: List of Report to save
         """
-        serialized_reports = list(map(self.report_type.to_mongodb, reports))
-        self.collection.insert_many(serialized_reports)
+        try:
+            serialized_reports = [self.report_type.to_mongodb(report) for report in reports]
+            self.collection.insert_many(serialized_reports)
+        except PyMongoError as exn:
+            raise WriteFailed(f'Failed to save report to MongoDB: {exn}') from exn
