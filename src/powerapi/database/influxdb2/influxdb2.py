@@ -28,122 +28,83 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from urllib.parse import urlparse
+
+from powerapi.database.base_db import BaseDB
+from powerapi.database.exception import ConnectionFailed, WriteFailed
+from powerapi.report import Report
+
 try:
     from influxdb_client import InfluxDBClient, WriteOptions
     from influxdb_client.client.write_api import SYNCHRONOUS
+    from influxdb_client.client.exceptions import InfluxDBError
+    from urllib3.exceptions import HTTPError
 except ImportError:
     logging.getLogger().info("influx-client2 is not installed.")
-
-from powerapi.report import Report
-from powerapi.exception import MissingArgumentException
-from powerapi.database.base_db import BaseDB, DBError
-
-
-class CantConnectToInfluxDBException(DBError):
-    """
-        Exception raised to notify that connection to the influx database is impossible
-    """
 
 
 class InfluxDB2(BaseDB):
     """
-        InfluxDB2 class is a subclass of BaseDB
-
-        Allow to handle a InfluxDB database in reading or writing.
+    InfluxDB2 database.
     """
 
-    def __init__(self, report_type: type[Report], url: str, org: str, bucket_name: str, token: str, tags: list[str],
-                 port=None):
+    def __init__(self, report_type: type[Report], url: str, org: str, bucket_name: str, token: str, tags: list[str]):
         """
-            :param report_type:     Type of the report handled by this database
-            :param url:             URL of the InfluxDB2 server
-            :org:                   Organization related to the database
-            :param bucket_name:     database name in the influxdb
-                                    (ex: "powerapi")
-            :param token:           Access token for readings and writings on database
-            :param tags:            metadata used to tag metric
-            :param port:            port of the InfluxDB2 server (if not specified in the url)
+        :param report_type: Type of the report handled by this database
+        :param url: URL of the InfluxDB2 server
+        :org: Organization name
+        :param bucket_name: Bucket name
+        :param token: Access token to use for authentication
+        :param tags: metadata used to tag metric
+        :param port: Port of the InfluxDB2 server
         """
-        BaseDB.__init__(self, report_type)
+        super().__init__(report_type)
+
         self.uri = url
-
-        # We check if the URL has the port or not
-        parsed_url = urlparse(url)
-        if parsed_url.port is None and port is not None:
-            self.uri += ':' + port.__str__()
-        elif parsed_url.port is None and port is None:
-            raise MissingArgumentException('port')
-
         self.org = org
         self.token = token
         self.bucket_name = bucket_name
         self.tags = tags
 
-        self.client = None
-        self.buckets_api = None
-        self.write_api = None
-        self.query_api = None
+        self.client = InfluxDBClient(self.uri, self.token, org=self.org)
+        self.buckets_api = self.client.buckets_api()
+        self.write_api = self.client.write_api(WriteOptions(SYNCHRONOUS))
+        self.query_api = self.client.query_api()
 
     def __iter__(self):
         raise NotImplementedError()
-
-    def _ping_client(self):
-        self.client.ping()
 
     def connect(self):
         """
         Connect to the influxdb2 database.
         """
-        # close connection if reload
-        if self.client is not None:
-            self.client.close()
-
         try:
+            self.client.ready()
+        except (OSError, HTTPError, InfluxDBError) as exn:
+            raise ConnectionFailed(f'Failed to connect to the InfluxDB server: {exn}') from exn
 
-            self.client = InfluxDBClient(url=self.uri, token=self.token, org=self.org)
-            self._ping_client()
-        except BaseException as exn:
-            raise CantConnectToInfluxDBException('connexion error') from exn
-
-        # get apis to working with the database
-        self.buckets_api = self.client.buckets_api()
-        self.write_api = self.client.write_api(WriteOptions(write_type=SYNCHRONOUS))
-        self.query_api = self.client.query_api()
-
-        # A bucket is created only if it does not exist
-        if self.buckets_api.find_bucket_by_name(self.bucket_name) is not None:
-            return
-
-        self.buckets_api.create_bucket(bucket_name=self.bucket_name)
+        if self.buckets_api.find_bucket_by_name(self.bucket_name) is None:
+            self.buckets_api.create_bucket(bucket_name=self.bucket_name)
 
     def disconnect(self):
         """
         Disconnect from the influxdb2 database.
         """
-
-    def get_db_by_name(self, db_name: str):
-        """
-            Get the database (bucket) with the given name
-
-            :param db_name: database name
-            :return: The database (bucket) with the given name
-        """
-        return self.buckets_api.find_bucket_by_name(db_name)
+        self.client.close()
 
     def save(self, report: Report):
         """
-            Override from BaseDB
-
-            :param report: Report to save
+        Save a report into the database.
+        :param report: Report to save
         """
         self.save_many([report])
 
     def save_many(self, reports: list[Report]):
         """
-            Save a batch of data
-
-            :param reports: Batch of data.
+        Save multiple reports into the database.
+        :param reports: List of reports to save
         """
-        data_list = list(map(lambda r: self.report_type.to_influxdb(r, self.tags), reports))
-        self.write_api.write(bucket=self.bucket_name, record=data_list)
+        try:
+            serialized_reports = [self.report_type.to_influxdb(report, self.tags) for report in reports]
+            self.write_api.write(self.bucket_name, record=serialized_reports)
+        except (OSError, HTTPError, InfluxDBError) as exn:
+            raise WriteFailed(f'Failed to save report to InfluxDB: {exn}') from exn
