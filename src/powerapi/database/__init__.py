@@ -27,7 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB, DBError
+from powerapi.database.base_db import BaseDB, IterDB
+from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
 from powerapi.database.csv import CsvDB
 from powerapi.database.mongodb import MongoDB
 from powerapi.database.opentsdb import OpenTSDB

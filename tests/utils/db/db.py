@@ -58,7 +58,7 @@ class FakeDB(BaseDB):
     Fake DB for testing purposes
     """
     def __init__(self, content=[]):
-        BaseDB.__init__(self, Report, [FakeDBError])
+        BaseDB.__init__(self, Report)
         self._content = content
 
         self.manager = Manager()

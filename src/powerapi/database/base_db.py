@@ -27,17 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.report import Report
-
-
-class DBError(PowerAPIExceptionWithMessage):
-
-    """
-    Error raised when an error occurred when using a database.
-    """
-    def __init__(self, msg: str):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
 
 
 class IterDB:
@@ -70,16 +60,14 @@ class IterDB:
 
 class BaseDB:
     """
-    This class define the interface needed to fetch/save reports from/to a database.
+    This class define the interface to a database.
     """
 
-    def __init__(self, report_type: type[Report], exceptions: list[type[Exception]] | None = None):
+    def __init__(self, report_type: type[Report]):
         """
         :param report_type: The type of report expected
-        :param exceptions: List of exception type raised by the database module
         """
         self.report_type = report_type
-        self.exceptions = exceptions or []
 
     def connect(self):
         """
