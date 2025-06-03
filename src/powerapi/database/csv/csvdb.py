@@ -31,30 +31,12 @@ import csv
 import os
 
 from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.exception import PowerAPIException
+from powerapi.database.exception import WriteFailed, ReadFailed
 from powerapi.report.report import Report, CSV_HEADER_COMMON
 from powerapi.utils import utils
 
 # Array of field that will not be considered as a group
 COMMON_ROW = ['timestamp', 'sensor', 'target', 'socket', 'cpu']
-
-
-class CsvBadFilePathError(PowerAPIException):
-    """
-    Error raised when file is not found
-    """
-
-
-class CsvBadCommonKeysError(PowerAPIException):
-    """
-    Error raised when a common keys is not found
-    """
-
-
-class HeaderAreNotTheSameError(PowerAPIException):
-    """
-    Error raised when the header read in a file doesn't fit the input data
-    """
 
 
 class CsvIterDB(IterDB):
@@ -85,14 +67,15 @@ class CsvIterDB(IterDB):
             try:
                 self.tmp_read[filename]['file'] = open(filename, encoding='utf-8')
                 self.tmp_read[filename]['reader'] = csv.DictReader(self.tmp_read[filename]['file'])
-            except FileNotFoundError as error:
-                raise CsvBadFilePathError(error) from error
+            except OSError as exn:
+                raise ReadFailed(f'Failed to open "{filename}" file: {exn.strerror}') from exn
+
             self.tmp_read[filename]['next_line'] = self._next(filename)
 
             # Check common key
             for key in CSV_HEADER_COMMON:
                 if key not in self.tmp_read[filename]['next_line']:
-                    raise CsvBadCommonKeysError("Wrong columns keys")
+                    raise ReadFailed(f'Missing column "{key}" in file "{filename}"')
 
         # Save the first timestamp
         if self.filenames:
@@ -278,7 +261,7 @@ class CsvDB(BaseDB):
                 if reader.fieldnames:
                     header_exist = True
                     if reader.fieldnames != expected_header:
-                        raise HeaderAreNotTheSameError(f"Header are not the same in {output_filename}")
+                        raise WriteFailed(f"Header are not the same in {output_filename}")
 
                 writer = csv.DictWriter(csvfile, fieldnames=expected_header)
                 if not header_exist:
