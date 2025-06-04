@@ -32,8 +32,6 @@ import sys
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.cli.config_parser import store_true, extract_file_names
 from powerapi.cli.config_parser import MissingValueException
-from powerapi.database.prometheus.prometheus_db import DEFAULT_METRIC_DESCRIPTION, DEFAULT_MODEL_VALUE, DEFAULT_PUSHER_NAME, \
-    DEFAULT_ADDRESS
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
 POWERAPI_ENVIRONMENT_VARIABLE_PREFIX = 'POWERAPI_'
@@ -41,8 +39,6 @@ POWERAPI_OUTPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREF
 POWERAPI_INPUT_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'INPUT_'
 POWERAPI_PRE_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'PRE_PROCESSOR_'
 POWERAPI_POST_PROCESSOR_ENVIRONMENT_VARIABLE_PREFIX = POWERAPI_ENVIRONMENT_VARIABLE_PREFIX + 'POST_PROCESSOR'
-
-TAGS_ARGUMENT_HELP_TEXT = 'specify report tags'
 
 
 class CommonCLIParsingManager(RootConfigParsingManager):
@@ -183,30 +179,40 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         subparser_prometheus_output = SubgroupConfigParsingManager("prometheus")
-        subparser_prometheus_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
-        subparser_prometheus_output.add_argument("u", "uri", help_text="specify server uri",
-                                                 default_value=DEFAULT_ADDRESS)
         subparser_prometheus_output.add_argument(
-            "p", "port", help_text="specify server port", argument_type=int
+            "n", "name",
+            help_text="Name of the pusher",
+            default_value="pusher_prometheus"
         )
         subparser_prometheus_output.add_argument(
-            "M", "metric-name", help_text="specify metric name"
+            "m", "model",
+            help_text="Input report type",
+            default_value="PowerReport"
         )
         subparser_prometheus_output.add_argument(
-            "d",
-            "metric-description",
-            help_text="specify metric description",
-            default_value=DEFAULT_METRIC_DESCRIPTION
-        )
-
-        subparser_prometheus_output.add_argument(
-            "m",
-            "model",
-            help_text="specify data type that will be stored in the database",
-            default_value=DEFAULT_MODEL_VALUE,
+            "u", "uri",
+            help_text="Address the HTTP server should listen on",
+            default_value="localhost"
         )
         subparser_prometheus_output.add_argument(
-            "n", "name", help_text="specify pusher name", default_value=DEFAULT_PUSHER_NAME
+            "p", "port",
+            help_text="Port number the HTTP server should listen on",
+            argument_type=int,
+            default_value=8000
+        )
+        subparser_prometheus_output.add_argument(
+            "M", "metric-name",
+            help_text="Exposed metric name",
+            default_value="power_estimation_watts"
+        )
+        subparser_prometheus_output.add_argument(
+            "d", "metric-description",
+            help_text="Set the exposed metric short description",
+            default_value="Estimated power consumption of the target"
+        )
+        subparser_prometheus_output.add_argument(
+            "t", "tags",
+            help_text="List of metadata tags that will be exposed with the metrics"
         )
         self.add_subgroup_parser(
             subgroup_name="output",
@@ -226,7 +232,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="PowerReport",
         )
 
-        subparser_csv_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
+        subparser_csv_output.add_argument("t", "tags", help_text="List of tags that should be kept")
         subparser_csv_output.add_argument(
             "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )
@@ -260,7 +266,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx2_output.add_argument("t", "tags", help_text=TAGS_ARGUMENT_HELP_TEXT)
+        subparser_influx2_output.add_argument("t", "tags", help_text="List of tags that should be kept")
         subparser_influx2_output.add_argument("k", "token",
                                               help_text="specify token for accessing the database")
         subparser_influx2_output.add_argument("g", "org",
