@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,13 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.database.driver import ReadableDatabase, WritableDatabase, ReadableWritableDatabase, DatabaseDriver
-from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
-from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
-from powerapi.database.csv import CsvDB
-from powerapi.database.mongodb import MongoDB
-from powerapi.database.opentsdb import OpenTSDB
-from powerapi.database.influxdb2 import InfluxDB2
-from powerapi.database.prometheus import PrometheusDB
-from powerapi.database.socket import SocketDB
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+
+from powerapi.report import Report
+
+
+class DatabaseDriver(ABC):
+    """
+    Abstract base class for database drivers.
+    """
+
+    @abstractmethod
+    def connect(self) -> None: ...
+
+    @abstractmethod
+    def disconnect(self) -> None: ...
+
+
+class ReadableDatabase(DatabaseDriver, ABC):
+    """
+    Interface for database drivers that can retrieve reports.
+    """
+
+    @staticmethod
+    @abstractmethod
+    def supported_read_types() -> Iterable[type[Report]]: ...
+
+    @abstractmethod
+    def read(self, stream_mode: bool = False) -> Iterable[Report]: ...
+
+
+class WritableDatabase(DatabaseDriver, ABC):
+    """
+    Interface for database drivers that can persist reports.
+    """
+
+    @staticmethod
+    @abstractmethod
+    def supported_write_types() -> Iterable[type[Report]]: ...
+
+    @abstractmethod
+    def write(self, reports: Iterable[Report]) -> None: ...
+
+
+class ReadableWritableDatabase(ReadableDatabase, WritableDatabase, ABC):
+    """
+    Interface for database drivers that can both persist and retrieve reports.
+    """
