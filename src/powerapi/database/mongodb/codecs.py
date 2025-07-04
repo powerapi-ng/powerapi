@@ -27,4 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.mongodb.driver import MongodbInput, MongodbOutput
+from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
+from powerapi.report import PowerReport, FormulaReport, HWPCReport
+
+
+class PowerReportEncoder(ReportEncoder[PowerReport, dict]):
+    """
+    Power Report encoder for the MongoDB database.
+    """
+
+    @staticmethod
+    def encode(report: PowerReport, opts: CodecOptions | None = None) -> dict:
+        return vars(report)
+
+class FormulaReportEncoder(ReportEncoder[FormulaReport, dict]):
+    """
+    Formula report encoder for the MongoDB database.
+    """
+
+    @staticmethod
+    def encode(report: FormulaReport, opts: CodecOptions | None = None) -> dict:
+        return vars(report)
+
+class HWPCReportDecoder(ReportDecoder[dict, HWPCReport]):
+    """
+    HwPC Report decoder for the MongoDB database.
+    """
+
+    @staticmethod
+    def decode(data: dict, opts: CodecOptions | None = None) -> HWPCReport:
+        return HWPCReport(data['timestamp'], data['sensor'], data['target'], data['groups'], data.get('metadata', {}))
+
+
+class ReportEncoders(ReportEncoderRegistry):
+    """
+    MongoDB database encoders registry.
+    Contains the report encoders supported by the MongoDB database.
+    """
+
+ReportEncoders.register(PowerReport, PowerReportEncoder)
+ReportEncoders.register(FormulaReport, FormulaReportEncoder)
+
+class ReportDecoders(ReportDecoderRegistry):
+    """
+    MongoDB database decoders registry.
+    Contains the report decoders supported by the MongoDB database.
+    """
+
+ReportDecoders.register(HWPCReport, HWPCReportDecoder)
