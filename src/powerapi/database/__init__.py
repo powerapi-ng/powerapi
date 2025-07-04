@@ -32,7 +32,7 @@ from powerapi.database.driver import ReadableDatabase, WritableDatabase, Readabl
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
 from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
 from powerapi.database.csv import CsvDB
-from powerapi.database.mongodb import MongoDB
+from powerapi.database.mongodb import MongodbInput, MongodbOutput
 from powerapi.database.opentsdb import OpenTSDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.database.prometheus import PrometheusDB
