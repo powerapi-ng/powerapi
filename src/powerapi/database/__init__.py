@@ -34,6 +34,6 @@ from powerapi.database.exception import DBError, ConnectionFailed, NotConnected,
 from powerapi.database.csv import CsvDB
 from .mongodb.driver import MongoDB
 from powerapi.database.opentsdb import OpenTSDB
-from powerapi.database.influxdb2 import InfluxDB2
+from .influxdb2.driver import InfluxDB2
 from powerapi.database.prometheus import PrometheusDB
 from powerapi.database.socket import SocketDB
