@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,13 +27,28 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB
-from .driver import ReadableDatabase, WritableDatabase, ReadableWritableDatabase, DatabaseDriver
-from .codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
-from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
-from powerapi.database.csv import CsvDB
-from .mongodb.driver import MongoDB
-from .opentsdb.driver import OpenTSDB
-from .influxdb2.driver import InfluxDB2
-from powerapi.database.prometheus import PrometheusDB
-from powerapi.database.socket import SocketDB
+from datetime import timezone
+
+from powerapi.database import CodecOptions, ReportEncoder, ReportEncoderRegistry
+from powerapi.report import PowerReport
+
+
+class PowerReportEncoder(ReportEncoder[PowerReport, tuple[float, dict]]):
+    """
+    Power Report encoder for the OpenTSDB database.
+    """
+
+    @staticmethod
+    def encode(report: PowerReport, opts: CodecOptions | None = None) -> tuple[float, dict]:
+        timestamp = int(report.timestamp.replace(tzinfo=timezone.utc).timestamp())
+        tags = {'timestamp': timestamp, 'host': report.sensor, 'target': report.target}
+        return report.power, tags
+
+
+class ReportEncoders(ReportEncoderRegistry):
+    """
+    OpenTSDB database encoders registry.
+    Contains the report encoders supported by the OpenTSDB database.
+    """
+
+ReportEncoders.register(PowerReport, PowerReportEncoder)
