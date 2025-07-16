@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,14 +27,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.database.driver import ReadableDatabase, WritableDatabase, ReadableWritableDatabase, DatabaseDriver
-from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
-from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
-from powerapi.database.csv import CsvDB
-from powerapi.database.mongodb import MongodbInput, MongodbOutput
-from powerapi.database.opentsdb import OpenTSDB
-from powerapi.database.influxdb2 import InfluxDB2
-from powerapi.database.prometheus import Prometheus
-from .socket.driver import SocketDB
-from .json.driver import JsonInput, JsonOutput
+from dataclasses import dataclass
+
+from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry
+from powerapi.report import PowerReport
+
+
+@dataclass
+class EncoderOptions(CodecOptions):
+    """
+    Encoder options for the Prometheus database.
+    """
+    dynamic_tags_name: list[str]
+
+
+class PowerReportEncoder(ReportEncoder[PowerReport, tuple[tuple[str, ...], tuple[float, float]]]):
+    """
+    Power Report encoder for the Prometheus database.
+    """
+
+    @staticmethod
+    def encode(report: PowerReport, opts: EncoderOptions | None = None) -> tuple[tuple[str, ...], tuple[float, float]]:
+        flattened_tags = report.flatten_tags(report.metadata)
+        dynamic_tags = [flattened_tags.get(tag_name, 'unknown') for tag_name in opts.dynamic_tags_name]
+        return (report.sensor, report.target, *dynamic_tags), (report.timestamp.timestamp(), report.power)
+
+
+class ReportEncoders(ReportEncoderRegistry):
+    """
+    Prometheus database encoders registry.
+    Contains the report encoders supported by the Prometheus database.
+    """
+
+ReportEncoders.register(PowerReport, PowerReportEncoder)
