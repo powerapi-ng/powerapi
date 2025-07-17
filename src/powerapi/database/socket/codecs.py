@@ -1,5 +1,5 @@
-# Copyright (c) 2021, INRIA
-# Copyright (c) 2021, University of Lille
+# Copyright (c) 2025, Inria
+# Copyright (c) 2025, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,14 +27,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.base_db import BaseDB, IterDB
-from powerapi.database.driver import ReadableDatabase, WritableDatabase, ReadableWritableDatabase, DatabaseDriver
-from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
-from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
-from powerapi.database.csv import CsvDB
-from powerapi.database.mongodb import MongodbInput, MongodbOutput
-from powerapi.database.opentsdb import OpenTSDB
-from powerapi.database.influxdb2 import InfluxDB2
-from powerapi.database.prometheus import Prometheus
-from powerapi.database.socket import Socket
-from .json.driver import JsonInput, JsonOutput
+from datetime import datetime, timezone
+
+from powerapi.database.codec import CodecOptions, ReportDecoder, ReportDecoderRegistry
+from powerapi.report import HWPCReport
+
+
+class HWPCReportDecoder(ReportDecoder[dict, HWPCReport]):
+    """
+    HwPC report decoder for the Socket database.
+    """
+
+    @staticmethod
+    def decode(data: dict, opts: CodecOptions | None = None) -> HWPCReport:
+        timestamp = datetime.fromtimestamp(data['timestamp'] / 1000, tz=timezone.utc)  # Unix timestamp in milliseconds
+        return HWPCReport(timestamp, data['sensor'], data['target'], data['groups'], data.get('metadata', {}))
+
+
+class ReportDecoders(ReportDecoderRegistry):
+    """
+    Socket database decoders registry.
+    Contains the report decoders supported by the Socket database.
+    """
+
+ReportDecoders.register(HWPCReport, HWPCReportDecoder)
