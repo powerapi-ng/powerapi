@@ -36,5 +36,5 @@ from powerapi.database.mongodb import MongoDB
 from powerapi.database.opentsdb import OpenTSDB
 from powerapi.database.influxdb2 import InfluxDB2
 from powerapi.database.prometheus import Prometheus
-from .socket.driver import SocketDB
+from powerapi.database.socket import Socket
 from .json.driver import JsonInput, JsonOutput
