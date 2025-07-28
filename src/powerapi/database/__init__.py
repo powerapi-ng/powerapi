@@ -29,7 +29,7 @@
 
 from powerapi.database.driver import ReadableDatabase, WritableDatabase, ReadableWritableDatabase, DatabaseDriver
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
-from powerapi.database.exception import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
+from powerapi.database.exceptions import DBError, ConnectionFailed, NotConnected, WriteFailed, ReadFailed
 from powerapi.database.csv import CSVInput, CSVOutput
 from powerapi.database.mongodb import MongodbInput, MongodbOutput
 from powerapi.database.opentsdb import OpenTSDB

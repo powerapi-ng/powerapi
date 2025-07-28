@@ -30,7 +30,7 @@
 from collections.abc import Iterable
 
 from powerapi.database.driver import DatabaseDriver, ReadableDatabase, WritableDatabase
-from powerapi.database.exception import ConnectionFailed, ReadFailed, WriteFailed
+from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
 from powerapi.database.mongodb.codecs import ReportEncoders, ReportDecoders
 from powerapi.report import Report
 

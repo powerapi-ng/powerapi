@@ -32,7 +32,7 @@ from queue import SimpleQueue, Empty
 from threading import Thread
 
 from powerapi.database.driver import ReadableDatabase
-from powerapi.database.exception import ConnectionFailed
+from powerapi.database.exceptions import ConnectionFailed
 from powerapi.database.socket.codecs import ReportDecoders
 from powerapi.database.socket.tcp_server import tcpserver_thread_target
 from powerapi.report import Report

@@ -30,7 +30,7 @@
 from collections.abc import Iterable
 
 from powerapi.database.driver import WritableDatabase
-from powerapi.database.exception import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.prometheus.codecs import ReportEncoders, EncoderOptions
 from powerapi.database.prometheus.collectors import ReportProcessorFactory
 from powerapi.report import Report

@@ -33,7 +33,7 @@ from os import fsync
 from pathlib import Path
 
 from powerapi.database.driver import ReadableDatabase, WritableDatabase
-from powerapi.database.exception import ConnectionFailed, WriteFailed, ReadFailed
+from powerapi.database.exceptions import ConnectionFailed, WriteFailed, ReadFailed
 from powerapi.database.json.codecs import ReportDecoders, ReportEncoders
 from powerapi.report import Report
 
