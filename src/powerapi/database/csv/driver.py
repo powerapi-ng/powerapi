@@ -33,7 +33,7 @@ from pathlib import Path
 from powerapi.database.csv.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.csv.fileio_handlers import MultiCsvFileReader, MultiCsvFileWriter
 from powerapi.database.driver import ReadableDatabase, WritableDatabase
-from powerapi.database.exception import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.report import Report
 
 
