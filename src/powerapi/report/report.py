@@ -27,37 +27,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import annotations
-
 from collections import Counter
 from collections.abc import Iterable
 from datetime import datetime
-from typing import NewType, Any
+from typing import Any
 from zlib import crc32
 
-from powerapi.exception import PowerAPIExceptionWithMessage
 from powerapi.message import Message
 
-TIMESTAMP_KEY = 'timestamp'
-SENSOR_KEY = 'sensor'
-TARGET_KEY = 'target'
-METADATA_KEY = 'metadata'
-GROUPS_KEY = 'groups'
-
-CSV_HEADER_COMMON = [TIMESTAMP_KEY, SENSOR_KEY, TARGET_KEY]
-CsvLines = NewType('CsvLines', tuple[list[str], dict[str, str]])
-
 TAGS_NAME_TRANSLATION_TABLE = str.maketrans('.-/', '___')
-
-
-class BadInputData(PowerAPIExceptionWithMessage):
-    """
-    Exception raised when input data can't be converted to a Report
-    """
-
-    def __init__(self, msg, input_data):
-        PowerAPIExceptionWithMessage.__init__(self, msg)
-        self.input_data = input_data
 
 
 class Report(Message):
@@ -67,9 +45,9 @@ class Report(Message):
 
     def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
         """
-        :param timestamp: Timestamp of the measurements.
-        :param sensor: Name of the sensor from which the measurements were taken.
-        :param target: Name of the target that the measurements refer to.
+        :param timestamp: Timestamp of the measurements
+        :param sensor: Name of the sensor from which the measurements were taken from
+        :param target: Name of the target that the measurements refers to
         """
         self.timestamp = timestamp
         self.sensor = sensor
@@ -79,32 +57,12 @@ class Report(Message):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.timestamp}, {self.sensor}, {self.target})'
 
-    def __eq__(self, other) -> bool:
-        return (isinstance(other, type(self)) and
-                self.timestamp == other.timestamp and
-                self.sensor == other.sensor and
-                self.target == other.target and
-                self.metadata == other.metadata)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Report):
+            return NotImplemented
 
-    @staticmethod
-    def _extract_timestamp(ts):
-        # Unix timestamp format (in milliseconds)
-        if isinstance(ts, int):
-            return datetime.fromtimestamp(ts / 1000)
-
-        # datetime object
-        if isinstance(ts, datetime):
-            return ts
-
-        if isinstance(ts, str):
-            try:
-                # ISO 8601 date format
-                return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
-            except ValueError:
-                # Unix timestamp format (in milliseconds)
-                return datetime.fromtimestamp(int(ts) / 1000)
-
-        raise ValueError('Invalid timestamp format')
+        return (self.timestamp == other.timestamp and self.sensor == other.sensor
+                and self.target == other.target and self.metadata == other.metadata)
 
     @staticmethod
     def sanitize_tags_name(tags: Iterable[str]) -> dict[str, str]:
