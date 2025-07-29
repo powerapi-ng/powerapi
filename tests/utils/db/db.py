@@ -26,9 +26,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from multiprocessing import Manager
 
-from powerapi.database import BaseDB, DBError
+from multiprocessing import Manager
+from typing import Iterable
+
+from powerapi.database import ReadableWritableDatabase
 from powerapi.report import Report
 
 
@@ -47,71 +49,39 @@ REPORT1 = Report(1, 2, 3)
 REPORT2 = Report(3, 4, 5)
 
 
-class FakeDBError(Exception):
+class SilentFakeDB(ReadableWritableDatabase):
     """
-    Exception raised to crash the db
+    Database that stores data inside a local queue.
     """
 
-
-class FakeDB(BaseDB):
-    """
-    Fake DB for testing purposes
-    """
-    def __init__(self, content=[]):
-        BaseDB.__init__(self, Report)
-        self._content = content
+    def __init__(self, content: list | None = None):
+        super().__init__()
 
         self.manager = Manager()
         self.q = self.manager.Queue()
 
-    def connect(self):
-        self.q.put('connected', block=False)
-
-    def iter(self, stream_mode: bool = False):
-        return iter(self._content)
-
-    def save(self, report):
-        self.q.put(report, block=False)
-
-    def save_many(self, reports):
-        self.q.put(reports, block=False)
-
-
-class SilentFakeDB(BaseDB):
-    """
-    An empty Database that don't send information through the pipe
-    """
-
-    def __init__(self, content=[]):
-        BaseDB.__init__(self, Report)
-        self._content = content
-
-        self.manager = Manager()
-        self.q = self.manager.Queue()
+        self.write(content)
 
     def connect(self):
-        pass
+        pass  # no-op in this case, there is nothing to connect to
 
-    def iter(self, stream_mode: bool = False):
-        return iter(self._content)
+    def disconnect(self) -> None:
+        pass  # no-op in this case, there is nothing to disconnect from
 
-    def save(self, report):
-        self.q.put(report, block=False)
+    @staticmethod
+    def supported_read_types() -> Iterable[type[Report]]:
+        return [Report]
 
-    def save_many(self, reports):
-        self.q.put(reports, block=False)
+    def read(self, stream_mode: bool = False) -> Iterable[Report]:
+        return [self.q.get() for _ in iter(lambda: not self.q.empty(), False)]
 
+    @staticmethod
+    def supported_write_types() -> Iterable[type[Report]]:
+        return [Report]
 
-class CrashDB(BaseDB):
-    """
-    FakeDB that crash when using its connect method
-    """
-
-    def __init__(self):
-        BaseDB.__init__(self, Report)
-
-    def connect(self):
-        raise DBError('crash')
+    def write(self, reports: Iterable[Report]) -> None:
+        for report in reports:
+            self.q.put(report)
 
 
 def define_database(database):
