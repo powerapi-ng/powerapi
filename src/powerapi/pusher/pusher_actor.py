@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -28,65 +28,55 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from powerapi.actor import Actor, State
-from powerapi.message import PoisonPillMessage, StartMessage
 
+from powerapi.actor import Actor, State
+from powerapi.database import WritableDatabase
+from powerapi.message import PoisonPillMessage, StartMessage
 from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
+from powerapi.report import Report
 
 
 class PusherState(State):
     """
-    Pusher Actor State
-
-    Contains in addition to State values :
-      - The database interface
+    Pusher Actor State class.
     """
 
-    def __init__(self, actor, database, report_model):
+    def __init__(self, actor: Actor, database: WritableDatabase):
         """
-        :param BaseDB database: Database for saving data.
+        :param actor: Pusher actor
+        :param database: Database driver used to persist reports
         """
-        State.__init__(self, actor)
+        super().__init__(actor)
 
-        #: (BaseDB): Database for saving data.
-        self.database = database
-
-        #: (Report): Type of the report that the pusher handle.
-        self.report_model = report_model
-
-        #: (Dict): Buffer data.
-        self.buffer = []
+        self.database: WritableDatabase = database
+        self.buffer: list[Report] = []
 
 
 class PusherActor(Actor):
     """
-    PusherActor class
-
-    The Pusher allow to save Report sent by Formula.
+    Pusher Actor class.
+    This actor allows to persist Reports sent by a Formula to a database.
     """
 
-    def __init__(self, name, report_model, database, level_logger=logging.WARNING, timeout=1000, delay=100,
-                 max_size=50):
+    def __init__(self, name: str, database: WritableDatabase, flush_interval: float = 0.100, max_buffer_size: int = 50, logger_level: int = logging.WARNING):
         """
-        :param str name: Pusher name.
-        :param Report report_model: ReportModel
-        :param BaseDB database: Database use for saving data.
-        :param int level_logger: Define the level of the logger
-        :param int delay: number of ms before message containing in the buffer will be writen in database
-        :param int max_size: maximum of message that the buffer can store before write them in database
+        :param name: Name of the pusher actor
+        :param database: Database driver to use to persist reports
+        :param flush_interval: Maximum time in seconds to wait before flushing the buffered reports to the database
+        :param max_buffer_size: Maximum number of reports that can be buffered before a forced flush to the database
+        :param logger_level: Define the level of the logger for the actor
         """
-        Actor.__init__(self, name, level_logger, timeout)
+        super().__init__(name, logger_level, 1000)
 
-        #: (State): State of the actor.
-        self.state = PusherState(self, database, report_model)
-        self.delay = delay
-        self.max_size = max_size
+        self.flush_interval = flush_interval
+        self.max_buffer_size = max_buffer_size
+
+        self.state = PusherState(self, database)
 
     def setup(self):
         """
-        Define StartMessage, PoisonPillMessage handlers and a handler for
-        each report type
+        Set up the Pusher actor message handlers.
         """
-        self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
-        self.add_handler(self.state.report_model, ReportHandler(self.state, self.delay, self.max_size))
         self.add_handler(StartMessage, PusherStartHandler(self.state))
+        self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
+        self.add_handler(Report, ReportHandler(self.state, self.flush_interval, self.max_buffer_size))

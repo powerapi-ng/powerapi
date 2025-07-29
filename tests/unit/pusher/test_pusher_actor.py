@@ -34,7 +34,6 @@ from queue import Empty
 import pytest
 
 from powerapi.pusher import PusherActor
-from powerapi.report import Report
 from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB, pytest_generate_tests_abstract
 from tests.utils.db.db import REPORT2, REPORT1
 
@@ -98,7 +97,7 @@ class TestPusher(AbstractTestActorWithDB):
 
     @pytest.fixture
     def actor_with_db(self, fake_db, delay, buffer_size):
-        return PusherActor('pusher_test', Report, fake_db, logging.DEBUG, delay=delay, max_size=buffer_size)
+        return PusherActor('pusher_test', fake_db, delay, buffer_size, logging.DEBUG)
 
     @staticmethod
     @define_buffer_size(0)

@@ -27,5 +27,4 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
-from powerapi.pusher.pusher_actor import PusherActor, PusherState
+from powerapi.pusher.pusher_actor import PusherActor

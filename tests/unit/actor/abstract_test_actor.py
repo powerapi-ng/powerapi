@@ -27,6 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import time
 from multiprocessing import Pipe
 
@@ -145,7 +146,7 @@ def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end
     """
-    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerReport)
+    actor = PusherActor(PUSHER_NAME, database, logger_level=logging.DEBUG)
 
     actor.start()
     actor.connect_data()
