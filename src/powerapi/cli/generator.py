@@ -28,13 +28,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import os
 import sys
 from collections.abc import Callable
 
 from powerapi.actor import Actor
-from powerapi.database import MongoDB, CsvDB, OpenTSDB, SocketDB, PrometheusDB
-from powerapi.database.influxdb2 import InfluxDB2
+from powerapi.database import CSVInput, CSVOutput, JsonInput, JsonOutput, Socket, MongoDB, InfluxDB2, OpenTSDB, Prometheus
+from powerapi.database import DatabaseDriver, ReadableDatabase, WritableDatabase, ReadableWritableDatabase
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
@@ -42,7 +41,7 @@ from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.report import HWPCReport, PowerReport, ControlReport, Report, FormulaReport
+from powerapi.report import HWPCReport, PowerReport, Report, FormulaReport
 
 COMPONENT_TYPE_KEY = 'type'
 COMPONENT_MODEL_KEY = 'model'
@@ -137,7 +136,8 @@ class BaseGenerator(Generator):
         Generator.__init__(self, component_group_name)
         self.report_classes: dict[str, type[Report]] = {
             'HWPCReport': HWPCReport,
-            'PowerReport': PowerReport
+            'PowerReport': PowerReport,
+            'FormulaReport': FormulaReport,
         }
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
@@ -162,32 +162,19 @@ class DBActorGenerator(BaseGenerator):
     ActorGenerator that initialise the start message with a database from config
     """
 
-    def __init__(self, component_group_name: str):
-        BaseGenerator.__init__(self, component_group_name)
-        self.report_classes['FormulaReport'] = FormulaReport
-        self.report_classes['ControlReport'] = ControlReport
+    @staticmethod
+    def _mongodb_database_factory(conf: dict) -> ReadableWritableDatabase:
+        """
+        MongoDB database factory method.
+        """
+        return MongoDB(conf['report_type'], conf['uri'], conf['db'], conf['collection'])
 
-        self.db_factory = {
-            'mongodb': lambda db_config: MongoDB(report_type=db_config['model'], uri=db_config['uri'],
-                                                 db_name=db_config['db'], collection_name=db_config['collection']),
-            'socket': lambda db_config: SocketDB(db_config['model'], db_config['host'], db_config['port']),
-            'csv': lambda db_config: CsvDB(report_type=db_config['model'], tags=gen_tag_list(db_config),
-                                           current_path=os.getcwd() if 'directory' not in db_config else db_config[
-                                               'directory'],
-                                           files=[] if 'files' not in db_config else db_config['files']),
-            'influxdb2': lambda db_config: InfluxDB2(report_type=db_config['model'], url=db_config['uri'],
-                                                     org=db_config['org'],
-                                                     bucket_name=db_config['db'], token=db_config['token'],
-                                                     tags=gen_tag_list(db_config)),
-            'opentsdb': lambda db_config: OpenTSDB(report_type=db_config['model'], host=db_config['uri'],
-                                                   port=db_config['port'], metric_name=db_config['metric-name']),
-            'prometheus': lambda db_config: PrometheusDB(report_type=db_config['model'],
-                                                         port=db_config['port'],
-                                                         address=db_config['uri'],
-                                                         metric_name=db_config['metric-name'],
-                                                         metric_description=db_config['metric-description'],
-                                                         tags=gen_tag_list(db_config)),
-        }
+    def __init__(self, component_group_name: str):
+        super().__init__(component_group_name)
+
+        self.db_factory: dict[str, Callable[[dict], ReadableDatabase | WritableDatabase]] = {}
+
+        self.add_db_factory('mongodb', self._mongodb_database_factory)
 
     def remove_report_class(self, model_name: str):
         """
@@ -213,7 +200,7 @@ class DBActorGenerator(BaseGenerator):
             raise ModelNameAlreadyUsed(model_name)
         self.report_classes[model_name] = report_class
 
-    def add_db_factory(self, db_name: str, db_factory_function):
+    def add_db_factory(self, db_name: str, db_factory_function: Callable[[dict], ReadableDatabase | WritableDatabase]):
         """
         add a database to generator
         """
@@ -244,15 +231,52 @@ class PullerGenerator(DBActorGenerator):
     Generate Puller Actor class and Puller start message from config
     """
 
+    @staticmethod
+    def _csv_input_database_factory(conf: dict) -> ReadableDatabase:
+        """
+        CSV Input database factory method.
+        """
+        return CSVInput(conf['model'], conf['files'])
+
+    @staticmethod
+    def _json_input_database_factory(conf: dict) -> ReadableDatabase:
+        """
+        JSON Input database factory method.
+        """
+        return JsonInput(conf['model'], conf['filepath'])
+
+    @staticmethod
+    def _socket_database_factory(conf: dict) -> ReadableDatabase:
+        """
+        Socket database factory method.
+        """
+        return Socket(conf['model'], conf['host'], conf['port'])
+
     def __init__(self, report_filter: Filter):
-        DBActorGenerator.__init__(self, 'input')
+        """
+        :param report_filter: Report filter to apply for incoming reports
+        """
+        super().__init__('input')
+
         self.report_filter = report_filter
 
-    def _actor_factory(self, actor_name: str, main_config, component_config: dict):
-        return PullerActor(name=actor_name, database=component_config[COMPONENT_DB_MANAGER_KEY],
-                           report_filter=self.report_filter, stream_mode=main_config[GENERAL_CONF_STREAM_MODE_KEY],
-                           report_model=component_config[COMPONENT_MODEL_KEY],
-                           level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
+        self.add_db_factory('csv', self._csv_input_database_factory)
+        self.add_db_factory('json', self._json_input_database_factory)
+        self.add_db_factory('socket', self._socket_database_factory)
+
+    def _actor_factory(self, actor_name: str, main_config, component_config: dict) -> PullerActor:
+        """
+        Actor factory method.
+        :param actor_name: Name of the actor
+        :param main_config: Global configuration
+        :param component_config: Actor configuration
+        :return: Configured Puller actor
+        """
+        report_model = component_config[COMPONENT_MODEL_KEY]
+        database = component_config[COMPONENT_DB_MANAGER_KEY]
+        stream_mode = main_config[GENERAL_CONF_STREAM_MODE_KEY]
+        logging_level = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
+        return PullerActor(actor_name, database, self.report_filter, report_model, stream_mode, logging_level)
 
 
 class PusherGenerator(DBActorGenerator):
@@ -260,18 +284,62 @@ class PusherGenerator(DBActorGenerator):
     Generate Pusher actor and Pusher start message from config
     """
 
+    @staticmethod
+    def _csv_output_database_factory(conf: dict) -> WritableDatabase:
+        """
+        CSV Output database factory method.
+        """
+        return CSVOutput(conf['model'], conf['directory'])
+
+    @staticmethod
+    def _json_output_database_factory(conf: dict) -> WritableDatabase:
+        """
+        JSON Output database factory method.
+        """
+        return JsonOutput(conf['model'], conf['dirpath'])
+
+    @staticmethod
+    def _influxdb2_database_factory(conf: dict) -> WritableDatabase:
+        """
+        InfluxDB2 database factory method.
+        """
+        return InfluxDB2(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'], gen_tag_list(conf))
+
+    @staticmethod
+    def _opentsdb_database_factory(conf: dict) -> WritableDatabase:
+        """
+        OpentsDB database factory method.
+        """
+        return OpenTSDB(conf['model'], conf['uri'], conf['port'], conf['metric-name'])
+
+    @staticmethod
+    def _prometheus_database_factory(conf: dict) -> WritableDatabase:
+        """
+        Prometheus database factory method.
+        """
+        return Prometheus(conf['model'], conf['host'], conf['port'], gen_tag_list(conf))
+
     def __init__(self):
-        DBActorGenerator.__init__(self, 'output')
+        super().__init__('output')
 
-    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict):
-        if 'max_buffer_size' in component_config.keys():
-            return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
-                               database=component_config[COMPONENT_DB_MANAGER_KEY],
-                               max_size=component_config[COMPONENT_DB_MAX_BUFFER_SIZE_KEY])
+        self.add_db_factory('csv', self._csv_output_database_factory)
+        self.add_db_factory('json', self._json_output_database_factory)
+        self.add_db_factory('influxdb2', self._influxdb2_database_factory)
+        self.add_db_factory('opentsdb', self._opentsdb_database_factory)
+        self.add_db_factory('prometheus', self._prometheus_database_factory)
 
-        return PusherActor(name=actor_name, report_model=component_config[COMPONENT_MODEL_KEY],
-                           database=component_config[COMPONENT_DB_MANAGER_KEY],
-                           level_logger=logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO)
+    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict) -> PusherActor:
+        """
+        Actor factory method.
+        :param actor_name: Name of the actor
+        :param main_config: Global configuration
+        :param component_config: Actor configuration
+        :return: Configured Pusher actor
+        """
+        report_model = component_config[COMPONENT_MODEL_KEY]
+        database = component_config[COMPONENT_DB_MANAGER_KEY]
+        level_logger = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
+        return PusherActor(actor_name, report_model, database, level_logger)
 
 
 class ProcessorGenerator(Generator):
