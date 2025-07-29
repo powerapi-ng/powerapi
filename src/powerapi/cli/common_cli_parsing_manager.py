@@ -139,7 +139,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "files",
             help_text="specify input csv files with this format : file1,file2,file3",
             action=extract_file_names,
-            default_value=[],
+            is_mandatory=True
         )
         subparser_csv_input.add_argument(
             "m",
@@ -224,6 +224,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "d",
             "directory",
             help_text="specify directory where where output  csv files will be writen",
+            is_mandatory=True
         )
         subparser_csv_output.add_argument(
             "m",
@@ -273,7 +274,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
                                               help_text="specify organisation for accessing the database")
 
         subparser_influx2_output.add_argument(
-            "d", "db", help_text="specify InfluxDB database name"
+            "b", "bucket", help_text="specify InfluxDB database name"
         )
         subparser_influx2_output.add_argument(
             "p", "port", help_text="specify InfluxDB connection port", argument_type=int
