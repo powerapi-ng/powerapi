@@ -139,7 +139,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "files",
             help_text="specify input csv files with this format : file1,file2,file3",
             action=extract_file_names,
-            default_value=[],
+            is_mandatory=True
         )
         subparser_csv_input.add_argument(
             "m",
@@ -154,6 +154,12 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_name="input",
             subgroup_parser=subparser_csv_input
         )
+
+        subparser_json_input = SubgroupConfigParsingManager("json")
+        subparser_json_input.add_argument("n", "name", help_text="Name of the puller", default_value="puller_json")
+        subparser_json_input.add_argument("m", "model", help_text="Expected report type")
+        subparser_json_input.add_argument("f", "filepath", help_text="Input file path")
+        self.add_subgroup_parser("input", subparser_json_input)
 
         subparser_mongo_output = SubgroupConfigParsingManager("mongodb")
         subparser_mongo_output.add_argument("u", "uri", help_text="specify MongoDB uri")
@@ -190,7 +196,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="PowerReport"
         )
         subparser_prometheus_output.add_argument(
-            "u", "uri",
+            "u", "addr",
             help_text="Address the HTTP server should listen on",
             default_value="localhost"
         )
@@ -224,6 +230,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "d",
             "directory",
             help_text="specify directory where where output  csv files will be writen",
+            is_mandatory=True
         )
         subparser_csv_output.add_argument(
             "m",
@@ -240,6 +247,12 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_name="output",
             subgroup_parser=subparser_csv_output
         )
+
+        subparser_json_output = SubgroupConfigParsingManager("json")
+        subparser_json_output.add_argument("n", "name", help_text="Name of the pusher", default_value="pusher_json")
+        subparser_json_output.add_argument("m", "model", help_text="Report type to be exported")
+        subparser_json_output.add_argument("f", "filepath", help_text="Output file path")
+        self.add_subgroup_parser("output", subparser_json_output)
 
         subparser_opentsdb_output = SubgroupConfigParsingManager("opentsdb")
         subparser_opentsdb_output.add_argument("u", "uri", help_text="specify openTSDB host")
@@ -273,7 +286,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
                                               help_text="specify organisation for accessing the database")
 
         subparser_influx2_output.add_argument(
-            "d", "db", help_text="specify InfluxDB database name"
+            "b", "bucket", help_text="specify InfluxDB database name"
         )
         subparser_influx2_output.add_argument(
             "p", "port", help_text="specify InfluxDB connection port", argument_type=int
