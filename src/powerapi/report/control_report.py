@@ -27,18 +27,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import annotations
-
 from datetime import datetime
 from typing import Any
 
-from .report import Report
+from powerapi.report import Report
 
 
 class ControlReport(Report):
     """
-    EventReport stores information about an event.
-    This is useful to control external tools via a producer/consumer job queue.
+    ControlReport class.
+    Stores information about an action, which can be used to control external tools from a formula.
     """
 
     def __init__(self, timestamp: datetime, sensor: str, target: str, action: str, parameters: list, metadata: dict[str, Any] | None = None):
@@ -57,30 +55,8 @@ class ControlReport(Report):
     def __repr__(self) -> str:
         return f'ControlReport({self.timestamp}, {self.sensor}, {self.target}, {self.action}, {self.parameters})'
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, ControlReport):
-            return False
+            return NotImplemented
 
         return super().__eq__(other) and self.action == other.action and self.parameters == other.parameters
-
-    @staticmethod
-    def from_json(data: dict) -> ControlReport:
-        """
-        :return: a dictionary, that can be converted into json format, from a given ControlReport
-        """
-        metadata = {} if 'metadata' not in data else data['metadata']
-        return ControlReport(data['timestamp'], data['sensor'], data['target'], data['action'], data['parameters'], metadata)
-
-    @staticmethod
-    def from_mongodb(data: dict) -> ControlReport:
-        """
-        :return: a ControlReport from a dictionary pulled from mongodb
-        """
-        return ControlReport.from_json(data)
-
-    @staticmethod
-    def to_mongodb(report: ControlReport) -> dict:
-        """
-        :return: a dictionary, that can be stored into a mongodb, from a given ControlReport
-        """
-        return vars(report)
