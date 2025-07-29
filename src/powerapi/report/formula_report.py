@@ -27,21 +27,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import annotations
-
-import json
 from datetime import datetime
 from typing import Any
 
-from powerapi.report.report import Report, CSV_HEADER_COMMON
-
-CSV_HEADER_FORMULA_REPORT = [*CSV_HEADER_COMMON, 'metadata']
+from powerapi.report.report import Report
 
 
 class FormulaReport(Report):
     """
-    FormulaReport stores information about a formula.
-    This is useful to gather information about a running formula in order to debug or compute statistics.
+    FormulaReport class.
+    Used to export information about a running formula.
     """
 
     def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
@@ -49,57 +44,6 @@ class FormulaReport(Report):
         :param timestamp: Report timestamp
         :param sensor: Sensor name
         :param target: Target name
-        :param metadata: Metadata values, can be anything but should be json serializable
+        :param metadata: Metadata values
         """
         super().__init__(timestamp, sensor, target, metadata)
-
-    @staticmethod
-    def to_csv_lines(report: FormulaReport, **_) -> (list[str], dict[str, Any]):
-        """
-        Convert a Formula report into a csv line.
-        :param report: Formula report that will be converted
-        :return: Tuple containing the csv header and the csv lines
-        """
-
-        line = {
-            'timestamp': int(datetime.timestamp(report.timestamp) * 1000),
-            'sensor': report.sensor,
-            'target': report.target,
-            'metadata': json.dumps(report.metadata)
-        }
-
-        return CSV_HEADER_FORMULA_REPORT, {'FormulaReport': [line]}
-
-    @staticmethod
-    def to_mongodb(report: FormulaReport) -> dict[str, Any]:
-        """
-        Convert a Formula report into a json document that can be stored into mongodb.
-        :return: a dictionary, that can be stored into a mongodb
-        """
-        return FormulaReport.to_json(report)
-
-    @staticmethod
-    def to_influxdb(report: FormulaReport, **_) -> dict[str, Any]:
-        """
-        Convert a Formula report into a dict that can be stored into influxdb.
-        param report: Formula report that will be converted
-        :return: a dictionary, that can be stored into influxdb
-        """
-        document = {
-            'measurement': 'formula_report',
-            'tags': {
-                'sensor': report.sensor,
-                'target': report.target,
-            },
-            'time': int(datetime.timestamp(report.timestamp) * 1000),
-            'fields': report.metadata
-        }
-
-        return document
-
-    @staticmethod
-    def to_json(report: FormulaReport) -> dict[str, Any]:
-        """
-        Convert a Formula report into a json document that can be stored into json.
-        """
-        return vars(report)
