@@ -30,7 +30,7 @@
 import logging
 from datetime import datetime, timezone
 
-from powerapi.database import BaseDB
+from powerapi.database import ReadableDatabase
 from powerapi.filter import Filter
 from powerapi.message import StartMessage, ErrorMessage, OKMessage
 from powerapi.puller import PullerActor
@@ -46,11 +46,11 @@ def _setup_fake_database(num_reports: int = 5):
     return SilentFakeDB([Report(datetime.fromtimestamp(i, timezone.utc), 'pytest', f'report-{i}') for i in range(num_reports)])
 
 
-def _setup_puller_actor(name: str, database: BaseDB, report_filter: Filter, stream_mode: bool = False):
+def _setup_puller_actor(name: str, database: ReadableDatabase, report_filter: Filter, stream_mode: bool = False):
     """
     Set up a PullerActor for tests.
     """
-    puller = PullerActor(name, database, report_filter, None, stream_mode, level_logger=logging.DEBUG, timeout=2000)
+    puller = PullerActor(name, database, report_filter, stream_mode, logging.DEBUG)
     puller.start()
     puller.connect_control()
     puller.connect_data()
@@ -68,6 +68,10 @@ def test_puller_start_message_empty_filter():
     puller.send_control(StartMessage())
     message = puller.receive_control()
     assert isinstance(message, ErrorMessage)
+
+    puller.terminate()
+    puller.join(timeout=5.0)
+    assert puller.is_alive() is False
 
 
 def test_puller_send_reports_to_dispatcher():

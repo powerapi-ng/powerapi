@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -30,78 +30,54 @@
 import logging
 
 from powerapi.actor import Actor, State
-from powerapi.message import PoisonPillMessage, StartMessage
-from powerapi.puller.handlers import PullerPoisonPillMessageHandler, PullerStartHandler
+from powerapi.database import ReadableDatabase
+from powerapi.filter import Filter
+from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.puller.database_poller import DatabasePollerThread
+from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 
 
 class PullerState(State):
     """
-    Puller Actor State
-
-    Contains in addition to State values :
-      - the database interface
-      - the Filter class
+    Puller Actor State class.
     """
 
-    def __init__(self, actor: Actor, database, report_filter, report_model, stream_mode, timeout_puller):
+    def __init__(self, actor: Actor, database: ReadableDatabase, report_filter: Filter, stream_mode: bool):
         """
-        :param BaseDB database: Allow to interact with a Database
-        :param Filter report_filter: Filter of the Puller
+        :param actor: Puller actor instance
+        :param database: Database driver
+        :param report_filter: Filter to use when dispatching reports
+        :param stream_mode: If true, poll continuously from the database; otherwise, stop the poller thread on empty result
         """
         super().__init__(actor)
 
-        #: (BaseDB): Allow to interact with a Database
         self.database = database
-
-        #: (it BaseDB): Allow to browse the database
-        self.database_it = None
-
-        #: (Filter): Filter of the puller
         self.report_filter = report_filter
-
-        #: (ReportModel): ReportModel
-        self.report_model = report_model
-
-        #: (bool): Stream mode
         self.stream_mode = stream_mode
 
-        #: (require stream mode = True) time (in ms) between two database reading
-        self.timeout_puller = timeout_puller
-
-        #: (int): Counter for "sleeping mode"
-        self.counter = 0
-
-        self.loop = None
+        self.db_poller_thread: DatabasePollerThread | None = None
 
 
 class PullerActor(Actor):
     """
-    PullerActor class
-
-    A Puller allows to handle the reading of a database and to dispatch report
-    to many Dispatcher depending on some rules.
+    Puller Actor class.
+    This actor allows to retrieve reports from a database and send them to theirs corresponding dispatcher.
     """
 
-    def __init__(self, name, database, report_filter, report_model, stream_mode=False, level_logger=logging.WARNING,
-                 timeout=5000, timeout_puller=100):
+    def __init__(self, name: str, database: ReadableDatabase, report_filter: Filter, stream_mode: bool = False, level_logger: int = logging.WARNING):
         """
-        :param str name: Actor name.
-        :param BaseDB database: Allow to interact with a Database.
-        :param Filter report_filter: Filter of the Puller.
-        :param int level_logger: Define the level of the logger
-        :param int tiemout_puller: (require stream mode) time (in ms) between two database reading
+        :param name: Name of the puller actor
+        :param database: Database driver to use to persist reports
+        :param report_filter: Filter to use when dispatching reports
+        :param level_logger: Define the level of the logger for the actor
         """
+        super().__init__(name, level_logger, 1000)
 
-        Actor.__init__(self, name, level_logger, timeout)
-
-        #: (State): Actor State.
-        self.state = PullerState(self, database, report_filter, report_model, stream_mode, timeout_puller)
-
-        self.low_exception += database.exceptions
+        self.state = PullerState(self, database, report_filter, stream_mode)
 
     def setup(self):
         """
-        Define StartMessage handler and PoisonPillMessage handler
+        Set up the Puller actor message handlers.
         """
+        self.add_handler(StartMessage, PullerStartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))
-        self.add_handler(StartMessage, PullerStartHandler(self.state, self.socket_interface.timeout))
