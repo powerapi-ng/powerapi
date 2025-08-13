@@ -68,6 +68,14 @@ def several_inputs_outputs_stream_config():
 
 
 @pytest.fixture
+def single_input_multiple_outputs_with_different_report_type():
+    """
+    Configuration with several inputs and outputs and stream mode enabled
+    """
+    return load_configuration_from_json_file('single_input_multiple_outputs_with_different_report_type_configuration.json')
+
+
+@pytest.fixture
 def several_inputs_outputs_stream_mongo_without_some_arguments_config(several_inputs_outputs_stream_config):
     """
     Configuration with several inputs and outputs and stream mode enabled. Some arguments

@@ -37,6 +37,7 @@ from powerapi.filter import Filter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
+from powerapi.report import PowerReport, FormulaReport
 
 
 ####################
@@ -275,6 +276,20 @@ def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_outp
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_opentsdb_without_some_arguments_config)
+
+
+def test_generate_pusher_report_type_to_actor_mapping(single_input_multiple_outputs_with_different_report_type):
+    """
+    Test generating a report type to actor mapping from a configuration having multiple outputs for different report types.
+    """
+    config = single_input_multiple_outputs_with_different_report_type
+    generator = PusherGenerator()
+    actors = generator.generate(config)
+    report_type_to_actor_mapping = generator.generate_report_type_to_actor_mapping(config, actors)
+
+    assert set(report_type_to_actor_mapping.keys()) == {PowerReport, FormulaReport}
+    assert report_type_to_actor_mapping[PowerReport] == [actors['powerrep1'], actors['powerrep2']]
+    assert report_type_to_actor_mapping[FormulaReport] == [actors['formularep']]
 
 
 ################################

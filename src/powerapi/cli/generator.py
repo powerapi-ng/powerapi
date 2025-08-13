@@ -95,7 +95,7 @@ class Generator:
     def __init__(self, component_group_name):
         self.component_group_name = component_group_name
 
-    def generate(self, main_config: dict) -> dict[str, type[Actor]]:
+    def generate(self, main_config: dict) -> dict[str, Actor]:
         """
         Generate an actor class and actor start message from config dict
         """
@@ -103,7 +103,6 @@ class Generator:
             raise PowerAPIException('Configuration error : no ' + self.component_group_name + ' specified')
 
         actors = {}
-
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
                 actors[component_name] = self._gen_actor(component_config, main_config, component_name)
@@ -112,7 +111,7 @@ class Generator:
 
         return actors
 
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> type[Actor]:
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> Actor:
         raise NotImplementedError()
 
 
@@ -345,6 +344,25 @@ class PusherGenerator(DBActorGenerator):
         database = component_config[COMPONENT_DB_MANAGER_KEY]
         level_logger = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
         return PusherActor(actor_name, database, logger_level=level_logger)
+
+    def generate_report_type_to_actor_mapping(self, main_config: dict, actors: dict[str, Actor]) -> dict[type[Report], list[PusherActor]]:
+        """
+        Generate the report type to actors mapping dict.
+        :param main_config: Main configuration
+        :param actors: Dictionary of actors (result of the `generate` method)
+        :return: Dictionary mapping the report type to actors that should process it
+        """
+        if self.component_group_name not in main_config:
+            raise PowerAPIException(f'Configuration error: Component "{self.component_group_name}" is not defined')
+
+        report_type_to_actor = {}
+        for component_name, component_config in main_config[self.component_group_name].items():
+            try:
+                report_type_to_actor.setdefault(component_config[COMPONENT_MODEL_KEY], []).append(actors[component_name])
+            except KeyError as exn:
+                raise PowerAPIException(f'Undefined parameter for "{component_name}" {self.component_group_name}') from exn
+
+        return report_type_to_actor
 
 
 class ProcessorGenerator(Generator):
