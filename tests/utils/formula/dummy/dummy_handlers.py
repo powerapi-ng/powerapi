@@ -58,6 +58,10 @@ class ReportHandler(Handler):
         :param powerapi.Report msg:  Received message
         """
         results = self._estimate(msg)
-        for _, actor_pusher in self.state.pushers.items():
-            for result in results:
-                actor_pusher.send_data(result)
+
+        # Send the reports to every available pusher because a lot of unit tests don't set up their test actor correctly.
+        # FIXME: Reports should only be sent to theirs corresponding pusher(s)
+        for pushers in self.state.pushers.values():
+            for pusher in pushers:
+                for result in results:
+                    pusher.send_data(result)

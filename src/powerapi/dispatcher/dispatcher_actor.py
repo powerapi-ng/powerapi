@@ -46,7 +46,7 @@ class DispatcherState(State):
     Dispatcher actor state.
     """
 
-    def __init__(self, actor, pushers: dict[str, PusherActor], route_table: RouteTable):
+    def __init__(self, actor, pushers: dict[type[Report], list[PusherActor]], route_table: RouteTable):
         """
         :param actor: Dispatcher actor instance
         :param pushers: List of pushers
@@ -90,8 +90,8 @@ class DispatcherActor(Actor):
     provided routing table. When a report doesn't have any formula assigned, the dispatcher will create a new formula.
     """
 
-    def __init__(self, name: str, formula_init_function: Callable, pushers: [], route_table: RouteTable,
-                 level_logger: Literal = logging.WARNING, timeout=None):
+    def __init__(self, name: str, formula_init_function: Callable, pushers: dict[type[Report], list[PusherActor]],
+                 route_table: RouteTable, level_logger: int = logging.WARNING, timeout=None):
         """
         :param name: Actor name
         :param formula_init_function: Factory function for creating Formula
