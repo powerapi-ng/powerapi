@@ -35,5 +35,6 @@ class FormulaPoisonPillMessageHandler(PoisonPillMessageHandler):
     Default Handler for dealing with PoisonPillMessage
     """
     def teardown(self, soft=False):
-        for _, pusher in self.state.pushers.items():
-            pusher.socket_interface.close()
+        for pushers in self.state.pushers.values():
+            for pusher in pushers:
+                pusher.socket_interface.close()

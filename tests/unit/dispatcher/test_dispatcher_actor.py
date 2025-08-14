@@ -290,7 +290,7 @@ class TestDispatcher:
         def formula_factory(name, pushers):
             return DummyFormulaActor(name, pushers, 0, 0)
 
-        reports_pusher = {PUSHER_NAME_POWER_REPORT: started_fake_pusher_power_report}
+        reports_pusher = {Report: [started_fake_pusher_power_report]}
         name = f'{request.node.name}_dispatcher'
         actor = DispatcherActor(name, formula_factory, reports_pusher, route_table)
 
