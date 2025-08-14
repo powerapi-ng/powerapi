@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -29,69 +29,84 @@
 
 import time
 
+from powerapi.actor import State
+from powerapi.database import DBError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.message import ErrorMessage
-from powerapi.database import DBError
-from powerapi.report import BadInputData
+from powerapi.report import Report
 
 
 class PusherStartHandler(StartHandler):
     """
-    Handle Start Message
+    Start Message Handler for the Pusher actor.
     """
 
-    def initialization(self):
+    def initialization(self) -> None:
         """
-        Initialize the output database
+        Initialize the Pusher actor.
         """
         try:
             self.state.database.connect()
-        except DBError as error:
-            self.state.actor.send_control(ErrorMessage(error.msg))
+        except DBError as exn:
+            self.state.logger.error('Failed to connect the database driver: %s', exn.msg)
+            self.state.actor.send_control(ErrorMessage('Database connection failed'))
             self.state.alive = False
 
 
 class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
     """
-    Handler for PoisonPillMessage
+    Poison Pill Message Handler for the Pusher actor.
     """
-    def teardown(self, soft=False):
-        if len(self.state.buffer) > 0:
-            self.state.database.save_many(self.state.buffer)
+
+    def teardown(self, soft: bool = False) -> None:
+        """
+        Teardown the Pusher actor.
+        Flushes the reports buffer before disconnecting the database driver.
+        :param soft: Toggle soft-kill mode for the actor
+        """
+        if self.state.buffer:
+            try:
+                self.state.database.write(self.state.buffer)
+                self.state.buffer = []
+            except DBError as exn:
+                self.state.actor.logger.error('The reports could not be saved before shutting down actor: %s', exn.msg)
+
+        self.state.database.disconnect()
 
 
 class ReportHandler(InitHandler):
     """
-    Put the received report in a buffer
-
-    the buffer is empty every *delay* ms or if its size exceed *max_size*
-
-    :param int delay: number of ms before message containing in the buffer will be writen in database
-    :param int max_size: maximum of message that the buffer can store before write them in database
+    Generic Report Handler class.
+    Stores the received reports into a buffer before sending them to be persisted in batch by the database.
     """
 
-    def __init__(self, state, delay=100, max_size=50):
-        InitHandler.__init__(self, state)
-
-        self.last_database_write_time = time.time()
-        self.delay = delay / 1000
-        self.max_size = max_size
-
-    def handle(self, msg):
+    def __init__(self, state: State, flush_interval: float, max_buffer_size: int):
         """
-        Save the msg in the database
+        :param state: Actor state
+        :param flush_interval: Maximum time in seconds to wait before flushing the buffered reports to the database
+        :param max_buffer_size: Maximum number of reports that can be buffered before a forced flush to the database
+        """
+        super().__init__(state)
 
-        :param powerapi.PowerReport msg: PowerReport to save.
+        self.flush_interval = flush_interval
+        self.max_buffer_size = max_buffer_size
+
+        self._last_write_ts: float = 0.0
+
+    def handle(self, msg: Report) -> None:
+        """
+        Buffers a report and flushes the buffer to the database when needed.
+        Incoming reports are stored in a buffer instead of being written to the database immediately.
+        The buffer is flushed in batch when it exceeds the maximum size or the flush interval has elapsed.
+        :param msg: Report to be buffered and eventually persisted
         """
         self.state.buffer.append(msg)
-        if (time.time() - self.last_database_write_time > self.delay) or (len(self.state.buffer) > self.max_size):
-            self.last_database_write_time = time.time()
 
-            self.state.buffer.sort(key=lambda x: x.timestamp)
-
+        if (time.monotonic() - self._last_write_ts) > self.flush_interval or len(self.state.buffer) >= self.max_buffer_size:
             try:
-                self.state.database.save_many(self.state.buffer)
-                self.state.actor.logger.debug('Saved %d reports in the database', len(self.state.buffer))
+                self.state.database.write(self.state.buffer)
                 self.state.buffer = []
-            except BadInputData as ex:
-                self.state.actor.logger.warning('The report cannot be saved: %s', ex.msg)
+            except DBError as exn:
+                self.state.actor.logger.error('The reports could not be saved: %s', exn.msg)
+            finally:
+                self._last_write_ts = time.monotonic()
