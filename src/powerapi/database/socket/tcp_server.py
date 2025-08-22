@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2025, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -30,12 +30,8 @@
 import logging
 from collections.abc import Iterator
 from json import JSONDecoder, JSONDecodeError
-from queue import SimpleQueue, Empty
+from queue import SimpleQueue
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
-from threading import Thread
-
-from powerapi.database.base_db import IterDB, BaseDB
-from powerapi.report import Report
 
 
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
@@ -114,64 +110,12 @@ class JsonRequestHandler(StreamRequestHandler):
         logging.info('Connection from %s closed', caddr)
 
 
-class IterSocketDB(IterDB):
+def tcpserver_thread_target(listen_addr: tuple[str, int], received_data_queue: SimpleQueue) -> None:
     """
-    SocketDB iterator that returns the received data.
+    Target function of the thread that will run the TCP server in background.
+    :param listen_addr: The address to listen on (ip, port)
+    :param received_data_queue: The queue where to store the received data
     """
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            document = self.db.received_data_queue.get(block=False)
-            return self.report_type.from_json(document)
-        except Empty as e:
-            raise StopIteration from e
-
-
-class SocketDB(BaseDB):
-    """
-    Database implementation that exposes a TCP socket the clients can connect to.
-    """
-
-    def __init__(self, report_type: type[Report], host: str, port: int):
-        """
-        :param report_type: The type of report to create
-        :param host: The host address to listen on
-        :param port: The port number to listen on
-        """
-        super().__init__(report_type)
-
-        self.server_address = (host, port)
-
-        self.received_data_queue = None
-        self.background_thread = None
-
-    def _tcpserver_background_thread_target(self):
-        """
-        Target function of the thread that will run the TCP server in background.
-        """
-        with ThreadedTCPServer(self.server_address, JsonRequestHandler, self.received_data_queue) as server:
-            logging.info('TCP socket is listening on %s:%s', *self.server_address)
-            server.serve_forever()
-
-    def connect(self):
-        """
-        Connect to the socket database.
-        """
-        self.received_data_queue = SimpleQueue()
-        self.background_thread = Thread(target=self._tcpserver_background_thread_target, daemon=True)
-        self.background_thread.start()
-
-    def disconnect(self):
-        """
-        Disconnect from the socket database.
-        """
-
-    def iter(self, stream_mode: bool = False) -> IterSocketDB:
-        """
-        Create the data iterator for the socket database.
-        :param stream_mode: Whether the data should be pulled continuously or not.
-        """
-        return IterSocketDB(self, self.report_type, stream_mode)
+    with ThreadedTCPServer(listen_addr, JsonRequestHandler, received_data_queue) as server:
+        logging.info('TCP socket is listening on %s:%s', *listen_addr)
+        server.serve_forever()

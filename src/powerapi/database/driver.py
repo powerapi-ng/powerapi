@@ -27,4 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.mongodb.driver import MongodbInput, MongodbOutput
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+
+from powerapi.report import Report
+
+
+class DatabaseDriver(ABC):
+    """
+    Abstract base class for database drivers.
+    """
+
+    @abstractmethod
+    def connect(self) -> None: ...
+
+    @abstractmethod
+    def disconnect(self) -> None: ...
+
+
+class ReadableDatabase(DatabaseDriver, ABC):
+    """
+    Interface for database drivers that can retrieve reports.
+    """
+
+    @staticmethod
+    @abstractmethod
+    def supported_read_types() -> Iterable[type[Report]]: ...
+
+    @abstractmethod
+    def read(self, stream_mode: bool = False) -> Iterable[Report]: ...
+
+
+class WritableDatabase(DatabaseDriver, ABC):
+    """
+    Interface for database drivers that can persist reports.
+    """
+
+    @staticmethod
+    @abstractmethod
+    def supported_write_types() -> Iterable[type[Report]]: ...
+
+    @abstractmethod
+    def write(self, reports: Iterable[Report]) -> None: ...
+
+
+class ReadableWritableDatabase(ReadableDatabase, WritableDatabase, ABC):
+    """
+    Interface for database drivers that can both persist and retrieve reports.
+    """

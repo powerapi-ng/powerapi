@@ -1,0 +1,34 @@
+{
+  "verbose": true,
+  "stream": true,
+  "input": {
+    "hwpcsensor": {
+      "model": "HWPCReport",
+      "type": "mongodb",
+      "uri": "mongodb://example",
+      "db": "inputdb",
+      "collection": "hwpcsensor"
+    }
+  },
+  "output": {
+    "powerrep1": {
+      "type": "mongodb",
+      "model": "PowerReport",
+      "uri": "mongodb://example",
+      "db": "outputdb",
+      "collection": "powerrep"
+    },
+    "powerrep2": {
+      "type": "csv",
+      "model": "PowerReport",
+      "directory": "/tmp/powerapi-csv-export-test"
+    },
+    "formularep": {
+      "type": "mongodb",
+      "model": "FormulaReport",
+      "uri": "mongodb://example",
+      "db": "outputdb",
+      "collection": "formularep"
+    }
+  }
+}

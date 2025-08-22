@@ -27,4 +27,22 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.mongodb.driver import MongodbInput, MongodbOutput
+import pytest
+
+from powerapi.actor import Actor
+from powerapi.pusher.handlers import ReportHandler
+from powerapi.pusher.pusher_actor import PusherState
+
+
+@pytest.fixture
+def pusher_report_handler(fake_database):
+    """
+    Factory fixture for creating a pusher report handler.
+    """
+    def _create_handler(flush_interval: float = 1.0, buffer_size: int = 10, last_write_ts: float = 0.0):
+        state = PusherState(Actor('test-actor'), fake_database)
+        handler = ReportHandler(state, flush_interval, buffer_size)
+        handler._last_write_ts = last_write_ts
+        return handler
+
+    return _create_handler

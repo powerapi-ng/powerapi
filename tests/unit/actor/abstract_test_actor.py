@@ -27,6 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import time
 from multiprocessing import Pipe
 
@@ -108,7 +109,7 @@ def recv_from_pipe(pipe, timeout):
         return None, None
 
 
-def define_database_content(content):
+def define_database_content(content: list):
     """
     Decorator used to define database content when using an actor with database
 
@@ -123,21 +124,52 @@ def define_database_content(content):
     return wrap
 
 
-def pytest_generate_tests_abstract(metafunc):
+def define_buffer_size(size: int):
     """
-    Function called by pytest when collecting a test_XXX function
+    Define the buffer size by using the given parameter
+    :param size: The buffer size
+    """
 
-    define the content fixtures in test environment with collected the
-    value _content if it exists or with an empty content
+    def wrap(func):
+        setattr(func, '_buffer_size', size)
+        return func
 
-    :param metafunc: the test context given by pytest
+    return wrap
+
+
+def define_delay(delay: float):
+    """
+    Define the delay by using the given parameter
+    :param delay; The delay
+    """
+
+    def wrap(func):
+        setattr(func, '_delay', delay)
+        return func
+
+    return wrap
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Function called by pytest when collecting a test functions.
+    Define the parameters required by the AbstractTestActorWithDB test class.
+    :param metafunc: Test context given by pytest
     """
     if 'content' in metafunc.fixturenames:
         content = getattr(metafunc.function, '_content', None)
         if isinstance(content, list):
             metafunc.parametrize('content', [content])
-        else:
-            metafunc.parametrize('content', [[]])
+
+    if 'buffer_size' in metafunc.fixturenames:
+        buffer_size = getattr(metafunc.function, '_buffer_size', None)
+        if isinstance(buffer_size, int):
+            metafunc.parametrize('buffer_size', [buffer_size])
+
+    if 'delay' in metafunc.fixturenames:
+        delay = getattr(metafunc.function, '_delay', None)
+        if isinstance(delay, float):
+            metafunc.parametrize('delay', [delay])
 
 
 @pytest.fixture
@@ -145,7 +177,7 @@ def pusher(database):
     """
     fixture that create a PusherActor before launching the test and stop it after the test end
     """
-    actor = PusherActor(name=PUSHER_NAME, database=database, report_model=PowerReport)
+    actor = PusherActor(PUSHER_NAME, database, logger_level=logging.DEBUG)
 
     actor.start()
     actor.connect_data()
@@ -409,11 +441,16 @@ class AbstractTestActorWithDB:
 
     @staticmethod
     @pytest.fixture
-    def fake_db(content):
+    def fake_db(request):
+        content = []
+        if hasattr(request, "param"):
+            content = request.param.get("content", [])
+
         return SilentFakeDB(content)
 
+    @staticmethod
     @pytest.fixture
-    def actor_with_db(self, fake_db, delay, buffer_size):
+    def actor_with_db(request, fake_db):
         raise NotImplementedError()
 
     @staticmethod
