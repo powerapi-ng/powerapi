@@ -32,6 +32,7 @@ import re
 
 from powerapi.actor import Actor, State
 from powerapi.pusher import PusherActor
+from powerapi.report import Report
 
 
 class FormulaState(State):
@@ -53,7 +54,7 @@ class FormulaActor(Actor):
     Abstract actor class used to implement formula actor that compute power consumption of a device from Reports
     """
 
-    def __init__(self, name, pushers: dict[str, PusherActor], level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name, pushers: dict[type[Report], PusherActor], level_logger=logging.WARNING, timeout=None):
         """
         Initialize a new Formula actor.
         :param name: Actor name
@@ -86,5 +87,6 @@ class FormulaActor(Actor):
         """
         Setup the Formula actor.
         """
-        for _, pusher in self.state.pushers.items():
-            pusher.connect_data()
+        for pushers in self.state.pushers.values():
+            for pusher in pushers:
+                pusher.connect_data()

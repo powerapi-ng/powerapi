@@ -146,7 +146,10 @@ class Actor(multiprocessing.Process):
             signame = signal.Signals(signum).name
             self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
 
-            self.state.alive = False
+            msg = PoisonPillMessage(soft=False)
+            handler = self.state.get_corresponding_handler(msg)
+            handler.handle(msg)
+
             self._kill_process()
             sys.exit(0)
 

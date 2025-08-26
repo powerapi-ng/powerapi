@@ -35,7 +35,7 @@
       "third_pusher": {
           "type": "prometheus",
           "model": "PowerReport",
-          "uri": "127.0.0.1",
+          "addr": "127.0.0.1",
           "port": 2222,
           "metric-name": "my_metric",
           "metric-description": "a description",
@@ -51,7 +51,7 @@
           "model": "PowerReport",
           "uri": "127.0.0.1",
           "port": 1111,
-          "db": "my_db_result_5",
+          "bucket": "my_db_result_5",
           "token": "my_token",
           "org": "my_org",
           "tags": "t1,t2,t3"

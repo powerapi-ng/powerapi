@@ -27,4 +27,28 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.database.mongodb.driver import MongodbInput, MongodbOutput
+from datetime import timezone
+
+from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry
+from powerapi.report import PowerReport
+
+
+class PowerReportEncoder(ReportEncoder[PowerReport, tuple[float, dict]]):
+    """
+    Power Report encoder for the OpenTSDB database.
+    """
+
+    @staticmethod
+    def encode(report: PowerReport, opts: CodecOptions | None = None) -> tuple[float, dict]:
+        timestamp = int(report.timestamp.replace(tzinfo=timezone.utc).timestamp())
+        tags = {'timestamp': timestamp, 'host': report.sensor, 'target': report.target}
+        return report.power, tags
+
+
+class ReportEncoders(ReportEncoderRegistry):
+    """
+    OpenTSDB database encoders registry.
+    Contains the report encoders supported by the OpenTSDB database.
+    """
+
+ReportEncoders.register(PowerReport, PowerReportEncoder)
