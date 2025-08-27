@@ -41,10 +41,11 @@ prometheus = ["prometheus-client >= 0.9.0"]
 
 # Plaforms:
 kubernetes = ["kubernetes >= 27.0.2"]
+openstack = ["openstacksdk >= 4.7.0"]
 
 # Aliases:
 all-databases = ["powerapi[mongodb, influxdb, opentsdb, prometheus]"]
-all-platforms = ["powerapi[kubernetes]"]
+all-platforms = ["powerapi[kubernetes, openstack]"]
 everything = ["powerapi[all-databases, all-platforms]"]
 
 [dependency-groups]
