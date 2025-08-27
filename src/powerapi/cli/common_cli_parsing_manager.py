@@ -343,6 +343,11 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             subgroup_parser=subparser_k8s_pre_processor
         )
 
+        subparser_openstack_pre_processor = SubgroupConfigParsingManager("openstack")
+        subparser_openstack_pre_processor.add_argument("p", "puller", help_text="Name of the puller to attach the pre-processor to", is_mandatory=True)
+        subparser_openstack_pre_processor.add_argument("n", "name", help_text="Name of the pre-processor", default_value='preprocessor_openstack')
+        self.add_subgroup_parser("pre-processor", subparser_openstack_pre_processor)
+
     def parse_argv(self):
         """
         Parse command line arguments.
