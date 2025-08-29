@@ -41,6 +41,7 @@ from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, Database
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import Filter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
+from powerapi.processor.pre.openstack import OpenStackPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -428,12 +429,25 @@ class PreProcessorGenerator(ProcessorGenerator):
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)
 
+    @staticmethod
+    def _openstack_pre_processor_factory(processor_config: dict) -> OpenStackPreProcessorActor:
+        """
+        Openstack pre-processor actor factory.
+        :param processor_config: Pre-Processor configuration
+        :return: Configured OpenStack pre-processor actor
+        """
+        name = processor_config[ACTOR_NAME_KEY]
+        target_actors_name = [processor_config[PULLER_NAME_KEY]]
+        level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
+        return OpenStackPreProcessorActor(name, [], target_actors_name, level_logger)
+
     def _get_default_processor_factories(self) -> dict[str, Callable[[dict], ProcessorActor]]:
         """
         Return the default pre-processors factory.
         """
         return {
             'k8s': self._k8s_pre_processor_factory,
+            'openstack': self._openstack_pre_processor_factory
         }
 
 
