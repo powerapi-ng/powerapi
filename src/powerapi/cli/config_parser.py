@@ -39,7 +39,7 @@ from powerapi.exception import AlreadyAddedArgumentException, UnknownArgExceptio
     SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, BadTypeException, \
     MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException, \
     SubgroupDoesNotExistException, AlreadyAddedSubgroupException
-from powerapi.utils.cli import find_longest_string_in_list, string_to_bool, to_lower_case_and_replace_separators, \
+from ._utils import find_longest_string_in_list, string_to_bool, to_lower_case_and_replace_separators, \
     get_longest_related_suffix
 
 

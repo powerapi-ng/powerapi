@@ -37,7 +37,7 @@ from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, s
 from powerapi.exception import MissingArgumentException, BadTypeException, AlreadyAddedSubparserException, \
     UnknownArgException, MissingValueException, BadContextException, RepeatedArgumentException, \
     AlreadyAddedSubgroupException
-from powerapi.utils.cli import merge_dictionaries
+from ._utils import merge_dictionaries
 
 
 class BaseConfigParsingManagerInterface:
