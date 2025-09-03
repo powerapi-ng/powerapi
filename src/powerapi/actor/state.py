@@ -30,7 +30,7 @@
 from powerapi.actor.supervisor import Supervisor
 from powerapi.exception import UnknownMessageTypeException
 from powerapi.handler import Handler
-from powerapi.message import Message
+from powerapi.actor.message import Message
 
 
 class State:

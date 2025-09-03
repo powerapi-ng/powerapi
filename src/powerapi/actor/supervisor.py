@@ -30,7 +30,7 @@
 import multiprocessing
 
 from powerapi.exception import PowerAPIException
-from powerapi.message import StartMessage, ErrorMessage
+from powerapi.actor.message import StartMessage, ErrorMessage
 
 
 class ActorInitError(PowerAPIException):

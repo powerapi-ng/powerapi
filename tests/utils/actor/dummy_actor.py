@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.handler import PoisonPillMessageHandler, StartHandler
-from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.actor.message import StartMessage, PoisonPillMessage
 from powerapi.actor import Actor, State
 from tests.utils.actor.dummy_handlers import DummyHandler
 

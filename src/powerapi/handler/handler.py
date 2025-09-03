@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.exception import PowerAPIException, UnknownMessageTypeException
-from powerapi.message import Message
+from powerapi.actor.message import Message
 
 
 class HandlerException(PowerAPIException):

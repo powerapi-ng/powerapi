@@ -30,7 +30,7 @@
 import logging
 
 from powerapi.actor import Actor
-from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.actor.message import StartMessage, PoisonPillMessage
 from powerapi.processor.pre.openstack.handlers import StartMessageHandler, PoisonPillMessageHandler, HWPCReportHandler
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
 from powerapi.report import HWPCReport

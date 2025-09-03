@@ -31,7 +31,7 @@ import pytest
 import zmq
 from unittest.mock import Mock
 from powerapi.actor import Actor, Supervisor, ActorInitError, State
-from powerapi.message import OKMessage, ErrorMessage, StartMessage
+from powerapi.actor.message import OKMessage, ErrorMessage, StartMessage
 
 
 #########

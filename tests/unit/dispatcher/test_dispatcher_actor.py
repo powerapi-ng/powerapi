@@ -36,7 +36,7 @@ import pytest
 
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.report import Report, PowerReport
 from tests.unit.actor.abstract_test_actor import recv_from_pipe, is_actor_alive, \
     PUSHER_NAME_POWER_REPORT, join_actor, start_actor

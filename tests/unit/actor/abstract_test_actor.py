@@ -36,7 +36,7 @@ from unittest.mock import Mock
 
 from powerapi.actor import Actor, NotConnectedException
 from powerapi.handler import Handler
-from powerapi.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage, OKMessage, ErrorMessage
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, HWPCReport
 from tests.utils.actor.dummy_actor import DummyActor

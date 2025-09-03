@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 
 from powerapi.database import ReadableDatabase
 from powerapi.filter import Filter
-from powerapi.message import StartMessage, ErrorMessage, OKMessage
+from powerapi.actor.message import StartMessage, ErrorMessage, OKMessage
 from powerapi.puller import PullerActor
 from powerapi.report import Report
 from tests.utils.db import SilentFakeDB
