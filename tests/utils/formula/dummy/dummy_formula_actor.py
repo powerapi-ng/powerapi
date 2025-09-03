@@ -34,7 +34,7 @@ from powerapi.actor import Actor
 from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula, AbstractCpuDramFormulaState
 from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
 from powerapi.handler import StartHandler
-from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.report import Report
 from tests.utils.formula.dummy.dummy_handlers import ReportHandler
 

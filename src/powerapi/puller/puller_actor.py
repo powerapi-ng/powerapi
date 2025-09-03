@@ -32,7 +32,7 @@ import logging
 from powerapi.actor import Actor, State
 from powerapi.database import ReadableDatabase
 from powerapi.filter import Filter
-from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.actor.message import StartMessage, PoisonPillMessage
 from powerapi.puller.database_poller import DatabasePollerThread
 from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 

@@ -35,7 +35,7 @@ import traceback
 import setproctitle
 
 from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
-from powerapi.message import PoisonPillMessage, Message
+from powerapi.actor.message import PoisonPillMessage, Message
 from powerapi.handler import HandlerException, Handler
 
 from .socket_interface import SocketInterface

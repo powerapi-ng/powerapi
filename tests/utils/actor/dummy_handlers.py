@@ -29,7 +29,7 @@
 import logging
 
 from powerapi.handler import Handler
-from powerapi.message import Message
+from powerapi.actor.message import Message
 
 
 class DummyHandler(Handler):

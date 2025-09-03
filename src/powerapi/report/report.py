@@ -33,7 +33,7 @@ from datetime import datetime
 from typing import Any
 from zlib import crc32
 
-from powerapi.message import Message
+from powerapi.actor.message import Message
 
 TAGS_NAME_TRANSLATION_TABLE = str.maketrans('.-/', '___')
 

@@ -32,7 +32,7 @@ import time
 from powerapi.actor import State
 from powerapi.database import DBError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
-from powerapi.message import ErrorMessage
+from powerapi.actor.message import ErrorMessage
 from powerapi.report import Report
 
 

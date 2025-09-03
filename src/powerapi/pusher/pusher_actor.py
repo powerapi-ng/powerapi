@@ -31,7 +31,7 @@ import logging
 
 from powerapi.actor import Actor, State
 from powerapi.database import WritableDatabase
-from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 from powerapi.report import Report
 

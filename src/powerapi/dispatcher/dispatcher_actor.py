@@ -29,14 +29,13 @@
 
 import logging
 from collections.abc import Callable
-from typing import Literal
 
 from powerapi.actor import Actor, State
 from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
 from powerapi.dispatcher.route_table import RouteTable
 from powerapi.formula import FormulaActor
 from powerapi.handler import StartHandler
-from powerapi.message import PoisonPillMessage, StartMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.pusher import PusherActor
 from powerapi.report import Report
 

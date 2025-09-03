@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.message import OKMessage, StartMessage, ErrorMessage
+from powerapi.actor.message import OKMessage, StartMessage, ErrorMessage
 from .handler import Handler
 
 

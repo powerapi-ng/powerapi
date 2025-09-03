@@ -31,7 +31,7 @@ import logging
 from multiprocessing import Manager
 
 from powerapi.actor import Actor
-from powerapi.message import StartMessage, PoisonPillMessage
+from powerapi.actor.message import StartMessage, PoisonPillMessage
 from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
 from powerapi.report import HWPCReport
 from .handlers import K8sPreProcessorActorHWPCReportHandler
