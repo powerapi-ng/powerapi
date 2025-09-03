@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["powerapi", "energy", "power-meter", "green-computing"]
 license = {text = "BSD-3-Clause"}
 requires-python = ">=3.10"
-dynamic = ["version"]
+version = "2.10.0"
 
 classifiers = [
     "Programming Language :: Python :: 3.10",
@@ -74,6 +74,3 @@ dev = [
 homepage = "https://powerapi.org"
 documentation = "https://powerapi.readthedocs.org"
 repository = "https://github.com/powerapi-ng/powerapi"
-
-[tool.setuptools.dynamic]
-version = {attr = "powerapi.__version__"}
