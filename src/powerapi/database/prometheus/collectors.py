@@ -47,7 +47,7 @@ except ImportError:
     Collector = None
 
 
-class ReportCollector(Collector, ABC):
+class ReportCollector(Collector):
     """
     Base Report Collector class.
     """
