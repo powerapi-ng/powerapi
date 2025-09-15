@@ -805,7 +805,7 @@ def test_subgroup_parser_parsing_empty_argument_list_return_an_empty_dict():
     subparser = SubgroupConfigParser('toto')
     subparser.add_argument('a', default_value=1)
     subparser.add_argument('x', default_value=False)
-    acc, result = subparser.parse([])
+    _acc, result = subparser.parse([])
     assert len(result) == 0
 
 
