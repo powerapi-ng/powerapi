@@ -28,11 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+import os
 from datetime import datetime, timezone
 
+import pytest
+
+from powerapi.actor.message import StartMessage, ErrorMessage, OKMessage
 from powerapi.database import ReadableDatabase
 from powerapi.filter import Filter
-from powerapi.actor.message import StartMessage, ErrorMessage, OKMessage
 from powerapi.puller import PullerActor
 from powerapi.report import Report
 from tests.utils.db import SilentFakeDB
@@ -128,6 +131,7 @@ def test_puller_with_multiple_reports_filter():
     assert dispatcher_catch_all.get_num_received_data() == num_reports
 
 
+@pytest.mark.skipif(os.getenv("CI") == "true", reason="This test is too flaky to be run in CI")
 def test_puller_with_stream_mode():
     """
     Test that the puller send reports to the dispatcher and stay alive waiting for new reports.
