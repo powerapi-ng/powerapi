@@ -28,18 +28,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import signal
 import multiprocessing
+import signal
 import sys
 import traceback
+from typing import TYPE_CHECKING
+
 import setproctitle
 
+from powerapi.actor.message import PoisonPillMessage
 from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
-from powerapi.actor.message import PoisonPillMessage, Message
-from powerapi.handler import HandlerException, Handler
-
+from powerapi.handler import HandlerException
 from .socket_interface import SocketInterface
 from .state import State
+
+if TYPE_CHECKING:
+    from powerapi.actor.message import Message
+    from powerapi.handler import Handler
 
 
 class InitializationException(PowerAPIExceptionWithMessage):
