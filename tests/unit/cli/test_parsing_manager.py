@@ -857,7 +857,7 @@ def test_parsing_environment_variables_with_unknown_argument_terminate_execution
 
 
 def test_parsing_environment_variables_with_long_and_short_names_for_arguments_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a configuration defined via environment variables with long and short names for arguments is correctly
     parsed
@@ -882,7 +882,7 @@ def test_parsing_environment_variables_with_long_and_short_names_for_arguments_i
 
 
 def test_parsing_environment_variables_with_no_argument_with_default_value_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments):
     """
     Test that the parsing of a configuration defined via environment variables missing arguments with
     default values results in a dict with the default values for those arguments
@@ -934,12 +934,12 @@ def test_configuration_priority_between_cli_and_environment_variables_in_root_pa
 def test_configuration_priority_between_cli_and_configuration_file_in_root_parsing_manager(config_file,
                                                                                            cli_configuration,
                                                                                            root_config_parsing_manager_with_mandatory_and_optional_arguments,
-                                                                                           test_files_path):
+                                                                                           test_files_path,
+                                                                                           monkeypatch):
     """
     Test that arguments values defined via the CLI are preserved regarding values defined via a configuration file
     """
-    sys.argv.append('--config-file')
-    sys.argv.append(test_files_path + '/root_manager_basic_configuration.json')
+    monkeypatch.setattr(sys, 'argv',  [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
 
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict["arg5"] = "this is a value"  # This value is not defined by the CLI but it has to be present
@@ -950,8 +950,8 @@ def test_configuration_priority_between_cli_and_configuration_file_in_root_parsi
 
 
 def test_configuration_priority_between_environment_variables_and_configuration_file_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
+        test_files_path, monkeypatch):
     """
     Test that arguments values defined via environment variables are preserved regarding values defined via
     a configuration file
@@ -964,9 +964,7 @@ def test_configuration_priority_between_environment_variables_and_configuration_
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    sys.argv = []
-    sys.argv.append('--config-file')
-    sys.argv.append(test_files_path + '/root_manager_basic_configuration.json')
+    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
 
     expected_dict = load_configuration_from_json_file(config_file_environment_variables)
     expected_dict["arg5"] = "this is a value"  # This value is not defined by the CLI but it has to be present
@@ -975,15 +973,13 @@ def test_configuration_priority_between_environment_variables_and_configuration_
 
     assert result == expected_dict
 
-    sys.argv = []
-
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
 
 @pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_no_argument_with_default_value.json'])
 def test_configuration_priority_between_cli_environment_variables_and_configuration_file_in_root_parsing_manager(
         config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
+        test_files_path, monkeypatch):
     """
     Test the following argument definition priority:
     1. CLI
@@ -999,8 +995,7 @@ def test_configuration_priority_between_cli_environment_variables_and_configurat
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    sys.argv.append('--config-file')
-    sys.argv.append(test_files_path + '/root_manager_basic_configuration.json')
+    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
 
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict["arg5"] = "this is a value 3"
@@ -1009,13 +1004,11 @@ def test_configuration_priority_between_cli_environment_variables_and_configurat
 
     assert result == expected_dict
 
-    sys.argv = []
-
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
 
 def test_parsing_environment_variables_with_subgroups_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a configuration defined via environment variables with subgroups is correctly parsed
     """
@@ -1037,7 +1030,7 @@ def test_parsing_environment_variables_with_subgroups_in_root_parsing_manager(
 
 
 def test_parsing_environment_variables_with_subgroups_and_long_and_short_names_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a configuration defined via environment variables with subgroups is correctly parsed
     """
@@ -1084,7 +1077,7 @@ def test_parsing_environment_variables_with_subgroups_and_unknown_arguments_term
 
 
 def test_parsing_environment_variables_with_subgroups_and_no_arguments_with_default_value_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
+        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
     """
     Test that a configuration defined via environment variables with subgroups without variables with default values
     is correctly parsed
@@ -1136,7 +1129,7 @@ def test_parsing_environment_variables_with_subgroups_and_wrong_type_terminate_e
                          ['root_manager_configuration_with_subgroups_and_no_argument_default_value.json'])
 def test_config_priority_between_cli_environ_variables_and_configuration_file_with_subgroups_in_root_parsing_manager(
         config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
+        test_files_path, monkeypatch):
     """
     Test the following argument definition priority for a configuration with subgroups:
     1. CLI
@@ -1152,8 +1145,7 @@ def test_config_priority_between_cli_environ_variables_and_configuration_file_wi
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    sys.argv.append('--config-file')
-    sys.argv.append(test_files_path + '/root_manager_configuration_with_subgroups.json')
+    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_configuration_with_subgroups.json'])
 
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict['input']['in1']['name'] = 'i1_name'
@@ -1163,8 +1155,6 @@ def test_config_priority_between_cli_environ_variables_and_configuration_file_wi
     result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
     assert result == expected_dict
-
-    sys.argv = []
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
@@ -1196,8 +1186,6 @@ def test_config_priority_between_cli_and_environ_variables_with_subgroups_in_roo
 
     assert result == expected_dict
 
-    sys.argv = []
-
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 
 
@@ -1205,13 +1193,12 @@ def test_config_priority_between_cli_and_environ_variables_with_subgroups_in_roo
                          ['root_manager_configuration_with_subgroups_and_no_argument_default_value.json'])
 def test_config_priority_between_cli_and_configuration_file_with_subgroups_in_root_parsing_manager(
         config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
+        test_files_path, monkeypatch):
     """
     Test that arguments values defined via the CLI are preserved regarding values defined via a config file
     with subgroups in configuration
     """
-    sys.argv.append('--config-file')
-    sys.argv.append(test_files_path + '/root_manager_configuration_with_subgroups.json')
+    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_configuration_with_subgroups.json'])
 
     expected_dict = load_configuration_from_json_file(config_file)
     expected_dict['input']['in1']['name'] = 'in1_name'
@@ -1222,12 +1209,10 @@ def test_config_priority_between_cli_and_configuration_file_with_subgroups_in_ro
 
     assert result == expected_dict
 
-    sys.argv = []
-
 
 def test_config_priority_between_environ_variables_and_configuration_file_with_subgroups_in_root_parsing_manager(
         root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
+        test_files_path, monkeypatch):
     """
     Test that arguments values defined via the environment variables are preserved regarding values defined via a config
     file with subgroups in configuration
@@ -1241,9 +1226,7 @@ def test_config_priority_between_environ_variables_and_configuration_file_with_s
         group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
         get_groups_prefixes())
 
-    sys.argv.append('--config-file')
-
-    sys.argv.append(test_files_path + '/root_manager_configuration_with_subgroups_and_long_and_short_names.json')
+    monkeypatch.setattr(sys, 'argv', ['--config-file', test_files_path + '/root_manager_configuration_with_subgroups_and_long_and_short_names.json'])
 
     expected_dict = load_configuration_from_json_file(config_file_environment_variables)
     expected_dict['input']['in1']['name'] = 'i1_name'
@@ -1253,8 +1236,6 @@ def test_config_priority_between_environ_variables_and_configuration_file_with_s
     result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
 
     assert result == expected_dict
-
-    sys.argv = []
 
     remove_environment_variables_configuration(variables_names=created_environment_variables)
 

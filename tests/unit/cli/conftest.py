@@ -485,27 +485,19 @@ def test_files_path():
 
 
 @pytest.fixture
-def cli_configuration(config_file: str):
+def cli_configuration(config_file: str, monkeypatch):
     """
     Load in sys.argv a configuration with arguments extracted from a json file
     """
-    sys.argv = generate_cli_configuration_from_json_file(file_name=config_file)
-
-    yield None
-
-    sys.argv = []
+    monkeypatch.setattr(sys, 'argv', generate_cli_configuration_from_json_file(file_name=config_file))
 
 
 @pytest.fixture
-def empty_cli_configuration():
+def empty_cli_configuration(monkeypatch):
     """
     Clean the CLI arguments
     """
-    sys.argv = []
-
-    yield None
-
-    sys.argv = []
+    monkeypatch.setattr(sys, 'argv', [])
 
 
 @pytest.fixture
