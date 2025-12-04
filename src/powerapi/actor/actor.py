@@ -118,9 +118,6 @@ class Actor(multiprocessing.Process):
         #: (powerapi.SocketInterface): Actor's SocketInterface
         self.socket_interface = SocketInterface(name, timeout)
 
-        #: (func): Actor behaviour
-        self.behaviour = Actor._initial_behaviour
-
         #: (List): list of exception that restart the actor it they are raised
         self.low_exception = []
 
@@ -132,7 +129,7 @@ class Actor(multiprocessing.Process):
 
         while self.state.alive:
             try:
-                self.behaviour(self)
+                self._process_received_messages()
             except Exception as exn:
                 if type(exn) in self.low_exception:
                     self.logger.error('Minor exception raised, restart actor !')
@@ -202,23 +199,10 @@ class Actor(multiprocessing.Process):
         """
         self.state.add_handler(message_type, handler)
 
-    def set_behaviour(self, new_behaviour):
+    def _process_received_messages(self):
         """
-        Set a new behaviour
-        :param new_behaviour: function
+        Process the messages received by the actor.
         """
-        self.behaviour = new_behaviour
-
-    def _initial_behaviour(self):
-        """
-        Initial behaviour of an actor
-
-        Wait for a message, and handle it with the correct handler
-
-        If the message is None, call the timout_handler otherwise find the
-        handler correponding to the message type and call it on the message.
-        """
-
         msg = self.receive()
         if msg is None:
             return  # Timeout
