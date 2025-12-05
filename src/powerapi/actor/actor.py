@@ -139,7 +139,7 @@ class Actor(multiprocessing.Process):
                     self.logger.error('Major Exception raised, stop actor')
                     traceback.print_exc()
 
-        self._kill_process()
+        self._teardown_actor()
 
     def _signal_handler_setup(self):
         """
@@ -154,7 +154,7 @@ class Actor(multiprocessing.Process):
             handler = self.state.get_corresponding_handler(msg)
             handler.handle(msg)
 
-            self._kill_process()
+            self._teardown_actor()
             sys.exit(0)
 
         signal.signal(signal.SIGTERM, term_handler)
@@ -207,12 +207,19 @@ class Actor(multiprocessing.Process):
         except HandlerException:
             self.logger.warning("Failed to handle message: %s", msg)
 
-    def _kill_process(self):
+    def _teardown_actor(self):
         """
-        Kill the actor (close sockets)
+        Internal teardown routine executed by the actor before it stops.
         """
+        self.teardown()
         self.socket_interface.close()
         self.logger.debug('Actor "%s" teardown', self.name)
+
+    def teardown(self):
+        """
+        Cleanup method executed in the actor process before it shuts down.
+        Override this method to customize the actor’s cleanup logic.
+        """
 
     def connect_data(self):
         """
