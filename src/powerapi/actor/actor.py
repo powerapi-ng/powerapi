@@ -113,7 +113,7 @@ class Actor(multiprocessing.Process):
         self.logger.addHandler(handler)
 
         #: (powerapi.State): Actor context
-        self.state = State(self)
+        self.state: State | None = None
 
         #: (powerapi.SocketInterface): Actor's SocketInterface
         self.socket_interface = SocketInterface(name, timeout)
@@ -125,7 +125,7 @@ class Actor(multiprocessing.Process):
         """
         Main code executed by the actor
         """
-        self._setup()
+        self._setup_actor()
 
         while self.state.alive:
             try:
@@ -160,33 +160,25 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def _setup(self):
+    def _setup_actor(self):
         """
-        Set actor specific configuration:
-
-         - set the processus name
-         - setup the socket interface
-         - setup the signal handler
-
-        This method is called before entering on the behaviour loop
+        Internal initialization routine executed by the actor before starting to process messages.
         """
-        # Name process
         setproctitle.setproctitle(self.name)
-
         self.socket_interface.setup()
-
-        self.logger.debug('Actor "%s" process created', self.name)
-
         self._signal_handler_setup()
 
         self.setup()
 
+        self.logger.debug('Actor "%s" process created', self.name)
+
     def setup(self):
         """
-        Function called before entering on the behaviour loop
-
-        Can be overriden to use personal actor setup
+        Initializes the actor before it begins processing messages.
+        Override this method to customize the actor’s initialization logic.
+        You **must** initialize the actor’s state within this method.
         """
+        self.state = State(self)
 
     def add_handler(self, message_type: type[Message], handler: Handler):
         """
