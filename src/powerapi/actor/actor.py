@@ -195,7 +195,8 @@ class Actor(multiprocessing.Process):
         """
         Process the messages received by the actor.
         """
-        msg = self.receive()
+        msg = self.socket_interface.receive()
+        self.logger.debug('Received message: %s', msg)
         if msg is None:
             return  # Timeout
 
@@ -221,71 +222,84 @@ class Actor(multiprocessing.Process):
         Override this method to customize the actor’s cleanup logic.
         """
 
-    def connect_data(self):
+    def send_control(self, msg: Message) -> None:
         """
-        Open a canal that can be use for unidirectional communication to this
-        actor
-        """
-        self.socket_interface.connect_data()
-
-    def connect_control(self):
-        """
-        Open a control canal with this actor. An actor can have only one
-        control open at the same time. Open a pair socket on the process
-        that want to control this actor
-        """
-        self.socket_interface.connect_control()
-
-    def send_control(self, msg):
-        """
-        Send a message to this actor on the control canal
-
-        :param Object msg: the message to send to this actor
+        Send a message on the control channel of the actor.
+        Used internally to respond to control messages received from other actors.
+        :param msg: Message to send
         """
         self.socket_interface.send_control(msg)
-        self.logger.debug('Send control to actor "%s" : %s', self.name, msg)
+        self.logger.debug('Sent control message: %s', msg)
 
-    def receive_control(self, timeout=None):
+    def get_proxy(self) -> ActorProxy:
         """
-        Receive a message from this actor on the control canal
+        Returns a proxy object for this actor.
+        The proxy object is used to communicate with the actor via its IPC interface.
+        :return: Proxy object
         """
-        msg = self.socket_interface.receive_control(timeout)
-        self.logger.debug('Actor "%s" received control : %s', self.name, msg)
-        return msg
+        return ActorProxy(self.name, self.__class__)
 
-    def send_data(self, msg):
+
+class ActorProxy:
+    """
+    Proxy object for actors.
+    Used to communicate with an actor via its IPC interface.
+    """
+
+    def __init__(self, actor_name: str, actor_type: type[Actor]):
         """
-        Send a msg to this actor using the data canal
-
-        :param Object msg: the message to send to this actor
+        Initialize a new actor proxy object.
+        :param actor_name: Name of the actor
+        :param actor_type: Type of the actor
         """
-        self.socket_interface.send_data(msg)
-        self.logger.debug('Send data to actor "%s" : %s ', self.name, msg)
+        self.actor_name = actor_name
+        self.actor_type = actor_type
 
-    def receive(self):
+        self._ipc_interface = SocketInterface(actor_name, None)
+
+    def connect_control(self) -> None:
         """
-        Block until a message was received (or until timeout) an return the
-        received messages
-
-        :return: the list of received messages or an empty list if timeout
-        :rtype: a list of Object
+        Connect to the actor's control channel.
         """
-        msg = self.socket_interface.receive()
-        self.logger.debug('Actor "%s" received data : %s', self.name, msg)
-        return msg
+        self._ipc_interface.connect_control()
 
-    def soft_kill(self):
-        """Kill this actor by sending a soft :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
+    def send_control(self, msg: Message) -> None:
         """
-        self.send_control(PoisonPillMessage())
-        self.socket_interface.close()
-
-    def hard_kill(self):
-        """Kill this actor by sending a hard :class:`PoisonPillMessage
-        <powerapi.message.message.PoisonPillMessage>`
-
+        Sends a message to the actor's control channel.
+        :param msg: Message to send
         """
-        self.send_control(PoisonPillMessage(soft=False))
-        self.socket_interface.close()
+        self._ipc_interface.send_control(msg)
+
+    def receive_control(self, timeout: int | None = None) -> Message:
+        """
+        Receive a message from the actor's control channel.
+        :param timeout: Timeout in seconds, None blocks indefinitely
+        :return: The received message
+        """
+        return self._ipc_interface.receive_control(timeout)
+
+    def connect_data(self) -> None:
+        """
+        Connect to the actor's data channel.
+        """
+        self._ipc_interface.connect_data()
+
+    def send_data(self, msg: Message) -> None:
+        """
+        Sends a message to the actor's data channel.
+        :param msg: Message to send
+        """
+        self._ipc_interface.send_data(msg)
+
+    def kill(self, graceful: bool = True) -> None:
+        """
+        Sends a kill message to the actor.
+        :param graceful: If true, the actor will process its pending messages before stopping; If false, stop immediately.
+        """
+        self.send_control(PoisonPillMessage(soft=graceful))
+
+    def disconnect(self) -> None:
+        """
+        Disconnect from the control and data channels of the actor.
+        """
+        self._ipc_interface.close()

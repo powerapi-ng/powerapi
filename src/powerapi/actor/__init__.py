@@ -31,4 +31,4 @@ from powerapi.actor.socket_interface import SocketInterface, NotConnectedExcepti
 from powerapi.actor.supervisor import Supervisor, ActorInitError, ActorAlreadySupervisedException
 from powerapi.actor.supervisor import CrashConfigureError, FailConfigureError
 from powerapi.actor.state import State
-from powerapi.actor.actor import Actor, InitializationException
+from powerapi.actor.actor import Actor, ActorProxy, InitializationException
