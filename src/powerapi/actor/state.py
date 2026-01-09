@@ -66,7 +66,7 @@ class State:
         """
         try:
             return self.handlers[msg.__class__.__name__]
-        except ValueError as e:
+        except KeyError as e:
             raise UnknownMessageTypeException() from e
 
     def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True):
