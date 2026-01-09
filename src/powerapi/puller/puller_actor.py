@@ -73,11 +73,15 @@ class PullerActor(Actor):
         """
         super().__init__(name, level_logger, 1000)
 
-        self.state = PullerState(self, database, report_filter, stream_mode)
+        self.database = database
+        self.report_filter = report_filter
+        self.stream_mode = stream_mode
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Set up the Puller actor message handlers.
         """
+        self.state = PullerState(self, self.database, self.report_filter, self.stream_mode)
+
         self.add_handler(StartMessage, PullerStartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))
