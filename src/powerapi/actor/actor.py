@@ -231,13 +231,23 @@ class Actor(multiprocessing.Process):
         self.socket_interface.send_control(msg)
         self.logger.debug('Sent control message: %s', msg)
 
-    def get_proxy(self) -> ActorProxy:
+    def get_proxy(self, connect_control: bool = False, connect_data: bool = False) -> ActorProxy:
         """
         Returns a proxy object for this actor.
         The proxy object is used to communicate with the actor via its IPC interface.
+        :param connect_control: Whether to connect to the actor control channel
+        :param connect_data: Whether to connect to the actor data channel
         :return: Proxy object
         """
-        return ActorProxy(self.name, self.__class__)
+        proxy = ActorProxy(self.name, self.__class__)
+
+        if connect_control:
+            proxy.connect_control()
+
+        if connect_data:
+            proxy.connect_data()
+
+        return proxy
 
 
 class ActorProxy:
