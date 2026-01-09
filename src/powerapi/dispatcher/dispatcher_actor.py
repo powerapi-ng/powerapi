@@ -30,13 +30,12 @@
 import logging
 from collections.abc import Callable
 
-from powerapi.actor import Actor, State
+from powerapi.actor import Actor, ActorProxy, State
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
 from powerapi.dispatcher.route_table import RouteTable
 from powerapi.formula import FormulaActor
 from powerapi.handler import StartHandler
-from powerapi.actor.message import PoisonPillMessage, StartMessage
-from powerapi.pusher import PusherActor
 from powerapi.report import Report
 
 
@@ -45,7 +44,7 @@ class DispatcherState(State):
     Dispatcher actor state.
     """
 
-    def __init__(self, actor, pushers: dict[type[Report], list[PusherActor]], route_table: RouteTable):
+    def __init__(self, actor, pushers: dict[type[Report], list[ActorProxy]], route_table: RouteTable):
         """
         :param actor: Dispatcher actor instance
         :param pushers: List of pushers
@@ -53,10 +52,10 @@ class DispatcherState(State):
         """
         super().__init__(actor)
 
-        self.formula_dict = {}
-
         self.pushers = pushers
         self.route_table = route_table
+
+        self.formula_dict = {}
 
     def add_formula(self, formula_id: tuple) -> FormulaActor:
         """
@@ -89,7 +88,7 @@ class DispatcherActor(Actor):
     provided routing table. When a report doesn't have any formula assigned, the dispatcher will create a new formula.
     """
 
-    def __init__(self, name: str, formula_init_function: Callable, pushers: dict[type[Report], list[PusherActor]],
+    def __init__(self, name: str, formula_init_function: Callable, pushers: dict[type[Report], list[ActorProxy]],
                  route_table: RouteTable, level_logger: int = logging.WARNING, timeout=None):
         """
         :param name: Actor name
@@ -98,19 +97,17 @@ class DispatcherActor(Actor):
         :param level_logger: Logging level
         :param timeout: Time in millisecond to wait for a message before running the timeout handler
         """
-        Actor.__init__(self, name, level_logger, timeout)
+        super().__init__(name, level_logger, timeout)
 
-        # (func): Function for creating Formula
         self.formula_init_function = formula_init_function
-
-        # (powerapi.DispatcherState): Actor state
-        self.state = DispatcherState(self, pushers, route_table)
+        self.pushers = pushers
+        self.route_table = route_table
 
     def setup(self):
         """
         Setup Dispatcher actor report handlers.
         """
-        super().setup()
+        self.state = DispatcherState(self, self.pushers, self.route_table)
 
         self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
         self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
