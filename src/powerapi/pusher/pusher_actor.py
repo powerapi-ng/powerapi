@@ -68,15 +68,16 @@ class PusherActor(Actor):
         """
         super().__init__(name, logger_level, 1000)
 
+        self.database = database
         self.flush_interval = flush_interval
         self.max_buffer_size = max_buffer_size
 
-        self.state = PusherState(self, database)
-
-    def setup(self):
+    def setup(self) -> None:
         """
         Set up the Pusher actor message handlers.
         """
+        self.state = PusherState(self, self.database)
+
         self.add_handler(StartMessage, PusherStartHandler(self.state))
         self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
         self.add_handler(Report, ReportHandler(self.state, self.flush_interval, self.max_buffer_size))
