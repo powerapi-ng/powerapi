@@ -140,6 +140,7 @@ class SocketInterface:
         self._control_socket = zmq.Context.instance().socket(zmq.DEALER)
         self._control_socket.setsockopt(zmq.LINGER, 0)
         self._control_socket.connect(f'ipc://{self.control_socket_filepath}')
+        self._control_socket.poll(zmq.POLLIN | zmq.POLLOUT)  # Very important, prevents synchronization problems.
 
     def receive_control(self, timeout: int | None = None) -> Any:
         """
@@ -173,6 +174,7 @@ class SocketInterface:
         self._data_socket = zmq.Context.instance().socket(zmq.PUSH)
         self._data_socket.setsockopt(zmq.LINGER, -1)
         self._data_socket.connect(f'ipc://{self.data_socket_filepath}')
+        self._data_socket.poll(zmq.POLLOUT)  # Very important, prevents synchronization problems.
 
     def send_data(self, msg: Any) -> None:
         """
