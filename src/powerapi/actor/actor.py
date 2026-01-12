@@ -313,3 +313,15 @@ class ActorProxy:
         Disconnect from the control and data channels of the actor.
         """
         self._ipc_interface.close()
+
+    def __enter__(self):
+        """
+        Context manager entry point.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Context manager exit point.
+        """
+        self.disconnect()
