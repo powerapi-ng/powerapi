@@ -123,7 +123,7 @@ def test_setup(endpoint_interface):
     assert isinstance(endpoint_interface._sockets_poller, zmq.Poller)
 
     check_socket(endpoint_interface._data_socket, zmq.PULL, endpoint_interface.data_socket_filepath)
-    check_socket(endpoint_interface._control_socket, zmq.PAIR, endpoint_interface.control_socket_filepath)
+    check_socket(endpoint_interface._control_socket, zmq.DEALER, endpoint_interface.control_socket_filepath)
 
 
 def test_data_connect(endpoint_interface, data_peer_interface):
@@ -167,7 +167,7 @@ def test_control_connect(endpoint_interface, control_peer_interface):
     """
     Test if the control socket is open.
     """
-    check_socket(control_peer_interface._control_socket, zmq.PAIR, control_peer_interface.control_socket_filepath)
+    check_socket(control_peer_interface._control_socket, zmq.DEALER, control_peer_interface.control_socket_filepath)
 
 
 def test_control_disconnect(endpoint_interface, control_peer_interface):

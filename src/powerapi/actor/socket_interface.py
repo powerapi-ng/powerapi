@@ -83,7 +83,7 @@ class SocketInterface:
         """
         self._is_endpoint = True
 
-        self._control_socket = zmq.Context.instance().socket(zmq.PAIR)
+        self._control_socket = zmq.Context.instance().socket(zmq.DEALER)
         self._control_socket.setsockopt(zmq.LINGER, 0)
         self._control_socket.bind(f'ipc://{self.control_socket_filepath}')
 
@@ -137,7 +137,7 @@ class SocketInterface:
         Connect to the control socket of the actor.
         This method should only be called by actors that wants to communicate with another actor's endpoint.
         """
-        self._control_socket = zmq.Context.instance().socket(zmq.PAIR)
+        self._control_socket = zmq.Context.instance().socket(zmq.DEALER)
         self._control_socket.setsockopt(zmq.LINGER, 0)
         self._control_socket.connect(f'ipc://{self.control_socket_filepath}')
 
