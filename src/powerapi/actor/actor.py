@@ -102,15 +102,7 @@ class Actor(multiprocessing.Process):
         """
         multiprocessing.Process.__init__(self, name=name)
 
-        #: (logging.Logger): Logger
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(level_logger)
-        formatter = logging.Formatter(
-            '%(asctime)s || %(levelname)s || ' +
-            '%(process)d %(processName)s || %(message)s')
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        self.logging_level = level_logger
 
         #: (powerapi.State): Actor context
         self.state: State | None = None
@@ -132,14 +124,21 @@ class Actor(multiprocessing.Process):
                 self._process_received_messages()
             except Exception as exn:
                 if type(exn) in self.low_exception:
-                    self.logger.error('Minor exception raised, restart actor !')
+                    logging.error('Minor exception raised, restart actor !')
                     traceback.print_exc()
                 else:
                     self.state.alive = False
-                    self.logger.error('Major Exception raised, stop actor')
+                    logging.error('Major Exception raised, stop actor')
                     traceback.print_exc()
 
         self._teardown_actor()
+
+    def _logging_setup(self) -> None:
+        """
+        Setup logging for the actor.
+        """
+        fmt = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(message)s'
+        logging.basicConfig(format=fmt, level=self.logging_level)
 
     def _signal_handler_setup(self):
         """
@@ -148,7 +147,7 @@ class Actor(multiprocessing.Process):
 
         def term_handler(signum, _):
             signame = signal.Signals(signum).name
-            self.logger.debug("Received signal %s (%s), terminating actor...", signame, signum)
+            logging.debug("Received signal %s (%s), terminating actor...", signame, signum)
 
             msg = PoisonPillMessage(soft=False)
             handler = self.state.get_corresponding_handler(msg)
@@ -165,12 +164,13 @@ class Actor(multiprocessing.Process):
         Internal initialization routine executed by the actor before starting to process messages.
         """
         setproctitle.setproctitle(self.name)
+        self._logging_setup()
         self.socket_interface.setup()
         self._signal_handler_setup()
 
         self.setup()
 
-        self.logger.debug('Actor "%s" process created', self.name)
+        logging.debug('Actor "%s" process created', self.name)
 
     def setup(self):
         """
@@ -196,7 +196,7 @@ class Actor(multiprocessing.Process):
         Process the messages received by the actor.
         """
         msg = self.socket_interface.receive()
-        self.logger.debug('Received message: %s', msg)
+        logging.debug('Received message: %s', msg)
         if msg is None:
             return  # Timeout
 
@@ -204,9 +204,9 @@ class Actor(multiprocessing.Process):
             handler = self.state.get_corresponding_handler(msg)
             handler.handle_message(msg)
         except UnknownMessageTypeException:
-            self.logger.warning("Unknown message type: %s", msg)
+            logging.warning("Unknown message type: %s", msg)
         except HandlerException:
-            self.logger.warning("Failed to handle message: %s", msg)
+            logging.warning("Failed to handle message: %s", msg)
 
     def _teardown_actor(self):
         """
@@ -214,7 +214,8 @@ class Actor(multiprocessing.Process):
         """
         self.teardown()
         self.socket_interface.close()
-        self.logger.debug('Actor "%s" teardown', self.name)
+
+        logging.debug('Actor "%s" teardown', self.name)
 
     def teardown(self):
         """
@@ -229,7 +230,7 @@ class Actor(multiprocessing.Process):
         :param msg: Message to send
         """
         self.socket_interface.send_control(msg)
-        self.logger.debug('Sent control message: %s', msg)
+        logging.debug('Sent control message: %s', msg)
 
     def get_proxy(self, connect_control: bool = False, connect_data: bool = False) -> ActorProxy:
         """
