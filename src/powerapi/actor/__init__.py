@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.actor.socket_interface import SocketInterface, NotConnectedException
-from powerapi.actor.supervisor import Supervisor, ActorInitError, ActorAlreadySupervisedException
-from powerapi.actor.supervisor import CrashConfigureError, FailConfigureError
+from powerapi.actor.message import Message, StartMessage, OKMessage, ErrorMessage, PoisonPillMessage
 from powerapi.actor.state import State
 from powerapi.actor.actor import Actor, ActorProxy, InitializationException
+from powerapi.actor.supervisor import Supervisor, ActorAlreadySupervisedException, ActorInitializationError
