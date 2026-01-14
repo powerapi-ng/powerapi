@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -27,94 +27,113 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import select
+from typing import TYPE_CHECKING
 
 from powerapi.actor import Supervisor
-from powerapi.puller import PullerActor
 from powerapi.dispatcher import DispatcherActor
+from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
+
+if TYPE_CHECKING:
+    from powerapi.actor import Actor
 
 
 class BackendSupervisor(Supervisor):
     """
-    Provide additional functionality to deal with actors: join
+    Backend Supervisor class.
+    Provides basic operations to start and stop a backend of actors.
     """
 
-    def __init__(self, stream_mode):
+    def __init__(self, stream_mode: bool):
+        """
+        Initialize a new backend supervisor.
+        :param stream_mode: True for stream mode, False otherwise
+        """
         super().__init__()
 
-        #: (bool): Enable stream mode.
         self.stream_mode = stream_mode
 
-        #: (list): List of Puller
-        self.pullers = []
+        self.pullers: list[PullerActor] = []
+        self.dispatchers: list[DispatcherActor] = []
+        self.pre_processors: list[ProcessorActor] = []
+        self.pushers: list[PusherActor] = []
 
-        #: (list): List of Dispatcher
-        self.dispatchers = []
-
-        #: (list): List of Pusher
-        self.pushers = []
-
-        #: (list): List of pre processors
-        self.pre_processors = []
-
-    def join(self):
+    def launch_actor(self, actor: Actor, start_message: bool = True, init_timeout: int = 2000) -> None:
         """
-        wait until all actor are terminated
+        Launch the actor and supervise it.
+        :param actor: Actor to launch
+        :param start_message: Whether to send a start message to the actor
+        :param init_timeout: Maximum time in milliseconds to wait for an actor to be initialized
+        :raise ActorAlreadySupervisedException: When trying to launch an actor that is already supervised
+        :raise ActorInitializationError: When the actor initialization process failed
         """
-        # List the different kind of actor
-        for actor in self.supervised_actors:
-            if isinstance(actor, PullerActor):
+        super().launch_actor(actor, start_message, init_timeout)
+
+        match actor:
+            case PullerActor():
                 self.pullers.append(actor)
-            elif isinstance(actor, DispatcherActor):
+            case DispatcherActor():
                 self.dispatchers.append(actor)
-            elif isinstance(actor, PusherActor):
-                self.pushers.append(actor)
-            else:
+            case ProcessorActor():
                 self.pre_processors.append(actor)
+            case PusherActor():
+                self.pushers.append(actor)
 
-        if self.stream_mode:
-            self.join_stream_mode_on()
-        else:
-            self.join_stream_mode_off()
-
-    def join_stream_mode_on(self):
+    @staticmethod
+    def _kill_actor(actor: Actor, graceful: bool) -> None:
         """
-        Supervisor behaviour when stream mode is on.
-        When end raise (for exemple by CRTL+C)
-        -> Kill all actor in the following order (Puller - Dispatcher/Formula - Pusher)
-        1. Send SIGTERM
-        2. Join X seconds
-        3. If still alive, send SIGKILL
-        4. Join
+        Helper function for killing an actor.
+        :param actor: Actor to kill
+        :param graceful: Whether to gracefully kill the actor
         """
-        for actor in self.supervised_actors:
-            if not actor.is_alive():
-                self.kill_actors()
-                return
+        with actor.get_proxy(connect_control=True) as proxy:
+            proxy.kill(graceful=graceful)
 
-        actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
-
-        select.select(actor_sentinels, actor_sentinels, actor_sentinels)
-        self.kill_actors()
-
-    def join_stream_mode_off(self):
+    def _join_stream_mode_off(self, timeout: float | None = None) -> None:
         """
-        Supervisor behaviour when stream mode is off.
-        - Supervisor wait the Puller death
-        - Supervisor wait the pre-processors death
-        - Supervisor wait for the dispatcher death
-        - Supervisor send a PoisonPill (by_data) to the Pusher
-        - Supervisor wait for the Pusher death
+        Wait until the pullers actors shutdown, then triggers the shutdown of the other actors.
+        :param timeout: Maximum time in seconds to wait for an actor to joined
         """
         for puller in self.pullers:
-            puller.join()
+            puller.join(timeout=timeout)
+
         for pre_processor in self.pre_processors:
-            pre_processor.soft_kill()
-            pre_processor.join()
+            self._kill_actor(pre_processor, graceful=True)
+            pre_processor.join(timeout=timeout)
+
         for dispatcher in self.dispatchers:
-            dispatcher.soft_kill()
-            dispatcher.join()
+            self._kill_actor(dispatcher, graceful=True)
+            dispatcher.join(timeout=timeout)
+
         for pusher in self.pushers:
-            pusher.soft_kill()
-            pusher.join()
+            self._kill_actor(pusher, graceful=True)
+            pusher.join(timeout=timeout)
+
+    def join(self, timeout: float | None = None) -> None:
+        """
+        Wait until all supervised actors are stopped.
+        When stream mode is disabled, this method will trigger the shutdown of all actors after the pullers shutdown.
+        :param timeout: Maximum time in seconds to wait for an actor to joined
+        """
+        if self.stream_mode:
+            super().join(timeout=timeout)
+        else:
+            self._join_stream_mode_off(timeout=timeout)
+
+    def kill_actors(self, graceful: bool = True) -> None:
+        """
+        Kill all supervised actors.
+        :param graceful: If true, the actors will process pending messages before stopping; If false, stop immediately
+        """
+        for puller in self.pullers:
+            self._kill_actor(puller, graceful=graceful)
+
+        for pre_processor in self.pre_processors:
+            self._kill_actor(pre_processor, graceful=graceful)
+
+        for dispatcher in self.dispatchers:
+            self._kill_actor(dispatcher, graceful=graceful)
+
+        for pusher in self.pushers:
+            self._kill_actor(pusher, graceful=graceful)

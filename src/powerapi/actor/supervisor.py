@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -27,124 +27,86 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import multiprocessing
+from typing import TYPE_CHECKING
 
-from powerapi.exception import PowerAPIException
 from powerapi.actor.message import StartMessage, ErrorMessage
+from powerapi.exception import PowerAPIException
 
-
-class ActorInitError(PowerAPIException):
-    """
-    Exception raised when an error occuried during the actor initialisation
-    process
-    """
-
-    def __init__(self, message):
-        super().__init__()
-
-        #: (str): error description
-        self.message = message
-
-
-class FailConfigureError(PowerAPIException):
-    """
-    Exception raised when an error occured during the actor setup process
-    """
-
-
-class CrashConfigureError(PowerAPIException):
-    """
-    Exception raised when an actor crash during initialisation
-    """
+if TYPE_CHECKING:
+    from powerapi.actor import Actor
 
 
 class ActorAlreadySupervisedException(PowerAPIException):
     """
-    Exception raised when trying to supervise with a supervisor that already
-    supervise this actor
+    Exception raised when trying to launch an actor that is already supervised.
     """
 
 
-class ActorAlreadyLaunchedException(PowerAPIException):
+class ActorInitializationError(PowerAPIException):
     """
-    Exception raised when trying to supervise with a supervisor that already
-    supervise this actor
+    Exception raised when the initialization of the actor failed.
     """
 
+    def __init__(self, error_msg: str):
+        super().__init__()
 
-SUPERVISOR_NAME = 'powerapi_supervisor'
+        self.error_msg = error_msg
 
 
 class Supervisor:
     """
-    Provide basic functionality to deal with actors: launch and kill
+    Actor supervisor class.
+    Provides basic operations to start and stop actors.
     """
 
     def __init__(self):
-        #: ([powerapi.actor.actor.Actor]): list of supervised actors
-        self.supervised_actors = []
+        self.supervised_actors: list[Actor] = []
 
-    def launch_actor(self, actor, start_message=True):
+    def launch_actor(self, actor: Actor, start_message: bool = True, init_timeout: float = 5.0) -> None:
         """
-        Launch the actor :
-          - start the process that execute the actor code
-          - connect the data and control socket
-          - send a StartMessage to initialize the actor if needed
-
-        :param Actor actor: Actor to be launched
-        :param boolean start_message: True a StartMessage need to be sent to
-                                     this actor
-
-        :raise: zmq.error.ZMQError if a communication error occurs
-        :raise: powerapi.actor.ActorInitError if the actor crash during the
-                initialisation process
+        Launch the actor and supervise it.
+        :param actor: Actor to launch
+        :param start_message: Whether to send a start message to the actor
+        :param init_timeout: Maximum time in seconds to wait for an actor to initialize
+        :raise ActorAlreadySupervisedException: When trying to launch an actor that is already supervised
+        :raise ActorInitializationError: When the actor initialization process failed
         """
-        if actor.is_alive():
-            raise ActorAlreadyLaunchedException()
+        if actor in self.supervised_actors:
+            raise ActorAlreadySupervisedException()
 
         actor.start()
-        actor.connect_control()
-        actor.connect_data()
 
         if start_message:
-            actor.send_control(StartMessage())
-            msg = actor.receive_control(2000)
-            if isinstance(msg, ErrorMessage):
-                raise ActorInitError(msg.error_message)
+            with actor.get_proxy(connect_control=True) as proxy:
+                proxy.send_control(StartMessage())
+                response = proxy.receive_control(timeout=int(init_timeout * 1000))
+                match response:
+                    case ErrorMessage():
+                        proxy.kill(graceful=False)
+                        actor.join()
+                        raise ActorInitializationError(response.error_message)
 
-            if msg is None:
-                if actor.is_alive():
-                    actor.terminate()
-                    raise FailConfigureError(f'Unable to configure the actor: {actor.name}')
-                raise CrashConfigureError(f'The actor "{actor.name}" crashed during initialisation')
+                    case None:
+                        actor.terminate()  # Actor process is expected to be dead, this is just to be sure.
+                        actor.join()
+                        raise ActorInitializationError('Actor process crashed during its initialization')
 
         self.supervised_actors.append(actor)
 
-    def join(self):
+    def join(self, timeout: float | None = None) -> None:
         """
-        wait until all actor are terminated
+        Wait until all supervised actors are stopped.
+        :param timeout: Maximum time in seconds to wait for an actor to be stopped
         """
-        actor_sentinels = [actor.sentinel for actor in self.supervised_actors]
-        multiprocessing.connection.wait(actor_sentinels)
+        for actor in self.supervised_actors:
+            actor.join(timeout=timeout)
 
-    def kill_actors(self, soft=False):
+    def kill_actors(self, graceful: bool = True) -> None:
         """
-        Kill all the supervised actors
+        Kill all supervised actors.
+        :param graceful: If true, the actors will process pending messages before stopping; If false, stop immediately
         """
         for actor in self.supervised_actors:
             if actor.is_alive():
-                if soft:
-                    actor.soft_kill()
-                else:
-                    actor.hard_kill()
-                actor.join()
-
-    def are_all_actors_alive(self) -> bool:
-        """
-        Identify if one of the actors is dead
-        :return: True if all the actors are alive
-        """
-        for actor in self.supervised_actors:
-            if not actor.is_alive():
-                return False
-        return True
+                with actor.get_proxy(connect_control=True) as proxy:
+                    proxy.kill(graceful=graceful)
