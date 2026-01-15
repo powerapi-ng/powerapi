@@ -1,4 +1,4 @@
-<img src="https://rawgit.com/Spirals-Team/powerapi/master/resources/logo/PowerAPI-logo.png" alt="Powerapi" width="300px">
+<img src="https://powerapi.org/assets/images/PowerAPI-logo.png" alt="PowerAPI logo" width="300px">
 
 [![License: BSD 3](https://img.shields.io/pypi/l/powerapi.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/powerapi-ng/powerapi/build.yml)](https://github.com/powerapi-ng/powerapi/actions/workflows/build.yml)
