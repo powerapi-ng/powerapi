@@ -243,5 +243,5 @@ def test_multiple_receive_timeout(endpoint_interface):
     """
     Test reaching the timeout when trying to receive a message from both the control and the data sockets.
     """
-    msg = endpoint_interface.receive()
+    msg = endpoint_interface.receive(timeout=100)
     assert msg is None
