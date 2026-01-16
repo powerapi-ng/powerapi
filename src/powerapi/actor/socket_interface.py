@@ -186,16 +186,17 @@ class SocketInterface:
 
         self._send_serialized(self._data_socket, msg)
 
-    def receive(self) -> Any:
+    def receive(self, timeout: int | None = None) -> Any:
         """
         Receive a message from either the control or the data sockets.
         This method should only be called by an actor acting as endpoint.
+        :param timeout: Timeout of the operation in milliseconds, if None block indefinitely
         :return: The received message or None if the timeout is reached
         """
         if self._sockets_poller is None:
             raise NotConnectedException()
 
-        for socket, _ in self._sockets_poller.poll(self.timeout):
+        for socket, _ in self._sockets_poller.poll(timeout):
             return self._recv_serialized(socket)
 
         return None
