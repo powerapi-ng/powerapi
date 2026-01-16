@@ -32,7 +32,7 @@ from multiprocessing import active_children
 import pytest
 
 from powerapi.report import Report
-from tests.utils.db import SilentFakeDB
+from tests.utils.db import LocalQueueDatabase, FailingLocalQueueDatabase
 
 
 @pytest.fixture
@@ -49,17 +49,20 @@ def shutdown_system():
 @pytest.fixture
 def make_fake_database():
     """
-    Factory fixture for creating a fake database with optional content.
+    Factory fixture for creating a fake database with optional pre-filled content.
     """
-    def _make(content: list[Report] | None = None) -> SilentFakeDB:
-        return SilentFakeDB(content or [])
+    def _make(content: list[Report] | None = None) -> LocalQueueDatabase:
+        return LocalQueueDatabase(content or [])
 
     return _make
 
 
 @pytest.fixture
-def fake_database(request) -> SilentFakeDB:
+def make_fake_failing_database():
     """
-    Fixture to create a SilentFakeDB without content.
+    Factory fixture for creating a fake database that supports failing its operations.
     """
-    return SilentFakeDB()
+    def _make(fail_connect: bool = False, fail_read: bool = False, fail_write: bool = False) -> FailingLocalQueueDatabase:
+        return FailingLocalQueueDatabase(fail_connect=fail_connect, fail_read=fail_read, fail_write=fail_write)
+
+    return _make
