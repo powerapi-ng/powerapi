@@ -27,12 +27,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import time
 
 from powerapi.actor import State
+from powerapi.actor.message import ErrorMessage
 from powerapi.database import DBError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
-from powerapi.actor.message import ErrorMessage
 from powerapi.report import Report
 
 
@@ -48,7 +49,7 @@ class PusherStartHandler(StartHandler):
         try:
             self.state.database.connect()
         except DBError as exn:
-            self.state.logger.error('Failed to connect the database driver: %s', exn.msg)
+            logging.error('Failed to connect the database driver: %s', exn.msg)
             self.state.actor.send_control(ErrorMessage('Database connection failed'))
             self.state.alive = False
 
@@ -67,9 +68,9 @@ class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
         if self.state.buffer:
             try:
                 self.state.database.write(self.state.buffer)
-                self.state.buffer = []
+                self.state.buffer.clear()
             except DBError as exn:
-                self.state.actor.logger.error('The reports could not be saved before shutting down actor: %s', exn.msg)
+                logging.error('The reports could not be saved before shutting down actor: %s', exn.msg)
 
         self.state.database.disconnect()
 
@@ -107,6 +108,6 @@ class ReportHandler(InitHandler):
                 self.state.database.write(self.state.buffer)
                 self.state.buffer = []
             except DBError as exn:
-                self.state.actor.logger.error('The reports could not be saved: %s', exn.msg)
+                logging.error('The reports could not be saved: %s', exn.msg)
             finally:
                 self._last_write_ts = time.monotonic()
