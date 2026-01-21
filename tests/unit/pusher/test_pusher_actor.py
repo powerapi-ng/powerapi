@@ -27,129 +27,162 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
 import time
 
-import pytest
-
-from powerapi.pusher import PusherActor
-from tests.unit.actor.abstract_test_actor import AbstractTestActorWithDB
+from powerapi.actor import StartMessage, PoisonPillMessage
 from tests.utils.db import make_report, generate_reports
 
 
-class TestPusher(AbstractTestActorWithDB):
-    """
-    Pusher actor tests.
-    """
-
-    @pytest.fixture
-    def actor_with_db(self, request, fake_db):
-        delay = 0.1
-        buffer_size = 50
-        if hasattr(request, "param"):
-            delay = request.param.get("delay", delay)
-            buffer_size = request.param.get("buffer_size", buffer_size)
-
-        return PusherActor('pusher_test', fake_db, delay, buffer_size, logging.DEBUG)
-
-
-def test_report_handler_save_reports_when_buffer_size_exceeded(pusher_report_handler, fake_database):
+def test_report_handler_save_reports_when_buffer_size_exceeded(pusher_report_handler):
     """
     Test that report handler writes reports to database when buffer size is exceeded.
     """
-    handler = pusher_report_handler(buffer_size=2, last_write_ts=float('inf'))
+    handler, database = pusher_report_handler(buffer_size=2, last_write_ts=float('inf'))
 
     report1 = make_report()
     handler.handle(report1)
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == []
 
     report2 = make_report()
     handler.handle(report2)
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == [report1, report2]
 
 
-def test_report_handler_dont_save_reports_when_buffer_size_is_not_exceeded(pusher_report_handler, fake_database):
+def test_report_handler_dont_save_reports_when_buffer_size_is_not_exceeded(pusher_report_handler):
     """
     Test that report handler don't write reports to database when buffer size is not exceeded.
     """
-    handler = pusher_report_handler(buffer_size=15, last_write_ts=float('inf'))
+    handler, database = pusher_report_handler(buffer_size=15, last_write_ts=float('inf'))
 
     reports_sent = generate_reports(10)
     for report in reports_sent:
         handler.handle(report)
 
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == []
 
 
-def test_reading_reports_from_database_directly_after_sending_them_to_report_handler(pusher_report_handler, fake_database):
+def test_reading_reports_from_database_directly_after_sending_them_to_report_handler(pusher_report_handler):
     """
     Test reading reports from database directly after sending them to the report handler.
     """
-    handler = pusher_report_handler(buffer_size=0, last_write_ts=float('inf'))
+    handler, database = pusher_report_handler(buffer_size=0, last_write_ts=float('inf'))
 
     for report in generate_reports(10):
         handler.handle(report)
-        received_reports = fake_database.read()
+        received_reports = database.read()
         assert received_reports == [report]
 
 
-def test_report_handler_saves_all_reports_to_database_when_buffer_size_is_zero(pusher_report_handler, fake_database):
+def test_report_handler_saves_all_reports_to_database_when_buffer_size_is_zero(pusher_report_handler):
     """
     Test that report handler writes all reports to database when buffer size is zero.
     """
-    handler = pusher_report_handler(buffer_size=0, last_write_ts=float('inf'))
+    handler, database = pusher_report_handler(buffer_size=0, last_write_ts=float('inf'))
 
     reports_sent = generate_reports(10)
     for report in reports_sent:
         handler.handle(report)
 
-    reports_received = fake_database.read()
+    reports_received = database.read()
     assert reports_received == reports_sent
 
 
-def test_report_handler_saves_report_to_database_when_flush_interval_is_exceeded(pusher_report_handler, fake_database):
+def test_report_handler_saves_report_to_database_when_flush_interval_is_exceeded(pusher_report_handler):
     """
     Test that report handler writes the received report to the database when the flush interval is exceeded.
     """
-    handler = pusher_report_handler(flush_interval=1.0, last_write_ts=0.0)
+    handler, database = pusher_report_handler(flush_interval=1.0, last_write_ts=0.0)
 
     report = make_report()
     handler.handle(report)
 
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == [report]
 
 
-def test_report_handler_dont_save_reports_when_flush_interval_is_not_exceeded(pusher_report_handler, fake_database):
+def test_report_handler_dont_save_reports_when_flush_interval_is_not_exceeded(pusher_report_handler):
     """
     Test that report handler don't write reports to database when flush interval is not exceeded.
     """
-    handler = pusher_report_handler(flush_interval=100.0, last_write_ts=time.monotonic())
+    handler, database = pusher_report_handler(flush_interval=100.0, last_write_ts=time.monotonic())
 
     report = make_report()
     handler.handle(report)
 
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == []
 
 
-def test_report_handler_follow_flush_interval_after_writing_to_database(pusher_report_handler, fake_database):
+def test_report_handler_follow_flush_interval_after_writing_to_database(pusher_report_handler):
     """
     Test that report handler follows flush interval after writing a report to the database.
     """
-    handler = pusher_report_handler(flush_interval=2.0, last_write_ts=time.monotonic())
+    handler, database = pusher_report_handler(flush_interval=2.0, last_write_ts=time.monotonic())
 
     report1 = make_report()
     handler.handle(report1)
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == []
 
-    time.sleep(handler.flush_interval * 1.15)
+    handler._last_write_ts = float('-inf')
 
     report2 = make_report()
     handler.handle(report2)
-    received_reports = fake_database.read()
+    received_reports = database.read()
     assert received_reports == [report1, report2]
+
+
+def test_report_handler_database_error_on_write(pusher_report_handler):
+    """
+    Test that report handler gracefully handle failure when writing reports to the database.
+    """
+    handler, database = pusher_report_handler()
+    report = make_report()
+
+    with database.with_failures(write=True):
+        handler.handle(report)
+
+    assert handler.state.buffer == [report]
+    assert handler.state.alive is True
+
+
+def test_start_handler_fails_connect_to_database_kill_actor(pusher_start_handler):
+    """
+    Test that start handler kills the actor when failing to connect to the database.
+    """
+    handler, _ = pusher_start_handler(fail_connect=True)
+    handler.handle(StartMessage())
+
+    assert handler.state.alive is False
+
+
+def test_poison_pill_handler_write_reports_in_buffer_before_stopping(pusher_poison_pill_handler):
+    """
+    Test that poison pill handler writes reports to database before stopping.
+    """
+    handler, database = pusher_poison_pill_handler()
+    buffer_reports = generate_reports(5)
+
+    handler.state.buffer = buffer_reports[:]
+    handler.handle(PoisonPillMessage(soft=False))
+    saved_reports = database.read()
+    assert handler.state.buffer == []
+    assert saved_reports == buffer_reports
+    assert handler.state.alive is False
+
+
+def test_poison_pill_handler_fail_write_reports_in_buffer_before_stopping(pusher_poison_pill_handler):
+    """
+    Test that poison pill handler gracefully handle failure when writing reports to the database.
+    """
+    handler, _ = pusher_poison_pill_handler(fail_write=True)
+
+    buffer_reports = generate_reports(5)
+    handler.state.buffer = buffer_reports[:]
+
+    handler.handle(PoisonPillMessage(soft=False))
+    assert handler.state.buffer == buffer_reports
+    assert handler.state.alive is False
