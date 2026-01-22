@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -27,52 +27,107 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIException
+from abc import ABC, abstractmethod
+from collections.abc import Sized, Iterable
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from powerapi.actor import ActorProxy
+    from powerapi.report import Report
 
 
-class FilterUselessError(PowerAPIException):
+class ReportRule(Protocol):
     """
-    Exception raised when a filter route with 0 filters
+    Abstract report rule class.
+    Used to check if a report should be routed to a dispatcher.
     """
 
+    def __call__(self, report: Report) -> bool: ...
 
-class Filter:
+
+class ReportFilter(ABC, Sized):
     """
-    Filter class
+    Abstract report filter class.
+    Used by puller actors to filter and route reports to their(s) corresponding dispatcher(s).
+    """
 
-    A filter allow the Puller to route Report of the database to Dispatchers
-    by fixing some rules.
+    @abstractmethod
+    def register(self, rule: ReportRule, dispatcher: ActorProxy) -> None: ...
+
+    @abstractmethod
+    def route(self, report: Report) -> Iterable[ActorProxy]: ...
+
+    @abstractmethod
+    def dispatchers(self) -> Iterable[ActorProxy]: ...
+
+
+class BroadcastReportFilter(ReportFilter):
+    """
+    Broadcast report filter class.
+    No filtering capabilities are supported, the reports will be routed to all defined dispatcher(s).
     """
 
     def __init__(self):
-        self.filters = []
+        self._dispatchers: list[ActorProxy] = []
 
-    def filter(self, rule, dispatcher):
+    def register(self, rule: ReportRule, dispatcher: ActorProxy) -> None:
         """
-        Define a rule for a kind of report, and send it to the dispatcher
-        if the rule accept it.
-
-        :param (func(report) -> bool) rule:      Function which return if
-                                                 the report has to be send to
-                                                 this dispatcher
-        :param powerapi.Dispatcher dispatcher: Dispatcher we want to send the
-                                                 report
+        Register a report filter.
+        :param rule: Unused parameter, any value will be ignored
+        :param dispatcher: Dispatcher where the report will be routed to
         """
-        self.filters.append((rule, dispatcher))
+        self._dispatchers.append(dispatcher)
 
-    def route(self, report):
+    def route(self, report: Report) -> Iterable[ActorProxy]:
         """
-        Get the list of dispatchers to whom send the report, or None
-
-        :param powerapi.Report report: Message to send
+        Returns the dispatchers where the given report should be sent to.
+        :param report: Report to route
+        :return: Iterable of dispatchers
         """
-        # Error if filters is empty
-        if not self.filters:
-            raise FilterUselessError()
+        return iter(self._dispatchers)
 
-        dispatchers = []
-        for rule, dispatcher in self.filters:
-            if rule(report):
-                dispatchers.append(dispatcher)
+    def dispatchers(self) -> Iterable[ActorProxy]:
+        """
+        Returns all registered dispatchers.
+        :return: Iterable of dispatchers
+        """
+        return iter(self._dispatchers)
 
-        return dispatchers
+    def __len__(self) -> int:
+        return len(self._dispatchers)
+
+
+class RulesetReportFilter(ReportFilter):
+    """
+    Ruleset report filter class.
+    Allow to route reports to dispatcher(s) based on rules.
+    """
+
+    def __init__(self):
+        self._filters: list[tuple[ReportRule, ActorProxy]] = []
+
+    def register(self, rule: ReportRule, dispatcher: ActorProxy) -> None:
+        """
+        Register a new filter rule.
+        :param rule: Predicate evaluated for each report
+        :param dispatcher: Dispatcher where the report will be routed to if the rule matches
+        """
+        self._filters.append((rule, dispatcher))
+
+    def route(self, report: Report) -> Iterable[ActorProxy]:
+        """
+        Returns the dispatchers where the given report should be sent to.
+        :param report: Report to route
+        :return: Iterable of dispatchers
+        """
+        return (dispatcher for rule, dispatcher in self._filters if rule(report))
+
+    def dispatchers(self) -> Iterable[ActorProxy]:
+        """
+        Returns all registered dispatchers regardless of rules.
+        :return: Iterable of dispatchers
+        """
+        return (dispatcher for _, dispatcher in self._filters)
+
+    def __len__(self) -> int:
+        return len(self._filters)
