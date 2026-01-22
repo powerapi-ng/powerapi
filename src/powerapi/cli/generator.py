@@ -39,7 +39,7 @@ from powerapi.database import ReadableDatabase, WritableDatabase
 from powerapi.database import Socket, InfluxDB2, OpenTSDB, Prometheus
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
-from powerapi.filter import Filter
+from powerapi.filter import ReportFilter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.processor.pre.openstack import OpenStackPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
@@ -250,7 +250,7 @@ class PullerGenerator(DBActorGenerator):
         """
         return MongodbInput(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
-    def __init__(self, report_filter: Filter):
+    def __init__(self, report_filter: ReportFilter):
         """
         :param report_filter: Report filter to apply for incoming reports
         """
