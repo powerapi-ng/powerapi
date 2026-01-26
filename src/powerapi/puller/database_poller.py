@@ -27,14 +27,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import os
 import signal
 from threading import Thread, Event
 from time import sleep
+from typing import TYPE_CHECKING
 
-from powerapi.actor import Actor
-from powerapi.database import ReadableDatabase, ConnectionFailed, ReadFailed
-from powerapi.filter import Filter
+from powerapi.database import ConnectionFailed, ReadFailed
+
+if TYPE_CHECKING:
+    from powerapi.database import ReadableDatabase
+    from powerapi.filter import ReportFilter
 
 
 class DatabasePollerThread(Thread):
@@ -43,9 +47,8 @@ class DatabasePollerThread(Thread):
     Fetches reports from a database and forward it to theirs corresponding dispatcher.
     """
 
-    def __init__(self, actor: Actor, database: ReadableDatabase, report_filter: Filter, stream_mode: bool, poll_interval: float = 1.0):
+    def __init__(self, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool, poll_interval: float = 1.0):
         """
-        :param actor: Puller actor instance
         :param database: Database to retrieve the reports from
         :param report_filter: Report filter used to dispatch the received reports
         :param stream_mode: If true, poll continuously from the database; otherwise, stop the poller thread on empty result
@@ -53,12 +56,12 @@ class DatabasePollerThread(Thread):
         """
         super().__init__(name='database-poller-thread', daemon=True)
 
-        self.actor = actor
         self.database = database
         self.report_filter = report_filter
         self.stream_mode = stream_mode
         self.poll_interval = poll_interval
 
+        self._ready_event = Event()
         self._stop_event = Event()
 
     @staticmethod
@@ -84,10 +87,14 @@ class DatabasePollerThread(Thread):
         try:
             self.database.connect()
         except ConnectionFailed as exn:
-            self.actor.logger.error('Failed to connect the database driver: %s', exn.msg)
+            logging.error('Failed to connect the database driver: %s', exn.msg)
             return
 
-        self.actor.logger.info('Database poller thread started')
+        for dispatcher in self.report_filter.dispatchers():
+            dispatcher.connect_data()
+
+        self._ready_event.set()
+        logging.info('Database poller thread started')
 
         while not self._stop_event.is_set():
             try:
@@ -96,15 +103,26 @@ class DatabasePollerThread(Thread):
                         dispatcher.send_data(report)
 
                 if not self.stream_mode:
-                    self.actor.logger.info('No reports available from database, shutting down poller thread')
+                    logging.info('No reports available from database, shutting down poller thread')
                     break
             except ReadFailed as exn:
-                self.actor.logger.error('Failed to fetch reports from database: %s', exn.msg)
+                logging.error('Failed to fetch reports from database: %s', exn.msg)
 
             sleep(self.poll_interval)
 
+        for dispatcher in self.report_filter.dispatchers():
+            dispatcher.disconnect()
+
         self.database.disconnect()
-        self.actor.logger.info('Database poller thread stopped')
+        logging.info('Database poller thread stopped')
+
+    def wait_ready(self, timeout: float | None = None) -> bool:
+        """
+        Wait until the database poller thread is ready.
+        :param timeout: Maximum time in seconds to wait, None to wait forever
+        :return: True if the database poller thread is ready, False otherwise
+        """
+        return self._ready_event.wait(timeout=timeout)
 
     def stop(self) -> None:
         """
