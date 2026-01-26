@@ -30,9 +30,9 @@
 import logging
 
 from powerapi.actor import Actor, State
-from powerapi.database import ReadableDatabase
-from powerapi.filter import Filter
 from powerapi.actor.message import StartMessage, PoisonPillMessage
+from powerapi.database import ReadableDatabase
+from powerapi.filter import ReportFilter
 from powerapi.puller.database_poller import DatabasePollerThread
 from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 
@@ -42,7 +42,7 @@ class PullerState(State):
     Puller Actor State class.
     """
 
-    def __init__(self, actor: Actor, database: ReadableDatabase, report_filter: Filter, stream_mode: bool):
+    def __init__(self, actor: Actor, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool):
         """
         :param actor: Puller actor instance
         :param database: Database driver
@@ -55,7 +55,7 @@ class PullerState(State):
         self.report_filter = report_filter
         self.stream_mode = stream_mode
 
-        self.db_poller_thread: DatabasePollerThread | None = None
+        self.db_poller_thread = DatabasePollerThread(database, report_filter, stream_mode)
 
 
 class PullerActor(Actor):
@@ -64,7 +64,7 @@ class PullerActor(Actor):
     This actor allows to retrieve reports from a database and send them to theirs corresponding dispatcher.
     """
 
-    def __init__(self, name: str, database: ReadableDatabase, report_filter: Filter, stream_mode: bool = False, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool = False, level_logger: int = logging.WARNING):
         """
         :param name: Name of the puller actor
         :param database: Database driver to use to persist reports
