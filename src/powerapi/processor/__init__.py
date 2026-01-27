@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -27,4 +27,4 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.processor.processor_actor import ProcessorActor, ProcessorState
+from powerapi.processor.processor_actor import ProcessorActor, PreProcessorActor, PostProcessorActor
