@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -26,18 +26,21 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from powerapi.handler import InitHandler
 from powerapi.report import Report
 
 
 class ProcessorReportHandler(InitHandler):
     """
-    Processor the report by modifying it in some way and then send the modified report to targets actos
+    Processor report handler class.
+    Used by processor actors to handles incoming reports.
     """
 
-    def _send_report(self, report: Report):
+    def _send_report(self, report: Report) -> None:
         """
-        Send the report to the actor target
+        Helper method to send the processed report to its targets actors.
+        :param report: Report to send
         """
-        for target in self.state.target_actors:
+        for target in self.state.actor.target_actors:
             target.send_data(report)

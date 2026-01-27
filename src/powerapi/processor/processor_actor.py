@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -28,47 +28,48 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+from typing import TYPE_CHECKING
 
-from powerapi.actor import State, Actor
+from powerapi.actor import Actor
 
-
-class ProcessorState(State):
-    """
-    Processor Actor State.
-    """
-
-    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list):
-        """
-        :param list target_actors: List of target actors for the processor
-        """
-        super().__init__(actor)
-
-        if not target_actors:
-            target_actors = []
-
-        self.target_actors = target_actors
-        self.target_actors_names = target_actors_names
+if TYPE_CHECKING:
+    from powerapi.actor import ActorProxy
 
 
 class ProcessorActor(Actor):
     """
     Processor actor class.
-    A processor modifies a report and sends the modified report to a list of targets actor.
+    Used to process reports before sending them to target actor(s).
     """
 
     def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int = 5000):
+        """
+        Initializes a new processor actor.
+        :param name: Name of the processor actor
+        :param level_logger: Logging level of the actor
+        :param timeout: Timeout in milliseconds
+        """
         super().__init__(name, level_logger, timeout)
-        self.state = ProcessorState(self, [], [])
 
-    def setup(self):
-        """
-        Set up the Processor actor.
-        """
-        raise NotImplementedError
+        self.target_actors: list[ActorProxy] = []
 
-    def add_target_actor(self, actor: Actor):
+    def add_target_actor(self, actor: ActorProxy) -> None:
         """
-        Add the given actor to the list of targets
+        Add the given actor to the list of targets.
         :param actor: Actor to be defined as target
         """
-        self.state.target_actors.append(actor)
+        self.target_actors.append(actor)
+
+
+class PreProcessorActor(ProcessorActor):
+    """
+    Pre-Processor actor class.
+    Used to process reports coming from puller(s) before sending them to a formula.
+    """
+
+
+class PostProcessorActor(ProcessorActor):
+    """
+    Post-Processor actor class.
+    Used to process reports produced by a formula before sending them to pusher(s).
+    """
