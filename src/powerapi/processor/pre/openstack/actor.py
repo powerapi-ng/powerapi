@@ -29,26 +29,25 @@
 
 import logging
 
-from powerapi.actor import Actor
+from powerapi.actor import Actor, State
 from powerapi.actor.message import StartMessage, PoisonPillMessage
 from powerapi.processor.pre.openstack.handlers import StartMessageHandler, PoisonPillMessageHandler, HWPCReportHandler
-from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
+from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
 from .metadata_cache_manager import OpenStackMetadataCacheManager
 
 
-class OpenStackPreProcessorState(ProcessorState):
+class OpenStackProcessorState(State):
     """
-    State of the OpenStack pre-processor actor.
+    State of the OpenStack processor actor.
     """
 
-    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list):
+    def __init__(self, actor: Actor):
         """
+        Initializes an OpenStack processor state.
         :param actor: Actor instance
-        :param target_actors: list of target actors
-        :param target_actors_names: list of target actor names
         """
-        super().__init__(actor, target_actors, target_actors_names)
+        super().__init__(actor)
 
         self.metadata_cache_manager = OpenStackMetadataCacheManager()
 
@@ -58,22 +57,20 @@ class OpenStackPreProcessorActor(ProcessorActor):
     Pre-Processor Actor that adds OpenStack related metadata to reports.
     """
 
-    def __init__(self, name: str, target_actors: list, target_actors_names: list, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, level_logger: int = logging.WARNING):
         """
+        Initializes an OpenStack pre-processor actor.
         :param name: Name of the actor
-        :param target_actors: List of target actors
-        :param target_actors_names: List of target actor names
         :param level_logger: Logging level of the actor
         """
         super().__init__(name, level_logger, 5000)
-
-        self.state = OpenStackPreProcessorState(self, target_actors, target_actors_names)
 
     def setup(self):
         """
         Set up the OpenStack pre-processor actor.
         """
+        self.state = OpenStackProcessorState(self)
+
         self.add_handler(StartMessage, StartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
-
         self.add_handler(HWPCReport, HWPCReportHandler(self.state))
