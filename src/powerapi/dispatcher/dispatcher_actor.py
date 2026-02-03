@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -27,16 +27,30 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-from collections.abc import Callable
+from __future__ import annotations
 
-from powerapi.actor import Actor, ActorProxy, State
+import logging
+from typing import TYPE_CHECKING, Protocol
+
+from powerapi.actor import Actor, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
-from powerapi.dispatcher.route_table import RouteTable
-from powerapi.formula import FormulaActor
 from powerapi.handler import StartHandler
 from powerapi.report import Report
+
+if TYPE_CHECKING:
+    from powerapi.actor import ActorProxy
+    from powerapi.formula import FormulaActor
+    from powerapi.dispatcher.route_table import RouteTable
+
+
+class FormulaFactory(Protocol):
+    """
+    Abstract formula factory class.
+    Used to define the factory method that will be called by the dispatcher to create a new formula actor.
+    """
+
+    def __call__(self, actor_name: str, pushers: dict[type[Report], list[ActorProxy]]) -> FormulaActor: ...
 
 
 class DispatcherState(State):
@@ -44,41 +58,44 @@ class DispatcherState(State):
     Dispatcher actor state.
     """
 
-    def __init__(self, actor, pushers: dict[type[Report], list[ActorProxy]], route_table: RouteTable):
+    def __init__(self, actor: DispatcherActor):
         """
+        Initialize a new dispatcher actor state.
         :param actor: Dispatcher actor instance
-        :param pushers: List of pushers
-        :param route_table: Route table to use for reports
         """
         super().__init__(actor)
 
-        self.pushers = pushers
-        self.route_table = route_table
+        self.formula_factory = actor.formula_factory
+        self.pushers = actor.pushers
+        self.route_table = actor.route_table
 
-        self.formula_dict = {}
+        self.formula_proxy: dict[tuple, ActorProxy] = {}
 
-    def add_formula(self, formula_id: tuple) -> FormulaActor:
+    def add_formula(self, formula_id: tuple) -> ActorProxy:
         """
-        Create a new formula corresponding to the given ID.
+        Create and start a new formula actor.
         :param formula_id: The formula ID
-        :return: The new formula actor
+        :return: Formula actor proxy
         """
-        formula = self.actor.formula_init_function(name=str((self.actor.name, *formula_id)), pushers=self.pushers)
-        self.supervisor.launch_actor(formula, False)
-        self.formula_dict[formula_id] = formula
-        return formula
+        formula_name = str((self.actor.name, *formula_id))
+        formula_actor = self.formula_factory(formula_name, self.pushers)
+        self.supervisor.launch_actor(formula_actor)
 
-    def get_formula(self, formula_id: tuple) -> FormulaActor:
+        formula_proxy = formula_actor.get_proxy(connect_data=True)
+        self.formula_proxy[formula_id] = formula_proxy
+        return formula_proxy
+
+    def get_formula(self, formula_id: tuple) -> ActorProxy:
         """
         Get the formula corresponding to the given formula id.
-        The formula will be created if it does not exist.
+        A new formula actor will be created if it does not exist.
         :param formula_id: The formula id
-        :return: The formula actor
+        :return: Formula actor proxy
         """
-        if formula_id not in self.formula_dict:
+        if formula_id not in self.formula_proxy:
             return self.add_formula(formula_id)
 
-        return self.formula_dict[formula_id]
+        return self.formula_proxy[formula_id]
 
 
 class DispatcherActor(Actor):
@@ -88,27 +105,28 @@ class DispatcherActor(Actor):
     provided routing table. When a report doesn't have any formula assigned, the dispatcher will create a new formula.
     """
 
-    def __init__(self, name: str, formula_init_function: Callable, pushers: dict[type[Report], list[ActorProxy]],
+    def __init__(self, name: str, formula_factory: FormulaFactory, pushers: dict[type[Report], list[ActorProxy]],
                  route_table: RouteTable, level_logger: int = logging.WARNING, timeout=None):
         """
+        Initialize a new dispatcher actor.
         :param name: Actor name
-        :param formula_init_function: Factory function for creating Formula
-        :param route_table: Routing table to use for dispatching the reports
-        :param level_logger: Logging level
-        :param timeout: Time in millisecond to wait for a message before running the timeout handler
+        :param formula_factory: Factory function for Formula actors
+        :param route_table: Routing table to use for dispatching the reports between formulas
+        :param level_logger: Logging level of the actor
+        :param timeout: Maximum time to wait for a message (in milliseconds)
         """
         super().__init__(name, level_logger, timeout)
 
-        self.formula_init_function = formula_init_function
+        self.formula_factory = formula_factory
         self.pushers = pushers
         self.route_table = route_table
 
     def setup(self):
         """
-        Setup Dispatcher actor report handlers.
+        Setup dispatcher actor.
         """
-        self.state = DispatcherState(self, self.pushers, self.route_table)
+        self.state = DispatcherState(self)
 
-        self.add_handler(Report, FormulaDispatcherReportHandler(self.state))
-        self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
         self.add_handler(StartMessage, StartHandler(self.state))
+        self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
+        self.add_handler(Report, FormulaDispatcherReportHandler(self.state))

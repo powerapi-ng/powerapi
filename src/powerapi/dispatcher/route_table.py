@@ -1,4 +1,4 @@
-# Copyright (c) 2021, INRIA
+# Copyright (c) 2021, Inria
 # Copyright (c) 2021, University of Lille
 # All rights reserved.
 #
@@ -27,8 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.dispatch_rule import DispatchRule
-from powerapi.report import Report
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from powerapi.dispatch_rule import DispatchRule
+    from powerapi.report import Report
 
 
 class RouteTable:
@@ -46,12 +49,12 @@ class RouteTable:
     def get_dispatch_rule(self, report: Report) -> DispatchRule | None:
         """
         Return the corresponding dispatch rule for the given report.
-        param msg: The report to get the dispatch rule for
-        return: The corresponding dispatch rule or None if no dispatch rule exists for the report type.
+        :param report: The report to get the dispatch rule for
+        :return: The corresponding dispatch rule or None if no dispatch rule exists for the report type.
         """
         return self.route_table.get(report.__class__.__name__, None)
 
-    def add_dispatch_rule(self, report_type: type[Report], dispatch_rule: DispatchRule):
+    def add_dispatch_rule(self, report_type: type[Report], dispatch_rule: DispatchRule) -> None:
         """
         Add a dispatch rule for the given report type.
         :param report_type: The report type to which the dispatch rule should map to
