@@ -33,15 +33,24 @@ from powerapi.report import Report
 
 class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
     """
-    Dispatcher Handler for PoisonPillMessage
+    Poison pill message handler for the dispatcher actor.
     """
-    def teardown(self, soft=False):
-        self.state.supervisor.kill_actors(soft)
+
+    def teardown(self, soft: bool = False):
+        """
+        Teardown the dispatcher actor.
+        All supervised formula actor(s) will be terminated.
+        """
+        for proxy in self.state.formula_proxy.values():
+            proxy.disconnect()
+
+        self.state.supervisor.kill_actors(graceful=soft)
+        self.state.supervisor.join(timeout=5.0)
 
 
 class FormulaDispatcherReportHandler(InitHandler):
     """
-    Send the received reports to their corresponding formula.
+    Generic report handler for the dispatcher actor.
     """
 
     def handle(self, msg: Report):
@@ -51,6 +60,4 @@ class FormulaDispatcherReportHandler(InitHandler):
         """
         dispatch_rule = self.state.route_table.get_dispatch_rule(msg)
         for formula_id in dispatch_rule.get_formula_id(msg):
-            formula = self.state.get_formula(formula_id)
-            if formula.is_alive():
-                formula.send_data(msg)
+            self.state.get_formula(formula_id).send_data(msg)
