@@ -72,6 +72,92 @@ def test_broadcast_report_filter_returns_empty_when_no_dispatchers():
     assert list(dispatchers) == []
 
 
+def test_broadcast_report_filter_replace_registered_dispatcher():
+    """
+    Replacing a registered dispatcher must update both registered and routed dispatchers.
+    """
+    report_filter = BroadcastReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    report_filter.register(rule_always_true, dispatcher_a)
+
+    dispatcher_b = Mock(name="dispatcher_b")
+    report_filter.register(rule_always_true, dispatcher_b)
+
+    dispatcher_c = Mock(name="dispatcher_c")
+    report_filter.register(rule_always_true, dispatcher_c)
+
+    dispatcher_x = Mock(name="dispatcher_x")
+    report_filter.replace(dispatcher_a, dispatcher_x)
+
+    assert list(report_filter.dispatchers()) == [dispatcher_x, dispatcher_b, dispatcher_c]
+    assert list(report_filter.route(make_report())) == [dispatcher_x, dispatcher_b, dispatcher_c]
+
+
+def test_broadcast_report_filter_replace_all_occurrences():
+    """
+    Replacing a dispatcher must affect every occurrence while preserving the ordering.
+    """
+    report_filter = BroadcastReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+    dispatcher_x = Mock(name="dispatcher_x")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_true, dispatcher_b)
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_true, dispatcher_a)
+
+    report_filter.replace(dispatcher_a, dispatcher_x)
+
+    assert list(report_filter.dispatchers()) == [dispatcher_x, dispatcher_b, dispatcher_x, dispatcher_x]
+    assert list(report_filter.route(make_report())) == [dispatcher_x, dispatcher_b, dispatcher_x, dispatcher_x]
+
+
+def test_broadcast_report_filter_replace_is_noop_for_unknown_dispatcher():
+    """
+    Replacing a non-registered dispatcher must not mutate a broadcast filter.
+    """
+    report_filter = BroadcastReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+    dispatcher_unknown = Mock(name="dispatcher_unknown")
+    dispatcher_x = Mock(name="dispatcher_x")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_true, dispatcher_b)
+    size_before = len(report_filter)
+
+    report_filter.replace(dispatcher_unknown, dispatcher_x)
+
+    assert len(report_filter) == size_before
+    assert list(report_filter.dispatchers()) == [dispatcher_a, dispatcher_b]
+    assert list(report_filter.route(make_report())) == [dispatcher_a, dispatcher_b]
+
+
+def test_broadcast_report_filter_replace_keeps_length_and_allows_duplicates():
+    """
+    Replacing with an already-registered dispatcher must keep the same filter size.
+    """
+    report_filter = BroadcastReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_true, dispatcher_b)
+    report_filter.register(rule_always_true, dispatcher_a)
+    size_before = len(report_filter)
+
+    report_filter.replace(dispatcher_a, dispatcher_b)
+
+    assert len(report_filter) == size_before
+    assert list(report_filter.dispatchers()) == [dispatcher_b, dispatcher_b, dispatcher_b]
+    assert list(report_filter.route(make_report())) == [dispatcher_b, dispatcher_b, dispatcher_b]
+
+
 def test_ruleset_report_filter_routes_only_matching_dispatchers():
     """
     Ruleset filters must return dispatchers whose rules evaluate to True.
@@ -102,3 +188,111 @@ def test_ruleset_report_filter_returns_empty_when_no_rules_match():
 
     dispatchers = report_filter.route(make_report())
     assert list(dispatchers) == []
+
+
+def test_ruleset_report_filter_replace_registered_dispatcher():
+    """
+    Replacing a registered dispatcher must only swap matching targets and keep rules.
+    """
+    report_filter = RulesetReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    report_filter.register(rule_always_true, dispatcher_a)
+
+    dispatcher_b = Mock(name="dispatcher_b")
+    report_filter.register(rule_always_false, dispatcher_b)
+
+    dispatcher_x = Mock(name="dispatcher_x")
+    report_filter.replace(dispatcher_a, dispatcher_x)
+
+    assert list(report_filter.dispatchers()) == [dispatcher_x, dispatcher_b]
+    assert list(report_filter.route(make_report())) == [dispatcher_x]
+
+
+def test_ruleset_report_filter_replace_all_occurrences():
+    """
+    Replacing a dispatcher in a ruleset filter must update every matching rule target.
+    """
+    report_filter = RulesetReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+    dispatcher_x = Mock(name="dispatcher_x")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_false, dispatcher_b)
+    report_filter.register(rule_always_true, dispatcher_a)
+
+    report_filter.replace(dispatcher_a, dispatcher_x)
+
+    assert list(report_filter.dispatchers()) == [dispatcher_x, dispatcher_b, dispatcher_x]
+    assert list(report_filter.route(make_report())) == [dispatcher_x, dispatcher_x]
+
+
+def test_ruleset_report_filter_replace_is_noop_for_unknown_dispatcher():
+    """
+    Replacing a non-registered dispatcher must not mutate a ruleset filter.
+    """
+    report_filter = RulesetReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+    dispatcher_unknown = Mock(name="dispatcher_unknown")
+    dispatcher_x = Mock(name="dispatcher_x")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_false, dispatcher_b)
+    size_before = len(report_filter)
+
+    report_filter.replace(dispatcher_unknown, dispatcher_x)
+
+    assert len(report_filter) == size_before
+    assert list(report_filter.dispatchers()) == [dispatcher_a, dispatcher_b]
+    assert list(report_filter.route(make_report())) == [dispatcher_a]
+
+
+def test_ruleset_report_filter_replace_keeps_rules_behavior():
+    """
+    Replacing a dispatcher must not alter predicate behavior.
+    """
+    report_filter = RulesetReportFilter()
+
+    def match_sensor_a(report) -> bool:
+        return report.sensor == "sensor_a"
+
+    def match_sensor_b(report) -> bool:
+        return report.sensor == "sensor_b"
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+    dispatcher_x = Mock(name="dispatcher_x")
+
+    report_filter.register(match_sensor_a, dispatcher_a)
+    report_filter.register(match_sensor_b, dispatcher_b)
+
+    report_filter.replace(dispatcher_a, dispatcher_x)
+
+    assert list(report_filter.route(make_report(sensor="sensor_a"))) == [dispatcher_x]
+    assert list(report_filter.route(make_report(sensor="sensor_b"))) == [dispatcher_b]
+    assert list(report_filter.route(make_report(sensor="sensor_other"))) == []
+
+
+def test_ruleset_report_filter_replace_keeps_length_and_allows_duplicates():
+    """
+    Replacing with an already-registered dispatcher must keep size and allow duplicates.
+    """
+    report_filter = RulesetReportFilter()
+
+    dispatcher_a = Mock(name="dispatcher_a")
+    dispatcher_b = Mock(name="dispatcher_b")
+
+    report_filter.register(rule_always_true, dispatcher_a)
+    report_filter.register(rule_always_false, dispatcher_b)
+    report_filter.register(rule_always_true, dispatcher_a)
+    size_before = len(report_filter)
+
+    report_filter.replace(dispatcher_a, dispatcher_b)
+
+    assert len(report_filter) == size_before
+    assert list(report_filter.dispatchers()) == [dispatcher_b, dispatcher_b, dispatcher_b]
+    assert list(report_filter.route(make_report())) == [dispatcher_b, dispatcher_b]

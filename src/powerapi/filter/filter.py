@@ -55,6 +55,9 @@ class ReportFilter(ABC, Sized):
     def register(self, rule: ReportRule, dispatcher: ActorProxy) -> None: ...
 
     @abstractmethod
+    def replace(self, old_dispatcher: ActorProxy, new_dispatcher: ActorProxy) -> None: ...
+
+    @abstractmethod
     def route(self, report: Report) -> Iterable[ActorProxy]: ...
 
     @abstractmethod
@@ -77,6 +80,17 @@ class BroadcastReportFilter(ReportFilter):
         :param dispatcher: Dispatcher where the report will be routed to
         """
         self._dispatchers.append(dispatcher)
+
+    def replace(self, old_dispatcher: ActorProxy, new_dispatcher: ActorProxy) -> None:
+        """
+        Replace every occurrence of a registered dispatcher by another one.
+        :param old_dispatcher: Registered dispatcher that will be replaced
+        :param new_dispatcher: Dispatcher that will be used as replacement
+        """
+        self._dispatchers = [
+            new_dispatcher if dispatcher == old_dispatcher else dispatcher
+            for dispatcher in self._dispatchers
+        ]
 
     def route(self, report: Report) -> Iterable[ActorProxy]:
         """
@@ -113,6 +127,17 @@ class RulesetReportFilter(ReportFilter):
         :param dispatcher: Dispatcher where the report will be routed to if the rule matches
         """
         self._filters.append((rule, dispatcher))
+
+    def replace(self, old_dispatcher: ActorProxy, new_dispatcher: ActorProxy) -> None:
+        """
+        Replace every occurrence of a registered dispatcher by another one.
+        :param old_dispatcher: Registered dispatcher that will be replaced
+        :param new_dispatcher: Dispatcher that will be used as replacement
+        """
+        self._filters = [
+            (rule, new_dispatcher if dispatcher == old_dispatcher else dispatcher)
+            for rule, dispatcher in self._filters
+        ]
 
     def route(self, report: Report) -> Iterable[ActorProxy]:
         """
