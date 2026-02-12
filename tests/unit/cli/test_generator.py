@@ -33,7 +33,7 @@ from powerapi.cli.generator import ModelNameDoesNotExist
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, PreProcessorGenerator
 from powerapi.database import MongodbInput, MongodbOutput, CSVInput, CSVOutput, Socket, InfluxDB2, Prometheus, OpenTSDB
 from powerapi.exception import PowerAPIException
-from powerapi.filter import Filter
+from powerapi.filter import BroadcastReportFilter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -48,7 +48,7 @@ def test_generate_puller_from_empty_config_dict_raise_an_exception():
     Test that PullerGenerator raises a PowerAPIException when there is no input argument
     """
     conf = {}
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
@@ -58,7 +58,7 @@ def test_generate_puller_from_mongo_basic_config(mongodb_input_output_stream_con
     """
     Test that generation for mongodb puller from a config with a mongodb input works correctly
     """
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
 
     pullers = generator.generate(mongodb_input_output_stream_config)
 
@@ -67,7 +67,7 @@ def test_generate_puller_from_mongo_basic_config(mongodb_input_output_stream_con
     puller = pullers['one_puller']
     assert isinstance(puller, PullerActor)
 
-    db = puller.state.database
+    db = puller.database
 
     assert isinstance(db, MongodbInput)
     assert db.uri == mongodb_input_output_stream_config['input']['one_puller']['uri']
@@ -83,7 +83,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
         if current_input['type'] == 'csv':
             current_input['files'] = current_input['files'].split(',')
 
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
     pullers = generator.generate(several_inputs_outputs_stream_config)
 
     assert len(pullers) == len(several_inputs_outputs_stream_config['input'])
@@ -92,7 +92,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
         assert puller_name in pullers
         assert isinstance(pullers[puller_name], PullerActor)
 
-        db = pullers[puller_name].state.database
+        db = pullers[puller_name].database
 
         if current_puller_infos['type'] == 'mongodb':
             assert isinstance(db, MongodbInput)
@@ -117,7 +117,7 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
     """
     Test that PullerGenerator raise a PowerAPIException when some arguments are missing for mongo input
     """
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
@@ -128,7 +128,7 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_socket_input(
     """
     Test that PullerGenerator raise a PowerAPIException when some arguments are missing for socket input
     """
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
 
     with pytest.raises(PowerAPIException):
         generator.generate(several_inputs_outputs_stream_socket_without_some_arguments_config)
@@ -155,7 +155,7 @@ def test_remove_hwpc_report_model_and_generate_puller_from_a_config_with_hwpc_re
     """
     Test that PullGenerator raises PowerAPIException when the model class is not defined
     """
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
     generator.remove_report_class('HWPCReport')
     with pytest.raises(PowerAPIException):
         _ = generator.generate(mongodb_input_output_stream_config)
@@ -166,7 +166,7 @@ def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_i
     """
     Test that PullGenerator raises a PowerAPIException when an input type is not defined
     """
-    generator = PullerGenerator(Filter())
+    generator = PullerGenerator(BroadcastReportFilter())
     generator.remove_db_factory('mongodb')
     with pytest.raises(PowerAPIException):
         _ = generator.generate(mongodb_input_output_stream_config)
@@ -199,7 +199,7 @@ def test_generate_pusher_from_mongo_basic_config(mongodb_input_output_stream_con
     pusher = pushers['one_pusher']
     assert isinstance(pusher, PusherActor)
 
-    db = pusher.state.database
+    db = pusher.database
 
     assert isinstance(db, MongodbOutput)
     assert db.uri == mongodb_input_output_stream_config['output']['one_pusher']['uri']
@@ -222,7 +222,7 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
         assert pusher_name in pushers
         assert isinstance(pushers[pusher_name], PusherActor)
 
-        db = pushers[pusher_name].state.database
+        db = pushers[pusher_name].database
         pusher_type = current_pusher_infos['type']
 
         if pusher_type == 'mongodb':
@@ -306,15 +306,13 @@ def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
         generator.generate(conf)
 
 
-def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, expected_pre_processor_info: dict):
+def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, processor_name: str):
     """
     Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
     """
     assert isinstance(pre_processor, K8sPreProcessorActor)
-
-    assert len(pre_processor.state.target_actors) == 0
-    assert len(pre_processor.state.target_actors_names) == 1
-    assert pre_processor.state.target_actors_names[0] == expected_pre_processor_info["puller"]
+    assert pre_processor.name == processor_name
+    assert len(pre_processor.target_actors) == 0
 
 
 def test_generate_pre_processor_from_k8s_config(k8s_pre_processor_config):
@@ -331,7 +329,7 @@ def test_generate_pre_processor_from_k8s_config(k8s_pre_processor_config):
 
     processor = processors[processor_name]
 
-    check_k8s_pre_processor_infos(processor, k8s_pre_processor_config["pre-processor"][processor_name])
+    check_k8s_pre_processor_infos(processor, processor_name)
 
 
 def test_generate_several_k8s_pre_processors_from_config(several_k8s_pre_processors_config):
@@ -344,12 +342,12 @@ def test_generate_several_k8s_pre_processors_from_config(several_k8s_pre_process
 
     assert len(processors) == len(several_k8s_pre_processors_config['pre-processor'])
 
-    for processor_name, current_processor_infos in several_k8s_pre_processors_config['pre-processor'].items():
+    for processor_name in several_k8s_pre_processors_config['pre-processor']:
         assert processor_name in processors
 
         processor = processors[processor_name]
 
-        check_k8s_pre_processor_infos(processor, current_processor_infos)
+        check_k8s_pre_processor_infos(processor, processor_name)
 
 
 def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(several_k8s_pre_processors_without_some_arguments_config):
@@ -360,17 +358,10 @@ def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(s
 
     processors = generator.generate(several_k8s_pre_processors_without_some_arguments_config)
 
-    expected_processor_info = {'k8s-api-mode': None}
-
     assert len(processors) == len(several_k8s_pre_processors_without_some_arguments_config['pre-processor'])
 
-    pre_processor_number = 1
     for pre_processor_name in several_k8s_pre_processors_without_some_arguments_config['pre-processor']:
         assert pre_processor_name in processors
 
         processor = processors[pre_processor_name]
-        expected_processor_info['puller'] = 'my_puller_' + str(pre_processor_number)
-
-        check_k8s_pre_processor_infos(processor, expected_processor_info)
-
-        pre_processor_number += 1
+        check_k8s_pre_processor_infos(processor, pre_processor_name)
