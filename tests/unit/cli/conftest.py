@@ -39,7 +39,7 @@ from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, s
 from powerapi.cli.generator import PullerGenerator, PusherGenerator, PreProcessorGenerator
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
 from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.filter import Filter
+from powerapi.filter import BroadcastReportFilter
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, generate_cli_configuration_from_json_file
 
 
@@ -578,7 +578,7 @@ def get_pre_processor_pullers_and_processors_dictionaries_from_configuration(con
     Return a tuple of dictionaries (pullers, processors) created from the given configuration.
     :param dict configuration : Dictionary containing the configuration
     """
-    report_filter = Filter()
+    report_filter = BroadcastReportFilter()
     puller_generator = PullerGenerator(report_filter=report_filter)
     pullers = puller_generator.generate(main_config=configuration)
 
@@ -587,10 +587,9 @@ def get_pre_processor_pullers_and_processors_dictionaries_from_configuration(con
 
     route_table = RouteTable()
 
-    dispatcher = DispatcherActor(name='dispatcher', formula_init_function=None, pushers=pushers,
-                                 route_table=route_table)
+    dispatcher = DispatcherActor('dispatcher', None, pushers, route_table)
 
-    report_filter.filter(lambda msg: True, dispatcher)
+    report_filter.register(lambda msg: True, dispatcher.get_proxy())
 
     processor_generator = PreProcessorGenerator()
     processors = processor_generator.generate(main_config=configuration)
@@ -613,14 +612,18 @@ def dispatcher_actor_in_dictionary():
 
 
 @pytest.fixture
-def pre_processor_binding_manager(pre_processor_pullers_and_processors_dictionaries):
+def pre_processor_binding_manager(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
     """
     Return a ProcessorBindingManager with a Processor
     """
     pullers = pre_processor_pullers_and_processors_dictionaries[0]
     processors = pre_processor_pullers_and_processors_dictionaries[1]
 
-    return PreProcessorBindingManager(pullers=pullers, processors=processors)
+    return PreProcessorBindingManager(
+        config=pre_processor_complete_configuration,
+        pullers=pullers,
+        processors=processors
+    )
 
 
 @pytest.fixture
@@ -631,7 +634,11 @@ def pre_processor_binding_manager_with_wrong_binding_types(pre_processor_wrong_b
     _, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
         configuration=pre_processor_wrong_binding_configuration)
 
-    return PreProcessorBindingManager(pullers=pushers, processors=processors)
+    return PreProcessorBindingManager(
+        config=pre_processor_wrong_binding_configuration,
+        pullers=pushers,
+        processors=processors
+    )
 
 
 @pytest.fixture
@@ -642,7 +649,11 @@ def pre_processor_binding_manager_with_unexisting_puller(pre_processor_with_unex
     pullers, processors, _ = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
         configuration=pre_processor_with_unexisting_puller_configuration)
 
-    return PreProcessorBindingManager(pullers=pullers, processors=processors)
+    return PreProcessorBindingManager(
+        config=pre_processor_with_unexisting_puller_configuration,
+        pullers=pullers,
+        processors=processors
+    )
 
 
 @pytest.fixture
@@ -654,7 +665,11 @@ def pre_processor_binding_manager_with_reused_puller_in_bindings(
     pullers, processors, _ = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
         configuration=pre_processor_with_reused_puller_in_bindings_configuration)
 
-    return PreProcessorBindingManager(pullers=pullers, processors=processors)
+    return PreProcessorBindingManager(
+        config=pre_processor_with_reused_puller_in_bindings_configuration,
+        pullers=pullers,
+        processors=processors
+    )
 
 
 def get_config_with_longest_argument_names(config: dict, arguments: dict):
