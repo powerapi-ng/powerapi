@@ -1,4 +1,4 @@
-# Copyright (c) 2018, INRIA
+# Copyright (c) 2018, Inria
 # Copyright (c) 2018, University of Lille
 # All rights reserved.
 #
@@ -51,69 +51,36 @@ if TYPE_CHECKING:
 
 class InitializationException(PowerAPIExceptionWithMessage):
     """
-    Exception raised when an actor failed to initialize itself
+    Exception raised when an actor failed to initialize itself.
     """
 
 
 class Actor(multiprocessing.Process):
     """
-    Abstract class that exposes an interface to create, setup and handle actors
+    Base Actor class for a runtime component running in a dedicated process.
 
-    :Method Interface:
+    Each actor initializes its communication channels, enters a message-processing loop,
+    and dispatches incoming messages to registered handlers until termination.
 
-    This table list from which interface each methods are accessible
-
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +=================================+============================================================================================+
-    | Client interface                | :meth:`connect_data <powerapi.actor.actor.Actor.connect_data>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`connect_control <powerapi.actor.actor.Actor.connect_control>`                       |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_control <powerapi.actor.actor.Actor.send_control>`                             |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`send_data <powerapi.actor.actor.Actor.send_data>`                                   |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :meth:`setup <powerapi.actor.actor.Actor.setup>`                                           |
-    |                                 +--------------------------------------------------------------------------------------------+
-    |                                 | :meth:`add_handler <powerapi.actor.actor.Actor.add_handler>`                               |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-
-    :Attributes Interface:
-
-    This table list from wich interface each attributes are accessible
-
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    |  Interface type                 |                                   method name                                              |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
-    | Server interface                | :attr:`state <powerapi.actor.actor.Actor.state>`                                           |
-    +---------------------------------+--------------------------------------------------------------------------------------------+
+    PowerAPI components are implemented as specialized actors in a data-processing pipeline.
     """
 
-    def __init__(self, name, level_logger=logging.WARNING, timeout=None):
+    def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int | None = None):
         """
-        Initialization and start of the process.
-
-        :param str name: unique name that will be used to indentify the actor
-                         processus
-        :param int level_logger: Define the level of the logger
-        :param int timeout: if defined, do something if no msg is recv every
-                            timeout (in ms)
+        Initialize
+        :param name: Name of the actor
+        :param level_logger: Logging level of the actor
+        :param timeout: Timeout of IPC operations in milliseconds, None for waiting indefinitely
         """
-        multiprocessing.Process.__init__(self, name=name)
+        super().__init__(name=name)
 
         self.logging_level = level_logger
 
-        #: (powerapi.State): Actor context
         self.state: State | None = None
-
-        #: (powerapi.SocketInterface): Actor's SocketInterface
         self.socket_interface = SocketInterface(name, timeout)
-
-        #: (List): list of exception that restart the actor it they are raised
         self.low_exception = []
 
-    def run(self):
+    def run(self) -> None:
         """
         Main code executed by the actor
         """
@@ -140,7 +107,7 @@ class Actor(multiprocessing.Process):
         fmt = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(message)s'
         logging.basicConfig(format=fmt, level=self.logging_level)
 
-    def _signal_handler_setup(self):
+    def _signal_handler_setup(self) -> None:
         """
         Define how to handle signal interrupts
         """
@@ -159,7 +126,7 @@ class Actor(multiprocessing.Process):
         signal.signal(signal.SIGTERM, term_handler)
         signal.signal(signal.SIGINT, term_handler)
 
-    def _setup_actor(self):
+    def _setup_actor(self) -> None:
         """
         Internal initialization routine executed by the actor before starting to process messages.
         """
@@ -172,26 +139,23 @@ class Actor(multiprocessing.Process):
 
         logging.debug('Actor "%s" process created', self.name)
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Initializes the actor before it begins processing messages.
-        Override this method to customize the actor’s initialization logic.
-        You **must** initialize the actor’s state within this method.
+        Override this method to customize the actor's initialization logic.
+        You **must** initialize the actor's state within this method.
         """
         self.state = State(self)
 
-    def add_handler(self, message_type: type[Message], handler: Handler):
+    def add_handler(self, message_type: type[Message], handler: Handler) -> None:
         """
-        Map a handler to a message type
-
-        :param type message_type: type of the message that the handler can
-                                  handle
-        :param handler: handler that will handle all messages of the given type
-        :type handler: powerapi.handler.Handler
+        Add the handler for the given message type.
+        :param message_type: Type of the message
+        :param handler: Handler that will process the messages
         """
         self.state.add_handler(message_type, handler)
 
-    def _process_received_messages(self):
+    def _process_received_messages(self) -> None:
         """
         Process the messages received by the actor.
         """
@@ -208,7 +172,7 @@ class Actor(multiprocessing.Process):
         except HandlerException:
             logging.warning("Failed to handle message: %s", msg)
 
-    def _teardown_actor(self):
+    def _teardown_actor(self) -> None:
         """
         Internal teardown routine executed by the actor before it stops.
         """
@@ -217,10 +181,10 @@ class Actor(multiprocessing.Process):
 
         logging.debug('Actor "%s" teardown', self.name)
 
-    def teardown(self):
+    def teardown(self) -> None:
         """
         Cleanup method executed in the actor process before it shuts down.
-        Override this method to customize the actor’s cleanup logic.
+        Override this method to customize the actor's cleanup logic.
         """
 
     def send_control(self, msg: Message) -> None:
@@ -321,7 +285,7 @@ class ActorProxy:
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """
         Context manager exit point.
         """
