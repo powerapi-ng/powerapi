@@ -60,18 +60,22 @@ class _MongodbDriver(DatabaseDriver):
         self.database_name = database_name
         self.collection_name = collection_name
 
-        self._client = MongoClient(uri, connect=False)
-        self._collection = self._client[database_name][collection_name]
-        self._cursor = self._collection.find({})
+        self._client = None
+        self._collection = None
+        self._cursor = None
 
     def connect(self):
         """
         Connect to the MongoDB server.
-        :raise: ConnectionFailed if the connection to the MongoDB server fails.
+        :raise ConnectionFailed: If the connection to the MongoDB server fails.
         """
         try:
-            # The client will establish a connection on the first operation.
+            self._client = MongoClient(self.uri)
             self._client.admin.command('ping')
+
+            database = self._client.get_database(self.database_name)
+            self._collection = database.get_collection(self.collection_name)
+            self._cursor = self._collection.find({})
         except PyMongoError as exn:
             raise ConnectionFailed(f'Failed to connect to the MongoDB server: {exn}') from exn
 
@@ -136,7 +140,7 @@ class MongodbInput(_MongodbDriver, ReadableDatabase):
         Read reports from the MongoDB database.
         :param stream_mode: If true, handle the reports as a continuous stream of data (**destructive**)
         :return: Iterable of reports
-        :raise: ReadFailed if the read operation fails
+        :raise ReadFailed: If the read operation fails
         """
         try:
             return self._streaming_reports_generator() if stream_mode else self._reports_generator()
@@ -173,7 +177,7 @@ class MongodbOutput(_MongodbDriver, WritableDatabase):
         """
         Write the reports into the MongoDB database.
         :param reports: Iterable of reports
-        :raise: WriteFailed if the write operation fails
+        :raise WriteFailed: If the write operation fails
         """
         try:
             encoded_reports = [self._report_encoder.encode(report) for report in reports]
