@@ -43,7 +43,7 @@ class StartMessageHandler(StartHandler):
         """
         Initialize the OpenStack processor.
         """
-        for actor in self.state.target_actors:
+        for actor in self.state.actor.target_actors:
             actor.connect_data()
 
         self.state.monitor_agent.start()
@@ -58,8 +58,8 @@ class PoisonPillMessageHandler(PoisonPillHandler):
         """
         Teardown the OpenStack processor.
         """
-        for actor in self.state.target_actors:
-            actor.socket_interface.close()
+        for actor in self.state.actor.target_actors:
+            actor.disconnect()
 
 
 class HWPCReportHandler(ProcessorReportHandler):

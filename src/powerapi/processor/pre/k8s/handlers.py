@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -42,10 +42,28 @@ class K8sPreProcessorActorStartMessageHandler(StartHandler):
         """
         Initialize the Kubernetes processor.
         """
-        for actor in self.state.target_actors:
+        for actor in self.state.actor.target_actors:
             actor.connect_data()
 
         self.state.monitor_agent.start()
+
+
+class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
+    """
+    Poison Pill message handler for the Kubernetes processor actor.
+    """
+
+    def teardown(self, soft: bool = False):
+        """
+        Teardown the Kubernetes processor.
+        """
+        self.state.monitor_agent.terminate()
+        self.state.monitor_agent.join()
+
+        self.state.manager.shutdown()
+
+        for actor in self.state.actor.target_actors:
+            actor.disconnect()
 
 
 class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
@@ -71,21 +89,3 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
             msg.metadata['k8s'] = vars(container_metadata)
 
         self._send_report(msg)
-
-
-class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
-    """
-    Poison Pill message handler for the Kubernetes processor actor.
-    """
-
-    def teardown(self, soft: bool = False):
-        """
-        Teardown the Kubernetes processor.
-        """
-        self.state.monitor_agent.terminate()
-        self.state.monitor_agent.join()
-
-        self.state.manager.shutdown()
-
-        for actor in self.state.target_actors:
-            actor.socket_interface.close()

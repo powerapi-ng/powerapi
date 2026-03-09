@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -28,11 +28,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+from dataclasses import dataclass
 from multiprocessing import Manager
 
-from powerapi.actor import Actor
+from powerapi.actor import Actor, State
 from powerapi.actor.message import StartMessage, PoisonPillMessage
-from powerapi.processor.processor_actor import ProcessorState, ProcessorActor
+from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
 from .handlers import K8sPreProcessorActorHWPCReportHandler
 from .handlers import K8sPreProcessorActorStartMessageHandler, K8sPreProcessorActorPoisonPillMessageHandler
@@ -40,30 +41,33 @@ from .metadata_cache_manager import K8sMetadataCacheManager
 from .monitor_agent import K8sMonitorAgent
 
 
-class K8sPreProcessorState(ProcessorState):
+@dataclass
+class K8sProcessorConfig:
     """
-    State of the Kubernetes pre-processor actor.
+    Kubernetes processor actor configuration.
+    :param api_mode: Kubernetes API mode (manual, local, cluster)
+    :param api_host: Kubernetes API host to connect to
+    :param api_key: Kubernetes API key (Bearer Token) to authenticate with
+    """
+    api_mode: str | None = None
+    api_host: str | None = None
+    api_key: str | None = None
+
+
+class K8sProcessorState(State):
+    """
+    State of the Kubernetes processor actor.
     """
 
-    def __init__(self, actor: Actor, target_actors: list, target_actors_names: list, api_mode: str | None, api_host: str | None, api_key: str | None):
-        super().__init__(actor, target_actors, target_actors_names)
-
-        self.api_mode = api_mode
-        self.api_host = api_host
-        self.api_key = api_key
-
-        self.manager = None
-        self.metadata_cache_manager = None
-        self.monitor_agent = None
-
-    def initialize_metadata_cache_manager(self):
+    def __init__(self, actor: Actor, config: K8sProcessorConfig):
         """
-        Initialize the metadata cache manager.
-        This method should **ONLY** be called from the pre-processor actor process.
+        Initializes a Kubernetes pre-processor state.
         """
+        super().__init__(actor)
+
         self.manager = Manager()
         self.metadata_cache_manager = K8sMetadataCacheManager(self.manager)
-        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, self.api_mode, self.api_host, self.api_key)
+        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, config.api_mode, config.api_host, config.api_key)
 
 
 class K8sPreProcessorActor(ProcessorActor):
@@ -71,17 +75,23 @@ class K8sPreProcessorActor(ProcessorActor):
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """
 
-    def __init__(self, name: str, target_actors: list, target_actors_names: list, api_mode: str | None = None,
-                 api_host: str | None = None, api_key: str | None = None, level_logger: int = logging.WARNING, timeout: int = 5000):
+    def __init__(self, name: str, config: K8sProcessorConfig, level_logger: int = logging.WARNING, timeout: int = 5000):
+        """
+        Initializes a Kubernetes pre-processor actor.
+        :param name: The name of the actor
+        :param config: Configuration of the actor
+        :param level_logger: logging level of the actor
+        :param timeout: timeout in seconds
+        """
         super().__init__(name, level_logger, timeout)
 
-        self.state = K8sPreProcessorState(self, target_actors, target_actors_names, api_mode, api_key, api_host)
+        self.config = config
 
     def setup(self):
         """
         Set up the Kubernetes pre-processor actor.
         """
-        self.state.initialize_metadata_cache_manager()
+        self.state = K8sProcessorState(self, self.config)
 
         self.add_handler(StartMessage, K8sPreProcessorActorStartMessageHandler(self.state))
         self.add_handler(HWPCReport, K8sPreProcessorActorHWPCReportHandler(self.state))

@@ -1,22 +1,21 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,20 +32,21 @@ import copy
 import pytest
 
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.dispatcher import DispatcherActor
 from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, TargetActorAlreadyUsed
-from powerapi.processor.processor_actor import ProcessorActor
 
 
-def test_create_pre_processor_binding_manager_with_actors(pre_processor_pullers_and_processors_dictionaries):
+def test_create_pre_processor_binding_manager_with_actors(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
     """
     Test that a PreProcessorBindingManager is correctly created when an actor and a processor dictionary are provided
     """
     expected_actors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[0])
     expected_processors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[1])
 
-    binding_manager = PreProcessorBindingManager(pullers=pre_processor_pullers_and_processors_dictionaries[0],
-                                                 processors=pre_processor_pullers_and_processors_dictionaries[1])
+    binding_manager = PreProcessorBindingManager(
+        config=pre_processor_complete_configuration,
+        pullers=pre_processor_pullers_and_processors_dictionaries[0],
+        processors=pre_processor_pullers_and_processors_dictionaries[1]
+    )
 
     assert binding_manager.actors == expected_actors_dictionary
     assert binding_manager.processors == expected_processors_dictionary
@@ -56,35 +56,35 @@ def test_create_processor_binding_manager_without_actors():
     """
     Test that a ProcessorBindingManager is correctly created without a dictionary
     """
-    binding_manager = PreProcessorBindingManager(pullers=None, processors=None)
+    binding_manager = PreProcessorBindingManager(config={}, pullers=None, processors=None)
 
     assert len(binding_manager.actors) == 0
     assert len(binding_manager.processors) == 0
 
 
-def test_process_bindings_for_pre_processor(pre_processor_complete_configuration,
-                                            pre_processor_pullers_and_processors_dictionaries):
+def test_process_bindings_for_pre_processor(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
     """
     Test that the bindings between a puller and a processor are correctly created
     """
     pullers = pre_processor_pullers_and_processors_dictionaries[0]
     processors = pre_processor_pullers_and_processors_dictionaries[1]
+    binding_manager = PreProcessorBindingManager(pre_processor_complete_configuration, pullers, processors)
 
-    binding_manager = PreProcessorBindingManager(pullers=pullers,
-                                                 processors=processors)
-
-    assert len(pullers['one_puller'].state.report_filter.filters) == 1
-    assert isinstance(pullers['one_puller'].state.report_filter.filters[0][1], DispatcherActor)
+    dispatchers = list(pullers['one_puller'].report_filter.dispatchers())
+    assert len(dispatchers) == 1
+    assert dispatchers[0].actor_name == 'dispatcher'
 
     binding_manager.process_bindings()
 
-    assert len(pullers['one_puller'].state.report_filter.filters) == 1
-    assert isinstance(pullers['one_puller'].state.report_filter.filters[0][1], ProcessorActor)
-    assert pullers['one_puller'].state.report_filter.filters[0][1] == processors['my_processor']
+    dispatchers = list(pullers['one_puller'].report_filter.dispatchers())
+    assert len(dispatchers) == 1
+    assert dispatchers[0].actor_name == 'my_processor'
+
+    assert len(processors['my_processor'].target_actors) == 1
+    assert processors['my_processor'].target_actors[0].actor_name == 'dispatcher'
 
 
-def test_process_bindings_for_pre_processor_raise_exception_with_wrong_binding_types(
-        pre_processor_binding_manager_with_wrong_binding_types):
+def test_process_bindings_for_pre_processor_raise_exception_with_wrong_binding_types(pre_processor_binding_manager_with_wrong_binding_types):
     """
     Test that an exception is raised with a wrong type for the from actor in a binding
     """
@@ -137,8 +137,8 @@ def check_all_processors_targets(preprocessor_binding_manager: PreProcessorBindi
     """
     Helper function that checks the processors targets of the given binding manager.
     """
-    for processor in preprocessor_binding_manager.processors.values():
-        preprocessor_binding_manager.check_processor_targets(processor)
+    for processor_name, processor in preprocessor_binding_manager.processors.items():
+        preprocessor_binding_manager.check_processor_targets(processor_name, processor)
 
 
 def test_check_processor_targets_raise_exception_with_no_existing_puller(pre_processor_binding_manager_with_unexisting_puller):

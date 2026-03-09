@@ -31,7 +31,7 @@ import logging
 import sys
 from collections.abc import Callable
 
-from powerapi.actor import Actor
+from powerapi.actor import Actor, ActorProxy
 from powerapi.database import CSVInput, CSVOutput
 from powerapi.database import JsonInput, JsonOutput
 from powerapi.database import MongodbInput, MongodbOutput
@@ -39,8 +39,8 @@ from powerapi.database import ReadableDatabase, WritableDatabase
 from powerapi.database import Socket, InfluxDB2, OpenTSDB, Prometheus
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
-from powerapi.filter import Filter
-from powerapi.processor.pre.k8s import K8sPreProcessorActor
+from powerapi.filter import ReportFilter
+from powerapi.processor.pre.k8s import K8sPreProcessorActor, K8sProcessorConfig
 from powerapi.processor.pre.openstack import OpenStackPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
@@ -56,11 +56,7 @@ COMPONENT_DB_MAX_BUFFER_SIZE_KEY = 'max_buffer_size'
 COMPONENT_URI_KEY = 'uri'
 
 ACTOR_NAME_KEY = 'actor_name'
-TARGET_ACTORS_KEY = 'target_actors'
 REGEXP_KEY = 'regexp'
-
-PULLER_NAME_KEY = 'puller'
-PUSHER_NAME_KEY = 'pusher'
 
 K8S_API_MODE_KEY = 'api-mode'
 K8S_API_KEY_KEY = 'api-key'
@@ -250,7 +246,7 @@ class PullerGenerator(DBActorGenerator):
         """
         return MongodbInput(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
-    def __init__(self, report_filter: Filter):
+    def __init__(self, report_filter: ReportFilter):
         """
         :param report_filter: Report filter to apply for incoming reports
         """
@@ -346,9 +342,9 @@ class PusherGenerator(DBActorGenerator):
         level_logger = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
         return PusherActor(actor_name, database, logger_level=level_logger)
 
-    def generate_report_type_to_actor_mapping(self, main_config: dict, actors: dict[str, Actor]) -> dict[type[Report], list[PusherActor]]:
+    def generate_report_mapping(self, main_config: dict, actors: dict[str, Actor]) -> dict[type[Report], list[ActorProxy]]:
         """
-        Generate the report type to actors mapping dict.
+        Generate the report type to pusher actor mapping.
         :param main_config: Main configuration
         :param actors: Dictionary of actors (result of the `generate` method)
         :return: Dictionary mapping the report type to actors that should process it
@@ -359,47 +355,60 @@ class PusherGenerator(DBActorGenerator):
         report_type_to_actor = {}
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
-                report_type_to_actor.setdefault(component_config[COMPONENT_MODEL_KEY], []).append(actors[component_name])
+                actor_proxy = actors[component_name].get_proxy()
+                report_type_to_actor.setdefault(component_config[COMPONENT_MODEL_KEY], []).append(actor_proxy)
             except KeyError as exn:
-                raise PowerAPIException(f'Undefined parameter for "{component_name}" {self.component_group_name}') from exn
+                raise PowerAPIException(f'Actor "{component_name}" is not defined') from exn
 
         return report_type_to_actor
 
 
 class ProcessorGenerator(Generator):
     """
-    Generator that initialises the processor from config
+    Generator that initializes the processor actor(s) from the configuration.
     """
 
-    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]] | None = None):
-        Generator.__init__(self, component_group_name)
+    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]]):
+        """
+        :param component_group_name: Name of the component group
+        :param processor_factory: Dictionary mapping processor type to actor factory
+        """
+        super().__init__(component_group_name)
 
         self.processor_factory = processor_factory
 
-    def remove_processor_factory(self, processor_type: str):
+    def remove_processor_factory(self, processor_type: str) -> None:
         """
-        remove a processor from generator
+        Remove the given processor actor factory from the generator.
+        :param processor_type: Processor type name
         """
         if processor_type not in self.processor_factory:
-            raise ProcessorTypeDoesNotExist(processor_type=processor_type)
+            raise ProcessorTypeDoesNotExist(processor_type)
+
         del self.processor_factory[processor_type]
 
-    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable):
+    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable) -> None:
         """
-        add a processor to generator
+        Add the given processor actor factory to the generator.
+        :param processor_type: Processor type name
+        :param processor_factory_function: Factory method used to generate the processor actors
         """
         if processor_type in self.processor_factory:
-            raise ProcessorTypeAlreadyUsed(processor_type=processor_type)
+            raise ProcessorTypeAlreadyUsed(processor_type)
+
         self.processor_factory[processor_type] = processor_factory_function
 
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
-
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ProcessorActor:
+        """
+        Helper method to generate a processor actor from the given configuration.
+        :param component_config: Configuration of the processor component
+        :param main_config: Global configuration
+        :param component_name: Name of the processor actor to generate
+        :return: Processor actor
+        """
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]
-
         if processor_actor_type not in self.processor_factory:
-            msg = 'Configuration error : processor actor type ' + processor_actor_type + ' unknown'
-            print(msg, file=sys.stderr)
-            raise PowerAPIException(msg)
+            raise PowerAPIException(f'Configuration error: Unknown processor actor type: {processor_actor_type}')
 
         component_config[ACTOR_NAME_KEY] = component_name
         component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
@@ -408,7 +417,7 @@ class ProcessorGenerator(Generator):
 
 class PreProcessorGenerator(ProcessorGenerator):
     """
-    Generator that initialises the pre-processor from config.
+    Generator that initializes the pre-processor actor(s) from the configuration.
     """
 
     def __init__(self):
@@ -425,9 +434,9 @@ class PreProcessorGenerator(ProcessorGenerator):
         api_mode = processor_config.get(K8S_API_MODE_KEY, 'manual')  # use manual mode by default
         api_host = processor_config.get(K8S_API_HOST_KEY, None)
         api_key = processor_config.get(K8S_API_KEY_KEY, None)
-        target_actors_name = [processor_config[PULLER_NAME_KEY]]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return K8sPreProcessorActor(name, [], target_actors_name, api_mode, api_host, api_key, level_logger)
+        config = K8sProcessorConfig(api_mode, api_host, api_key)
+        return K8sPreProcessorActor(name, config, level_logger)
 
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> OpenStackPreProcessorActor:
@@ -437,9 +446,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :return: Configured OpenStack pre-processor actor
         """
         name = processor_config[ACTOR_NAME_KEY]
-        target_actors_name = [processor_config[PULLER_NAME_KEY]]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return OpenStackPreProcessorActor(name, [], target_actors_name, level_logger)
+        return OpenStackPreProcessorActor(name, level_logger)
 
     def _get_default_processor_factories(self) -> dict[str, Callable[[dict], ProcessorActor]]:
         """
@@ -449,16 +457,3 @@ class PreProcessorGenerator(ProcessorGenerator):
             'k8s': self._k8s_pre_processor_factory,
             'openstack': self._openstack_pre_processor_factory
         }
-
-
-class PostProcessorGenerator(ProcessorGenerator):
-    """
-    Generator that initialises the post-processor from config
-    """
-
-    def __init__(self):
-        ProcessorGenerator.__init__(self, 'post-processor', self._get_default_processor_factories())
-
-    @staticmethod
-    def _get_default_processor_factories() -> dict[str, Callable[[dict], ProcessorActor]]:
-        return {}

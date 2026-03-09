@@ -27,9 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import StartHandler, PoisonPillMessageHandler
 from powerapi.actor.message import ErrorMessage
-from powerapi.puller.database_poller import DatabasePollerThread
+from powerapi.handler import StartHandler, PoisonPillMessageHandler
 
 
 class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
@@ -42,12 +41,8 @@ class PullerPoisonPillMessageHandler(PoisonPillMessageHandler):
         Teardown the Puller actor.
         :param soft: Toggle soft-kill mode for the actor
         """
-        if self.state.db_poller_thread and self.state.db_poller_thread.is_alive():
-            self.state.db_poller_thread.stop()
-            self.state.db_poller_thread.join(timeout=5.0)
-
-        for _, dispatcher in self.state.report_filter.filters:
-            dispatcher.socket_interface.close()
+        self.state.db_poller_thread.stop()
+        self.state.db_poller_thread.join(timeout=5.0)
 
 
 class PullerStartMessageHandler(StartHandler):
@@ -59,18 +54,13 @@ class PullerStartMessageHandler(StartHandler):
         """
         Initialize the Puller actor.
         """
-        if not self.state.report_filter.filters:
+        if not self.state.report_filter:
             self.state.actor.send_control(ErrorMessage('Report filter is empty'))
-            return
-
-        for _, dispatcher in self.state.report_filter.filters:
-            dispatcher.connect_data()
-
-        db_poller_thread = DatabasePollerThread(self.state.actor, self.state.database, self.state.report_filter, self.state.stream_mode)
-        db_poller_thread.start()
-        if not db_poller_thread.is_alive():
-            self.state.actor.send_control(ErrorMessage('Database poller thread failed to start'))
             self.state.alive = False
             return
 
-        self.state.db_poller_thread = db_poller_thread
+        self.state.db_poller_thread.start()
+        self.state.db_poller_thread.wait_ready(timeout=5.0)
+        if not self.state.db_poller_thread.is_alive():
+            self.state.actor.send_control(ErrorMessage('Database poller thread failed to start'))
+            self.state.alive = False

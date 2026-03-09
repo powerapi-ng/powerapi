@@ -27,4 +27,4 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from .db import SilentFakeDB, make_report, generate_reports
+from .db import LocalQueueDatabase, FailingLocalQueueDatabase, make_report, generate_reports

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
 #
@@ -27,134 +27,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
-import os
-from datetime import datetime, timezone
-
-import pytest
-
-from powerapi.actor.message import StartMessage, ErrorMessage, OKMessage
-from powerapi.database import ReadableDatabase
-from powerapi.filter import Filter
-from powerapi.puller import PullerActor
-from powerapi.report import Report
-from tests.utils.db import SilentFakeDB
-from tests.utils.dispatcher import FakeDispatcher
+from powerapi.actor import StartMessage, PoisonPillMessage
 
 
-def _setup_fake_database(num_reports: int = 5):
+def test_start_handler_empty_report_filter_kill_actor(puller_start_handler, empty_report_filter):
     """
-    Set up a fake database for tests.
+    Test that start handler kills the actor when the report filter is empty.
     """
-    return SilentFakeDB([Report(datetime.fromtimestamp(i, timezone.utc), 'pytest', f'report-{i}') for i in range(num_reports)])
+    handler = puller_start_handler(empty_report_filter)
+    handler.handle(StartMessage())
+
+    assert handler.state.alive is False
 
 
-def _setup_puller_actor(name: str, database: ReadableDatabase, report_filter: Filter, stream_mode: bool = False):
+def test_start_handler_initializes_database_poller(puller_start_handler, broadcast_report_filter):
     """
-    Set up a PullerActor for tests.
+    Test that start handler initializes the database poller.
     """
-    puller = PullerActor(name, database, report_filter, stream_mode, logging.DEBUG)
-    puller.start()
-    puller.connect_control()
-    puller.connect_data()
-    return puller
+    handler = puller_start_handler(broadcast_report_filter)
+    handler.handle(StartMessage())
+
+    assert handler.state.alive is True
+    handler.state.db_poller_thread.start.assert_called_once()
 
 
-def test_puller_start_message_empty_filter():
+def test_start_handler_fail_initialize_database_poller_kill_actor(puller_start_handler, broadcast_report_filter):
     """
-    Test that the puller send an ErrorMessage when it receives a StartMessage with an empty filter.
+    Test that start handler kills the actor when the database poller fails to initialize.
     """
-    report_filter = Filter()
-    puller = _setup_puller_actor('puller_test_start_message_empty_filter', _setup_fake_database(), report_filter)
-    assert puller.is_alive() is True
+    handler = puller_start_handler(broadcast_report_filter)
+    handler.state.db_poller_thread.start.side_effect = None
+    handler.state.db_poller_thread.is_alive.return_value = False
 
-    puller.send_control(StartMessage())
-    message = puller.receive_control()
-    assert isinstance(message, ErrorMessage)
+    handler.handle(StartMessage())
 
-    puller.terminate()
-    puller.join(timeout=5.0)
-    assert puller.is_alive() is False
+    assert handler.state.alive is False
+    handler.state.db_poller_thread.start.assert_called_once()
 
 
-def test_puller_send_reports_to_dispatcher():
+def test_poison_pill_handler_stop_database_poller(puller_poison_pill_handler):
     """
-    Test that the puller send reports to the dispatcher when it receives a StartMessage.
+    Test that poison pill handler stops the database poller before killing the actor.
     """
-    dispatcher = FakeDispatcher('dispatcher_test_send_reports_to_dispatcher')
+    handler = puller_poison_pill_handler()
+    handler.handle(PoisonPillMessage(soft=False))
 
-    report_filter = Filter()
-    report_filter.filter(lambda msg: True, dispatcher)
-
-    num_reports = 10
-    database = _setup_fake_database(num_reports)
-
-    puller = _setup_puller_actor('puller_test_send_reports_to_dispatcher', database, report_filter)
-    assert puller.is_alive() is True
-
-    puller.send_control(StartMessage())
-    message = puller.receive_control()
-    assert isinstance(message, OKMessage)
-
-    puller.join(timeout=5.0)
-    assert puller.is_alive() is False
-    assert dispatcher.get_num_received_data() == num_reports
-
-
-def test_puller_with_multiple_reports_filter():
-    """
-    Test that the puller follow defined filter when sending the reports to the dispatcher.
-    """
-    dispatcher_even = FakeDispatcher('even_dispatcher_test_with_multiple_reports_filter')
-    dispatcher_odd = FakeDispatcher('odd_dispatcher_test_with_multiple_reports_filter')
-    dispatcher_catch_all = FakeDispatcher('catchall_dispatcher_test_with_multiple_reports_filter')
-
-    num_reports = 10
-    database = _setup_fake_database(num_reports)
-
-    report_filter = Filter()
-    report_filter.filter(lambda msg: (int(msg.target.removeprefix('report-')) % 2) == 0, dispatcher_even)
-    report_filter.filter(lambda msg: (int(msg.target.removeprefix('report-')) % 2) != 0, dispatcher_odd)
-    report_filter.filter(lambda msg: True, dispatcher_catch_all)
-
-    puller = _setup_puller_actor('puller_test_with_multiple_reports_filter', database, report_filter)
-    assert puller.is_alive() is True
-
-    puller.send_control(StartMessage())
-    message = puller.receive_control()
-    assert isinstance(message, OKMessage)
-
-    puller.join(timeout=5.0)
-    assert puller.is_alive() is False
-    assert dispatcher_even.get_num_received_data() == 5  # 0, 2, 4, 6, 8
-    assert dispatcher_odd.get_num_received_data() == 5  # 1, 3, 5, 7, 9
-    assert dispatcher_catch_all.get_num_received_data() == num_reports
-
-
-@pytest.mark.skipif(os.getenv("CI") == "true", reason="This test is too flaky to be run in CI")
-def test_puller_with_stream_mode():
-    """
-    Test that the puller send reports to the dispatcher and stay alive waiting for new reports.
-    """
-    dispatcher = FakeDispatcher('dispatcher_test_with_stream_mode')
-
-    report_filter = Filter()
-    report_filter.filter(lambda msg: True, dispatcher)
-
-    num_reports = 10
-    database = _setup_fake_database(num_reports)
-
-    puller = _setup_puller_actor('puller_test_with_stream_mode', database, report_filter, stream_mode=True)
-    assert puller.is_alive() is True
-
-    puller.send_control(StartMessage())
-    message = puller.receive_control()
-    assert isinstance(message, OKMessage)
-
-    puller.join(timeout=5.0)
-    assert puller.is_alive() is True
-    assert dispatcher.get_num_received_data() == num_reports
-
-    puller.terminate()
-    puller.join(timeout=5.0)
-    assert puller.is_alive() is False
+    assert handler.state.alive is False
+    handler.state.db_poller_thread.stop.assert_called_once()
+    handler.state.db_poller_thread.join.assert_called_once()

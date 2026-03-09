@@ -1,4 +1,4 @@
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022, Inria
 # Copyright (c) 2022, University of Lille
 # All rights reserved.
 #
@@ -27,4 +27,5 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.dispatcher.dispatcher_actor import DispatcherActor, RouteTable
+from powerapi.dispatcher.dispatcher_actor import DispatcherActor
+from powerapi.dispatcher.route_table import RouteTable
