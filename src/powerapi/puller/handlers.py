@@ -64,4 +64,3 @@ class PullerStartMessageHandler(StartHandler):
         if not self.state.db_poller_thread.is_alive():
             self.state.actor.send_control(ErrorMessage('Database poller thread failed to start'))
             self.state.alive = False
-            return
