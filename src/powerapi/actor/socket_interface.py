@@ -27,10 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
 from hashlib import blake2b
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 import zmq
 
