@@ -29,16 +29,12 @@
 
 from collections.abc import Iterable
 
+from opentsdb import TSDBClient, TSDBClientException
+
 from powerapi.database.driver import WritableDatabase
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.opentsdb.codecs import ReportEncoders
 from powerapi.report import Report
-
-try:
-    from opentsdb import TSDBClient, TSDBClientException
-except ImportError:
-    TSDBClient = None
-    TSDBClientException = None
 
 
 class OpenTSDB(WritableDatabase):

@@ -29,17 +29,13 @@
 
 from collections.abc import Iterable
 
+from prometheus_client import start_http_server, CollectorRegistry
+
 from powerapi.database.driver import WritableDatabase
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.prometheus.codecs import ReportEncoders, EncoderOptions
 from powerapi.database.prometheus.collectors import ReportProcessorFactory
 from powerapi.report import Report
-
-try:
-    from prometheus_client import start_http_server, CollectorRegistry
-except ImportError:
-    start_http_server = None
-    CollectorRegistry = None
 
 
 class Prometheus(WritableDatabase):
