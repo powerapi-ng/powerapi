@@ -28,15 +28,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-import sys
 from collections.abc import Callable
 
 from powerapi.actor import Actor, ActorProxy
-from powerapi.database import CSVInput, CSVOutput
-from powerapi.database import JsonInput, JsonOutput
-from powerapi.database import MongodbInput, MongodbOutput
 from powerapi.database import ReadableDatabase, WritableDatabase
-from powerapi.database import Socket, InfluxDB2, OpenTSDB, Prometheus
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import ReportFilter
@@ -198,10 +193,12 @@ class DBActorGenerator(BaseGenerator):
         self.db_factory[db_name] = db_factory_function
 
     def _generate_db(self, db_name: str, component_config: dict):
-        if db_name not in self.db_factory:
-            raise PowerAPIException('Configuration error: Invalid database type: %s', db_name)
-
-        return self.db_factory[db_name](component_config)
+        try:
+            return self.db_factory[db_name](component_config)
+        except KeyError as exn:
+            raise PowerAPIException('Configuration error: Invalid database type: %s', db_name) from exn
+        except ImportError as exn:
+            raise PowerAPIException('Dependencies for %s database are not installed', db_name) from exn
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
         model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
@@ -223,6 +220,7 @@ class PullerGenerator(DBActorGenerator):
         """
         CSV Input database factory method.
         """
+        from powerapi.database.csv import CSVInput
         return CSVInput(conf['model'], conf['files'])
 
     @staticmethod
@@ -230,6 +228,7 @@ class PullerGenerator(DBActorGenerator):
         """
         JSON Input database factory method.
         """
+        from powerapi.database.json import JsonInput
         return JsonInput(conf['model'], conf['filepath'])
 
     @staticmethod
@@ -237,6 +236,7 @@ class PullerGenerator(DBActorGenerator):
         """
         Socket database factory method.
         """
+        from powerapi.database.socket import Socket
         return Socket(conf['model'], conf['host'], conf['port'])
 
     @staticmethod
@@ -244,6 +244,7 @@ class PullerGenerator(DBActorGenerator):
         """
         MongoDB Input database factory method.
         """
+        from powerapi.database.mongodb import MongodbInput
         return MongodbInput(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
     def __init__(self, report_filter: ReportFilter):
@@ -283,6 +284,7 @@ class PusherGenerator(DBActorGenerator):
         """
         CSV Output database factory method.
         """
+        from powerapi.database.csv import CSVOutput
         return CSVOutput(conf['model'], conf['directory'])
 
     @staticmethod
@@ -290,6 +292,7 @@ class PusherGenerator(DBActorGenerator):
         """
         JSON Output database factory method.
         """
+        from powerapi.database.json import JsonOutput
         return JsonOutput(conf['model'], conf['filepath'])
 
     @staticmethod
@@ -297,6 +300,7 @@ class PusherGenerator(DBActorGenerator):
         """
         MongoDB Output database factory method.
         """
+        from powerapi.database.mongodb import MongodbOutput
         return MongodbOutput(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
     @staticmethod
@@ -304,6 +308,7 @@ class PusherGenerator(DBActorGenerator):
         """
         InfluxDB2 database factory method.
         """
+        from powerapi.database.influxdb2 import InfluxDB2
         return InfluxDB2(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'], gen_tag_list(conf))
 
     @staticmethod
@@ -311,6 +316,7 @@ class PusherGenerator(DBActorGenerator):
         """
         OpentsDB database factory method.
         """
+        from powerapi.database.opentsdb import OpenTSDB
         return OpenTSDB(conf['model'], conf['uri'], conf['port'], conf['metric-name'])
 
     @staticmethod
@@ -318,6 +324,7 @@ class PusherGenerator(DBActorGenerator):
         """
         Prometheus database factory method.
         """
+        from powerapi.database.prometheus import Prometheus
         return Prometheus(conf['model'], conf['addr'], conf['port'], gen_tag_list(conf))
 
     def __init__(self):
