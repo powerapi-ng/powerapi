@@ -52,19 +52,11 @@ def csv_input_output_stream_config():
 
 
 @pytest.fixture
-def mongodb_input_output_stream_config():
-    """
-    Configuration with mongodb as input and output and stream mode enabled
-    """
-    return load_configuration_from_json_file(file_name='mongo_input_output_stream_mode_enabled_configuration.json')
-
-
-@pytest.fixture
 def several_inputs_outputs_stream_config():
     """
     Configuration with several inputs and outputs and stream mode enabled
     """
-    return load_configuration_from_json_file(file_name='several_inputs_outputs_stream_mode_enabled_configuration.json')
+    return load_configuration_from_json_file('several_inputs_outputs_stream_mode_enabled_configuration.json')
 
 
 @pytest.fixture
@@ -76,24 +68,6 @@ def single_input_multiple_outputs_with_different_report_type():
 
 
 @pytest.fixture
-def several_inputs_outputs_stream_mongo_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of mongo input/output are removed
-    """
-    for _, current_input in several_inputs_outputs_stream_config["input"].items():
-        if current_input['type'] == 'mongodb':
-            current_input.pop('uri')
-            current_input.pop('db')
-
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'mongodb':
-            current_output.pop('uri')
-            current_output.pop('db')
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
 def several_inputs_outputs_stream_socket_without_some_arguments_config(several_inputs_outputs_stream_config):
     """
     Configuration with several inputs and outputs and stream mode enabled. Some arguments
@@ -102,67 +76,6 @@ def several_inputs_outputs_stream_socket_without_some_arguments_config(several_i
     for _, current_input in several_inputs_outputs_stream_config["input"].items():
         if current_input['type'] == 'socket':
             current_input.pop('port')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
-def several_inputs_outputs_stream_csv_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of csv input/output are removed
-    """
-    for _, current_input in several_inputs_outputs_stream_config["input"].items():
-        if current_input['type'] == 'csv':
-            current_input.pop('files')
-
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'csv':
-            current_output.pop('directory')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
-def several_inputs_outputs_stream_influx_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of influxdb output are removed
-    """
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'influxdb':
-            current_output.pop('port')
-            current_output.pop('db')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
-def several_inputs_outputs_stream_prometheus_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of prometheus output are removed
-    """
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'prometheus':
-            current_output.pop('metric-name')
-            current_output.pop('metric-description')
-            current_output.pop('aggregation-period')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
-def several_inputs_outputs_stream_opentsdb_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with several inputs and outputs and stream mode enabled. Some arguments
-    of opentsdb output are removed
-    """
-    for _, current_output in several_inputs_outputs_stream_config["output"].items():
-        if current_output['type'] == 'opentsdb':
-            current_output.pop('metric-name')
-            current_output.pop('port')
-            current_output.pop('uri')
 
     return several_inputs_outputs_stream_config
 
@@ -182,18 +95,6 @@ def several_k8s_pre_processors_without_some_arguments_config():
     """
     return load_configuration_from_json_file(
         file_name='several_k8s_pre_processors_without_some_arguments_configuration.json')
-
-
-@pytest.fixture
-def several_k8s_pre_processors(several_k8s_pre_processors_config):
-    """
-    Return a dictionary with several k8s processors
-    """
-    generator = PreProcessorGenerator()
-
-    pre_processors = generator.generate(several_k8s_pre_processors_config)
-
-    return pre_processors
 
 
 @pytest.fixture
@@ -251,18 +152,6 @@ def k8s_pre_processor_config():
     Configuration with k8s as pre-processor
     """
     return load_configuration_from_json_file(file_name='k8s_pre_processor_configuration.json')
-
-
-@pytest.fixture
-def k8s_pre_processors(k8s_pre_processor_config):
-    """
-    Return a dictionary of k8s pre-processors
-    """
-    generator = PreProcessorGenerator()
-
-    processors = generator.generate(k8s_pre_processor_config)
-
-    return processors
 
 
 @pytest.fixture
@@ -595,20 +484,6 @@ def get_pre_processor_pullers_and_processors_dictionaries_from_configuration(con
     processors = processor_generator.generate(main_config=configuration)
 
     return pullers, processors, pushers
-
-
-@pytest.fixture
-def dispatcher_actor_in_dictionary():
-    """
-    Return a DistpatcherActor in a dictionary
-    """
-
-    route_table = RouteTable()
-
-    dispatcher = DispatcherActor(name='dispatcher', formula_init_function=None, pushers=None,
-                                 route_table=route_table)
-
-    return {dispatcher.name: dispatcher}
 
 
 @pytest.fixture

@@ -1,21 +1,21 @@
-# Copyright (c) 2023, INRIA
+# Copyright (c) 2023, Inria
 # Copyright (c) 2023, University of Lille
 # All rights reserved.
-
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,7 +31,9 @@ import pytest
 
 from powerapi.cli.generator import ModelNameDoesNotExist
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, PreProcessorGenerator
-from powerapi.database import MongodbInput, MongodbOutput, CSVInput, CSVOutput, Socket, InfluxDB2, Prometheus, OpenTSDB
+from powerapi.database.csv import CSVInput, CSVOutput
+from powerapi.database.json import JsonInput, JsonOutput
+from powerapi.database.socket import Socket
 from powerapi.exception import PowerAPIException
 from powerapi.filter import BroadcastReportFilter
 from powerapi.processor.pre.k8s import K8sPreProcessorActor
@@ -40,9 +42,6 @@ from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, FormulaReport
 
 
-####################
-# PULLER GENERATOR #
-####################
 def test_generate_puller_from_empty_config_dict_raise_an_exception():
     """
     Test that PullerGenerator raises a PowerAPIException when there is no input argument
@@ -54,32 +53,11 @@ def test_generate_puller_from_empty_config_dict_raise_an_exception():
         generator.generate(conf)
 
 
-def test_generate_puller_from_mongo_basic_config(mongodb_input_output_stream_config):
-    """
-    Test that generation for mongodb puller from a config with a mongodb input works correctly
-    """
-    generator = PullerGenerator(BroadcastReportFilter())
-
-    pullers = generator.generate(mongodb_input_output_stream_config)
-
-    assert len(pullers) == 1
-    assert 'one_puller' in pullers
-    puller = pullers['one_puller']
-    assert isinstance(puller, PullerActor)
-
-    db = puller.database
-
-    assert isinstance(db, MongodbInput)
-    assert db.uri == mongodb_input_output_stream_config['input']['one_puller']['uri']
-    assert db.database_name == mongodb_input_output_stream_config['input']['one_puller']['db']
-    assert db.collection_name == mongodb_input_output_stream_config['input']['one_puller']['collection']
-
-
 def test_generate_several_pullers_from_config(several_inputs_outputs_stream_config):
     """
     Test that several inputs are correctly used to generate the related actors
     """
-    for _, current_input in several_inputs_outputs_stream_config['input'].items():
+    for current_input in several_inputs_outputs_stream_config['input'].values():
         if current_input['type'] == 'csv':
             current_input['files'] = current_input['files'].split(',')
 
@@ -94,33 +72,17 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
 
         db = pullers[puller_name].database
 
-        if current_puller_infos['type'] == 'mongodb':
-            assert isinstance(db, MongodbInput)
-            assert db.uri == current_puller_infos['uri']
-            assert db.database_name == current_puller_infos['db']
-            assert db.collection_name == current_puller_infos['collection']
-
-        elif current_puller_infos['type'] == 'csv':
+        if current_puller_infos['type'] == 'csv':
             assert isinstance(db, CSVInput)
             assert all(str(filepath) in current_puller_infos['files'] for filepath  in db.input_filepaths)
-
         elif current_puller_infos['type'] == 'socket':
             assert isinstance(db, Socket)
             assert db.listen_addr == (current_puller_infos['host'], current_puller_infos['port'])
-
+        elif current_puller_infos['type'] == 'json':
+            assert isinstance(db, JsonInput)
+            assert str(db.input_filepath) == current_puller_infos['filepath']
         else:
             pytest.fail(f'Unsupported puller type: {current_puller_infos["type"]}')
-
-
-def test_generate_puller_raise_exception_when_missing_arguments_in_mongo_input(
-        several_inputs_outputs_stream_mongo_without_some_arguments_config):
-    """
-    Test that PullerGenerator raise a PowerAPIException when some arguments are missing for mongo input
-    """
-    generator = PullerGenerator(BroadcastReportFilter())
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
 
 
 def test_generate_puller_raise_exception_when_missing_arguments_in_socket_input(
@@ -134,9 +96,6 @@ def test_generate_puller_raise_exception_when_missing_arguments_in_socket_input(
         generator.generate(several_inputs_outputs_stream_socket_without_some_arguments_config)
 
 
-#########################
-# DBActorGenerator Test #
-#########################
 def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
     """
     Test that an exception is raised when a model factory that does not exist is erased
@@ -150,31 +109,28 @@ def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_rai
     assert len(generator.report_classes) == num_report_classes
 
 
-def test_remove_hwpc_report_model_and_generate_puller_from_a_config_with_hwpc_report_model_raise_an_exception(
-        mongodb_input_output_stream_config):
+def test_remove_hwpc_report_model_and_generate_puller_from_a_config_using_model(several_inputs_outputs_stream_config):
     """
-    Test that PullGenerator raises PowerAPIException when the model class is not defined
+    PullerGenerator should raise an exception when the model of an input is not defined.
     """
     generator = PullerGenerator(BroadcastReportFilter())
     generator.remove_report_class('HWPCReport')
+
     with pytest.raises(PowerAPIException):
-        _ = generator.generate(mongodb_input_output_stream_config)
+        _ = generator.generate(several_inputs_outputs_stream_config)
 
 
-def test_remove_mongodb_factory_and_generate_puller_from_a_config_with_mongodb_input_must_call_sys_exit_(
-        mongodb_input_output_stream_config):
+def test_remove_csv_database_factory_and_generate_puller_from_a_config_using_type(several_inputs_outputs_stream_config):
     """
-    Test that PullGenerator raises a PowerAPIException when an input type is not defined
+    PullerGenerator should raise an exception when the database of an input is not defined.
     """
     generator = PullerGenerator(BroadcastReportFilter())
-    generator.remove_db_factory('mongodb')
+    generator.remove_db_factory('csv')
+
     with pytest.raises(PowerAPIException):
-        _ = generator.generate(mongodb_input_output_stream_config)
+        _ = generator.generate(several_inputs_outputs_stream_config)
 
 
-#########################
-# PusherGenerator Test #
-#########################
 def test_generate_pusher_from_empty_config_dict_raise_an_exception():
     """
     Test that PusherGenerator raise an exception when there is no output argument
@@ -186,34 +142,12 @@ def test_generate_pusher_from_empty_config_dict_raise_an_exception():
         generator.generate(conf)
 
 
-def test_generate_pusher_from_mongo_basic_config(mongodb_input_output_stream_config):
-    """
-    Test that generation for mongodb puller from a config with a mongodb input works correctly
-    """
-    generator = PusherGenerator()
-
-    pushers = generator.generate(mongodb_input_output_stream_config)
-
-    assert len(pushers) == 1
-    assert 'one_pusher' in pushers
-    pusher = pushers['one_pusher']
-    assert isinstance(pusher, PusherActor)
-
-    db = pusher.database
-
-    assert isinstance(db, MongodbOutput)
-    assert db.uri == mongodb_input_output_stream_config['output']['one_pusher']['uri']
-    assert db.database_name == mongodb_input_output_stream_config['output']['one_pusher']['db']
-    assert db.collection_name == mongodb_input_output_stream_config['output']['one_pusher']['collection']
-
-
 def test_generate_several_pushers_from_config(several_inputs_outputs_stream_config):
     """
     Test that several outputs are correctly used to generate the related actors
 
     """
     generator = PusherGenerator()
-
     pushers = generator.generate(several_inputs_outputs_stream_config)
 
     assert len(pushers) == len(several_inputs_outputs_stream_config['output'])
@@ -225,57 +159,14 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
         db = pushers[pusher_name].database
         pusher_type = current_pusher_infos['type']
 
-        if pusher_type == 'mongodb':
-            assert isinstance(db, MongodbOutput)
-            assert db.uri == current_pusher_infos['uri']
-            assert db.database_name == current_pusher_infos['db']
-            assert db.collection_name == current_pusher_infos['collection']
-
-        elif pusher_type == 'prometheus':
-            assert isinstance(db, Prometheus)
-            assert db.listen_addr == (current_pusher_infos['addr'], current_pusher_infos['port'])
-
-        elif pusher_type == 'csv':
+        if pusher_type == 'csv':
             assert isinstance(db, CSVOutput)
             assert str(db.output_directory) == current_pusher_infos['directory']
-
-        elif pusher_type == 'influxdb2':
-            assert isinstance(db, InfluxDB2)
-            assert db._bucket_name == current_pusher_infos['bucket']
-            assert db._client.org == current_pusher_infos['org']
-            assert db._client.auth_header_value.split()[1] == current_pusher_infos['token']
-            assert db._report_encoder_opts.allowed_tags_name == set(current_pusher_infos['tags'].split(','))
-
-        elif pusher_type == 'opentsdb':
-            assert isinstance(db, OpenTSDB)
-            assert db._host == current_pusher_infos['uri']
-            assert db._port == current_pusher_infos['port']
-            assert db._metric_name == current_pusher_infos['metric-name']
-
+        elif pusher_type == 'json':
+            assert isinstance(db, JsonOutput)
+            assert str(db.output_filepath) == current_pusher_infos['filepath']
         else:
             pytest.fail(f'Unsupported pusher type: {pusher_type}')
-
-
-def test_generate_pusher_raise_exception_when_missing_arguments_in_mongo_output(
-        several_inputs_outputs_stream_mongo_without_some_arguments_config):
-    """
-    Test that PusherGenerator raises a PowerAPIException when some arguments are missing for mongo output
-    """
-    generator = PusherGenerator()
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_mongo_without_some_arguments_config)
-
-
-def test_generate_pusher_raise_exception_when_missing_arguments_in_opentsdb_output(
-        several_inputs_outputs_stream_opentsdb_without_some_arguments_config):
-    """
-    Test that PusherGenerator raises a PowerAPIException when some arguments are missing for opentsdb output
-    """
-    generator = PusherGenerator()
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_opentsdb_without_some_arguments_config)
 
 
 def test_generate_pusher_report_type_to_actor_mapping(single_input_multiple_outputs_with_different_report_type):
@@ -294,9 +185,6 @@ def test_generate_pusher_report_type_to_actor_mapping(single_input_multiple_outp
     assert [proxy.actor_type for proxy in report_mapping[FormulaReport]] == [PusherActor]
 
 
-################################
-# PreProcessorActorGenerator Test #
-################################
 def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
     """
     Test that PreProcessGenerator raise an exception when there is no processor argument
