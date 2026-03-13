@@ -29,17 +29,13 @@
 
 from collections.abc import Iterable
 
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+
 from powerapi.database.driver import DatabaseDriver, ReadableDatabase, WritableDatabase
 from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
 from powerapi.database.mongodb.codecs import ReportEncoders, ReportDecoders
 from powerapi.report import Report
-
-try:
-    from pymongo import MongoClient
-    from pymongo.errors import PyMongoError
-except ImportError:
-    MongoClient = None
-    PyMongoError = None
 
 
 class _MongodbDriver(DatabaseDriver):

@@ -4,19 +4,16 @@
   "input": {
     "hwpcsensor": {
       "model": "HWPCReport",
-      "type": "mongodb",
-      "uri": "mongodb://example",
-      "db": "inputdb",
-      "collection": "hwpcsensor"
+      "type": "socket",
+      "host": "localhost",
+      "port": 8889
     }
   },
   "output": {
     "powerrep1": {
-      "type": "mongodb",
+      "type": "json",
       "model": "PowerReport",
-      "uri": "mongodb://example",
-      "db": "outputdb",
-      "collection": "powerrep"
+      "filepath": "/tmp/pytest-powerrep.jsonl"
     },
     "powerrep2": {
       "type": "csv",
@@ -24,11 +21,9 @@
       "directory": "/tmp/powerapi-csv-export-test"
     },
     "formularep": {
-      "type": "mongodb",
+      "type": "json",
       "model": "FormulaReport",
-      "uri": "mongodb://example",
-      "db": "outputdb",
-      "collection": "formularep"
+      "filepath": "/tmp/pytest-formularep.jsonl"
     }
   }
 }
