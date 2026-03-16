@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from typing import TypeVar, Generic, Protocol
+from typing import TypeVar, Protocol
 
 from powerapi.report import Report
 
@@ -62,20 +62,18 @@ class ReportDecoder(Protocol[_EncodedDataType, _ReportType]):
     def decode(data: _EncodedDataType, opts: CodecOptions | None = None) -> _ReportType: ...
 
 
-_CodecType = TypeVar('_CodecType', ReportEncoder, ReportDecoder)
-
-class _Registry(Generic[_CodecType]):
+class _Registry[CodecType: (ReportEncoder, ReportDecoder)]:
     """
     Generic codecs registry class.
     """
-    _registry: dict[type[Report], _CodecType]
+    _registry: dict[type[Report], CodecType]
 
     def __init_subclass__(cls):
         super().__init_subclass__()
         cls._registry = {}  # Ensure each subclass has its own independent registry.
 
     @classmethod
-    def register(cls, report_type: type[Report], codec: _CodecType) -> None:
+    def register(cls, report_type: type[Report], codec: CodecType) -> None:
         """
         Register a report type with its corresponding codec.
         :param report_type: Report type to register
@@ -84,7 +82,7 @@ class _Registry(Generic[_CodecType]):
         cls._registry[report_type] = codec
 
     @classmethod
-    def get(cls, report_type: type[Report]) -> _CodecType:
+    def get(cls, report_type: type[Report]) -> CodecType:
         """
         Get the codec corresponding to the given report type.
         :param report_type: Report type
