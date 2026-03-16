@@ -29,7 +29,7 @@
 
 from collections.abc import Iterable
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from multiprocessing import Manager
 from uuid import uuid4
 
@@ -44,7 +44,7 @@ def make_report(sensor: str = 'pytest', target: str | None = None) -> Report:
     :param target: Target name, random UUID4 if None
     :return: Initialized report
     """
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.now(tz=UTC)
     target_name = target if target is not None else str(uuid4())
     return Report(timestamp, sensor, target_name)
 

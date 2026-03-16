@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from powerapi.database.codec import CodecOptions, ReportDecoder, ReportDecoderRegistry
 from powerapi.report import HWPCReport
@@ -40,7 +40,7 @@ class HWPCReportDecoder(ReportDecoder[dict, HWPCReport]):
 
     @staticmethod
     def decode(data: dict, opts: CodecOptions | None = None) -> HWPCReport:
-        timestamp = datetime.fromtimestamp(data['timestamp'] / 1000, tz=timezone.utc)  # Unix timestamp in milliseconds
+        timestamp = datetime.fromtimestamp(data['timestamp'] / 1000, tz=UTC)  # Unix timestamp in milliseconds
         return HWPCReport(timestamp, data['sensor'], data['target'], data['groups'], data.get('metadata', {}))
 
 

@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from powerapi.database.csv.codecs import HWPCReportDecoder
 from powerapi.report import HWPCReport
@@ -42,7 +42,7 @@ class TestHwPCReportDecoder:
         """
         Test to decode valid CSV lines with one events group.
         """
-        ts = int(datetime.now(timezone.utc).timestamp() * 1000)  # milliseconds
+        ts = int(datetime.now(tz=UTC).timestamp() * 1000)  # milliseconds
         lines = {'testg': [
             {'timestamp': ts, 'sensor': 'pytest', 'target': 'example', 'socket': '0', 'cpu': '0', 'event1': 1, 'event2': 1},
             {'timestamp': ts, 'sensor': 'pytest', 'target': 'example', 'socket': '0', 'cpu': '1', 'event1': 2, 'event2': 2},
@@ -53,7 +53,7 @@ class TestHwPCReportDecoder:
         report = HWPCReportDecoder().decode(lines)
 
         assert isinstance(report, HWPCReport)
-        assert report.timestamp == datetime.fromtimestamp(ts / 1000, timezone.utc)
+        assert report.timestamp == datetime.fromtimestamp(ts / 1000, tz=UTC)
         assert report.sensor == 'pytest'
         assert report.target == 'example'
         assert report.metadata == {}
@@ -70,7 +70,7 @@ class TestHwPCReportDecoder:
         """
         Test to decode valid CSV lines with multiple events groups.
         """
-        ts = int(datetime.now(timezone.utc).timestamp() * 1000)  # milliseconds
+        ts = int(datetime.now(tz=UTC).timestamp() * 1000)  # milliseconds
         lines = {
             'testg1': [
                 {'timestamp': ts, 'sensor': 'pytest', 'target': 'example', 'socket': '0', 'cpu': '0', 'event1': 1, 'event2': 1},
@@ -85,7 +85,7 @@ class TestHwPCReportDecoder:
         report = HWPCReportDecoder().decode(lines)
 
         assert isinstance(report, HWPCReport)
-        assert report.timestamp == datetime.fromtimestamp(ts / 1000, timezone.utc)
+        assert report.timestamp == datetime.fromtimestamp(ts / 1000, tz=UTC)
         assert report.sensor == 'pytest'
         assert report.target == 'example'
         assert report.metadata == {}

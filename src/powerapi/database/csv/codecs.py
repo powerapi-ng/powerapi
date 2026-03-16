@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
 from powerapi.report import PowerReport, FormulaReport, HWPCReport
@@ -81,7 +81,7 @@ class HWPCReportDecoder(ReportDecoder[_SourcedCsvRowsType, HWPCReport]):
         groups = {}
         for group_name, rows in data.items():
             first_row = next(iter(rows))
-            timestamp = datetime.fromtimestamp(int(first_row['timestamp']) / 1000, tz=timezone.utc)
+            timestamp = datetime.fromtimestamp(int(first_row['timestamp']) / 1000, tz=UTC)
             sensor = first_row['sensor']
             target = first_row['target']
             group = groups.setdefault(group_name, {})
