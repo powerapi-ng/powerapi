@@ -1,4 +1,4 @@
-target-version = "py310"  # should match minimal python version of PowerAPI
+target-version = "py312"  # should match minimal python version of PowerAPI
 
 [lint]
 select = [
