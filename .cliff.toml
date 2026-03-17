@@ -1,0 +1,40 @@
+# git-cliff ~ configuration file
+
+[changelog]
+body = """
+## What's Changed {%- if version %} in {{ version }}{%- endif -%}
+
+{% for commit in commits %}
+  {%- if commit.remote.pr_title %}
+    * {{ commit.remote.pr_title | split(pat="\n") | first | trim }}\
+      {% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }})){%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{% if version %}
+    {% if previous.version %}
+      **Full Changelog**: {{ self::remote_url() }}/compare/{{ previous.version }}...{{ version }}
+    {% endif %}
+{% else -%}
+  {% raw %}\n{% endraw %}
+{% endif %}
+
+{%- macro remote_url() -%}
+  https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
+{%- endmacro -%}
+"""
+trim = true
+postprocessors = []
+
+[git]
+conventional_commits = false
+filter_unconventional = true
+split_commits = false
+filter_commits = false
+topo_order = false
+sort_commits = "newest"
+
+commit_parsers = [
+  { field = "github.pr_title", pattern = "build\\(deps.*\\)", skip = true },
+  { field = "github.pr_title", pattern = "chore\\(release\\)", skip = true },
+]
