@@ -28,5 +28,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.formula.handlers import FormulaPoisonPillMessageHandler
-from powerapi.formula.abstract_cpu_dram_formula import AbstractCpuDramFormula
 from powerapi.formula.formula_actor import FormulaActor, FormulaState
