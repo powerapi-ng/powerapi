@@ -36,7 +36,6 @@ from powerapi.database.json import JsonInput, JsonOutput
 from powerapi.database.socket import Socket
 from powerapi.exception import PowerAPIException
 from powerapi.filter import BroadcastReportFilter
-from powerapi.processor.pre.k8s import K8sPreProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.report import PowerReport, FormulaReport
@@ -194,64 +193,3 @@ def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
-
-
-def check_k8s_pre_processor_infos(pre_processor: K8sPreProcessorActor, processor_name: str):
-    """
-    Check that the infos related to a K8sMonitorAgentActor are correct regarding its related K8SProcessorActor
-    """
-    assert isinstance(pre_processor, K8sPreProcessorActor)
-    assert pre_processor.name == processor_name
-    assert len(pre_processor.target_actors) == 0
-
-
-def test_generate_pre_processor_from_k8s_config(k8s_pre_processor_config):
-    """
-    Test that generation for k8s processor from a config works correctly
-    """
-    generator = PreProcessorGenerator()
-    processor_name = 'my_processor'
-
-    processors = generator.generate(k8s_pre_processor_config)
-
-    assert len(processors) == len(k8s_pre_processor_config['pre-processor'])
-    assert processor_name in processors
-
-    processor = processors[processor_name]
-
-    check_k8s_pre_processor_infos(processor, processor_name)
-
-
-def test_generate_several_k8s_pre_processors_from_config(several_k8s_pre_processors_config):
-    """
-    Test that several k8s pre-processors are correctly generated
-    """
-    generator = PreProcessorGenerator()
-
-    processors = generator.generate(several_k8s_pre_processors_config)
-
-    assert len(processors) == len(several_k8s_pre_processors_config['pre-processor'])
-
-    for processor_name in several_k8s_pre_processors_config['pre-processor']:
-        assert processor_name in processors
-
-        processor = processors[processor_name]
-
-        check_k8s_pre_processor_infos(processor, processor_name)
-
-
-def test_generate_k8s_pre_processor_uses_default_values_with_missing_arguments(several_k8s_pre_processors_without_some_arguments_config):
-    """
-     Test that PreProcessorGenerator generates a pre-processor with default values when arguments are not defined
-     """
-    generator = PreProcessorGenerator()
-
-    processors = generator.generate(several_k8s_pre_processors_without_some_arguments_config)
-
-    assert len(processors) == len(several_k8s_pre_processors_without_some_arguments_config['pre-processor'])
-
-    for pre_processor_name in several_k8s_pre_processors_without_some_arguments_config['pre-processor']:
-        assert pre_processor_name in processors
-
-        processor = processors[pre_processor_name]
-        check_k8s_pre_processor_infos(processor, pre_processor_name)

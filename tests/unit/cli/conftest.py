@@ -147,14 +147,6 @@ def config_without_output(csv_io_postmortem_config):
 
 
 @pytest.fixture
-def k8s_pre_processor_config():
-    """
-    Configuration with k8s as pre-processor
-    """
-    return load_configuration_from_json_file(file_name='k8s_pre_processor_configuration.json')
-
-
-@pytest.fixture
 def subgroup_parser():
     """
     A subgroup parser with one argument "-a"
