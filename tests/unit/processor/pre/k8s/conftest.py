@@ -32,11 +32,10 @@ from multiprocessing import Manager
 import pytest
 
 from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager
-from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
 
 
-@pytest.fixture(name='initialized_metadata_cache_manager')
-def fx_initialized_metadata_cache_manager():
+@pytest.fixture
+def initialized_metadata_cache_manager():
     """
     Returns an initialized metadata cache manager.
     """
@@ -44,12 +43,3 @@ def fx_initialized_metadata_cache_manager():
     yield K8sMetadataCacheManager(manager)
 
     manager.shutdown()
-
-
-@pytest.fixture
-def initialized_monitor_agent(initialized_metadata_cache_manager):
-    """
-    Returns an initialized monitor agent.
-    """
-    agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
-    return agent

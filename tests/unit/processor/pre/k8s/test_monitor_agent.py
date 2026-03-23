@@ -27,7 +27,22 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest
+
+pytest.importorskip('powerapi.processor.pre.k8s.monitor_agent')  # The monitor agent requires external dependencies.
+
 from kubernetes.client import V1Pod, V1ContainerStatus, Configuration, V1ObjectMeta, V1PodStatus
+
+from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
+
+
+@pytest.fixture
+def initialized_monitor_agent(initialized_metadata_cache_manager):
+    """
+    Returns an initialized monitor agent.
+    """
+    agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
+    return agent
 
 
 def generate_k8s_config_for_tests() -> Configuration:

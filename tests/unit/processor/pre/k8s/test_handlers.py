@@ -32,6 +32,8 @@ from unittest.mock import Mock
 
 import pytest
 
+pytest.importorskip('powerapi.processor.pre.k8s.actor')  # The actor module requires external dependencies.
+
 from powerapi.processor.pre.k8s.actor import K8sProcessorState, K8sProcessorConfig
 from powerapi.processor.pre.k8s.handlers import K8sPreProcessorActorHWPCReportHandler
 from powerapi.processor.pre.k8s.metadata_cache_manager import K8sContainerMetadata
