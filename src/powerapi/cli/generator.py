@@ -373,14 +373,13 @@ class ProcessorGenerator(Generator):
     Generator that initializes the processor actor(s) from the configuration.
     """
 
-    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]]):
+    def __init__(self, component_group_name: str):
         """
         :param component_group_name: Name of the component group
-        :param processor_factory: Dictionary mapping processor type to actor factory
         """
         super().__init__(component_group_name)
 
-        self.processor_factory = processor_factory
+        self.processor_factory: dict[str, Callable[[dict], ProcessorActor]] = {}
 
     def remove_processor_factory(self, processor_type: str) -> None:
         """
@@ -431,7 +430,10 @@ class PreProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
-        super().__init__('pre-processor', self._get_default_processor_factories())
+        super().__init__('pre-processor')
+
+        self.add_processor_factory('k8s', self._k8s_pre_processor_factory)
+        self.add_processor_factory('openstack', self._openstack_pre_processor_factory)
 
     @staticmethod
     def _k8s_pre_processor_factory(processor_config: dict) -> ProcessorActor:
@@ -460,12 +462,3 @@ class PreProcessorGenerator(ProcessorGenerator):
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return OpenStackPreProcessorActor(name, level_logger)
-
-    def _get_default_processor_factories(self) -> dict[str, Callable[[dict], ProcessorActor]]:
-        """
-        Return the default pre-processors factory.
-        """
-        return {
-            'k8s': self._k8s_pre_processor_factory,
-            'openstack': self._openstack_pre_processor_factory
-        }
