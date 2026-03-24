@@ -27,143 +27,161 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import copy
+from unittest.mock import Mock
 
 import pytest
 
+from powerapi.actor import ActorProxy
 from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, TargetActorAlreadyUsed
+from powerapi.cli.generator import PreProcessorGenerator, PullerGenerator
+from powerapi.dispatcher import DispatcherActor
+from powerapi.exception import UnexistingActorException, UnsupportedActorTypeException, TargetActorAlreadyUsed
+from powerapi.filter import BroadcastReportFilter
+from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
+from powerapi.puller import PullerActor
 
 
-def test_create_pre_processor_binding_manager_with_actors(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
+class NoopPreprocessor(PreProcessorActor):
     """
-    Test that a PreProcessorBindingManager is correctly created when an actor and a processor dictionary are provided
+    Pre-processor actor that does nothing, for testing purposes.
     """
-    expected_actors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[0])
-    expected_processors_dictionary = copy.copy(pre_processor_pullers_and_processors_dictionaries[1])
-
-    binding_manager = PreProcessorBindingManager(
-        config=pre_processor_complete_configuration,
-        pullers=pre_processor_pullers_and_processors_dictionaries[0],
-        processors=pre_processor_pullers_and_processors_dictionaries[1]
-    )
-
-    assert binding_manager.actors == expected_actors_dictionary
-    assert binding_manager.processors == expected_processors_dictionary
 
 
-def test_create_processor_binding_manager_without_actors():
+@pytest.fixture
+def preprocessor_config():
     """
-    Test that a ProcessorBindingManager is correctly created without a dictionary
+    Fixture that provides a configuration with a socket puller and a no-op pre-processor.
     """
-    binding_manager = PreProcessorBindingManager(config={}, pullers=None, processors=None)
+    return {
+        'verbose': True,
+        'stream': True,
+        'input': {
+            'pytest-socket-puller': {
+                'type': 'socket',
+                'model': 'HWPCReport',
+                'host': 'localhost',
+                'port': 8889
+            }
+        },
+        'pre-processor': {
+            'pytest-noop-preprocessor': {
+                'type': 'noop',
+                'puller': 'pytest-socket-puller'
+            }
+        }
+    }
 
-    assert len(binding_manager.actors) == 0
-    assert len(binding_manager.processors) == 0
 
-
-def test_process_bindings_for_pre_processor(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
+@pytest.fixture
+def puller_generator() -> PullerGenerator:
     """
-    Test that the bindings between a puller and a processor are correctly created
+    Fixture that provides a generator for the puller actors.
     """
-    pullers = pre_processor_pullers_and_processors_dictionaries[0]
-    processors = pre_processor_pullers_and_processors_dictionaries[1]
-    binding_manager = PreProcessorBindingManager(pre_processor_complete_configuration, pullers, processors)
+    report_filter = BroadcastReportFilter()
+    report_filter.register(lambda _: True, Mock(actor_name='pytest-dispatcher', actor_type=DispatcherActor, spec=ActorProxy))
 
-    dispatchers = list(pullers['one_puller'].report_filter.dispatchers())
-    assert len(dispatchers) == 1
-    assert dispatchers[0].actor_name == 'dispatcher'
+    generator = PullerGenerator(report_filter)
+    return generator
+
+
+@pytest.fixture
+def preprocessor_generator() -> PreProcessorGenerator:
+    """
+    Fixture to return a preprocessor generator with the noop preprocessor available.
+    """
+    generator = PreProcessorGenerator()
+
+    def _noop_processor_factory(_) -> ProcessorActor:
+        return NoopPreprocessor('pytest-noop-preprocessor')
+
+    generator.add_processor_factory('noop', _noop_processor_factory)
+    return generator
+
+
+def test_preprocessor_binding_manager_replace_puller_target(puller_generator, preprocessor_generator, preprocessor_config):
+    """
+    The binding manager should replace the target of the puller actor from a dispatcher actor to the pre-processor actor.
+    """
+    pullers = puller_generator.generate(preprocessor_config)
+    processors = preprocessor_generator.generate(preprocessor_config)
+    binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
+
+    puller = pullers['pytest-socket-puller']
+    assert isinstance(puller, PullerActor)
+
+    puller_target_proxy, = puller.report_filter.dispatchers()
+    assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
+    assert puller_target_proxy.actor_name == 'pytest-dispatcher'
 
     binding_manager.process_bindings()
 
-    dispatchers = list(pullers['one_puller'].report_filter.dispatchers())
-    assert len(dispatchers) == 1
-    assert dispatchers[0].actor_name == 'my_processor'
-
-    assert len(processors['my_processor'].target_actors) == 1
-    assert processors['my_processor'].target_actors[0].actor_name == 'dispatcher'
+    puller_target_proxy, = puller.report_filter.dispatchers()
+    assert issubclass(puller_target_proxy.actor_type, PreProcessorActor)
+    assert puller_target_proxy.actor_name == 'pytest-noop-preprocessor'
 
 
-def test_process_bindings_for_pre_processor_raise_exception_with_wrong_binding_types(pre_processor_binding_manager_with_wrong_binding_types):
+def test_preprocessor_binding_manager_with_empty_preprocessor_config(puller_generator, preprocessor_config):
     """
-    Test that an exception is raised with a wrong type for the from actor in a binding
+    The binding manager should not replace the target of the puller actor when there is no pre-processor configuration.
     """
+    preprocessor_config['pre-processor'] = {}
 
-    with pytest.raises(UnsupportedActorTypeException):
-        pre_processor_binding_manager_with_wrong_binding_types.process_bindings()
+    pullers = puller_generator.generate(preprocessor_config)
+    processors = {}
+    binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
+
+    puller = pullers['pytest-socket-puller']
+    assert isinstance(puller, PullerActor)
+
+    puller_target_proxy, = puller.report_filter.dispatchers()
+    assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
+    assert puller_target_proxy.actor_name == 'pytest-dispatcher'
+
+    binding_manager.process_bindings()
+
+    puller_target_proxy, = puller.report_filter.dispatchers()
+    assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
+    assert puller_target_proxy.actor_name == 'pytest-dispatcher'
 
 
-def test_process_bindings_for_pre_processor_raise_exception_with_no_existing_puller(
-        pre_processor_binding_manager_with_unexisting_puller):
+def test_preprocessor_binding_manager_with_invalid_puller_name(puller_generator, preprocessor_generator, preprocessor_config):
     """
-    Test that an exception is raised with a puller that doesn't exist
+    The binding manager should raise an exception when the puller name of the pre-processor is invalid.
     """
+    preprocessor_config['pre-processor']['pytest-noop-preprocessor']['puller'] = 'invalid-puller-target'
+
+    pullers = puller_generator.generate(preprocessor_config)
+    processors = preprocessor_generator.generate(preprocessor_config)
+    binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
 
     with pytest.raises(UnexistingActorException):
-        pre_processor_binding_manager_with_unexisting_puller.process_bindings()
+        binding_manager.process_bindings()
 
 
-def test_process_bindings_for_pre_processor_raise_exception_with_reused_puller_in_bindings(
-        pre_processor_binding_manager_with_reused_puller_in_bindings):
+def test_preprocessor_binding_manager_with_invalid_puller_type(puller_generator, preprocessor_generator, preprocessor_config):
     """
-    Test that an exception is raised when the same puller is used by several processors
+    The binding manager should raise an exception when the puller type of the pre-processor is invalid.
     """
+    pullers = puller_generator.generate(preprocessor_config)
+    pullers['pytest-socket-puller'] = Mock(name='pytest-socket-puller')
 
-    with pytest.raises(TargetActorAlreadyUsed):
-        pre_processor_binding_manager_with_reused_puller_in_bindings.process_bindings()
+    processors = preprocessor_generator.generate(preprocessor_config)
+    binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
 
-
-def test_check_processors_targets_are_unique_raise_exception_with_reused_puller_in_bindings(
-        pre_processor_binding_manager_with_reused_puller_in_bindings):
-    """
-    Test that an exception is raised when the same puller is used by several processors
-    """
-    with pytest.raises(TargetActorAlreadyUsed):
-        pre_processor_binding_manager_with_reused_puller_in_bindings.check_processors_targets_are_unique()
-
-
-def test_check_processors_targets_are_unique_pass_without_reused_puller_in_bindings(
-        pre_processor_binding_manager):
-    """
-    Test that a correct without repeated target passes the validation
-    """
-    try:
-        pre_processor_binding_manager.check_processors_targets_are_unique()
-    except TargetActorAlreadyUsed:
-        pytest.fail("Processors targets are not unique")
-
-
-def check_all_processors_targets(preprocessor_binding_manager: PreProcessorBindingManager):
-    """
-    Helper function that checks the processors targets of the given binding manager.
-    """
-    for processor_name, processor in preprocessor_binding_manager.processors.items():
-        preprocessor_binding_manager.check_processor_targets(processor_name, processor)
-
-
-def test_check_processor_targets_raise_exception_with_no_existing_puller(pre_processor_binding_manager_with_unexisting_puller):
-    """
-    Test that an exception is raised with a puller that doesn't exist
-    """
-    with pytest.raises(UnexistingActorException):
-        check_all_processors_targets(pre_processor_binding_manager_with_unexisting_puller)
-
-
-def test_check_processor_targets_raise_exception_with_raise_exception_with_wrong_binding_types(pre_processor_binding_manager_with_wrong_binding_types):
-    """
-    Test that an exception is raised with a puller that doesn't exist
-    """
     with pytest.raises(UnsupportedActorTypeException):
-        check_all_processors_targets(pre_processor_binding_manager_with_wrong_binding_types)
+        binding_manager.process_bindings()
 
 
-def test_check_processor_targets_pass_with_correct_targets(pre_processor_binding_manager):
+def test_preprocessor_binding_manager_with_duplicate_target(puller_generator, preprocessor_generator, preprocessor_config):
     """
-    Test that validation of a configuration with existing targets of the correct type
+    The binding manager should raise an exception when multiple pre-processor have the same target.
     """
-    try:
-        check_all_processors_targets(pre_processor_binding_manager)
-    except UnsupportedActorTypeException as e:
-        pytest.fail(f'Unsupported actor type: {e}')
-    except UnexistingActorException as e:
-        pytest.fail(f'Actor does not exist: {e}')
+    pre_processors = preprocessor_config['pre-processor']
+    pre_processors['pytest-noop-preprocessor-duplicate'] = pre_processors['pytest-noop-preprocessor']
+
+    pullers = puller_generator.generate(preprocessor_config)
+    processors = preprocessor_generator.generate(preprocessor_config)
+    binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
+
+    with pytest.raises(TargetActorAlreadyUsed):
+        binding_manager.process_bindings()
