@@ -81,23 +81,6 @@ def several_inputs_outputs_stream_socket_without_some_arguments_config(several_i
 
 
 @pytest.fixture
-def several_k8s_pre_processors_config():
-    """
-    Configuration with several k8s processors
-    """
-    return load_configuration_from_json_file(file_name='several_k8s_pre_processors_configuration.json')
-
-
-@pytest.fixture
-def several_k8s_pre_processors_without_some_arguments_config():
-    """
-    Configuration with several k8s processors
-    """
-    return load_configuration_from_json_file(
-        file_name='several_k8s_pre_processors_without_some_arguments_configuration.json')
-
-
-@pytest.fixture
 def csv_io_postmortem_config(invalid_csv_io_stream_config):
     """
     Valid configuration with csv as input and output and stream mode disabled
@@ -144,14 +127,6 @@ def config_without_output(csv_io_postmortem_config):
     csv_io_postmortem_config.pop('output')
 
     return csv_io_postmortem_config
-
-
-@pytest.fixture
-def k8s_pre_processor_config():
-    """
-    Configuration with k8s as pre-processor
-    """
-    return load_configuration_from_json_file(file_name='k8s_pre_processor_configuration.json')
 
 
 @pytest.fixture
@@ -427,124 +402,12 @@ def empty_pre_processor_config(pre_processor_complete_configuration):
     return pre_processor_complete_configuration
 
 
-@pytest.fixture(params=['k8s_pre_processor_wrong_binding_configuration.json'])
-def pre_processor_wrong_binding_configuration(request):
-    """
-    Return a dictionary containing wrong bindings with a pre-processor
-    """
-    return load_configuration_from_json_file(file_name=request.param)
-
-
 @pytest.fixture(params=['k8s_pre_processor_with_non_existing_puller_configuration.json'])
 def pre_processor_with_unexisting_puller_configuration(request):
     """
     Return a dictionary containing a pre-processor with a puller that doesn't exist
     """
-    return load_configuration_from_json_file(
-        file_name=request.param)
-
-
-@pytest.fixture(params=['k8s_pre_processor_with_reused_puller_in_bindings_configuration.json'])
-def pre_processor_with_reused_puller_in_bindings_configuration(request):
-    """
-    Return a dictionary containing a pre-processor with a puller that doesn't exist
-    """
-    return load_configuration_from_json_file(
-        file_name=request.param)
-
-
-@pytest.fixture
-def pre_processor_pullers_and_processors_dictionaries(pre_processor_complete_configuration):
-    """
-    Return a dictionary which contains puller actors, a dictionary of processors as well as the pushers
-    """
-    return get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_complete_configuration)
-
-
-def get_pre_processor_pullers_and_processors_dictionaries_from_configuration(configuration: dict) -> (dict, dict, dict):
-    """
-    Return a tuple of dictionaries (pullers, processors) created from the given configuration.
-    :param dict configuration : Dictionary containing the configuration
-    """
-    report_filter = BroadcastReportFilter()
-    puller_generator = PullerGenerator(report_filter=report_filter)
-    pullers = puller_generator.generate(main_config=configuration)
-
-    pusher_generator = PusherGenerator()
-    pushers = pusher_generator.generate(main_config=configuration)
-
-    route_table = RouteTable()
-
-    dispatcher = DispatcherActor('dispatcher', None, pushers, route_table)
-
-    report_filter.register(lambda msg: True, dispatcher.get_proxy())
-
-    processor_generator = PreProcessorGenerator()
-    processors = processor_generator.generate(main_config=configuration)
-
-    return pullers, processors, pushers
-
-
-@pytest.fixture
-def pre_processor_binding_manager(pre_processor_complete_configuration, pre_processor_pullers_and_processors_dictionaries):
-    """
-    Return a ProcessorBindingManager with a Processor
-    """
-    pullers = pre_processor_pullers_and_processors_dictionaries[0]
-    processors = pre_processor_pullers_and_processors_dictionaries[1]
-
-    return PreProcessorBindingManager(
-        config=pre_processor_complete_configuration,
-        pullers=pullers,
-        processors=processors
-    )
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_wrong_binding_types(pre_processor_wrong_binding_configuration):
-    """
-    Return a PreProcessorBindingManager with wrong target for the pre-processor (a pusher instead of a puller)
-    """
-    _, processors, pushers = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_wrong_binding_configuration)
-
-    return PreProcessorBindingManager(
-        config=pre_processor_wrong_binding_configuration,
-        pullers=pushers,
-        processors=processors
-    )
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_unexisting_puller(pre_processor_with_unexisting_puller_configuration):
-    """
-    Return a PreProcessorBindingManager with an unexisting target for the pre-processor (a puller that doesn't exist)
-    """
-    pullers, processors, _ = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_with_unexisting_puller_configuration)
-
-    return PreProcessorBindingManager(
-        config=pre_processor_with_unexisting_puller_configuration,
-        pullers=pullers,
-        processors=processors
-    )
-
-
-@pytest.fixture
-def pre_processor_binding_manager_with_reused_puller_in_bindings(
-        pre_processor_with_reused_puller_in_bindings_configuration):
-    """
-    Return a PreProcessorBindingManager with a puller used by two different pre-processors
-    """
-    pullers, processors, _ = get_pre_processor_pullers_and_processors_dictionaries_from_configuration(
-        configuration=pre_processor_with_reused_puller_in_bindings_configuration)
-
-    return PreProcessorBindingManager(
-        config=pre_processor_with_reused_puller_in_bindings_configuration,
-        pullers=pullers,
-        processors=processors
-    )
+    return load_configuration_from_json_file(request.param)
 
 
 def get_config_with_longest_argument_names(config: dict, arguments: dict):

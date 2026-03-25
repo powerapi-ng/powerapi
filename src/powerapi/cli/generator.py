@@ -35,8 +35,6 @@ from powerapi.database import ReadableDatabase, WritableDatabase
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import ReportFilter
-from powerapi.processor.pre.k8s import K8sPreProcessorActor, K8sProcessorConfig
-from powerapi.processor.pre.openstack import OpenStackPreProcessorActor
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -375,14 +373,13 @@ class ProcessorGenerator(Generator):
     Generator that initializes the processor actor(s) from the configuration.
     """
 
-    def __init__(self, component_group_name: str, processor_factory: dict[str, Callable[[dict], ProcessorActor]]):
+    def __init__(self, component_group_name: str):
         """
         :param component_group_name: Name of the component group
-        :param processor_factory: Dictionary mapping processor type to actor factory
         """
         super().__init__(component_group_name)
 
-        self.processor_factory = processor_factory
+        self.processor_factory: dict[str, Callable[[dict], ProcessorActor]] = {}
 
     def remove_processor_factory(self, processor_type: str) -> None:
         """
@@ -405,6 +402,14 @@ class ProcessorGenerator(Generator):
 
         self.processor_factory[processor_type] = processor_factory_function
 
+    def _generate_processor(self, processor_name: str, component_config: dict) -> ProcessorActor:
+        try:
+            return self.processor_factory[processor_name](component_config)
+        except KeyError as exn:
+            raise PowerAPIException('Configuration error: Invalid processor type: %s', processor_name) from exn
+        except ImportError as exn:
+            raise PowerAPIException('Dependencies for %s processor are not installed', processor_name) from exn
+
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ProcessorActor:
         """
         Helper method to generate a processor actor from the given configuration.
@@ -414,12 +419,9 @@ class ProcessorGenerator(Generator):
         :return: Processor actor
         """
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]
-        if processor_actor_type not in self.processor_factory:
-            raise PowerAPIException(f'Configuration error: Unknown processor actor type: {processor_actor_type}')
-
         component_config[ACTOR_NAME_KEY] = component_name
         component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
-        return self.processor_factory[processor_actor_type](component_config)
+        return self._generate_processor(processor_actor_type, component_config)
 
 
 class PreProcessorGenerator(ProcessorGenerator):
@@ -428,17 +430,21 @@ class PreProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
-        super().__init__('pre-processor', self._get_default_processor_factories())
+        super().__init__('pre-processor')
+
+        self.add_processor_factory('k8s', self._k8s_pre_processor_factory)
+        self.add_processor_factory('openstack', self._openstack_pre_processor_factory)
 
     @staticmethod
-    def _k8s_pre_processor_factory(processor_config: dict) -> K8sPreProcessorActor:
+    def _k8s_pre_processor_factory(processor_config: dict) -> ProcessorActor:
         """
         Kubernetes pre-processor actor factory.
         :param processor_config: Pre-Processor configuration
         :return: Configured Kubernetes pre-processor actor
         """
+        from powerapi.processor.pre.k8s.actor import K8sPreProcessorActor, K8sProcessorConfig
         name = processor_config[ACTOR_NAME_KEY]
-        api_mode = processor_config.get(K8S_API_MODE_KEY, 'manual')  # use manual mode by default
+        api_mode = processor_config[K8S_API_MODE_KEY]
         api_host = processor_config.get(K8S_API_HOST_KEY, None)
         api_key = processor_config.get(K8S_API_KEY_KEY, None)
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
@@ -446,21 +452,13 @@ class PreProcessorGenerator(ProcessorGenerator):
         return K8sPreProcessorActor(name, config, level_logger)
 
     @staticmethod
-    def _openstack_pre_processor_factory(processor_config: dict) -> OpenStackPreProcessorActor:
+    def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:
         """
         Openstack pre-processor actor factory.
         :param processor_config: Pre-Processor configuration
         :return: Configured OpenStack pre-processor actor
         """
+        from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
         return OpenStackPreProcessorActor(name, level_logger)
-
-    def _get_default_processor_factories(self) -> dict[str, Callable[[dict], ProcessorActor]]:
-        """
-        Return the default pre-processors factory.
-        """
-        return {
-            'k8s': self._k8s_pre_processor_factory,
-            'openstack': self._openstack_pre_processor_factory
-        }

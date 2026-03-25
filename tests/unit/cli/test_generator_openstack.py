@@ -1,5 +1,4 @@
-# Copyright (c) 2024, Inria
-# Copyright (c) 2024, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,19 +26,40 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Manager
-
 import pytest
 
-from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager
+pytest.importorskip('powerapi.processor.pre.openstack.actor')  # The OpenStack processor requires external dependencies to work.
+
+from powerapi.cli.generator import PreProcessorGenerator
+from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
 
 
 @pytest.fixture
-def initialized_metadata_cache_manager():
+def openstack_config():
     """
-    Returns an initialized metadata cache manager.
+    Fixture that provides a configuration with an OpenStack pre-processor.
     """
-    manager = Manager()
-    yield K8sMetadataCacheManager(manager)
+    return {
+        'stream': True,
+        'verbose': True,
+        'pre-processor': {
+            'pytest-openstack-preprocessor': {
+                'type': 'openstack',
+                'puller': 'pytest-json-puller'
+            }
+        }
+    }
 
-    manager.shutdown()
+
+def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
+    """
+    PreProcessorGenerator should generate an OpenStackPreProcessorActor when given a valid config.
+    """
+    generator = PreProcessorGenerator()
+    preprocessors = generator.generate(openstack_config)
+
+    assert len(preprocessors) == 1
+    assert 'pytest-openstack-preprocessor' in preprocessors
+
+    preprocessor = preprocessors['pytest-openstack-preprocessor']
+    assert isinstance(preprocessor, OpenStackPreProcessorActor)
