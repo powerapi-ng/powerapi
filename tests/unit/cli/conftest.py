@@ -34,12 +34,8 @@ from copy import deepcopy
 import pytest
 
 import tests.utils.cli as test_files_module
-from powerapi.cli.binding_manager import PreProcessorBindingManager
 from powerapi.cli.config_parser import SubgroupConfigParser, BaseConfigParser, store_true, RootConfigParser
-from powerapi.cli.generator import PullerGenerator, PusherGenerator, PreProcessorGenerator
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
-from powerapi.dispatcher import DispatcherActor, RouteTable
-from powerapi.filter import BroadcastReportFilter
 from tests.utils.cli.base_config_parser import load_configuration_from_json_file, generate_cli_configuration_from_json_file
 
 
