@@ -5,18 +5,17 @@ select = [
     "F",   # pyflakes
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
+    "A",  # flake8-builtins
     "B",   # flake8-bugbear
     "G",   # flake8-logging-format
     "PT",  # flake8-pytest-style
     "UP",  # pyupgrade
     "ERA", # eradicate
-    "RUF", # ruff
+    "RUF", # ruff-specific-rules
 ]
 
 ignore = [
-    "E501",   # line too long
-    
-    "B006",   # mutable-argument-default
+    "E501",   # line-too-long
+
     "F401",   # unused-import
-    "B010",   # set-attr-with-constant
 ]
