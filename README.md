@@ -1,10 +1,9 @@
 <img src="https://powerapi.org/assets/images/PowerAPI-logo.png" alt="PowerAPI logo" width="300px">
 
-[![License: BSD 3](https://img.shields.io/pypi/l/powerapi.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![License: BSD-3-Clause](https://img.shields.io/pypi/l/powerapi.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/powerapi-ng/powerapi/build.yml)](https://github.com/powerapi-ng/powerapi/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/powerapi)](https://pypi.org/project/powerapi/)
 [![Codecov](https://codecov.io/gh/powerapi-ng/powerapi/branch/master/graph/badge.svg)](https://codecov.io/gh/powerapi-ng/powerapi)
-[![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.11453194.svg)](https://doi.org/10.5281/zenodo.11453194)
 [![JOSS paper](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e/status.svg)](https://joss.theoj.org/papers/ff5876ca096c62cb6d243e56b5676c4e)
 
 PowerAPI is a middleware toolkit for building software-defined power meters.
@@ -12,21 +11,19 @@ Software-defined power meters are configurable software libraries that can estim
 PowerAPI supports the acquisition of raw metrics from a wide diversity of sensors (*eg.*, physical meters, processor interfaces, hardware counters, OS counters) and the delivery of power consumptions via different channels (including file system, network, web, graphical).
 As a middleware toolkit, PowerAPI offers the capability of assembling power meters *«à la carte»* to accommodate user requirements.
 
-# About
-
+## About
 PowerAPI is an open-source project developed by the [Spirals project-team](https://team.inria.fr/spirals), a joint research group between the [University of Lille](https://www.univ-lille.fr) and [Inria](https://www.inria.fr).
 
-The documentation of the project is available [here](http://powerapi.org).
+More information about the project can be found on the [PowerAPI website](https://powerapi.org).
 
 ## Mailing list
 You can follow the latest news and asks questions by subscribing to our <a href="mailto:sympa@inria.fr?subject=subscribe powerapi">mailing list</a>.
 
 ## Contributing
-If you would like to contribute code you can do so through GitHub by forking the repository and sending a pull request.
-
-When submitting code, please make every effort to [follow existing conventions and style](CONTRIBUTING.md) in order to keep the code as readable as possible.
+To learn more about making a contribution to PowerAPI, please see our [Contributing guide](CONTRIBUTING.md).
 
 ## Publications
+- **[xPUE: Extending Power Usage Effectiveness Metrics for Cloud Infrastructures](https://inria.hal.science/hal-04980997v1)**: G. Fieni, R. Rouvoy, L. Seinturier. _IEEE Transactions on Sustainable Computing_ (TSUSC). 2025.
 - **[PowerAPI: A Python framework for building software-defined power meters](https://joss.theoj.org/papers/10.21105/joss.06670)**: G. Fieni, D. Romero Acero, P. Rust, R. Rouvoy. _Journal of Open Source Software_ (JOSS). The Open Journal, June 2024.
 - **[Evaluating the Impact of Java Virtual Machines on Energy Consumption](https://hal.inria.fr/hal-03275286v1)**: Z. Ournani, MC. Belgaid, R. Rouvoy, P. Rust, J. Penhoat. _15th ACM/IEEE International Symposium on Empirical Software Engineering and Measurement_ (ESEM). October 2021, Bari, Italy.
 - **[SelfWatts: On-the-fly Selection of Performance Events to Optimize Software-defined Power Meters](https://hal.inria.fr/hal-03173410v1)**: G. Fieni, R. Rouvoy, L. Seiturier. _20th IEEE/ACM International Symposium on Cluster, Cloud and Internet Computing_ (CCGRID 2021). May 2021, Melbourne, Australia.
@@ -44,20 +41,8 @@ When submitting code, please make every effort to [follow existing conventions a
 - **[Runtime Monitoring of Software Energy Hotspots](https://hal.inria.fr/hal-00715331)**: A. Noureddine, A. Bourdon, R. Rouvoy, L. Seinturier. _International Conference on Automated Software Engineering_ (ASE), September 2012, Essen, Germany. pp.160-169.
 - **[A Preliminary Study of the Impact of Software Engineering on GreenIT](https://hal.inria.fr/hal-00681560)**: A. Noureddine, A. Bourdon, R. Rouvoy, L. Seinturier. _International Workshop on Green and Sustainable Software_ (GREENS), June 2012, Zurich, Switzerland. pp.21-27.
 
-## Use Cases
-PowerAPI is used in a variety of projects to address key challenges of GreenIT:
-* [SmartWatts](https://github.com/powerapi-ng/smartwatts-formula) is a self-adaptive power meter that can estimate the energy consumption of software containers in real-time.
-* [GenPack](https://hal.inria.fr/hal-01403486) provides a container scheduling strategy to minimize the energy footprint of cloud infrastructures.
-* [VirtualWatts](https://github.com/powerapi-ng/virtualwatts-formula) provides process-level power estimation of applications running in virtual machines.
-* [Web Energy Archive](http://webenergyarchive.com) ranks popular websites based on the energy footpring they imposes to browsers.
-* [Greenspector](https://greenspector.com) optimises the power consumption of software by identifying potential energy leaks in the source code.
-
-## Research Projects
-
-Currently, PowerAPI is used in two research projects:
-
-- [Distiller ANR Project](https://www.davidson.fr/blog/comment-reduire-limpact-environnemental-des-applications-cloud-davidson-consulting-inria-ovhcloud-orange-sassocient-pour-le-programme-de-recherche-distiller) that searches to reduce energy consumption of Cloud applications.
-- [Défi Pulse](https://www.inria.fr/fr/pulse-defi-qarnot-computing-ademe-calcul-intensif-hpc-environnement) studies how to valorize emissions from High Performance Computing (HPC) using as use case [Qarnot Computing's](https://qarnot.com/en) offers.
+## Citation
+If you use PowerAPI in a scientific publication, we would appreciate citations to this paper: https://doi.org/10.21105/joss.06670
 
 ## License
 PowerAPI is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for details.
