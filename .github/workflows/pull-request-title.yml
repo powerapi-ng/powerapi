@@ -1,0 +1,69 @@
+name: Pull Request Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions: {}
+
+jobs:
+  semantic-title:
+    name: Validate semantic format
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    concurrency:
+      group: pr-semantic-title-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+      - shell: python
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_VALID_TYPES: |
+            feat
+            fix
+            refactor
+            docs
+            test
+            build
+            ci
+            chore
+        run: |
+          import os
+          import re
+          import sys
+          
+          pr_title = os.environ.get("PR_TITLE", "").strip()
+          if not pr_title:
+              print("ERROR: PR_TITLE environment variable is missing or empty.", file=sys.stderr)
+              sys.exit(1)
+          
+          pr_valid_types = [
+              valid_type for raw_type in os.environ.get("PR_VALID_TYPES", "").splitlines()
+              if (valid_type := raw_type.strip()) and not valid_type.startswith("#")
+          ]
+          if not pr_valid_types:
+              print("ERROR: PR_VALID_TYPES environment variable is missing or empty.", file=sys.stderr)
+              sys.exit(1)
+          
+          title_pattern = re.compile(
+              r"^(?P<type>[A-Za-z0-9_-]+)(?:\((?P<scope>[A-Za-z0-9_.\-/]+)\))?(?P<breaking>!)?:\s(?P<subject>\S.*)$"
+          )
+          matches = title_pattern.fullmatch(pr_title)
+          if not matches:
+              print("ERROR: Pull request title format is invalid.", file=sys.stderr)
+              print("Expected format: <type>(<optional-scope>)<optional-!>: <subject>", file=sys.stderr)
+              sys.exit(1)
+          
+          pr_type = matches.group("type")
+          if pr_type not in pr_valid_types:
+              print("ERROR: Pull request semantic type is invalid.", file=sys.stderr)
+              print(f"Expected one of: {', '.join(pr_valid_types)}", file=sys.stderr)
+              sys.exit(1)
+          
+          print("Pull request title is valid.")
+          sys.exit(0)
