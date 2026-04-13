@@ -90,14 +90,16 @@ class Generator:
         Generate an actor class and actor start message from config dict
         """
         if self.component_group_name not in main_config:
-            raise PowerAPIException('Configuration error : no ' + self.component_group_name + ' specified')
+            raise PowerAPIException(f'Configuration error : Component {self.component_group_name} group is unknown')
 
         actors = {}
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
                 actors[component_name] = self._gen_actor(component_config, main_config, component_name)
             except KeyError as exn:
-                raise PowerAPIException('Configuration error: Missing "%s" argument for %s component', exn.args[0], component_name) from exn
+                raise PowerAPIException(f'Configuration error: Missing "{exn.args[0]}" argument for {component_name} component') from exn
+            except ValueError as exn:
+                raise PowerAPIException(f'Configuration error: Invalid parameter for {component_name} component: {exn.args[0]}') from exn
 
         return actors
 
@@ -227,7 +229,7 @@ class PullerGenerator(DBActorGenerator):
         JSON Input database factory method.
         """
         from powerapi.database.json import JsonInput
-        return JsonInput(conf['model'], conf['filepath'])
+        return JsonInput(conf['model'], conf['filepath'], conf['compression'])
 
     @staticmethod
     def _socket_database_factory(conf: dict) -> ReadableDatabase:
@@ -291,7 +293,7 @@ class PusherGenerator(DBActorGenerator):
         JSON Output database factory method.
         """
         from powerapi.database.json import JsonOutput
-        return JsonOutput(conf['model'], conf['filepath'])
+        return JsonOutput(conf['model'], conf['filepath'], conf['compression'])
 
     @staticmethod
     def _mongodb_database_factory(conf: dict) -> WritableDatabase:

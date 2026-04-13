@@ -159,6 +159,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         subparser_json_input.add_argument("n", "name", help_text="Name of the puller", default_value="puller_json")
         subparser_json_input.add_argument("m", "model", help_text="Expected report type")
         subparser_json_input.add_argument("f", "filepath", help_text="Input file path")
+        subparser_json_input.add_argument("c", "compression", default_value='auto', help_text="Compression type")
         self.add_subgroup_parser("input", subparser_json_input)
 
         subparser_mongo_output = SubgroupConfigParsingManager("mongodb")
@@ -252,6 +253,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         subparser_json_output.add_argument("n", "name", help_text="Name of the pusher", default_value="pusher_json")
         subparser_json_output.add_argument("m", "model", help_text="Report type to be exported")
         subparser_json_output.add_argument("f", "filepath", help_text="Output file path")
+        subparser_json_output.add_argument("c", "compression", default_value="auto", help_text="Compression type")
         self.add_subgroup_parser("output", subparser_json_output)
 
         subparser_opentsdb_output = SubgroupConfigParsingManager("opentsdb")

@@ -18,7 +18,8 @@
       "puller4": {
           "model": "HWPCReport",
           "type": "json",
-          "filepath": "/tmp/pytest-powerapi.jsonl"
+          "filepath": "/tmp/pytest-powerapi.jsonl",
+          "compression": "none"
       }
   },
   "output": {
@@ -30,7 +31,8 @@
       "seventh_pusher": {
           "type": "json",
           "model": "FormulaReport",
-          "filepath": "my_output_filepath"
+          "filepath": "my_output_filepath",
+          "compression": "none"
       }
   }
 }
