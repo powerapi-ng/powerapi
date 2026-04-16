@@ -13,7 +13,8 @@
     "powerrep1": {
       "type": "json",
       "model": "PowerReport",
-      "filepath": "/tmp/pytest-powerrep.jsonl"
+      "filepath": "/tmp/pytest-powerrep.jsonl",
+      "compression": "none"
     },
     "powerrep2": {
       "type": "csv",
@@ -23,7 +24,8 @@
     "formularep": {
       "type": "json",
       "model": "FormulaReport",
-      "filepath": "/tmp/pytest-formularep.jsonl"
+      "filepath": "/tmp/pytest-formularep.jsonl",
+      "compression": "none"
     }
   }
 }

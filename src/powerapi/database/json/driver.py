@@ -28,13 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections.abc import Iterable, Iterator
-from io import TextIOWrapper
 from os import fsync
 from pathlib import Path
+from typing import TextIO
 
 from powerapi.database.driver import ReadableDatabase, WritableDatabase
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed, ReadFailed
 from powerapi.database.json.codecs import ReportDecoders, ReportEncoders
+from powerapi.database.json.file_handlers import FileHandlerRegistry
 from powerapi.report import Report
 
 
@@ -45,19 +46,26 @@ class JsonInput(ReadableDatabase):
     The input **should** follow the JSON Lines text format. (https://jsonlines.org/)
     """
 
-    def __init__(self, report_type: type[Report], input_filepath: str):
+    def __init__(self, report_type: type[Report], input_filepath: str, compression: str):
         """
         :param report_type: Type of the report handled by this database
         :param input_filepath: Path to the input file
+        :param compression: Compression method to use for the file
         """
         self.input_filepath = Path(input_filepath)
+        self.compression = compression
 
         self._report_decoder = ReportDecoders.get(report_type)
-        self._file: TextIOWrapper | None = None
+        self._file_handler = FileHandlerRegistry.get(compression, self.input_filepath)
+        self._file: TextIO | None = None
 
     def connect(self) -> None:
+        """
+        Connect the JSON input database driver.
+        :raise: ConnectionFailed if the operation fails
+        """
         try:
-            self._file = open(self.input_filepath, encoding='utf-8')
+            self._file = self._file_handler.open(self.input_filepath, 'r')
         except OSError as exn:
             raise ConnectionFailed(f'Failed to open input file: {exn}') from exn
 
@@ -110,31 +118,31 @@ class JsonOutput(WritableDatabase):
     The output follows the JSON Lines text format. (https://jsonlines.org/)
     """
 
-    def __init__(self, report_type: type[Report], output_filepath: str):
+    def __init__(self, report_type: type[Report], output_filepath: str, compression: str):
         """
         :param report_type: Type of the report handled by this database
         :param output_filepath: Path to the output file
         """
-        super().__init__()
-
         self.output_filepath = Path(output_filepath)
+        self.compression = compression
 
         self._report_encoder = ReportEncoders.get(report_type)
-        self._file: TextIOWrapper | None = None
+        self._file_handler = FileHandlerRegistry.get(compression, self.output_filepath)
+        self._file: TextIO | None = None
 
     def connect(self) -> None:
         """
-        Connect the JSON input database driver.
+        Connect the JSON output database driver.
         :raise: ConnectionFailed if the operation fails
         """
         try:
-            self._file = open(self.output_filepath, 'w', encoding='utf-8')
+            self._file = self._file_handler.open(self.output_filepath, 'w')
         except OSError as exn:
             raise ConnectionFailed(f'Failed to open output file: {exn}') from exn
 
     def disconnect(self) -> None:
         """
-        Disconnect the JSON input database driver.
+        Disconnect the JSON output database driver.
         """
         try:
             self._file.flush()
