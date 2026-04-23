@@ -80,7 +80,6 @@ def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
     assert db._client.org == expected_db_attributes['org']
     assert db._client.token == expected_db_attributes['token']
     assert db._bucket_name == expected_db_attributes['bucket']
-    assert {'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db._report_encoder_opts.allowed_tags_name)
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'uri', 'org', 'token', 'bucket'])

@@ -35,7 +35,7 @@ from urllib3.exceptions import HTTPError
 
 from powerapi.database import ConnectionFailed, WriteFailed
 from powerapi.database.driver import WritableDatabase
-from powerapi.database.influxdb2.codecs import ReportEncoders, EncoderOptions
+from powerapi.database.influxdb2.codecs import ReportEncoders
 from powerapi.report import Report
 
 
@@ -45,14 +45,13 @@ class InfluxDB2(WritableDatabase):
     Allow to persist reports to an InfluxDB (version 2) database.
     """
 
-    def __init__(self, report_type: type[Report], url: str, org: str, bucket: str, token: str, tags: list[str]):
+    def __init__(self, report_type: type[Report], url: str, org: str, bucket: str, token: str):
         """
         :param report_type: Type of the report handled by this database
         :param url: InfluxDB server URL
         :param org: Organization name
         :param bucket: Bucket name
         :param token: Authentication token
-        :param tags: List of allowed tags name, leave empty to allow all tags
         """
         super().__init__()
 
@@ -63,7 +62,6 @@ class InfluxDB2(WritableDatabase):
         self._write_api = self._client.write_api()
 
         self._report_encoder = ReportEncoders.get(report_type)
-        self._report_encoder_opts = EncoderOptions(set(tags))
 
     def connect(self) -> None:
         """
@@ -97,7 +95,7 @@ class InfluxDB2(WritableDatabase):
         :raise: WriteFailed if the write operation fails
         """
         try:
-            encoded_reports = [self._report_encoder.encode(report, self._report_encoder_opts) for report in reports]
+            encoded_reports = [self._report_encoder.encode(report) for report in reports]
             self._write_api.write(self._bucket_name, record=encoded_reports)
         except (OSError, HTTPError, InfluxDBError) as exn:
             raise WriteFailed(f'Failed to save report to the InfluxDB database: {exn}') from exn
