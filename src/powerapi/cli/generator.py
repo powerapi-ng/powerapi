@@ -309,7 +309,7 @@ class PusherGenerator(DBActorGenerator):
         InfluxDB2 database factory method.
         """
         from powerapi.database.influxdb2 import InfluxDB2
-        return InfluxDB2(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'], gen_tag_list(conf))
+        return InfluxDB2(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'])
 
     @staticmethod
     def _opentsdb_database_factory(conf: dict) -> WritableDatabase:

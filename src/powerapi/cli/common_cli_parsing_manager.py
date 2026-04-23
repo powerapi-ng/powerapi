@@ -281,7 +281,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
 
         subparser_influx2_output = SubgroupConfigParsingManager("influxdb2")
         subparser_influx2_output.add_argument("u", "uri", help_text="specify InfluxDB uri")
-        subparser_influx2_output.add_argument("t", "tags", help_text="List of tags that should be kept")
         subparser_influx2_output.add_argument("k", "token",
                                               help_text="specify token for accessing the database")
         subparser_influx2_output.add_argument("g", "org",
