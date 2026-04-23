@@ -27,18 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from dataclasses import dataclass
-
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry
 from powerapi.report import PowerReport, FormulaReport
-
-
-@dataclass
-class EncoderOptions(CodecOptions):
-    """
-    Encoder options for the InfluxDB database.
-    """
-    allowed_tags_name: set[str]
 
 
 class PowerReportEncoder(ReportEncoder[PowerReport, dict]):
@@ -47,16 +37,10 @@ class PowerReportEncoder(ReportEncoder[PowerReport, dict]):
     """
 
     @staticmethod
-    def encode(report: PowerReport, opts: EncoderOptions | None = None) -> dict:
-        flattened_tags = report.flatten_tags(report.metadata)
-        if opts.allowed_tags_name:
-            dynamic_tags = {k: v for k, v in flattened_tags.items() if k in opts.allowed_tags_name}
-        else:
-            dynamic_tags = flattened_tags
-
+    def encode(report: PowerReport, opts: CodecOptions | None = None) -> dict:
         return {
             'measurement': 'powerrep',
-            'tags': {'sensor': report.sensor, 'target': report.target} | dynamic_tags,
+            'tags': {'sensor': report.sensor, 'target': report.target} | report.flatten_tags(report.metadata),
             'fields': {'power_estimation': report.power},
             'time': report.timestamp,
         }
@@ -68,7 +52,7 @@ class FormulaReportEncoder(ReportEncoder[FormulaReport, dict]):
     """
 
     @staticmethod
-    def encode(report: FormulaReport, opts: EncoderOptions | None = None) -> dict:
+    def encode(report: FormulaReport, opts: CodecOptions | None = None) -> dict:
         return {
             'measurement': 'formularep',
             'tags': {'sensor': report.sensor, 'target': report.target},
