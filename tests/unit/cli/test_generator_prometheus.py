@@ -74,7 +74,8 @@ def test_pusher_generator_with_valid_prometheus_config(prometheus_config):
 
     expected_db_attributes = prometheus_config['output']['pytest-prometheus-pusher']
     assert db.listen_addr == (expected_db_attributes['addr'], expected_db_attributes['port'])
-    assert {'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db.tags)
+    assert {'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db.dynamic_tags)
+    assert {'sensor', 'target', 'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db.metric_labels)
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'addr', 'port'])
