@@ -28,6 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from dataclasses import dataclass
+from typing import NamedTuple
 
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry
 from powerapi.report import PowerReport
@@ -41,16 +42,26 @@ class EncoderOptions(CodecOptions):
     dynamic_tags_name: list[str]
 
 
-class PowerReportEncoder(ReportEncoder[PowerReport, tuple[tuple[str, ...], tuple[float, float]]]):
+class PowerReportMetrics(NamedTuple):
+    """
+    Power Report metrics container.
+    """
+    label_values: tuple[str, ...]
+    timestamp: float
+    power_estimation: float
+
+
+class PowerReportEncoder(ReportEncoder[PowerReport, PowerReportMetrics]):
     """
     Power Report encoder for the Prometheus database.
     """
 
     @staticmethod
-    def encode(report: PowerReport, opts: EncoderOptions | None = None) -> tuple[tuple[str, ...], tuple[float, float]]:
+    def encode(report: PowerReport, opts: EncoderOptions | None = None) -> PowerReportMetrics:
         flattened_tags = report.flatten_tags(report.metadata)
         dynamic_tags = [flattened_tags.get(tag_name, 'unknown') for tag_name in opts.dynamic_tags_name]
-        return (report.sensor, report.target, *dynamic_tags), (report.timestamp.timestamp(), report.power)
+        labels = (report.sensor, report.target, *dynamic_tags)
+        return PowerReportMetrics(labels, report.timestamp.timestamp(), report.power)
 
 
 class ReportEncoders(ReportEncoderRegistry):

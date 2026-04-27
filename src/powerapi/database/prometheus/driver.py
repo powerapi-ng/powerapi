@@ -49,19 +49,20 @@ class Prometheus(WritableDatabase):
         :param report_type: Report type
         :param listen_addr: Address to listen on
         :param listen_port: Port to listen on
-        :param tags: List of tags name that will be used by the metrics
+        :param tags: List of tags name that will be exposed by the metric
         """
         super().__init__()
 
         self.listen_addr = (listen_addr, listen_port)
-        self.tags = list(dict.fromkeys(['sensor', 'target', *tags]))  # Ensure unique tags name (and preserve order)
+        self.dynamic_tags = list(dict.fromkeys(tags))
+        self.metric_labels = list(dict.fromkeys(['sensor', 'target', *tags]))
 
         self._http_server = None
         self._http_server_thread = None
-        self._metrics_collector = ReportProcessorFactory.create_collector(report_type, self.tags)
+        self._metrics_collector = ReportProcessorFactory.create_collector(report_type, self.metric_labels)
 
         self._report_encoder = ReportEncoders.get(report_type)
-        self._report_encoder_opts = EncoderOptions(self.tags)
+        self._report_encoder_opts = EncoderOptions(self.dynamic_tags)
 
     def connect(self) -> None:
         """
