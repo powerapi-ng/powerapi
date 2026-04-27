@@ -33,18 +33,13 @@ from threading import Lock
 from time import time
 from typing import ClassVar
 
-from powerapi.database.codec import ReportEncoder
-from powerapi.database.prometheus.codecs import PowerReportEncoder, EncoderOptions
-from powerapi.report import PowerReport, Report
+from prometheus_client import Metric
+from prometheus_client.metrics_core import GaugeMetricFamily
+from prometheus_client.registry import Collector
 
-try:
-    from prometheus_client import Metric
-    from prometheus_client.metrics_core import GaugeMetricFamily
-    from prometheus_client.registry import Collector
-except ImportError:
-    Metric = None
-    GaugeMetricFamily = None
-    Collector = None
+from powerapi.database.codec import ReportEncoder
+from powerapi.database.prometheus.codecs import PowerReportMetrics, EncoderOptions
+from powerapi.report import PowerReport, Report
 
 
 class ReportCollector(Collector):
@@ -57,8 +52,6 @@ class ReportCollector(Collector):
         :param labels: List of labels name to use for the metrics
         :param samples_ttl: Expiration time of the metrics samples in seconds
         """
-        super().__init__()
-
         self.labels = labels
         self.samples_ttl = samples_ttl
 
@@ -80,9 +73,9 @@ class PowerReportCollector(ReportCollector):
         super().__init__(labels, samples_ttl)
 
         self._lock = Lock()
-        self._metrics: dict[tuple[str, ...], tuple[float, float]] = {}
+        self._metrics: dict[tuple[str, ...], PowerReportMetrics] = {}
 
-    def submit(self, reports: Iterable[PowerReport], encoder: PowerReportEncoder, encoder_opts: EncoderOptions) -> None:
+    def submit(self, reports: Iterable[Report], encoder: ReportEncoder, encoder_opts: EncoderOptions) -> None:
         """
         Submit reports to be used as samples for the metrics.
         :param reports: Iterable of PowerReport objects
@@ -91,8 +84,8 @@ class PowerReportCollector(ReportCollector):
         """
         with self._lock:
             for report in reports:
-                labels, values = encoder.encode(report, encoder_opts)
-                self._metrics[labels] = values
+                sample = encoder.encode(report, encoder_opts)
+                self._metrics[sample.label_values] = sample
 
     def collect(self) -> Iterable[Metric]:
         """
@@ -100,12 +93,11 @@ class PowerReportCollector(ReportCollector):
         :return: Prometheus metrics to be exported
         """
         gauge = GaugeMetricFamily('power_estimation_watts', 'Estimated power consumption for a target', labels=self.labels, unit='watts')
-        current_timestamp = time()
-
         with self._lock:
-            for labels, (timestamp, power_estimation) in self._metrics.items():
-                if (current_timestamp - timestamp) < self.samples_ttl:
-                    gauge.add_metric(labels, power_estimation, timestamp)
+            current_timestamp = time()
+            for sample in self._metrics.values():
+                if (current_timestamp - sample.timestamp) < self.samples_ttl:
+                    gauge.add_metric(sample.label_values, sample.power_estimation, sample.timestamp)
 
         yield gauge
 
