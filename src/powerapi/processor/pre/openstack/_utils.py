@@ -34,7 +34,7 @@ LIBVIRT_INSTANCE_NAME_REGEX = re.compile(r"(instance-\d+)")
 
 def get_instance_name_from_libvirt_cgroup(target: str) -> str | None:
     """
-    Returns the instance name of the target.
+    Extract the instance name from the libvirt cgroup path.
     :param target: Cgroup path
     :return: Instance name (``instance-XXXXXXXX``)
     """
@@ -44,7 +44,7 @@ def get_instance_name_from_libvirt_cgroup(target: str) -> str | None:
         # For example: /sys/fs/cgroup/machine.slice/machine-qemu\\x2d3\\x2dinstance\\x2d00000003.scope/libvirt/emulator
         target = target.encode("utf-8").decode("unicode_escape")
 
-    match = LIBVIRT_INSTANCE_NAME_REGEX.match(target)
+    match = LIBVIRT_INSTANCE_NAME_REGEX.search(target)
     if match:
         return match.group(1)
 

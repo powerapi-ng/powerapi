@@ -27,19 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections.abc import MutableMapping
 from dataclasses import dataclass
-
-from openstack.connection import Connection
-from openstack.exceptions import SDKException
+from multiprocessing.managers import SyncManager
 
 
-class MetadataSyncFailed(Exception):
-    """
-    Exception raised when the metadata cache sync operation fails.
-    """
-
-
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ServerMetadata:
     """
     Represents an OpenStack server metadata cache entry.
@@ -47,42 +40,36 @@ class ServerMetadata:
     server_id: str
     server_name: str
     host: str
+    instance_name: str
     metadata: dict[str, str]
 
 
 class OpenStackMetadataCacheManager:
     """
     OpenStack metadata cache manager.
-    Use the OpenStack API to fetch details about the servers hosted on the infrastructure.
-    It requires credentials with sufficient permissions to access server metadata across all projects.
-    Permission to read Nova Extended Server Attributes (OS-EXT-SRV-ATTR) is **mandatory** in order to map cgroups to servers.
     """
 
-    def __init__(self):
-        self._openstack_api = Connection(app_name='PowerAPI')  # Configuration is taken from OS_* environment variables
-        self._metadata_cache: dict[tuple, ServerMetadata] = {}
+    def __init__(self, manager: SyncManager):
+        """
+        :param manager: Manager of the shared metadata cache
+        """
+        self._metadata_cache: MutableMapping[tuple[str, str], ServerMetadata] = manager.dict()
 
     def get_server_metadata(self, host: str, instance_name: str) -> ServerMetadata | None:
         """
         Get metadata for the server of the specified host from the cache.
         :param host: Name of the host (hypervisor) where the server is located
         :param instance_name: Name of the instance (libvirt instance name)
-        :return: Server metadata cache entry
+        :return: Server metadata cache entry or None if not found
         """
         return self._metadata_cache.get((host, instance_name), None)
 
-    def sync_metadata_cache_from_api(self) -> None:
+    def update_server_metadata(self, server_metadata: ServerMetadata) -> None:
         """
-        Sync the running servers metadata cache from the OpenStack API.
+        Add or update metadata for a server.
+        :param server_metadata: Server metadata cache entry
         """
-        try:
-            for server in self._openstack_api.compute.servers(details=True, all_projects=True):
-                cache_entry = ServerMetadata(server.id, server.name, server.host, server.metadata)
-                self._metadata_cache[(server.host, server.instance_name)] = cache_entry
-        except SDKException as exn:
-            raise MetadataSyncFailed('Failed to retrieve servers metadata from OpenStack API') from exn
-        except ValueError as exn:
-            raise MetadataSyncFailed('Required server attribute is missing from the OpenStack API response') from exn
+        self._metadata_cache[(server_metadata.host, server_metadata.instance_name)] = server_metadata
 
     def clear_metadata_cache(self) -> None:
         """
