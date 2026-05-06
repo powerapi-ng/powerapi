@@ -1,5 +1,4 @@
-# Copyright (c) 2025, Inria
-# Copyright (c) 2025, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,26 +25,3 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import re
-
-LIBVIRT_INSTANCE_NAME_REGEX = re.compile(r"(instance-\d+)")
-
-
-def get_instance_name_from_libvirt_cgroup(target: str) -> str | None:
-    """
-    Extract the instance name from the libvirt cgroup path.
-    :param target: Cgroup path
-    :return: Instance name (``instance-XXXXXXXX``)
-    """
-    if "\\x" in target:
-        # Some systems (cgroups v2 managed by systemd) escape special characters in the cgroup path.
-        # Decoding the path is required in order to reliably extract the instance name.
-        # For example: /sys/fs/cgroup/machine.slice/machine-qemu\\x2d3\\x2dinstance\\x2d00000003.scope/libvirt/emulator
-        target = target.encode("utf-8").decode("unicode_escape")
-
-    match = LIBVIRT_INSTANCE_NAME_REGEX.search(target)
-    if match:
-        return match.group(1)
-
-    return None

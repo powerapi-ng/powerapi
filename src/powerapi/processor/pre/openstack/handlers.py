@@ -31,7 +31,7 @@ from powerapi.handler import StartHandler, PoisonPillMessageHandler as PoisonPil
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
 from ._utils import get_instance_name_from_libvirt_cgroup
-from .metadata_cache_manager import ServerMetadata, MetadataSyncFailed
+from .metadata_cache_manager import ServerMetadata
 
 
 class StartMessageHandler(StartHandler):
@@ -58,6 +58,11 @@ class PoisonPillMessageHandler(PoisonPillHandler):
         """
         Teardown the OpenStack processor.
         """
+        self.state.monitor_agent.terminate()
+        self.state.monitor_agent.join()
+
+        self.state.manager.shutdown()
+
         for actor in self.state.actor.target_actors:
             actor.disconnect()
 
@@ -75,21 +80,11 @@ class HWPCReportHandler(ProcessorReportHandler):
         :param instance_name: Name of the instance to fetch metadata for
         :return: Server metadata entry or None if not found
         """
-        server_metadata = None
-        try:
-            server_metadata = self.state.metadata_cache_manager.get_server_metadata(sensor_name, instance_name)
-            if server_metadata is None:
-                # Retry once after syncing the metadata cache.
-                self.state.metadata_cache_manager.sync_metadata_cache_from_api()
-                server_metadata = self.state.metadata_cache_manager.get_server_metadata(sensor_name, instance_name)
-        except MetadataSyncFailed as exn:
-            self.state.logger.warning(exn)
-
-        return server_metadata
+        return self.state.metadata_cache_manager.get_server_metadata(sensor_name, instance_name)
 
     def handle(self, msg: HWPCReport):
         """
-        Process an HWPCReport to add the Kubernetes metadata.
+        Process an HWPCReport to add the OpenStack metadata.
         :param msg: The HWPCReport to process
         """
         instance_name = get_instance_name_from_libvirt_cgroup(msg.target)

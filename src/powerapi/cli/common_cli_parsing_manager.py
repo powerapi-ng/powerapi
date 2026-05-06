@@ -347,6 +347,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         subparser_openstack_pre_processor = SubgroupConfigParsingManager("openstack")
         subparser_openstack_pre_processor.add_argument("p", "puller", help_text="Name of the puller to attach the pre-processor to", is_mandatory=True)
         subparser_openstack_pre_processor.add_argument("n", "name", help_text="Name of the pre-processor", default_value='preprocessor_openstack')
+        subparser_openstack_pre_processor.add_argument('i', "polling-interval", help_text="OpenStack API polling interval (in seconds)", argument_type=float, default_value=10.0)
         self.add_subgroup_parser("pre-processor", subparser_openstack_pre_processor)
 
     def parse_argv(self):

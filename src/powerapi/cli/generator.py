@@ -462,5 +462,6 @@ class PreProcessorGenerator(ProcessorGenerator):
         """
         from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
         name = processor_config[ACTOR_NAME_KEY]
+        api_polling_interval = processor_config['polling-interval']
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return OpenStackPreProcessorActor(name, level_logger)
+        return OpenStackPreProcessorActor(name, api_polling_interval, level_logger)

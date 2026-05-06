@@ -1,5 +1,4 @@
-# Copyright (c) 2025, Inria
-# Copyright (c) 2025, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,25 +26,38 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import re
-
-LIBVIRT_INSTANCE_NAME_REGEX = re.compile(r"(instance-\d+)")
+from powerapi.processor.pre.openstack._utils import get_instance_name_from_libvirt_cgroup
 
 
-def get_instance_name_from_libvirt_cgroup(target: str) -> str | None:
+def test_get_instance_name_from_libvirt_cgroup_v1_path():
     """
-    Extract the instance name from the libvirt cgroup path.
-    :param target: Cgroup path
-    :return: Instance name (``instance-XXXXXXXX``)
+    Test extracting a libvirt instance name from a cgroup v1 path.
     """
-    if "\\x" in target:
-        # Some systems (cgroups v2 managed by systemd) escape special characters in the cgroup path.
-        # Decoding the path is required in order to reliably extract the instance name.
-        # For example: /sys/fs/cgroup/machine.slice/machine-qemu\\x2d3\\x2dinstance\\x2d00000003.scope/libvirt/emulator
-        target = target.encode("utf-8").decode("unicode_escape")
+    target = '/machine/machine-qemu-3-instance-00000003.libvirt-qemu'
 
-    match = LIBVIRT_INSTANCE_NAME_REGEX.search(target)
-    if match:
-        return match.group(1)
+    assert get_instance_name_from_libvirt_cgroup(target) == 'instance-00000003'
 
-    return None
+
+def test_get_instance_name_from_libvirt_cgroup_v2_path():
+    """
+    Test extracting a libvirt instance name from a cgroup v2 path.
+    """
+    target = '/machine.slice/machine-qemu-3-instance-00000003.scope/libvirt/emulator'
+
+    assert get_instance_name_from_libvirt_cgroup(target) == 'instance-00000003'
+
+
+def test_get_instance_name_from_escaped_libvirt_cgroup_v2_path():
+    """
+    Test extracting a libvirt instance name from an escaped cgroup v2 path.
+    """
+    target = '/machine.slice/machine-qemu\\x2d3\\x2dinstance\\x2d00000003.scope/libvirt/emulator'
+
+    assert get_instance_name_from_libvirt_cgroup(target) == 'instance-00000003'
+
+
+def test_get_instance_name_from_non_libvirt_cgroup_path():
+    """
+    Test extracting a libvirt instance name from a non-libvirt cgroup path.
+    """
+    assert get_instance_name_from_libvirt_cgroup('/system.slice/system-getty.slice/getty@tty1.service') is None
