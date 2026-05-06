@@ -45,7 +45,8 @@ def openstack_config():
         'pre-processor': {
             'pytest-openstack-preprocessor': {
                 'type': 'openstack',
-                'puller': 'pytest-json-puller'
+                'puller': 'pytest-json-puller',
+                'polling-interval': 10.0
             }
         }
     }
