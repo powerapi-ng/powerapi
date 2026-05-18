@@ -50,7 +50,7 @@ def hwpc_report_handler():
         actor = Mock(name='processor-actor')
         actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
 
-        state = K8sProcessorState(actor, K8sProcessorConfig('manual'))
+        state = K8sProcessorState(actor, K8sProcessorConfig('manual', 'https://localhost:6443', 'pytest-token'))
         state.metadata_cache_manager = Mock(name='metadata_cache_manager')
 
         handler = K8sPreProcessorActorHWPCReportHandler(state)

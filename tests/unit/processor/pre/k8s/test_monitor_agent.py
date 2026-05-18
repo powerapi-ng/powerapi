@@ -33,6 +33,7 @@ pytest.importorskip('powerapi.processor.pre.k8s.monitor_agent')  # The monitor a
 
 from kubernetes.client import V1Pod, V1ContainerStatus, Configuration, V1ObjectMeta, V1PodStatus
 
+from powerapi.processor.pre.k8s.actor import K8sProcessorConfig
 from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent
 
 
@@ -41,7 +42,8 @@ def initialized_monitor_agent(initialized_metadata_cache_manager):
     """
     Returns an initialized monitor agent.
     """
-    agent = K8sMonitorAgent(initialized_metadata_cache_manager, 'manual', '', '')
+    processor_config = K8sProcessorConfig('manual', 'https://localhost:6443', 'pytest-token')
+    agent = K8sMonitorAgent(initialized_metadata_cache_manager, processor_config)
     return agent
 
 
@@ -109,7 +111,6 @@ def test_building_metadata_cache_entry_from_pod(initialized_monitor_agent):
     """
     Test building metadata cache entries from a Kubernetes POD object.
     """
-
     pod_name = 'test-pod'
     pod_namespace = 'powerapi'
     pod_labels = {'executor': 'pytest'}

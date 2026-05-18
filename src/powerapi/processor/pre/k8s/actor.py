@@ -41,7 +41,7 @@ from .metadata_cache_manager import K8sMetadataCacheManager
 from .monitor_agent import K8sMonitorAgent
 
 
-@dataclass
+@dataclass(frozen=True)
 class K8sProcessorConfig:
     """
     Kubernetes processor actor configuration.
@@ -49,7 +49,7 @@ class K8sProcessorConfig:
     :param api_host: Kubernetes API host to connect to
     :param api_key: Kubernetes API key (Bearer Token) to authenticate with
     """
-    api_mode: str | None = None
+    api_mode: str
     api_host: str | None = None
     api_key: str | None = None
 
@@ -67,7 +67,7 @@ class K8sProcessorState(State):
 
         self.manager = Manager()
         self.metadata_cache_manager = K8sMetadataCacheManager(self.manager)
-        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, config.api_mode, config.api_host, config.api_key)
+        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, config)
 
 
 class K8sPreProcessorActor(ProcessorActor):
