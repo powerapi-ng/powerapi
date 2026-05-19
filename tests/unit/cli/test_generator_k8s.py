@@ -69,9 +69,9 @@ def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     assert isinstance(preprocessor, K8sPreProcessorActor)
 
     expected_preprocessor_attributes = k8s_processor_config['pre-processor']['pytest-k8s-preprocessor']
-    assert preprocessor.config.api_mode == expected_preprocessor_attributes['api-mode']
-    assert preprocessor.config.api_key == expected_preprocessor_attributes['api-key']
-    assert preprocessor.config.api_host == expected_preprocessor_attributes['api-host']
+    assert preprocessor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']
+    assert preprocessor.monitor_config.api_key == expected_preprocessor_attributes['api-key']
+    assert preprocessor.monitor_config.api_host == expected_preprocessor_attributes['api-host']
 
 
 @pytest.mark.parametrize('missing_arg', ['api-mode'])

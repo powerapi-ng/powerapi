@@ -27,28 +27,34 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import annotations
-
 import logging
 import sys
+from dataclasses import dataclass
 from multiprocessing import Process, Event
 from signal import signal, SIGTERM, SIGINT
 from time import sleep
-from typing import TYPE_CHECKING
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
 from kubernetes.client.rest import ApiException
 from urllib3.exceptions import ProtocolError
 
-from .metadata_cache_manager import K8sContainerMetadata, ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
-
-if TYPE_CHECKING:
-    from .actor import K8sProcessorConfig
-    from .metadata_cache_manager import K8sMetadataCacheManager
-
+from .metadata_cache_manager import K8sMetadataCacheManager, K8sContainerMetadata, ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
 
 K8S_MONITOR_RETRY_DELAY_SECONDS = 1.0
+
+
+@dataclass(frozen=True)
+class K8sMonitorConfig:
+    """
+    Kubernetes monitoring agent configuration.
+    :param api_mode: Kubernetes API mode (manual, local, cluster)
+    :param api_host: Kubernetes API host to connect to
+    :param api_key: Kubernetes API key (Bearer Token) to authenticate with
+    """
+    api_mode: str
+    api_host: str | None = None
+    api_key: str | None = None
 
 
 def load_manual_k8s_config(configuration: client.Configuration, api_host: str | None, api_key: str | None) -> None:
@@ -99,7 +105,7 @@ class K8sMonitorAgent(Process):
     Background monitoring agent that update the shared metadata cache from Kubernetes API events.
     """
 
-    def __init__(self, cache_manager: K8sMetadataCacheManager, conf: K8sProcessorConfig, level_logger: int = logging.WARNING):
+    def __init__(self, cache_manager: K8sMetadataCacheManager, conf: K8sMonitorConfig, level_logger: int = logging.WARNING):
         """
         :param K8sMetadataCacheManager cache_manager: Metadata cache manager
         :param conf: Configuration of the k8s processor actor
@@ -114,7 +120,6 @@ class K8sMonitorAgent(Process):
         handler.setFormatter(formatter)
 
         self.metadata_cache_manager = cache_manager
-        self.processor_config = conf
 
         self._api_config = build_k8s_api_client_configuration(conf.api_mode, conf.api_host, conf.api_key)
         self._stop_monitoring = Event()
