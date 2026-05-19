@@ -27,8 +27,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections.abc import MutableMapping
 from dataclasses import dataclass
-from multiprocessing import Manager
+from multiprocessing.managers import SyncManager
 
 ADDED_EVENT = 'ADDED'
 DELETED_EVENT = 'DELETED'
@@ -52,11 +53,11 @@ class K8sMetadataCacheManager:
     Kubernetes container metadata cache manager.
     """
 
-    def __init__(self, manager: Manager):
+    def __init__(self, manager: SyncManager):
         """
         :param manager: Manager of the shared metadata cache
         """
-        self.metadata_cache: dict[str, K8sContainerMetadata] = manager.dict()
+        self.metadata_cache: MutableMapping[str, K8sContainerMetadata] = manager.dict()
 
     def update_container_metadata(self, event: str, container_metadata: K8sContainerMetadata):
         """

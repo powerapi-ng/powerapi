@@ -444,14 +444,17 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Pre-Processor configuration
         :return: Configured Kubernetes pre-processor actor
         """
-        from powerapi.processor.pre.k8s.actor import K8sPreProcessorActor, K8sProcessorConfig
-        name = processor_config[ACTOR_NAME_KEY]
+        from powerapi.processor.pre.k8s.actor import K8sPreProcessorActor
+        from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorConfig
+
         api_mode = processor_config[K8S_API_MODE_KEY]
         api_host = processor_config.get(K8S_API_HOST_KEY, None)
         api_key = processor_config.get(K8S_API_KEY_KEY, None)
+        monitor_config = K8sMonitorConfig(api_mode, api_host, api_key)
+
+        name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        config = K8sProcessorConfig(api_mode, api_host, api_key)
-        return K8sPreProcessorActor(name, config, level_logger)
+        return K8sPreProcessorActor(name, monitor_config, level_logger)
 
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:

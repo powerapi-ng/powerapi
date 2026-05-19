@@ -34,7 +34,8 @@ import pytest
 
 pytest.importorskip('powerapi.processor.pre.k8s.actor')  # The actor module requires external dependencies.
 
-from powerapi.processor.pre.k8s.actor import K8sProcessorState, K8sProcessorConfig
+from powerapi.processor.pre.k8s.actor import K8sProcessorState
+from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorConfig
 from powerapi.processor.pre.k8s.handlers import K8sPreProcessorActorHWPCReportHandler
 from powerapi.processor.pre.k8s.metadata_cache_manager import K8sContainerMetadata
 from powerapi.report import HWPCReport
@@ -50,7 +51,8 @@ def hwpc_report_handler():
         actor = Mock(name='processor-actor')
         actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
 
-        state = K8sProcessorState(actor, K8sProcessorConfig('manual'))
+        monitor_config = K8sMonitorConfig('manual', 'https://localhost:6443', 'pytest-token')
+        state = K8sProcessorState(actor, monitor_config)
         state.metadata_cache_manager = Mock(name='metadata_cache_manager')
 
         handler = K8sPreProcessorActorHWPCReportHandler(state)

@@ -29,68 +29,75 @@
 
 import logging
 import sys
-from multiprocessing import Process
+from dataclasses import dataclass
+from multiprocessing import Process, Event
 from signal import signal, SIGTERM, SIGINT
+from time import sleep
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
-from kubernetes.client.configuration import Configuration
 from kubernetes.client.rest import ApiException
 from urllib3.exceptions import ProtocolError
 
-from .metadata_cache_manager import ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
-from .metadata_cache_manager import K8sMetadataCacheManager, K8sContainerMetadata
+from .metadata_cache_manager import K8sMetadataCacheManager, K8sContainerMetadata, ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT
 
-LOCAL_CONFIG_MODE = "local"
-MANUAL_CONFIG_MODE = "manual"
-CLUSTER_CONFIG_MODE = "cluster"
+K8S_MONITOR_RETRY_DELAY_SECONDS = 1.0
 
 
-def _setup_k8s_client_with_local_config() -> None:
+@dataclass(frozen=True)
+class K8sMonitorConfig:
     """
-    Setup Kubernetes API client with a kube-config file. (from KUBECONFIG environment variable, or ~/.kube/config)
+    Kubernetes monitoring agent configuration.
+    :param api_mode: Kubernetes API mode (manual, local, cluster)
+    :param api_host: Kubernetes API host to connect to
+    :param api_key: Kubernetes API key (Bearer Token) to authenticate with
     """
-    config.load_kube_config()
+    api_mode: str
+    api_host: str | None = None
+    api_key: str | None = None
 
 
-def _setup_k8s_client_with_cluster_config() -> None:
+def load_manual_k8s_config(configuration: client.Configuration, api_host: str | None, api_key: str | None) -> None:
     """
-    Setup Kubernetes API client with the pod service account. (requires PowerAPI to be running in a Kubernetes cluster)
+    Setup Kubernetes API client configuration manually.
+    This method only supports authentication by Bearer Token.
+    :param configuration: Kubernetes API client configuration
+    :param api_host: The Kubernetes API host
+    :param api_key: The Kubernetes API key (Bearer Token)
     """
-    config.load_incluster_config()
+    if not api_host:
+        raise ValueError('Kubernetes API host is not defined')
+
+    if not api_key:
+        raise ValueError('Kubernetes API key is not defined')
+
+    configuration.host = api_host
+    configuration.api_key['authorization'] = api_key
+    configuration.api_key_prefix['authorization'] = 'Bearer'
 
 
-def _setup_k8s_client_with_manual_config(host: str, api_key: str) -> None:
+def build_k8s_api_client_configuration(api_mode: str, api_host: str | None, api_key: str | None) -> client.Configuration:
     """
-    Setup Kubernetes API client with the user provided configuration. (Bearer Token)
-    :param host: Kubernetes API host url.
-    :param api_key: Kubernetes API token.
+    Build a Kubernetes API client configuration.
+    :param api_mode: The Kubernetes API mode (manual, local, cluster)
+    :param api_host: The Kubernetes API host
+    :param api_key: The Kubernetes API key (Bearer Token)
+    :return: Kubernetes API client configuration
     """
     configuration = client.Configuration()
+    match api_mode.casefold():
+        case 'local':
+            # Setup Kubernetes API client with a kube-config file. (from KUBECONFIG environment variable, or ~/.kube/config)
+            config.load_kube_config(client_configuration=configuration)
+        case 'cluster':
+            # Setup Kubernetes API client with the pod service account. (requires PowerAPI to be running in a pod)
+            config.load_incluster_config(client_configuration=configuration)
+        case 'manual':
+            load_manual_k8s_config(configuration, api_host, api_key)
+        case _:
+            raise ValueError(f'Invalid Kubernetes API mode: {api_mode}')
 
-    configuration.host = host or 'http://localhost'
-    configuration.api_key["authorization"] = api_key
-
-    Configuration.set_default(configuration)
-
-
-def load_k8s_api_client_configuration(api_mode: str, api_host: str, api_key: str) -> None:
-    """
-    Setup Kubernetes API client according to the selected mode.
-    :param api_mode: API mode (manual, local, cluster)
-    :param api_host: API host to connect to
-    :param api_key: API key (Bearer Token) to authenticate with
-    """
-    if api_mode.casefold() == MANUAL_CONFIG_MODE:
-        _setup_k8s_client_with_manual_config(api_host, api_key)
-        return
-
-    if api_mode.casefold() == CLUSTER_CONFIG_MODE:
-        _setup_k8s_client_with_cluster_config()
-        return
-
-    # load local configuration by default.
-    _setup_k8s_client_with_local_config()
+    return configuration
 
 
 class K8sMonitorAgent(Process):
@@ -98,17 +105,14 @@ class K8sMonitorAgent(Process):
     Background monitoring agent that update the shared metadata cache from Kubernetes API events.
     """
 
-    def __init__(self, cache_manager: K8sMetadataCacheManager, api_mode: str, api_host: str, api_key: str, level_logger: int = logging.WARNING):
+    def __init__(self, cache_manager: K8sMetadataCacheManager, conf: K8sMonitorConfig, level_logger: int = logging.WARNING):
         """
         :param K8sMetadataCacheManager cache_manager: Metadata cache manager
-        :param str api_mode: The Kubernetes API mode (manual, local, cluster)
-        :param str api_host: The Kubernetes API host
-        :param str api_key: The Kubernetes API key (Bearer Token)
+        :param conf: Configuration of the k8s processor actor
         :param int level_logger: The logger level
         """
         super().__init__(name='k8s-processor-monitor-agent')
 
-        #: (logging.Logger): Logger
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(level_logger)
         formatter = logging.Formatter('%(asctime)s || %(levelname)s || ' + '%(process)d %(processName)s || %(message)s')
@@ -117,27 +121,25 @@ class K8sMonitorAgent(Process):
 
         self.metadata_cache_manager = cache_manager
 
-        self.k8s_api = self._setup_k8s_api_client(api_mode, api_host, api_key)
-
-        self.stop_monitoring = False
+        self._api_config = build_k8s_api_client_configuration(conf.api_mode, conf.api_host, conf.api_key)
+        self._stop_monitoring = Event()
 
     @staticmethod
-    def _setup_k8s_api_client(api_mode: str, api_host: str, api_key: str) -> client.CoreV1Api:
+    def build_k8s_api_client(api_config: client.Configuration) -> client.CoreV1Api:
         """
-        Setup Kubernetes API client.
-        :param api_mode: The Kubernetes API mode (manual, local, cluster)
-        :param api_host: The Kubernetes API host
-        :param api_key: The Kubernetes API key (Bearer Token)
+        Build a Kubernetes API client with the given configuration.
+        :param api_config: Kubernetes API configuration
+        :return: Kubernetes API client
         """
-        load_k8s_api_client_configuration(api_mode, api_host, api_key)
-        return client.CoreV1Api()
+        api_client = client.ApiClient(configuration=api_config)
+        return client.CoreV1Api(api_client)
 
     def _setup_signal_handlers(self):
         """
         Setup signal handlers for the current Process.
         """
         def stop_monitor(_, __):
-            self.stop_monitoring = True
+            self._stop_monitoring.set()
             sys.exit(0)
 
         signal(SIGTERM, stop_monitor)
@@ -149,13 +151,13 @@ class K8sMonitorAgent(Process):
         """
         self._setup_signal_handlers()
 
-        # Clearing the metadata cache before starting prevents having orphaned entries
-        # that will never be deleted because they no longer exist in the Kubernetes API.
-        self.metadata_cache_manager.clear_metadata_cache()
+        self.metadata_cache_manager.clear_metadata_cache()  # Prevents orphaned cache entries.
 
-        while not self.stop_monitoring:
-            resource_id = self.fetch_list_all_pod_for_all_namespaces()
-            self.watch_list_pod_for_all_namespaces(resource_id)
+        api_client = self.build_k8s_api_client(self._api_config)
+        while not self._stop_monitoring.is_set():
+            resource_id = self.fetch_list_all_pod_for_all_namespaces(api_client)
+            self.watch_list_pod_for_all_namespaces(api_client, resource_id)
+            sleep(K8S_MONITOR_RETRY_DELAY_SECONDS)
 
     @staticmethod
     def get_containers_id_name_from_statuses(container_statuses: list[V1ContainerStatus]) -> dict[str, str]:
@@ -184,14 +186,15 @@ class K8sMonitorAgent(Process):
             for container_id, container_name in self.get_containers_id_name_from_statuses(container_statuses).items()
         ]
 
-    def fetch_list_all_pod_for_all_namespaces(self) -> int | None:
+    def fetch_list_all_pod_for_all_namespaces(self, api_client: client.CoreV1Api) -> int | None:
         """
         Fetch all pod for all namespaces and populate the metadata cache.
+        :param api_client: Kubernetes api client
         :return: Resource version of the last fetched entry
         """
         resource_version = None
         try:
-            pods: V1PodList = self.k8s_api.list_pod_for_all_namespaces(watch=False)
+            pods: V1PodList = api_client.list_pod_for_all_namespaces(watch=False)
             resource_version = pods.metadata.resource_version
             for pod in pods.items:
                 for entry in self.build_metadata_cache_entries_from_pod(pod):
@@ -204,16 +207,16 @@ class K8sMonitorAgent(Process):
 
         return resource_version
 
-    def watch_list_pod_for_all_namespaces(self, resource_version: int | None = None):
+    def watch_list_pod_for_all_namespaces(self, api_client: client.CoreV1Api, resource_version: int | None = None):
         """
         Watch k8s pods events for all namespaces and update the local metadata cache accordingly.
+        :param api_client: Kubernetes API client
         :param resource_version: Resource version from where the watcher begin
         """
         try:
             w = watch.Watch()
-            for event in w.stream(self.k8s_api.list_pod_for_all_namespaces, resource_version=resource_version):
+            for event in w.stream(api_client.list_pod_for_all_namespaces, resource_version=resource_version):
                 event_type = event["type"]
-
                 if event_type not in {ADDED_EVENT, MODIFIED_EVENT, DELETED_EVENT}:
                     logging.warning('Unexpected pod event: %s', event_type)
                     continue
