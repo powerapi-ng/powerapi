@@ -28,7 +28,8 @@
 
 import logging
 import sys
-from multiprocessing import Process
+from dataclasses import dataclass
+from multiprocessing import Process, Event
 from signal import signal, SIGINT, SIGTERM
 from time import sleep
 
@@ -39,6 +40,15 @@ from openstack.exceptions import SDKException
 from .metadata_cache_manager import OpenStackMetadataCacheManager, ServerMetadata
 
 
+@dataclass
+class OpenStackMonitorConfig:
+    """
+    OpenStack monitoring agent configuration.
+    :param polling_interval: Interval in seconds between OpenStack API synchronizations.
+    """
+    polling_interval: float
+
+
 class OpenStackMonitorAgent(Process):
     """
     Background monitoring agent that updates the shared metadata cache from the OpenStack API.
@@ -46,10 +56,10 @@ class OpenStackMonitorAgent(Process):
     Permission to read Nova Extended Server Attributes (OS-EXT-SRV-ATTR) is **mandatory** in order to map cgroups to servers.
     """
 
-    def __init__(self, cache_manager: OpenStackMetadataCacheManager, poll_interval: float, level_logger: int = logging.WARNING):
+    def __init__(self, cache_manager: OpenStackMetadataCacheManager, config: OpenStackMonitorConfig, level_logger: int = logging.WARNING):
         """
         :param cache_manager: Metadata cache manager
-        :param poll_interval: Interval in seconds between OpenStack API synchronizations
+        :param config: Configuration of the monitor agent
         :param level_logger: Logger level
         """
         super().__init__(name='openstack-processor-monitor-agent')
@@ -61,8 +71,9 @@ class OpenStackMonitorAgent(Process):
         handler.setFormatter(formatter)
 
         self.metadata_cache_manager = cache_manager
-        self.poll_interval = poll_interval
-        self.stop_monitoring = False
+        self.config = config
+
+        self._stop_monitoring = Event()
 
     @staticmethod
     def _setup_openstack_api_client() -> Connection:
@@ -77,7 +88,7 @@ class OpenStackMonitorAgent(Process):
         Setup signal handlers for the current Process.
         """
         def stop_monitor(_, __):
-            self.stop_monitoring = True
+            self._stop_monitoring = True
             sys.exit(0)
 
         signal(SIGTERM, stop_monitor)
@@ -93,11 +104,11 @@ class OpenStackMonitorAgent(Process):
         # Prevents orphaned entries that no longer exist in the OpenStack API.
         self.metadata_cache_manager.clear_metadata_cache()
 
-        while not self.stop_monitoring:
+        while not self._stop_monitoring:
             for server in self.fetch_servers_metadata(openstack_api):
                 self.metadata_cache_manager.update_server_metadata(server)
 
-            sleep(self.poll_interval)
+            sleep(self.config.polling_interval)
 
     @staticmethod
     def build_metadata_cache_entry_from_server(server: Server) -> ServerMetadata:

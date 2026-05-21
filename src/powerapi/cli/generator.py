@@ -464,7 +464,11 @@ class PreProcessorGenerator(ProcessorGenerator):
         :return: Configured OpenStack pre-processor actor
         """
         from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
-        name = processor_config[ACTOR_NAME_KEY]
+        from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
+
         api_polling_interval = processor_config['polling-interval']
+        monitor_config = OpenStackMonitorConfig(api_polling_interval)
+
+        name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return OpenStackPreProcessorActor(name, api_polling_interval, level_logger)
+        return OpenStackPreProcessorActor(name, monitor_config, level_logger)

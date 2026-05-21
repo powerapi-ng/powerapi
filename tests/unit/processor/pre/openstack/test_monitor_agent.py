@@ -36,7 +36,7 @@ from openstack.exceptions import SDKException
 from openstack.compute.v2.server import Server
 
 from powerapi.processor.pre.openstack.metadata_cache_manager import ServerMetadata
-from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorAgent
+from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorAgent, OpenStackMonitorConfig
 
 
 @pytest.fixture
@@ -44,7 +44,8 @@ def initialized_monitor_agent(initialized_metadata_cache_manager):
     """
     Returns an initialized OpenStack monitor agent.
     """
-    return OpenStackMonitorAgent(initialized_metadata_cache_manager, poll_interval=0.01)
+    monitor_config = OpenStackMonitorConfig(polling_interval=0.01)
+    return OpenStackMonitorAgent(initialized_metadata_cache_manager, monitor_config)
 
 
 def make_server(server_id, server_name, host, instance_name, metadata) -> Server:
