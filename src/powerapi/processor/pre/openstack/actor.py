@@ -36,7 +36,7 @@ from powerapi.processor.pre.openstack.handlers import StartMessageHandler, Poiso
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
 from .metadata_cache_manager import OpenStackMetadataCacheManager
-from .monitor_agent import OpenStackMonitorAgent
+from .monitor_agent import OpenStackMonitorAgent, OpenStackMonitorConfig
 
 
 class OpenStackProcessorState(State):
@@ -44,17 +44,17 @@ class OpenStackProcessorState(State):
     State of the OpenStack processor actor.
     """
 
-    def __init__(self, actor: Actor, polling_interval: float):
+    def __init__(self, actor: Actor, monitor_config: OpenStackMonitorConfig):
         """
         Initializes an OpenStack processor state.
         :param actor: Actor instance
-        :param polling_interval: OpenStack API polling interval (in seconds)
+        :param monitor_config: Monitoring agent configuration
         """
         super().__init__(actor)
 
         self.manager = Manager()
         self.metadata_cache_manager = OpenStackMetadataCacheManager(self.manager)
-        self.monitor_agent = OpenStackMonitorAgent(self.metadata_cache_manager, polling_interval)
+        self.monitor_agent = OpenStackMonitorAgent(self.metadata_cache_manager, monitor_config)
 
 
 class OpenStackPreProcessorActor(ProcessorActor):
@@ -62,22 +62,22 @@ class OpenStackPreProcessorActor(ProcessorActor):
     Pre-Processor Actor that adds OpenStack related metadata to reports.
     """
 
-    def __init__(self, name: str, polling_interval: float, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, monitor_config: OpenStackMonitorConfig, level_logger: int = logging.WARNING):
         """
         Initializes an OpenStack pre-processor actor.
         :param name: Name of the actor
-        :param polling_interval: OpenStack API polling interval (in seconds)
+        :param monitor_config: Monitoring agent configuration
         :param level_logger: Logging level of the actor
         """
         super().__init__(name, level_logger, 5000)
 
-        self.polling_interval = polling_interval
+        self.monitor_config = monitor_config
 
     def setup(self):
         """
         Set up the OpenStack pre-processor actor.
         """
-        self.state = OpenStackProcessorState(self, self.polling_interval)
+        self.state = OpenStackProcessorState(self, self.monitor_config)
 
         self.add_handler(StartMessage, StartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))

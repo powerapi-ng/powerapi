@@ -64,3 +64,6 @@ def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
 
     preprocessor = preprocessors['pytest-openstack-preprocessor']
     assert isinstance(preprocessor, OpenStackPreProcessorActor)
+
+    expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
+    assert preprocessor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
