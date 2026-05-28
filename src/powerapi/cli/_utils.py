@@ -36,11 +36,25 @@ def find_longest_string_in_list(strings: list[str]) -> str:
     return max(strings, key=len)
 
 
-def string_to_bool(bool_value: str):
+def string_to_bool(value: str) -> bool:
     """
-    Transforms a str to bool according to their content
+    Transforms a string to a boolean according to its content.
+    :param value: The string to be converted
+    :return: Boolean value
     """
-    return bool_value.lower() in ("yes", "true", "t", "1")
+    return value.casefold() in ("yes", "y", "true", "t", "1")
+
+
+def string_to_list(value: str) -> list:
+    """
+    Transforms a comma separated list to a list of strings.
+    :param value: The string to be converted
+    :return: List of strings
+    """
+    if value == '':
+        return []
+
+    return [v.strip() for v in value.split(',')]
 
 
 def merge_dictionaries(source: dict, destination: dict) -> dict:

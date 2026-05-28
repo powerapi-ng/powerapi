@@ -103,15 +103,9 @@ class ConfigValidator:
         """
         Check that csv input type has files that exist
         """
-        for key, input_config in config['input'].items():
+        for input_config in config['input'].values():
             if input_config['type'] == 'csv':
-                list_of_files = input_config['files']
-
-                if isinstance(list_of_files, str):
-                    list_of_files = input_config['files'].split(",")
-                    config['input'][key]['files'] = list_of_files
-
-                for file_name in list_of_files:
+                for file_name in input_config['files']:
                     if not os.access(file_name, os.R_OK):
                         raise FileDoesNotExistException(file_name=file_name)
 

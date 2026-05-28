@@ -51,7 +51,7 @@ def prometheus_config() -> dict:
                 'model': 'PowerReport',
                 'addr': 'localhost',
                 'port': 8000,
-                'tags': 'powerapi_example_tag1,powerapi_example_tag2'
+                'tags': ['powerapi_example_tag1', 'powerapi_example_tag2']
             }
         }
     }

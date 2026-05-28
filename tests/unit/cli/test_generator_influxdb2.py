@@ -53,7 +53,6 @@ def influxdb2_config() -> dict:
                 'org': 'powerapi',
                 'token': 'powerapi-auth-token',
                 'bucket': 'powerapi-example-bucket',
-                'tags': 'powerapi_example_tag1,powerapi_example_tag2'
             }
         }
     }

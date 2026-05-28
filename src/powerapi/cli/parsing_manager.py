@@ -88,7 +88,7 @@ class SubgroupConfigParsingManager(BaseConfigParsingManagerInterface):
             for _, waited_value in self.cli_parser.get_arguments().items():
                 if args in waited_value.names:
                     # check type
-                    if not isinstance(value, waited_value.type) and not waited_value.is_flag and args != 'files':
+                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
                         raise BadTypeException(args, waited_value.type)
 
         # Check that all the mandatory arguments are present

@@ -5,7 +5,7 @@
       "puller": {
           "model": "HWPCReport",
           "type": "csv",
-          "files": "/tmp/rapl.csv,/tmp/msr.csv",
+          "files": ["/tmp/rapl.csv", "/tmp/msr.csv"],
           "name": "my_puller"
       }
   },

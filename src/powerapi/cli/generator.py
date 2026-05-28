@@ -107,15 +107,6 @@ class Generator:
         raise NotImplementedError()
 
 
-def gen_tag_list(db_config: dict):
-    """
-    Generate tag list from tag string
-    """
-    if 'tags' not in db_config or not db_config['tags']:
-        return []
-    return db_config['tags'].split(',')
-
-
 class BaseGenerator(Generator):
     """
     Generate an Actor and Start message from config
@@ -325,7 +316,7 @@ class PusherGenerator(DBActorGenerator):
         Prometheus database factory method.
         """
         from powerapi.database.prometheus import Prometheus
-        return Prometheus(conf['model'], conf['addr'], conf['port'], gen_tag_list(conf))
+        return Prometheus(conf['model'], conf['addr'], conf['port'], conf.get('tags', []))
 
     def __init__(self):
         super().__init__('output')

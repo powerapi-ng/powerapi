@@ -30,7 +30,7 @@
 import sys
 
 from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
-from powerapi.cli.config_parser import store_true, extract_file_names
+from powerapi.cli.config_parser import store_true
 from powerapi.cli.config_parser import MissingValueException
 from powerapi.exception import BadTypeException, BadContextException, UnknownArgException
 
@@ -138,7 +138,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             "f",
             "files",
             help_text="specify input csv files with this format : file1,file2,file3",
-            action=extract_file_names,
+            argument_type=list,
             is_mandatory=True
         )
         subparser_csv_input.add_argument(
@@ -219,7 +219,8 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
         subparser_prometheus_output.add_argument(
             "t", "tags",
-            help_text="List of metadata tags that will be exposed with the metrics"
+            help_text="List of metadata tags that will be exposed with the metrics",
+            argument_type=list
         )
         self.add_subgroup_parser(
             subgroup_name="output",
@@ -240,7 +241,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value="PowerReport",
         )
 
-        subparser_csv_output.add_argument("t", "tags", help_text="List of tags that should be kept")
         subparser_csv_output.add_argument(
             "n", "name", help_text="specify pusher name", default_value="pusher_csv"
         )

@@ -40,13 +40,12 @@ from powerapi.exception import AlreadyAddedArgumentException, UnknownArgExceptio
     MissingArgumentException, SameLengthArgumentNamesException, InvalidPrefixException, RepeatedArgumentException, \
     SubgroupDoesNotExistException, AlreadyAddedSubgroupException
 from ._utils import find_longest_string_in_list, string_to_bool, to_lower_case_and_replace_separators, \
-    get_longest_related_suffix
+    get_longest_related_suffix, string_to_list
 
 
 def store_val(argument_name: str, val: Any, configuration: dict, args: list | None = None) -> (list, dict):
     """
     Action that stores the value of the argument on the parser result
-
     """
     if val == '':
         val = None
@@ -58,18 +57,8 @@ def store_val(argument_name: str, val: Any, configuration: dict, args: list | No
 def store_true(argument_name: str, configuration: dict, val: Any = None, args: list | None = None) -> (list, dict):
     """
     Action that stores a True boolean value on the parser result
-
     """
-    val = True
-    configuration[argument_name] = val
-    return args, configuration
-
-
-def extract_file_names(argument_name: str, val: Any, configuration: dict, args: list | None = None):
-    """
-    Action used to convert string from --files parameter into a list of file name
-    """
-    configuration[argument_name] = val.split(",")
+    configuration[argument_name] = True
     return args, configuration
 
 
@@ -780,6 +769,10 @@ def cast_argument_value(arg_name: str, val: Any, argument: ConfigurationArgument
     try:
         if argument.type is bool and val is not None and isinstance(val, str):
             return string_to_bool(val)
+
+        if argument.type is list and val is not None and isinstance(val, str):
+            return string_to_list(val)
+
         return argument.type(val)
     except ValueError as exn:
         raise BadTypeException(arg_name, argument.type) from exn
