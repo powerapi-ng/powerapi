@@ -143,9 +143,8 @@ def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
     """
     for _, input_config in invalid_csv_io_stream_config['input'].items():
         if input_config['type'] == 'csv':
-            list_of_files = input_config['files'].split(",")
-            for file_str in list_of_files:
-                if os.path.isfile(file_str) is False:
+            for file_str in input_config['files']:
+                if not os.path.isfile(file_str):
                     with open(file_str, 'w') as file:
                         file.close()
 
@@ -153,8 +152,7 @@ def create_empty_files_from_config(invalid_csv_io_stream_config: dict):
 
     for _, input_config in invalid_csv_io_stream_config['input'].items():
         if input_config['type'] == 'csv':
-            list_of_files = input_config['files']
-            for file_str in list_of_files:
+            for file_str in input_config['files']:
                 if os.path.isfile(file_str):
                     os.remove(file_str)
 

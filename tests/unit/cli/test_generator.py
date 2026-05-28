@@ -56,10 +56,6 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
     """
     Test that several inputs are correctly used to generate the related actors
     """
-    for current_input in several_inputs_outputs_stream_config['input'].values():
-        if current_input['type'] == 'csv':
-            current_input['files'] = current_input['files'].split(',')
-
     generator = PullerGenerator(BroadcastReportFilter())
     pullers = generator.generate(several_inputs_outputs_stream_config)
 

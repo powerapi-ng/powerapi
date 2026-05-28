@@ -49,17 +49,10 @@ def test_config_in_postmortem_mode_with_csv_input_is_validated(create_empty_file
     The files list for the input has to be transformed into a list
     """
     try:
-        expected_result = load_configuration_from_json_file(
-            file_name='csv_input_output_stream_mode_enabled_configuration.json')
-        for current_input in expected_result['input']:
-            if expected_result['input'][current_input]['type'] == 'csv':
-                expected_result['input'][current_input]['files'] = (
-                    expected_result['input'][current_input]['files']).split(',')
-
+        expected_result = load_configuration_from_json_file('csv_input_output_stream_mode_enabled_configuration.json')
         expected_result['stream'] = False
 
         ConfigValidator.validate(csv_io_postmortem_config)
-
         assert csv_io_postmortem_config == expected_result
 
     except NotAllowedArgumentValueException as e:
@@ -74,11 +67,9 @@ def test_valid_config_postmortem_csv_input_without_optional_arguments_is_validat
     """
     expected_result = csv_io_postmortem_config_without_optional_arguments.copy()
     for current_input in expected_result['input']:
-        if expected_result['input'][current_input]['type'] == 'csv':
-            expected_result['input'][current_input]['files'] = (expected_result['input'][current_input]['files']).split(
-                ',')
         expected_result['input'][current_input]['name'] = 'default_puller'
         expected_result['input'][current_input]['model'] = 'HWPCReport'
+
     expected_result['stream'] = False
     expected_result['verbose'] = False
 
