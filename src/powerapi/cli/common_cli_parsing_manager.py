@@ -56,8 +56,7 @@ class PullerConfigParsingManager(SubgroupConfigParsingManager):
 
         self.add_argument(
             'n', 'name',
-            help_text='Name assigned to this puller actor',
-            is_mandatory=True
+            help_text='Name assigned to this puller actor'
         )
         self.add_argument(
             'm', 'model',
@@ -79,8 +78,7 @@ class PusherConfigParsingManager(SubgroupConfigParsingManager):
 
         self.add_argument(
             'n', 'name',
-            help_text='Name assigned to this pusher actor',
-            is_mandatory=True
+            help_text='Name assigned to this pusher actor'
         )
         self.add_argument(
             'm', 'model',
@@ -102,8 +100,7 @@ class PreProcessorConfigParsingManager(SubgroupConfigParsingManager):
 
         self.add_argument(
             'n', 'name',
-            help_text='Name assigned to this pre-processor actor',
-            is_mandatory=True
+            help_text='Name assigned to this pre-processor actor'
         )
         self.add_argument(
             'p', 'puller',
