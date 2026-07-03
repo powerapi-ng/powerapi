@@ -26,9 +26,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import pytest
+
 from powerapi.cli.common_cli_parsing_manager import CommonCLIParsingManager, PullerConfigParsingManager, \
     PusherConfigParsingManager, PreProcessorConfigParsingManager, generate_env_prefix
 from powerapi.cli.config_parser import store_true
+from powerapi.exception import NoNameSpecifiedForSubgroupException
 
 
 def test_generate_env_prefix_with_no_component():
@@ -73,15 +76,15 @@ def test_generate_env_prefix_with_custom_root_prefix():
     assert generate_env_prefix('INPUT', root_prefix='MYAPP') == 'MYAPP_INPUT_'
 
 
-def test_puller_config_parser_registers_mandatory_name_argument():
+def test_puller_config_parser_registers_shared_name_argument():
     """
-    Test that PullerConfigParsingManager registers a mandatory name argument.
+    Test that PullerConfigParsingManager registers the shared subgroup name argument.
     """
     parser = PullerConfigParsingManager('pytest')
     name_argument = parser.cli_parser.get_arguments()['name']
 
     assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is True
+    assert name_argument.is_mandatory is False
 
 
 def test_puller_config_parser_registers_default_model_argument():
@@ -95,15 +98,15 @@ def test_puller_config_parser_registers_default_model_argument():
     assert model_argument.default_value == 'HWPCReport'
 
 
-def test_pusher_config_parser_registers_mandatory_name_argument():
+def test_pusher_config_parser_registers_shared_name_argument():
     """
-    Test that PusherConfigParsingManager registers a mandatory name argument.
+    Test that PusherConfigParsingManager registers the shared subgroup name argument.
     """
     parser = PusherConfigParsingManager('pytest')
     name_argument = parser.cli_parser.get_arguments()['name']
 
     assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is True
+    assert name_argument.is_mandatory is False
 
 
 def test_pusher_config_parser_registers_default_model_argument():
@@ -117,15 +120,15 @@ def test_pusher_config_parser_registers_default_model_argument():
     assert model_argument.default_value == 'PowerReport'
 
 
-def test_pre_processor_config_parser_registers_mandatory_name_argument():
+def test_pre_processor_config_parser_registers_shared_name_argument():
     """
-    Test that PreProcessorConfigParsingManager registers a mandatory name argument.
+    Test that PreProcessorConfigParsingManager registers the shared subgroup name argument.
     """
     parser = PreProcessorConfigParsingManager('pytest')
     name_argument = parser.cli_parser.get_arguments()['name']
 
     assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is True
+    assert name_argument.is_mandatory is False
 
 
 def test_pre_processor_config_parser_registers_mandatory_puller_argument():
@@ -242,6 +245,42 @@ def test_common_cli_manager_registers_stream_argument():
     assert stream_argument.is_flag is True
     assert stream_argument.action is store_true
     assert stream_argument.default_value is False
+
+
+def test_common_cli_manager_validates_output_config_without_name():
+    """
+    Test that output config validation can use the output key as the pusher name.
+    """
+    parser_manager = CommonCLIParsingManager()
+    config = {
+        'output': {
+            'powerrep': {
+                'model': 'PowerReport',
+                'type': 'json',
+                'filepath': '/tmp/powerapi-output.jsonl',
+            },
+        },
+    }
+
+    result = parser_manager.validate(config)
+
+    assert result['output']['powerrep']['type'] == 'json'
+    assert result['output']['powerrep']['model'] == 'PowerReport'
+    assert result['output']['powerrep']['filepath'] == '/tmp/powerapi-output.jsonl'
+    assert result['output']['powerrep']['compression'] == 'auto'
+
+
+def test_common_cli_manager_requires_name_for_cli_subgroup():
+    """
+    Test that CLI subgroup parsing still requires -n/--name.
+    """
+    parser_manager = CommonCLIParsingManager()
+
+    with pytest.raises(NoNameSpecifiedForSubgroupException):
+        parser_manager._parse_cli([
+            '--output', 'json',
+            '--filepath', '/tmp/powerapi-output.jsonl',
+        ])
 
 
 def test_common_cli_manager_parse_cli_configuration():
