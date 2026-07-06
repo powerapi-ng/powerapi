@@ -32,7 +32,7 @@ from collections.abc import Iterable
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
-from powerapi.database.driver import DatabaseDriver, ReadableDatabase, WritableDatabase
+from powerapi.database.driver import DatabaseDriver, ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
 from powerapi.database.mongodb.codecs import ReportEncoders, ReportDecoders
 from powerapi.report import Report
@@ -143,6 +143,30 @@ class MongodbInput(_MongodbDriver, ReadableDatabase):
         except PyMongoError as exn:
             raise ReadFailed(f'Failed to retrieve reports from the MongoDB database: {exn}') from exn
 
+class MongodbInputFactory(ReadableDatabaseFactory):
+    """
+    Factory that creates a MongoDB input database driver.
+    """
+
+    def __init__(self, report_type: type[Report], uri: str, database_name: str, collection_name: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param uri: URI of the MongoDB server
+        :param database_name: Database name
+        :param collection_name: Collection name
+        """
+        self.report_type = report_type
+        self.uri = uri
+        self.database_name = database_name
+        self.collection_name = collection_name
+
+    def create(self) -> ReadableDatabase:
+        """
+        Creates a MongoDB input database driver.
+        :return: Initialized MongoDB input database driver.
+        """
+        return MongodbInput(self.report_type, self.uri, self.database_name, self.collection_name)
+
 
 class MongodbOutput(_MongodbDriver, WritableDatabase):
     """
@@ -180,3 +204,31 @@ class MongodbOutput(_MongodbDriver, WritableDatabase):
             self._collection.insert_many(encoded_reports)
         except PyMongoError as exn:
             raise WriteFailed(f'Failed to write reports to the MongoDB database: {exn}') from exn
+
+
+class MongodbOutputFactory(WritableDatabaseFactory):
+    """
+    Factory that creates a MongoDB output database driver.
+    """
+
+    def __init__(self, report_type: type[Report], uri: str, database_name: str, collection_name: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param uri: URI of the MongoDB server
+        :param database_name: Database name
+        :param collection_name: Collection name
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.uri = uri
+        self.database_name = database_name
+        self.collection_name = collection_name
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the MongoDB output database driver.
+        :return: Initialized MongoDB output database driver
+        """
+        return MongodbOutput(self.report_type, self.uri, self.database_name, self.collection_name)

@@ -31,14 +31,17 @@ from collections.abc import Iterable
 from queue import SimpleQueue, Empty
 from threading import Thread
 
-from powerapi.database.driver import ReadableDatabase
+from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed
 from powerapi.database.socket.codecs import ReportDecoders
 from powerapi.database.socket.tcp_server import tcpserver_thread_target
 from powerapi.report import Report
 
 
-class Socket(ReadableDatabase):
+class SocketInput(ReadableDatabase):
+    """
+    Socket database driver.
+    """
 
     def __init__(self, report_type: type[Report], host: str, port: int):
         """
@@ -51,9 +54,9 @@ class Socket(ReadableDatabase):
         self.listen_addr = (host, port)
 
         self._report_decoder = ReportDecoders.get(report_type)
-
-        self._received_data_queue: SimpleQueue[Report] | None = None
-        self._tcp_server_thread: Thread | None = None
+        self._received_data_queue = SimpleQueue()
+        thread_args = (self.listen_addr, self._received_data_queue)
+        self._tcp_server_thread = Thread(target=tcpserver_thread_target, args=thread_args, daemon=True)
 
     def connect(self) -> None:
         """
@@ -61,9 +64,6 @@ class Socket(ReadableDatabase):
         :raise: ConnectionFailed if the operation fails
         """
         try:
-            self._received_data_queue = SimpleQueue()
-            thread_args = (self.listen_addr, self._received_data_queue)
-            self._tcp_server_thread = Thread(target=tcpserver_thread_target, args=thread_args, daemon=True)
             self._tcp_server_thread.start()
         except RuntimeError as exn:
             raise ConnectionFailed(f'Failed to connect the Socket database: {exn}') from exn
@@ -92,3 +92,28 @@ class Socket(ReadableDatabase):
                 yield self._report_decoder.decode(self._received_data_queue.get(block=False))
             except Empty:
                 break
+
+class SocketInputFactory(ReadableDatabaseFactory):
+    """
+    Factory that creates a socket database driver.
+    """
+
+    def __init__(self, report_type: type[Report], host: str, port: int):
+        """
+        :param report_type: The type of report to create
+        :param host: The host address to listen on
+        :param port: The port number to listen on
+        """
+        if report_type not in ReportDecoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.host = host
+        self.port = port
+
+    def create(self) -> ReadableDatabase:
+        """
+        Create the socket database driver.
+        :return: Initialized socket database driver
+        """
+        return SocketInput(self.report_type, self.host, self.port)

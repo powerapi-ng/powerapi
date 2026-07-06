@@ -32,7 +32,7 @@ from pathlib import Path
 
 from powerapi.database.csv.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.csv.fileio_handlers import MultiCsvFileReader, MultiCsvFileWriter
-from powerapi.database.driver import ReadableDatabase, WritableDatabase
+from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.report import Report
 
@@ -100,6 +100,30 @@ class CSVInput(ReadableDatabase):
         return self._reports_generator()
 
 
+class CSVInputFactory(ReadableDatabaseFactory):
+    """
+    CSV input database factory.
+    """
+
+    def __init__(self, report_type: type[Report], input_files: list[str]):
+        """
+        :param report_type: Type of the report handled by this database
+        :param input_files: List of input file paths
+        """
+        if report_type not in ReportDecoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.input_files = input_files
+
+    def create(self) -> ReadableDatabase:
+        """
+        Create the CSV input database driver.
+        :return: Initialized CSV input database driver
+        """
+        return CSVInput(self.report_type, self.input_files)
+
+
 class CSVOutput(WritableDatabase):
     """
     CSV output database driver.
@@ -154,3 +178,27 @@ class CSVOutput(WritableDatabase):
                 self._output_file_handler.write_rows(self._report_encoder.encode(report))
         except OSError as exn:
             raise WriteFailed(f'Failed to write reports to CSV files: {exn}') from exn
+
+
+class CSVOutputFactory(WritableDatabaseFactory):
+    """
+    CSV output database factory.
+    """
+
+    def __init__(self, report_type: type[Report], output_directory: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param output_directory: Path to the output directory
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.output_directory = output_directory
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the CSV output database driver.
+        :return: Initialized CSV output database driver
+        """
+        return CSVOutput(self.report_type, self.output_directory)
