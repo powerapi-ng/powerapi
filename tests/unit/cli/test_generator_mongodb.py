@@ -34,9 +34,9 @@ from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
-pytest.importorskip('powerapi.database.mongodb')  # The MongoDB driver requires external dependencies to work.
+pytest.importorskip('powerapi.database.mongodb.driver')  # The MongoDB driver requires external dependencies to work.
 
-from powerapi.database.mongodb import MongodbOutput, MongodbInput
+from powerapi.database.mongodb.driver import MongodbInputFactory, MongodbOutputFactory
 
 
 @pytest.fixture
@@ -81,13 +81,13 @@ def test_puller_generator_with_valid_mongodb_config(mongodb_config):
     puller = pullers['pytest-mongodb-puller']
     assert isinstance(puller, PullerActor)
 
-    db = puller.database
-    assert isinstance(db, MongodbInput)
+    db_factory = puller.database_factory
+    assert isinstance(db_factory, MongodbInputFactory)
 
     expected_db_attributes = mongodb_config['input']['pytest-mongodb-puller']
-    assert db.uri == expected_db_attributes['uri']
-    assert db.database_name == expected_db_attributes['db']
-    assert db.collection_name == expected_db_attributes['collection']
+    assert db_factory.uri == expected_db_attributes['uri']
+    assert db_factory.database_name == expected_db_attributes['db']
+    assert db_factory.collection_name == expected_db_attributes['collection']
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'uri'])
@@ -116,13 +116,13 @@ def test_pusher_generator_with_valid_mongodb_config(mongodb_config):
     pusher = pushers['pytest-mongodb-pusher']
     assert isinstance(pusher, PusherActor)
 
-    db = pusher.database
-    assert isinstance(db, MongodbOutput)
+    db_factory = pusher.database_factory
+    assert isinstance(db_factory, MongodbOutputFactory)
 
     expected_db_attributes = mongodb_config['output']['pytest-mongodb-pusher']
-    assert db.uri == expected_db_attributes['uri']
-    assert db.database_name == expected_db_attributes['db']
-    assert db.collection_name == expected_db_attributes['collection']
+    assert db_factory.uri == expected_db_attributes['uri']
+    assert db_factory.database_name == expected_db_attributes['db']
+    assert db_factory.collection_name == expected_db_attributes['collection']
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'uri', 'db', 'collection'])

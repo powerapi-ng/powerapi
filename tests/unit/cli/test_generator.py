@@ -31,9 +31,9 @@ import pytest
 
 from powerapi.cli.generator import ModelNameDoesNotExist
 from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, PreProcessorGenerator
-from powerapi.database.csv import CSVInput, CSVOutput
-from powerapi.database.json import JsonInput, JsonOutput
-from powerapi.database.socket import Socket
+from powerapi.database.csv.driver import CSVInputFactory, CSVOutputFactory
+from powerapi.database.json.driver import JsonInputFactory, JsonOutputFactory
+from powerapi.database.socket.driver import SocketInputFactory
 from powerapi.exception import PowerAPIException
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
@@ -65,17 +65,18 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
         assert puller_name in pullers
         assert isinstance(pullers[puller_name], PullerActor)
 
-        db = pullers[puller_name].database
+        db_factory = pullers[puller_name].database_factory
 
         if current_puller_infos['type'] == 'csv':
-            assert isinstance(db, CSVInput)
-            assert all(str(filepath) in current_puller_infos['files'] for filepath  in db.input_filepaths)
+            assert isinstance(db_factory, CSVInputFactory)
+            assert db_factory.input_files == current_puller_infos['files']
         elif current_puller_infos['type'] == 'socket':
-            assert isinstance(db, Socket)
-            assert db.listen_addr == (current_puller_infos['host'], current_puller_infos['port'])
+            assert isinstance(db_factory, SocketInputFactory)
+            assert db_factory.host == current_puller_infos['host']
+            assert db_factory.port == current_puller_infos['port']
         elif current_puller_infos['type'] == 'json':
-            assert isinstance(db, JsonInput)
-            assert str(db.input_filepath) == current_puller_infos['filepath']
+            assert isinstance(db_factory, JsonInputFactory)
+            assert db_factory.output_filepath == current_puller_infos['filepath']
         else:
             pytest.fail(f'Unsupported puller type: {current_puller_infos["type"]}')
 
@@ -151,15 +152,15 @@ def test_generate_several_pushers_from_config(several_inputs_outputs_stream_conf
         assert pusher_name in pushers
         assert isinstance(pushers[pusher_name], PusherActor)
 
-        db = pushers[pusher_name].database
+        db_factory = pushers[pusher_name].database_factory
         pusher_type = current_pusher_infos['type']
 
         if pusher_type == 'csv':
-            assert isinstance(db, CSVOutput)
-            assert str(db.output_directory) == current_pusher_infos['directory']
+            assert isinstance(db_factory, CSVOutputFactory)
+            assert db_factory.output_directory == current_pusher_infos['directory']
         elif pusher_type == 'json':
-            assert isinstance(db, JsonOutput)
-            assert str(db.output_filepath) == current_pusher_infos['filepath']
+            assert isinstance(db_factory, JsonOutputFactory)
+            assert db_factory.output_filepath == current_pusher_infos['filepath']
         else:
             pytest.fail(f'Unsupported pusher type: {pusher_type}')
 

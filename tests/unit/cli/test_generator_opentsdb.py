@@ -32,9 +32,9 @@ from powerapi.cli.generator import PusherGenerator
 from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
-pytest.importorskip("powerapi.database.opentsdb")  # The OpenTSDB driver requires external dependencies to work.
+pytest.importorskip("powerapi.database.opentsdb.driver")  # The OpenTSDB driver requires external dependencies to work.
 
-from powerapi.database.opentsdb import OpenTSDB
+from powerapi.database.opentsdb.driver import OpenTSDBOutputFactory
 
 
 @pytest.fixture
@@ -70,13 +70,13 @@ def test_pusher_generator_with_valid_opentsdb_config(opentsdb_config):
     pusher = pushers['pytest-opentsdb-pusher']
     assert isinstance(pusher, PusherActor)
 
-    db = pusher.database
-    assert isinstance(db, OpenTSDB)
+    db_factory = pusher.database_factory
+    assert isinstance(db_factory, OpenTSDBOutputFactory)
 
     expected_db_attributes = opentsdb_config['output']['pytest-opentsdb-pusher']
-    assert db._host == expected_db_attributes['uri']
-    assert db._port == expected_db_attributes['port']
-    assert db._metric_name == expected_db_attributes['metric-name']
+    assert db_factory.host == expected_db_attributes['uri']
+    assert db_factory.port == expected_db_attributes['port']
+    assert db_factory.metric_name == expected_db_attributes['metric-name']
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'uri', 'port', 'metric-name'])
