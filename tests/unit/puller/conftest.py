@@ -36,6 +36,7 @@ import pytest
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 from powerapi.puller.puller_actor import PullerState
+from tests.utils.db import PrebuiltDatabaseFactory
 
 if TYPE_CHECKING:
     from powerapi.filter import ReportFilter
@@ -88,8 +89,9 @@ def puller_start_handler(make_fake_failing_database, fake_database_poller):
     def _create_handler(report_filter: ReportFilter) -> PullerStartMessageHandler:
         actor = Mock()
         database = make_fake_failing_database()
+        database_factory = PrebuiltDatabaseFactory(database)
 
-        state = PullerState(actor, database, report_filter, stream_mode=False)
+        state = PullerState(actor, database_factory, report_filter, stream_mode=False)
         state.db_poller_thread = fake_database_poller
 
         handler = PullerStartMessageHandler(state)
@@ -108,8 +110,9 @@ def puller_poison_pill_handler(make_fake_failing_database, empty_report_filter, 
         actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
 
         database = make_fake_failing_database()
+        database_factory = PrebuiltDatabaseFactory(database)
 
-        state = PullerState(actor, database, empty_report_filter, stream_mode=False)
+        state = PullerState(actor, database_factory, empty_report_filter, stream_mode=False)
         state.db_poller_thread = fake_database_poller
 
         handler = PullerPoisonPillMessageHandler(state)
