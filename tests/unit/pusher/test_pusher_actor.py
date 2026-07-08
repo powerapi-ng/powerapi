@@ -149,12 +149,48 @@ def test_report_handler_database_error_on_write(pusher_report_handler):
     assert handler.state.alive is True
 
 
+def test_start_handler_create_database_driver(pusher_start_handler):
+    """
+    Test that start handler stores the created database driver.
+    """
+    handler, database = pusher_start_handler()
+    handler.handle(StartMessage())
+
+    assert handler.state.alive is True
+    assert handler.state.database_driver is database
+
+
 def test_start_handler_fails_connect_to_database_kill_actor(pusher_start_handler):
     """
     Test that start handler kills the actor when failing to connect to the database.
     """
     handler, _ = pusher_start_handler(fail_connect=True)
     handler.handle(StartMessage())
+
+    assert handler.state.alive is False
+
+
+def test_start_handler_fails_create_database_kill_actor(pusher_start_handler):
+    """
+    Test that start handler kills the actor when failing to create the database.
+    """
+    handler, _ = pusher_start_handler(fail_create=True)
+    handler.handle(StartMessage())
+
+    assert handler.state.alive is False
+    assert handler.state.database_driver is None
+    handler.state.actor.send_control.assert_called_once()  # ErrorMessage sent to supervisor
+
+
+def test_poison_pill_handler_without_database_driver(pusher_poison_pill_handler):
+    """
+    Test that poison pill handler skips teardown when no database driver exists.
+    """
+    handler, _ = pusher_poison_pill_handler()
+
+    handler.state.database_driver = None
+
+    handler.handle(PoisonPillMessage(soft=False))
 
     assert handler.state.alive is False
 

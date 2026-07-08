@@ -33,7 +33,8 @@ from datetime import datetime, UTC
 from multiprocessing import Manager
 from uuid import uuid4
 
-from powerapi.database import ReadableWritableDatabase, ReadFailed, WriteFailed, ConnectionFailed
+from powerapi.database.driver import ReadableWritableDatabase, ReadableDatabaseFactory, WritableDatabaseFactory
+from powerapi.database.exceptions import ReadFailed, WriteFailed, ConnectionFailed
 from powerapi.report import Report
 
 
@@ -196,3 +197,19 @@ class FailingLocalQueueDatabase(LocalQueueDatabase):
             raise WriteFailed('This database is setup to always fail its writes')
 
         super().write(reports)
+
+
+class PrebuiltDatabaseFactory(ReadableDatabaseFactory, WritableDatabaseFactory):
+    """
+    Test factory returning a prebuilt database instance.
+    """
+
+    def __init__(self, database: ReadableWritableDatabase, fail_create: bool = False):
+        self.database = database
+        self.fail_create = fail_create
+
+    def create(self) -> ReadableWritableDatabase:
+        if self.fail_create:
+            raise ValueError('This database factory is setup to always fail its creation')
+
+        return self.database

@@ -30,8 +30,8 @@
 import logging
 
 from powerapi.actor import Actor, State
-from powerapi.database import WritableDatabase
 from powerapi.actor.message import PoisonPillMessage, StartMessage
+from powerapi.database.driver import WritableDatabaseFactory, WritableDatabase
 from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 from powerapi.report import Report
 
@@ -41,14 +41,15 @@ class PusherState(State):
     Pusher Actor State class.
     """
 
-    def __init__(self, actor: Actor, database: WritableDatabase):
+    def __init__(self, actor: Actor, database_factory: WritableDatabaseFactory):
         """
         :param actor: Pusher actor
-        :param database: Database driver used to persist reports
+        :param database_factory: Factory used to create the database driver
         """
         super().__init__(actor)
 
-        self.database: WritableDatabase = database
+        self.database_factory = database_factory
+        self.database_driver: WritableDatabase | None = None
         self.buffer: list[Report] = []
 
 
@@ -58,17 +59,17 @@ class PusherActor(Actor):
     This actor allows to persist Reports sent by a Formula to a database.
     """
 
-    def __init__(self, name: str, database: WritableDatabase, flush_interval: float = 0.100, max_buffer_size: int = 50, logger_level: int = logging.WARNING):
+    def __init__(self, name: str, database_factory: WritableDatabaseFactory, flush_interval: float = 0.100, max_buffer_size: int = 50, logger_level: int = logging.WARNING):
         """
         :param name: Name of the pusher actor
-        :param database: Database driver to use to persist reports
+        :param database_factory: Factory used to create the database driver
         :param flush_interval: Maximum time in seconds to wait before flushing the buffered reports to the database
         :param max_buffer_size: Maximum number of reports that can be buffered before a forced flush to the database
         :param logger_level: Define the level of the logger for the actor
         """
         super().__init__(name, logger_level, 1000)
 
-        self.database = database
+        self.database_factory = database_factory
         self.flush_interval = flush_interval
         self.max_buffer_size = max_buffer_size
 
@@ -76,7 +77,7 @@ class PusherActor(Actor):
         """
         Set up the Pusher actor message handlers.
         """
-        self.state = PusherState(self, self.database)
+        self.state = PusherState(self, self.database_factory)
 
         self.add_handler(StartMessage, PusherStartHandler(self.state))
         self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))

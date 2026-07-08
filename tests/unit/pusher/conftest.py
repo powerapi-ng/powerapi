@@ -36,6 +36,7 @@ import pytest
 
 from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
 from powerapi.pusher.pusher_actor import PusherState
+from tests.utils.db import PrebuiltDatabaseFactory
 
 if TYPE_CHECKING:
     from tests.utils.db import FailingLocalQueueDatabase
@@ -46,9 +47,11 @@ def pusher_start_handler(make_fake_failing_database):
     """
     Factory fixture for creating a pusher start handler.
     """
-    def _create_handler(fail_connect: bool = False, fail_read: bool = False, fail_write: bool = False) -> tuple[PusherStartHandler, FailingLocalQueueDatabase]:
-        db = make_fake_failing_database(fail_connect=fail_connect, fail_read=fail_read, fail_write=fail_write)
-        state = PusherState(Mock(), db)
+
+    def _create_handler(fail_create: bool = False, fail_connect: bool = False) -> tuple[PusherStartHandler, FailingLocalQueueDatabase]:
+        db = make_fake_failing_database(fail_connect=fail_connect)
+        db_factory = PrebuiltDatabaseFactory(db, fail_create=fail_create)
+        state = PusherState(Mock(), db_factory)
         handler = PusherStartHandler(state)
         return handler, db
 
@@ -60,11 +63,17 @@ def pusher_poison_pill_handler(make_fake_failing_database):
     """
     Factory fixture for creating a pusher poison-pill handler.
     """
-    def _create_handler(fail_connect: bool = False, fail_read: bool = False, fail_write: bool = False) -> tuple[PusherPoisonPillMessageHandler, FailingLocalQueueDatabase]:
-        db = make_fake_failing_database(fail_connect=fail_connect, fail_read=fail_read, fail_write=fail_write)
+
+    def _create_handler(fail_write: bool = False) -> tuple[PusherPoisonPillMessageHandler, FailingLocalQueueDatabase]:
+        db = make_fake_failing_database(fail_write=fail_write)
+        db_factory = PrebuiltDatabaseFactory(db)
+
         actor = Mock()
         actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
-        state = PusherState(Mock(), db)
+
+        state = PusherState(actor, db_factory)
+        state.database_driver = db
+
         handler = PusherPoisonPillMessageHandler(state)
         return handler, db
 
@@ -76,9 +85,19 @@ def pusher_report_handler(make_fake_failing_database):
     """
     Factory fixture for creating a pusher report handler.
     """
-    def _create_handler(flush_interval: float = 1.0, buffer_size: int = 10, last_write_ts: float = 0.0) -> tuple[ReportHandler, FailingLocalQueueDatabase]:
-        db = make_fake_failing_database()
-        state = PusherState(Mock(), db)
+
+    def _create_handler(
+            fail_write: bool = False,
+            flush_interval: float = 1.0,
+            buffer_size: int = 10,
+            last_write_ts: float = 0.0
+    ) -> tuple[ReportHandler, FailingLocalQueueDatabase]:
+        db = make_fake_failing_database(fail_write=fail_write)
+        db_factory = PrebuiltDatabaseFactory(db)
+
+        state = PusherState(Mock(), db_factory)
+        state.database_driver = db
+
         handler = ReportHandler(state, flush_interval, buffer_size)
         handler._last_write_ts = last_write_ts
         return handler, db
