@@ -120,8 +120,8 @@ class K8sMonitorAgent(Process):
         handler.setFormatter(formatter)
 
         self.metadata_cache_manager = cache_manager
+        self.config = conf
 
-        self._api_config = build_k8s_api_client_configuration(conf.api_mode, conf.api_host, conf.api_key)
         self._stop_monitoring = Event()
 
     @staticmethod
@@ -153,7 +153,8 @@ class K8sMonitorAgent(Process):
 
         self.metadata_cache_manager.clear_metadata_cache()  # Prevents orphaned cache entries.
 
-        api_client = self.build_k8s_api_client(self._api_config)
+        api_config = build_k8s_api_client_configuration(self.config.api_mode, self.config.api_host, self.config.api_key)
+        api_client = self.build_k8s_api_client(api_config)
         while not self._stop_monitoring.is_set():
             resource_id = self.fetch_list_all_pod_for_all_namespaces(api_client)
             self.watch_list_pod_for_all_namespaces(api_client, resource_id)
