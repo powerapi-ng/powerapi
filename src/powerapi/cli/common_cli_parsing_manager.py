@@ -272,7 +272,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self._register_prometheus_output_parser()
         self._register_csv_output_parser()
         self._register_json_output_parser()
-        self._register_opentsdb_output_parser()
         self._register_influxdb2_output_parser()
 
     def _register_mongodb_output_parser(self):
@@ -366,31 +365,6 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         self.add_subgroup_parser('output', subparser_json_output)
-
-    def _register_opentsdb_output_parser(self):
-        """
-        Register the OpenTSDB output parser.
-        """
-        subparser_opentsdb_output = PusherConfigParsingManager('opentsdb')
-
-        subparser_opentsdb_output.add_argument(
-            'u', 'uri',
-            help_text='OpenTSDB host address',
-            is_mandatory=True
-        )
-        subparser_opentsdb_output.add_argument(
-            'p', 'port',
-            help_text='OpenTSDB connection port',
-            argument_type=int,
-            default_value=4242
-        )
-        subparser_opentsdb_output.add_argument(
-            'metric-name',
-            help_text='OpenTSDB metric name to write',
-            is_mandatory=True
-        )
-
-        self.add_subgroup_parser('output', subparser_opentsdb_output)
 
     def _register_influxdb2_output_parser(self):
         """

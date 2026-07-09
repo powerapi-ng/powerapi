@@ -204,7 +204,6 @@ def test_common_cli_manager_registers_output_parsers():
         'prometheus',
         'csv',
         'json',
-        'opentsdb',
         'influxdb2',
     }
 

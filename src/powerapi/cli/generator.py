@@ -303,14 +303,6 @@ class PusherGenerator(DBActorGenerator):
         return InfluxDB2OutputFactory(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'])
 
     @staticmethod
-    def _opentsdb_database_factory(conf: dict) -> WritableDatabaseFactory:
-        """
-        OpentsDB database factory method.
-        """
-        from powerapi.database.opentsdb.driver import OpenTSDBOutputFactory
-        return OpenTSDBOutputFactory(conf['model'], conf['uri'], conf['port'], conf['metric-name'])
-
-    @staticmethod
     def _prometheus_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         Prometheus database factory method.
@@ -325,7 +317,6 @@ class PusherGenerator(DBActorGenerator):
         self.add_db_factory('json', self._json_output_database_factory)
         self.add_db_factory('mongodb', self._mongodb_database_factory)
         self.add_db_factory('influxdb2', self._influxdb2_database_factory)
-        self.add_db_factory('opentsdb', self._opentsdb_database_factory)
         self.add_db_factory('prometheus', self._prometheus_database_factory)
 
     def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict) -> PusherActor:
