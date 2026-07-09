@@ -32,7 +32,7 @@ import time
 
 from powerapi.actor import State
 from powerapi.actor.message import ErrorMessage
-from powerapi.database import DBError
+from powerapi.database.exceptions import DBError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.report import Report
 
@@ -47,10 +47,16 @@ class PusherStartHandler(StartHandler):
         Initialize the Pusher actor.
         """
         try:
-            self.state.database.connect()
+            database_driver = self.state.database_factory.create()
+            database_driver.connect()
+            self.state.database_driver = database_driver
+        except ValueError as exn:
+            logging.error('Failed to create the database driver: %s', exn)
+            self.state.actor.send_control(ErrorMessage('Database driver creation failed'))
+            self.state.alive = False
         except DBError as exn:
-            logging.error('Failed to connect the database driver: %s', exn.msg)
-            self.state.actor.send_control(ErrorMessage('Database connection failed'))
+            logging.error('Failed to initialize the database driver: %s', exn.msg)
+            self.state.actor.send_control(ErrorMessage('Database initialization failed'))
             self.state.alive = False
 
 
@@ -65,14 +71,17 @@ class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
         Flushes the reports buffer before disconnecting the database driver.
         :param soft: Toggle soft-kill mode for the actor
         """
+        if self.state.database_driver is None:
+            return
+
         if self.state.buffer:
             try:
-                self.state.database.write(self.state.buffer)
+                self.state.database_driver.write(self.state.buffer)
                 self.state.buffer.clear()
             except DBError as exn:
                 logging.error('The reports could not be saved before shutting down actor: %s', exn.msg)
 
-        self.state.database.disconnect()
+        self.state.database_driver.disconnect()
 
 
 class ReportHandler(InitHandler):
@@ -105,7 +114,7 @@ class ReportHandler(InitHandler):
 
         if (time.monotonic() - self._last_write_ts) > self.flush_interval or len(self.state.buffer) >= self.max_buffer_size:
             try:
-                self.state.database.write(self.state.buffer)
+                self.state.database_driver.write(self.state.buffer)
                 self.state.buffer = []
             except DBError as exn:
                 logging.error('The reports could not be saved: %s', exn.msg)

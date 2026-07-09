@@ -31,7 +31,7 @@ import logging
 
 from powerapi.actor import Actor, State
 from powerapi.actor.message import StartMessage, PoisonPillMessage
-from powerapi.database import ReadableDatabase
+from powerapi.database.driver import ReadableDatabaseFactory
 from powerapi.filter import ReportFilter
 from powerapi.puller.database_poller import DatabasePollerThread
 from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
@@ -42,20 +42,20 @@ class PullerState(State):
     Puller Actor State class.
     """
 
-    def __init__(self, actor: Actor, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool):
+    def __init__(self, actor: Actor, database_factory: ReadableDatabaseFactory, report_filter: ReportFilter, stream_mode: bool):
         """
         :param actor: Puller actor instance
-        :param database: Database driver
+        :param database_factory: Factory used to create the database driver
         :param report_filter: Filter to use when dispatching reports
         :param stream_mode: If true, poll continuously from the database; otherwise, stop the poller thread on empty result
         """
         super().__init__(actor)
 
-        self.database = database
+        self.database_factory = database_factory
         self.report_filter = report_filter
         self.stream_mode = stream_mode
 
-        self.db_poller_thread = DatabasePollerThread(database, report_filter, stream_mode)
+        self.db_poller_thread = DatabasePollerThread(database_factory, report_filter, stream_mode)
 
 
 class PullerActor(Actor):
@@ -64,16 +64,16 @@ class PullerActor(Actor):
     This actor allows to retrieve reports from a database and send them to theirs corresponding dispatcher.
     """
 
-    def __init__(self, name: str, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool = False, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, database_factory: ReadableDatabaseFactory, report_filter: ReportFilter, stream_mode: bool = False, level_logger: int = logging.WARNING):
         """
         :param name: Name of the puller actor
-        :param database: Database driver to use to persist reports
+        :param database_factory: Factory used to create the database driver
         :param report_filter: Filter to use when dispatching reports
         :param level_logger: Define the level of the logger for the actor
         """
         super().__init__(name, level_logger, 1000)
 
-        self.database = database
+        self.database_factory = database_factory
         self.report_filter = report_filter
         self.stream_mode = stream_mode
 
@@ -81,7 +81,7 @@ class PullerActor(Actor):
         """
         Set up the Puller actor message handlers.
         """
-        self.state = PullerState(self, self.database, self.report_filter, self.stream_mode)
+        self.state = PullerState(self, self.database_factory, self.report_filter, self.stream_mode)
 
         self.add_handler(StartMessage, PullerStartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))

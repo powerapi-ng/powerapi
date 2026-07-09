@@ -31,14 +31,14 @@ from collections.abc import Iterable
 
 from prometheus_client import start_http_server, CollectorRegistry
 
-from powerapi.database.driver import WritableDatabase
+from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.prometheus.codecs import ReportEncoders, EncoderOptions
 from powerapi.database.prometheus.collectors import ReportProcessorFactory
 from powerapi.report import Report
 
 
-class Prometheus(WritableDatabase):
+class PrometheusOutput(WritableDatabase):
     """
     Prometheus database driver.
     Allow to export reports as a Prometheus metrics endpoint.
@@ -103,3 +103,31 @@ class Prometheus(WritableDatabase):
             self._metrics_collector.submit(reports, self._report_encoder, self._report_encoder_opts)
         except (ValueError, TypeError) as exn:
             raise WriteFailed(f'Failed to save the report to Prometheus database: {exn}') from exn
+
+
+class PrometheusOutputFactory(WritableDatabaseFactory):
+    """
+    Prometheus database factory.
+    """
+
+    def __init__(self, report_type: type[Report], listen_addr: str, listen_port: int, tags: list[str]):
+        """
+        :param report_type: Report type
+        :param listen_addr: Address to listen on
+        :param listen_port: Port to listen on
+        :param tags: List of tags name that will be exposed by the metric
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.listen_addr = listen_addr
+        self.listen_port = listen_port
+        self.tags = tags
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the Prometheus database driver.
+        :return: Initialized Prometheus database driver
+        """
+        return PrometheusOutput(self.report_type, self.listen_addr, self.listen_port, self.tags)

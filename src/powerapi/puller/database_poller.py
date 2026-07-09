@@ -36,10 +36,10 @@ from threading import Thread, Event
 from time import sleep
 from typing import TYPE_CHECKING
 
-from powerapi.database import ConnectionFailed, ReadFailed
+from powerapi.database.exceptions import ConnectionFailed, ReadFailed
 
 if TYPE_CHECKING:
-    from powerapi.database import ReadableDatabase
+    from powerapi.database.driver import ReadableDatabaseFactory
     from powerapi.filter import ReportFilter
 
 
@@ -49,16 +49,16 @@ class DatabasePollerThread(Thread):
     Fetches reports from a database and forward it to theirs corresponding dispatcher.
     """
 
-    def __init__(self, database: ReadableDatabase, report_filter: ReportFilter, stream_mode: bool, poll_interval: float = 1.0):
+    def __init__(self, database_factory: ReadableDatabaseFactory, report_filter: ReportFilter, stream_mode: bool, poll_interval: float = 1.0):
         """
-        :param database: Database to retrieve the reports from
+        :param database_factory: Factory used to create the database driver
         :param report_filter: Report filter used to dispatch the received reports
         :param stream_mode: If true, poll continuously from the database; otherwise, stop the poller thread on empty result
         :param poll_interval: Interval in seconds between database polls
         """
         super().__init__(name='database-poller-thread', daemon=True)
 
-        self.database = database
+        self.database_factory = database_factory
         self.report_filter = report_filter
         self.stream_mode = stream_mode
         self.poll_interval = poll_interval
@@ -87,7 +87,11 @@ class DatabasePollerThread(Thread):
         Entrypoint of the database poller thread.
         """
         try:
-            self.database.connect()
+            database = self.database_factory.create()
+            database.connect()
+        except ValueError as exn:
+            logging.error('Failed to create the database driver: %s', exn)
+            return
         except ConnectionFailed as exn:
             logging.error('Failed to connect the database driver: %s', exn.msg)
             return
@@ -100,7 +104,7 @@ class DatabasePollerThread(Thread):
 
         while not self._stop_event.is_set():
             try:
-                for report in self.database.read(self.stream_mode):
+                for report in database.read(self.stream_mode):
                     for dispatcher in self.report_filter.route(report):
                         dispatcher.send_data(report)
 
@@ -115,7 +119,7 @@ class DatabasePollerThread(Thread):
         for dispatcher in self.report_filter.dispatchers():
             dispatcher.disconnect()
 
-        self.database.disconnect()
+        database.disconnect()
         logging.info('Database poller thread stopped')
 
     def wait_ready(self, timeout: float | None = None) -> bool:

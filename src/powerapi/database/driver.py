@@ -58,6 +58,15 @@ class ReadableDatabase(DatabaseDriver, ABC):
     def read(self, stream_mode: bool = False) -> Iterable[Report]: ...
 
 
+class ReadableDatabaseFactory(ABC):
+    """
+    Interface for factories that create readable database drivers.
+    """
+
+    @abstractmethod
+    def create(self) -> ReadableDatabase: ...
+
+
 class WritableDatabase(DatabaseDriver, ABC):
     """
     Interface for database drivers that can persist reports.
@@ -69,6 +78,15 @@ class WritableDatabase(DatabaseDriver, ABC):
 
     @abstractmethod
     def write(self, reports: Iterable[Report]) -> None: ...
+
+
+class WritableDatabaseFactory(ABC):
+    """
+    Interface for factories that create writable database drivers.
+    """
+
+    @abstractmethod
+    def create(self) -> WritableDatabase: ...
 
 
 class ReadableWritableDatabase(ReadableDatabase, WritableDatabase, ABC):

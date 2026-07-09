@@ -31,13 +31,13 @@ from collections.abc import Iterable
 
 from opentsdb import TSDBClient, TSDBClientException
 
-from powerapi.database.driver import WritableDatabase
+from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.opentsdb.codecs import ReportEncoders
 from powerapi.report import Report
 
 
-class OpenTSDB(WritableDatabase):
+class OpenTSDBOutput(WritableDatabase):
     """
     OpenTSDB database driver.
     Allow to persist reports to an OpenTSDB database.
@@ -51,7 +51,6 @@ class OpenTSDB(WritableDatabase):
         self._metric_name = metric_name
 
         self._client = TSDBClient(host, port, run_at_once=False)
-
         self._report_encoder = ReportEncoders.get(report_type)
 
     def connect(self) -> None:
@@ -92,3 +91,31 @@ class OpenTSDB(WritableDatabase):
                 self._client.send(self._metric_name, value, **tags)
         except TSDBClientException as exn:
             raise WriteFailed(f'Failed to save report to OpenTSDB database: {exn}') from exn
+
+
+class OpenTSDBOutputFactory(WritableDatabaseFactory):
+    """
+    OpenTSDB database factory.
+    """
+
+    def __init__(self, report_type: type[Report], host: str, port: int, metric_name: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param host: OpenTSDB server host
+        :param port: OpenTSDB server port
+        :param metric_name: Metric name used to store reports
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.host = host
+        self.port = port
+        self.metric_name = metric_name
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the OpenTSDB database driver.
+        :return: Initialized OpenTSDB database driver
+        """
+        return OpenTSDBOutput(self.report_type, self.host, self.port, self.metric_name)

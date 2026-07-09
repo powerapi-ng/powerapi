@@ -33,13 +33,13 @@ from influxdb_client import InfluxDBClient
 from influxdb_client.client.exceptions import InfluxDBError
 from urllib3.exceptions import HTTPError
 
-from powerapi.database import ConnectionFailed, WriteFailed
-from powerapi.database.driver import WritableDatabase
+from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
+from powerapi.database.exceptions import ConnectionFailed, WriteFailed
 from powerapi.database.influxdb2.codecs import ReportEncoders
 from powerapi.report import Report
 
 
-class InfluxDB2(WritableDatabase):
+class InfluxDB2Output(WritableDatabase):
     """
     InfluxDB2 database driver.
     Allow to persist reports to an InfluxDB (version 2) database.
@@ -99,3 +99,33 @@ class InfluxDB2(WritableDatabase):
             self._write_api.write(self._bucket_name, record=encoded_reports)
         except (OSError, HTTPError, InfluxDBError) as exn:
             raise WriteFailed(f'Failed to save report to the InfluxDB database: {exn}') from exn
+
+
+class InfluxDB2OutputFactory(WritableDatabaseFactory):
+    """
+    InfluxDB2 output database factory.
+    """
+
+    def __init__(self, report_type: type[Report], url: str, org: str, bucket: str, token: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param url: InfluxDB server URL
+        :param org: Organization name
+        :param bucket: Bucket name
+        :param token: Authentication token
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.url = url
+        self.org = org
+        self.bucket = bucket
+        self.token = token
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the InfluxDB2 output database driver.
+        :return: Initialized InfluxDB2 database driver
+        """
+        return InfluxDB2Output(self.report_type, self.url, self.org, self.bucket, self.token)

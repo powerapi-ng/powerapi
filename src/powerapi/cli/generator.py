@@ -31,7 +31,7 @@ import logging
 from collections.abc import Callable
 
 from powerapi.actor import Actor, ActorProxy
-from powerapi.database import ReadableDatabase, WritableDatabase
+from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
 from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
     DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
 from powerapi.filter import ReportFilter
@@ -145,7 +145,7 @@ class DBActorGenerator(BaseGenerator):
     def __init__(self, component_group_name: str):
         super().__init__(component_group_name)
 
-        self.db_factory: dict[str, Callable[[dict], ReadableDatabase | WritableDatabase]] = {}
+        self.db_factory: dict[str, Callable[[dict], ReadableDatabaseFactory | WritableDatabaseFactory]] = {}
 
     def remove_report_class(self, model_name: str):
         """
@@ -174,7 +174,7 @@ class DBActorGenerator(BaseGenerator):
 
         self.report_classes[model_name] = report_class
 
-    def add_db_factory(self, db_name: str, db_factory_function: Callable[[dict], ReadableDatabase | WritableDatabase]):
+    def add_db_factory(self, db_name: str, db_factory_function: Callable[[dict], ReadableDatabaseFactory | WritableDatabaseFactory]):
         """
         add a database to generator
         """
@@ -207,36 +207,36 @@ class PullerGenerator(DBActorGenerator):
     """
 
     @staticmethod
-    def _csv_input_database_factory(conf: dict) -> ReadableDatabase:
+    def _csv_input_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
         CSV Input database factory method.
         """
-        from powerapi.database.csv import CSVInput
-        return CSVInput(conf['model'], conf['files'])
+        from powerapi.database.csv.driver import CSVInputFactory
+        return CSVInputFactory(conf['model'], conf['files'])
 
     @staticmethod
-    def _json_input_database_factory(conf: dict) -> ReadableDatabase:
+    def _json_input_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
         JSON Input database factory method.
         """
-        from powerapi.database.json import JsonInput
-        return JsonInput(conf['model'], conf['filepath'], conf['compression'])
+        from powerapi.database.json.driver import JsonInputFactory
+        return JsonInputFactory(conf['model'], conf['filepath'], conf['compression'])
 
     @staticmethod
-    def _socket_database_factory(conf: dict) -> ReadableDatabase:
+    def _socket_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
-        Socket database factory method.
+        Socket Input database factory method.
         """
-        from powerapi.database.socket import Socket
-        return Socket(conf['model'], conf['host'], conf['port'])
+        from powerapi.database.socket.driver import SocketInputFactory
+        return SocketInputFactory(conf['model'], conf['host'], conf['port'])
 
     @staticmethod
-    def _mongodb_database_factory(conf: dict) -> ReadableDatabase:
+    def _mongodb_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
         MongoDB Input database factory method.
         """
-        from powerapi.database.mongodb import MongodbInput
-        return MongodbInput(conf['model'], conf['uri'], conf['db'], conf['collection'])
+        from powerapi.database.mongodb.driver import MongodbInputFactory
+        return MongodbInputFactory(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
     def __init__(self, report_filter: ReportFilter):
         """
@@ -271,52 +271,52 @@ class PusherGenerator(DBActorGenerator):
     """
 
     @staticmethod
-    def _csv_output_database_factory(conf: dict) -> WritableDatabase:
+    def _csv_output_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         CSV Output database factory method.
         """
-        from powerapi.database.csv import CSVOutput
-        return CSVOutput(conf['model'], conf['directory'])
+        from powerapi.database.csv.driver import CSVOutputFactory
+        return CSVOutputFactory(conf['model'], conf['directory'])
 
     @staticmethod
-    def _json_output_database_factory(conf: dict) -> WritableDatabase:
+    def _json_output_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         JSON Output database factory method.
         """
-        from powerapi.database.json import JsonOutput
-        return JsonOutput(conf['model'], conf['filepath'], conf['compression'])
+        from powerapi.database.json.driver import JsonOutputFactory
+        return JsonOutputFactory(conf['model'], conf['filepath'], conf['compression'])
 
     @staticmethod
-    def _mongodb_database_factory(conf: dict) -> WritableDatabase:
+    def _mongodb_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         MongoDB Output database factory method.
         """
-        from powerapi.database.mongodb import MongodbOutput
-        return MongodbOutput(conf['model'], conf['uri'], conf['db'], conf['collection'])
+        from powerapi.database.mongodb.driver import MongodbOutputFactory
+        return MongodbOutputFactory(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
     @staticmethod
-    def _influxdb2_database_factory(conf: dict) -> WritableDatabase:
+    def _influxdb2_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         InfluxDB2 database factory method.
         """
-        from powerapi.database.influxdb2 import InfluxDB2
-        return InfluxDB2(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'])
+        from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
+        return InfluxDB2OutputFactory(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'])
 
     @staticmethod
-    def _opentsdb_database_factory(conf: dict) -> WritableDatabase:
+    def _opentsdb_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         OpentsDB database factory method.
         """
-        from powerapi.database.opentsdb import OpenTSDB
-        return OpenTSDB(conf['model'], conf['uri'], conf['port'], conf['metric-name'])
+        from powerapi.database.opentsdb.driver import OpenTSDBOutputFactory
+        return OpenTSDBOutputFactory(conf['model'], conf['uri'], conf['port'], conf['metric-name'])
 
     @staticmethod
-    def _prometheus_database_factory(conf: dict) -> WritableDatabase:
+    def _prometheus_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
         Prometheus database factory method.
         """
-        from powerapi.database.prometheus import Prometheus
-        return Prometheus(conf['model'], conf['addr'], conf['port'], conf.get('tags', []))
+        from powerapi.database.prometheus.driver import PrometheusOutputFactory
+        return PrometheusOutputFactory(conf['model'], conf['addr'], conf['port'], conf.get('tags', []))
 
     def __init__(self):
         super().__init__('output')

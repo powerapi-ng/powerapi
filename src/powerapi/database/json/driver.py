@@ -30,9 +30,8 @@
 from collections.abc import Iterable, Iterator
 from os import fsync
 from pathlib import Path
-from typing import TextIO
 
-from powerapi.database.driver import ReadableDatabase, WritableDatabase
+from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
 from powerapi.database.exceptions import ConnectionFailed, WriteFailed, ReadFailed
 from powerapi.database.json.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.json.file_handlers import FileHandlerRegistry
@@ -57,7 +56,7 @@ class JsonInput(ReadableDatabase):
 
         self._report_decoder = ReportDecoders.get(report_type)
         self._file_handler = FileHandlerRegistry.get(compression, self.input_filepath)
-        self._file: TextIO | None = None
+        self._file = None
 
     def connect(self) -> None:
         """
@@ -111,6 +110,32 @@ class JsonInput(ReadableDatabase):
             raise ReadFailed(f'Failed to read reports from input file: {exn}') from exn
 
 
+class JsonInputFactory(ReadableDatabaseFactory):
+    """
+    JSON input database factory.
+    """
+
+    def __init__(self, report_type: type[Report], output_filepath: str, compression: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param output_filepath: Path to the output file
+        :param compression: Compression method to use for the file
+        """
+        if report_type not in ReportDecoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.output_filepath = output_filepath
+        self.compression = compression
+
+    def create(self) -> ReadableDatabase:
+        """
+        Create the JSON input database driver.
+        :return: Initialized JSON input database driver
+        """
+        return JsonInput(self.report_type, self.output_filepath, self.compression)
+
+
 class JsonOutput(WritableDatabase):
     """
     JSON output database driver.
@@ -128,7 +153,7 @@ class JsonOutput(WritableDatabase):
 
         self._report_encoder = ReportEncoders.get(report_type)
         self._file_handler = FileHandlerRegistry.get(compression, self.output_filepath)
-        self._file: TextIO | None = None
+        self._file = None
 
     def connect(self) -> None:
         """
@@ -170,3 +195,29 @@ class JsonOutput(WritableDatabase):
             self._file.writelines([self._report_encoder.encode(report) for report in reports])
         except OSError as exn:
             raise WriteFailed(f'Failed to write reports to output file: {exn}') from exn
+
+
+class JsonOutputFactory(WritableDatabaseFactory):
+    """
+    JSON output database factory.
+    """
+
+    def __init__(self, report_type: type[Report], output_filepath: str, compression: str):
+        """
+        :param report_type: Type of the report handled by this database
+        :param output_filepath: Path to the output file
+        :param compression: Compression method to use for the file
+        """
+        if report_type not in ReportEncoders.supported_types():
+            raise ValueError(f'Unsupported report type: {report_type.__name__}')
+
+        self.report_type = report_type
+        self.output_filepath = output_filepath
+        self.compression = compression
+
+    def create(self) -> WritableDatabase:
+        """
+        Create the JSON output database driver.
+        :return: Initialized JSON output database driver
+        """
+        return JsonOutput(self.report_type, self.output_filepath, self.compression)

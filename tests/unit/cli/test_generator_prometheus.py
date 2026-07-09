@@ -32,9 +32,9 @@ from powerapi.cli.generator import PusherGenerator
 from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
-pytest.importorskip("powerapi.database.prometheus")  # The Prometheus driver requires external dependencies to work.
+pytest.importorskip("powerapi.database.prometheus.driver")  # The Prometheus driver requires external dependencies to work.
 
-from powerapi.database.prometheus import Prometheus
+from powerapi.database.prometheus.driver import PrometheusOutputFactory
 
 
 @pytest.fixture
@@ -69,13 +69,13 @@ def test_pusher_generator_with_valid_prometheus_config(prometheus_config):
     pusher = pushers['pytest-prometheus-pusher']
     assert isinstance(pusher, PusherActor)
 
-    db = pusher.database
-    assert isinstance(db, Prometheus)
+    db_factory = pusher.database_factory
+    assert isinstance(db_factory, PrometheusOutputFactory)
 
     expected_db_attributes = prometheus_config['output']['pytest-prometheus-pusher']
-    assert db.listen_addr == (expected_db_attributes['addr'], expected_db_attributes['port'])
-    assert {'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db.dynamic_tags)
-    assert {'sensor', 'target', 'powerapi_example_tag1', 'powerapi_example_tag2'}.issubset(db.metric_labels)
+    assert db_factory.listen_addr == expected_db_attributes['addr']
+    assert db_factory.listen_port == expected_db_attributes['port']
+    assert set(db_factory.tags) == {'powerapi_example_tag1', 'powerapi_example_tag2'}
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'addr', 'port'])

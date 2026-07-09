@@ -32,9 +32,9 @@ from powerapi.cli.generator import PusherGenerator
 from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
-pytest.importorskip("powerapi.database.influxdb2")  # The InfluxDB2 driver requires external dependencies to work.
+pytest.importorskip("powerapi.database.influxdb2.driver")  # The InfluxDB2 driver requires external dependencies to work.
 
-from powerapi.database.influxdb2 import InfluxDB2
+from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
 
 
 @pytest.fixture
@@ -71,14 +71,14 @@ def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
     pusher = pushers['pytest-influxdb2-pusher']
     assert isinstance(pusher, PusherActor)
 
-    db = pusher.database
-    assert isinstance(db, InfluxDB2)
+    db_factory = pusher.database_factory
+    assert isinstance(db_factory, InfluxDB2OutputFactory)
 
     expected_db_attributes = influxdb2_config['output']['pytest-influxdb2-pusher']
-    assert db._client.url == expected_db_attributes['uri']
-    assert db._client.org == expected_db_attributes['org']
-    assert db._client.token == expected_db_attributes['token']
-    assert db._bucket_name == expected_db_attributes['bucket']
+    assert db_factory.url == expected_db_attributes['uri']
+    assert db_factory.org == expected_db_attributes['org']
+    assert db_factory.token == expected_db_attributes['token']
+    assert db_factory.bucket == expected_db_attributes['bucket']
 
 
 @pytest.mark.parametrize('missing_arg', ['model', 'uri', 'org', 'token', 'bucket'])
