@@ -7,6 +7,12 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+    groups:
+      codeql-actions:
+        # Group CodeQL actions so they're always updated together.
+        # This prevents CodeQL checks from failing due to version mismatches.
+        patterns:
+          - "github/codeql-action/*"
 
   - package-ecosystem: "pip"
     directory: "/"
