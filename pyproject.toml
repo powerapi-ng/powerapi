@@ -39,13 +39,14 @@ dependencies = [
 mongodb = ["pymongo >= 3.7.2"]
 influxdb = ["influxdb-client >= 1.30.0"]
 prometheus = ["prometheus-client >= 0.9.0"]
+clickhouse = ["clickhouse-connect >= 1.0.0"]
 
 # Plaforms:
 kubernetes = ["kubernetes >= 27.0.2"]
 openstack = ["openstacksdk >= 4.7.0"]
 
 # Aliases:
-all-databases = ["powerapi[mongodb, influxdb, prometheus]"]
+all-databases = ["powerapi[mongodb, influxdb, prometheus, clickhouse]"]
 all-platforms = ["powerapi[kubernetes, openstack]"]
 everything = ["powerapi[all-databases, all-platforms]"]
 
