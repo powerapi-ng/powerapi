@@ -273,6 +273,7 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         self._register_csv_output_parser()
         self._register_json_output_parser()
         self._register_influxdb2_output_parser()
+        self._register_clickhouse_output_parser()
 
     def _register_mongodb_output_parser(self):
         """
@@ -394,6 +395,41 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         )
 
         self.add_subgroup_parser('output', subparser_influx2_output)
+
+    def _register_clickhouse_output_parser(self):
+        """
+        Register the ClickHouse output parser.
+        """
+        subparser_clickhouse_output = PusherConfigParsingManager('clickhouse')
+
+        subparser_clickhouse_output.add_argument(
+            'h', 'host',
+            help_text='ClickHouse server host',
+            is_mandatory=True,
+        )
+        subparser_clickhouse_output.add_argument(
+            'p', 'port',
+            help_text='ClickHouse server port',
+            argument_type=int,
+            default_value=8123,
+        )
+        subparser_clickhouse_output.add_argument(
+            'u', 'username',
+            help_text='ClickHouse username',
+            default_value='default',
+        )
+        subparser_clickhouse_output.add_argument(
+            'P', 'password',
+            help_text='ClickHouse password',
+            default_value='',
+        )
+        subparser_clickhouse_output.add_argument(
+            'd', 'database',
+            help_text='ClickHouse database name',
+            default_value='default',
+        )
+
+        self.add_subgroup_parser('output', subparser_clickhouse_output)
 
     def _register_pre_processor_parsers(self):
         """

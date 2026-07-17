@@ -310,6 +310,14 @@ class PusherGenerator(DBActorGenerator):
         from powerapi.database.prometheus.driver import PrometheusOutputFactory
         return PrometheusOutputFactory(conf['model'], conf['addr'], conf['port'], conf.get('tags', []))
 
+    @staticmethod
+    def _clickhouse_database_factory(conf: dict) -> WritableDatabaseFactory:
+        """
+        ClickHouse output database factory method.
+        """
+        from powerapi.database.clickhouse.driver import ClickHouseOutputFactory
+        return ClickHouseOutputFactory(conf['model'], conf['host'], conf['port'], conf['username'], conf['password'], conf['database'])
+
     def __init__(self):
         super().__init__('output')
 
@@ -318,6 +326,7 @@ class PusherGenerator(DBActorGenerator):
         self.add_db_factory('mongodb', self._mongodb_database_factory)
         self.add_db_factory('influxdb2', self._influxdb2_database_factory)
         self.add_db_factory('prometheus', self._prometheus_database_factory)
+        self.add_db_factory('clickhouse', self._clickhouse_database_factory)
 
     def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict) -> PusherActor:
         """
