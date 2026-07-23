@@ -99,7 +99,7 @@ class SingleCsvFileReader:
     def open(self) -> None:
         """
         Open the input file and initialize the reader.
-        :raise: OSError if the file cannot be opened
+        :raises OSError: if the file cannot be opened
         """
         self._file = open(self.input_filepath, encoding='utf-8')
         self._reader = DictReader(self._file)
@@ -191,7 +191,7 @@ class MultiCsvFileReader(CsvFilesReader):
     def open(self):
         """
         Open the input files and initialize theirs corresponding reader.
-        :raise: OSError if a file cannot be opened
+        :raises OSError: if a file cannot be opened
         """
         pending_readers = {}
         with ExitStack() as stack:
@@ -219,7 +219,7 @@ class MultiCsvFileReader(CsvFilesReader):
         """
         current_cursor = None
         if cursors := [cursor for reader in self._file_readers.values() if (cursor := reader.cursor()) is not None]:
-            current_cursor = min(cursors)  # type: ignore[arg-type]
+            current_cursor = min(cursors)
 
         rows = {}
         for group_name, reader in self._file_readers.items():
@@ -327,7 +327,7 @@ class MultiCsvFileWriter(CsvFilesWriter):
         """
         Write rows into output files.
         :param rows: List of dict representing the rows as column/value pairs
-        :raise: OSError if a file cannot be opened
+        :raises OSError: if a file cannot be opened
         """
         for group_name, group_rows in rows.items():
             if not group_rows:
