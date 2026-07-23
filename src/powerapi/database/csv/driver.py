@@ -33,7 +33,7 @@ from pathlib import Path
 from powerapi.database.csv.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.csv.fileio_handlers import MultiCsvFileReader, MultiCsvFileWriter
 from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
 from powerapi.report import Report
 
 
@@ -62,8 +62,8 @@ class CSVInput(ReadableDatabase):
         """
         try:
             self._input_file_handler.open()
-        except OSError as exn:
-            raise ConnectionFailed(f'Failed to setup file handler: {exn}') from exn
+        except (OSError, KeyError, TypeError, ValueError) as exn:
+            raise ConnectionFailed(f'Failed to open CSV input file: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -79,25 +79,18 @@ class CSVInput(ReadableDatabase):
         """
         return ReportDecoders.supported_types()
 
-    def _reports_generator(self) -> Iterable[Report]:
-        """
-        Return a generator that yields reports from the database.
-        :return: Iterable of reports
-        """
-        while True:
-            rows = self._input_file_handler.next_rows()
-            if not rows:
-                break
-            yield self._report_decoder.decode(rows)
-
     def read(self, stream_mode: bool = False) -> Iterable[Report]:
         """
         Read reports from the CSV database.
-        :param stream_mode: No-Op for this driver, steam mode is not supported
+        :param stream_mode: No-Op for this driver, stream mode is not supported
         :return: Iterable of reports
         :raise: ReadFailed if the read operation fails
         """
-        return self._reports_generator()
+        try:
+            while rows := self._input_file_handler.next_rows():
+                yield self._report_decoder.decode(rows)
+        except (OSError, KeyError, TypeError, ValueError) as exn:
+            raise ReadFailed(f'Failed to read reports from CSV files: {exn}') from exn
 
 
 class CSVInputFactory(ReadableDatabaseFactory):
@@ -151,7 +144,7 @@ class CSVOutput(WritableDatabase):
             self.output_directory.mkdir(parents=True, exist_ok=True)
             self._output_file_handler.open()
         except OSError as exn:
-            raise ConnectionFailed(f'Invalid output directory: {exn}') from exn
+            raise ConnectionFailed(f'Invalid CSV output directory: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -176,7 +169,7 @@ class CSVOutput(WritableDatabase):
         try:
             for report in reports:
                 self._output_file_handler.write_rows(self._report_encoder.encode(report))
-        except OSError as exn:
+        except (OSError, ValueError) as exn:
             raise WriteFailed(f'Failed to write reports to CSV files: {exn}') from exn
 
 
