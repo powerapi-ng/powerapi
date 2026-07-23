@@ -127,6 +127,7 @@ class SingleCsvFileReader:
             # Unrecoverable errors can happen when closing the input file.
             pass
 
+        self._file = None
         self._reader = None
         self._row_cursor = None
         self._last_row_buffer = None
