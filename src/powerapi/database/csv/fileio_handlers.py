@@ -133,10 +133,10 @@ class SingleCsvFileReader:
         self._row_cursor = None
         self._last_row_buffer = None
 
-    def cursor(self) -> _RowCursor:
+    def cursor(self) -> _RowCursor | None:
         """
         Return the current row cursor.
-        :return: Row cursor object
+        :return: Row cursor object or None if no cursor is available
         """
         return self._row_cursor
 
