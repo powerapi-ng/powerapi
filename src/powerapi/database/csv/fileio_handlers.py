@@ -103,10 +103,16 @@ class SingleCsvFileReader:
         self._file = open(self.input_filepath, encoding='utf-8')
         self._reader = DictReader(self._file)
 
-        # Initialize the reader by consuming the first rows of the file.
-        # These rows will be discarded and never returned by the iterator.
-        # This is not ideal, but simplify considerably the code of the reader.
-        self.next_rows()
+        # Prime the cursor without consuming the first logical group.
+        # next_rows() will return this buffered row on its first call.
+        try:
+            first_row = next(self._reader, None)
+            if first_row is not None:
+                self._row_cursor = _RowCursor(int(first_row['timestamp']), first_row['sensor'], first_row['target'])
+                self._last_row_buffer = first_row
+        except (OSError, KeyError, ValueError):
+            self.close()
+            raise
 
     def close(self) -> None:
         """
@@ -149,9 +155,6 @@ class SingleCsvFileReader:
 
         for row in self._reader:
             current_cursor = _RowCursor(int(row['timestamp']), row['sensor'], row['target'])
-
-            if self._row_cursor is None:
-                self._row_cursor = current_cursor
 
             if current_cursor == self._row_cursor:
                 rows.append(row)
