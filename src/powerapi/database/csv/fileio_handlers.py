@@ -330,6 +330,9 @@ class MultiCsvFileWriter(CsvFilesWriter):
         :raise: OSError if a file cannot be opened
         """
         for group_name, group_rows in rows.items():
+            if not group_rows:
+                continue
+
             file_writer = self._file_writers.get(group_name)
             if file_writer is None:
                 fieldnames = list(next(iter(group_rows)).keys())
