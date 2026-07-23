@@ -145,6 +145,7 @@ class SingleCsvFileReader:
         Returns the next rows sharing the same timestamp/sensor/target from the input file.
         :param row_cursor: Tuple of str representing the expected row cursor
         :return: List of dict representing the rows as column/value pairs
+        :raises ValueError: If timestamps move backward while reading rows
         """
         rows = []
 
@@ -157,6 +158,9 @@ class SingleCsvFileReader:
 
         for row in self._reader:
             current_cursor = _RowCursor(int(row['timestamp']), row['sensor'], row['target'])
+
+            if self._row_cursor is not None and current_cursor.timestamp < self._row_cursor.timestamp:
+                raise ValueError(f'Timestamp regression at {self.input_filepath}:{self._reader.line_num}')
 
             if current_cursor == self._row_cursor:
                 rows.append(row)
