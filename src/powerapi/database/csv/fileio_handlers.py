@@ -29,6 +29,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from contextlib import ExitStack
 from csv import DictReader, DictWriter
 from dataclasses import dataclass
 from pathlib import Path
@@ -192,10 +193,16 @@ class MultiCsvFileReader(CsvFilesReader):
         Open the input files and initialize theirs corresponding reader.
         :raise: OSError if a file cannot be opened
         """
-        for input_filepath in self.input_filepaths:
-            file_reader = SingleCsvFileReader(input_filepath)
-            file_reader.open()
-            self._file_readers[input_filepath.stem] = file_reader
+        pending_readers = {}
+        with ExitStack() as stack:
+            for input_filepath in self.input_filepaths:
+                file_reader = SingleCsvFileReader(input_filepath)
+                stack.callback(file_reader.close)  # Register cleanup before opening to cover partial initialization failures.
+                file_reader.open()
+                pending_readers[input_filepath.stem] = file_reader
+
+            self._file_readers.update(pending_readers)
+            stack.pop_all()  # Transfer resource ownership to _file_readers after successful initialization.
 
     def close(self):
         """
