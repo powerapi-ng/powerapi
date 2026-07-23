@@ -163,6 +163,9 @@ class SingleCsvFileReader:
                 self._row_cursor = current_cursor
                 self._last_row_buffer = row
                 break
+        else:
+            # The file is exhausted and has no pending cursor.
+            self._row_cursor = None
 
         return rows
 
