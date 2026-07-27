@@ -103,7 +103,7 @@ class CSVInputFactory(ReadableDatabaseFactory):
         :param report_type: Type of the report handled by this database
         :param input_files: List of input file paths
         """
-        if report_type not in ReportDecoders.supported_types():
+        if report_type not in CSVInput.supported_read_types():
             raise ValueError(f'Unsupported report type: {report_type.__name__}')
 
         self.report_type = report_type
@@ -183,7 +183,7 @@ class CSVOutputFactory(WritableDatabaseFactory):
         :param report_type: Type of the report handled by this database
         :param output_directory: Path to the output directory
         """
-        if report_type not in ReportEncoders.supported_types():
+        if report_type not in CSVOutput.supported_write_types():
             raise ValueError(f'Unsupported report type: {report_type.__name__}')
 
         self.report_type = report_type
