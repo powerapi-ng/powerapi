@@ -27,6 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections import defaultdict
 from datetime import datetime, UTC
 
 from powerapi.database.codec import CodecOptions, ReportEncoder, ReportEncoderRegistry, ReportDecoder, ReportDecoderRegistry
@@ -68,6 +69,8 @@ class FormulaReportEncoder(ReportEncoder[FormulaReport, _SourcedCsvRowsType]):
         }
 
 
+_HWPC_NON_EVENT_COLUMNS = frozenset(('timestamp', 'sensor', 'target', 'socket', 'cpu', 'metadata'))
+
 class HWPCReportDecoder(ReportDecoder[_SourcedCsvRowsType, HWPCReport]):
     """
     HwPC Report decoder for the CSV database.
@@ -75,22 +78,19 @@ class HWPCReportDecoder(ReportDecoder[_SourcedCsvRowsType, HWPCReport]):
 
     @staticmethod
     def decode(data: _SourcedCsvRowsType, opts: CodecOptions | None = None) -> HWPCReport:
-        timestamp = None
-        sensor = None
-        target = None
+        first_row = next(iter(data.values()))[0]
+        timestamp = datetime.fromtimestamp(int(first_row['timestamp']) / 1000, tz=UTC)
+        sensor = first_row['sensor']
+        target = first_row['target']
+
         groups = {}
         for group_name, rows in data.items():
-            first_row = next(iter(rows))
-            timestamp = datetime.fromtimestamp(int(first_row['timestamp']) / 1000, tz=UTC)
-            sensor = first_row['sensor']
-            target = first_row['target']
-            group = groups.setdefault(group_name, {})
+            event_names = [event_name for event_name in rows[0] if event_name not in _HWPC_NON_EVENT_COLUMNS]
+            group = defaultdict(dict)
             for row in rows:
-                event_values = {
-                    event_name: int(event_values) for event_name, event_values in row.items()
-                    if event_name not in {'timestamp', 'sensor', 'target', 'socket', 'cpu', 'metadata'}
-                }
-                group.setdefault(row['socket'], {}).setdefault(row['cpu'], {}).update(event_values)
+                group[row['socket']][row['cpu']] = {event_name: int(row[event_name]) for event_name in event_names}
+
+            groups[group_name] = dict(group)  # Prevent missing-key access from mutating the decoded report.
 
         return HWPCReport(timestamp, sensor, target, groups, {})
 
