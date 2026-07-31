@@ -29,6 +29,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from contextlib import ExitStack
 from csv import DictReader, DictWriter
 from dataclasses import dataclass
 from pathlib import Path
@@ -98,15 +99,21 @@ class SingleCsvFileReader:
     def open(self) -> None:
         """
         Open the input file and initialize the reader.
-        :raise: OSError if the file cannot be opened
+        :raises OSError: if the file cannot be opened
         """
         self._file = open(self.input_filepath, encoding='utf-8')
         self._reader = DictReader(self._file)
 
-        # Initialize the reader by consuming the first rows of the file.
-        # These rows will be discarded and never returned by the iterator.
-        # This is not ideal, but simplify considerably the code of the reader.
-        self.next_rows()
+        # Prime the cursor without consuming the first logical group.
+        # next_rows() will return this buffered row on its first call.
+        try:
+            first_row = next(self._reader, None)
+            if first_row is not None:
+                self._row_cursor = _RowCursor(int(first_row['timestamp']), first_row['sensor'], first_row['target'])
+                self._last_row_buffer = first_row
+        except (OSError, KeyError, ValueError):
+            self.close()
+            raise
 
     def close(self) -> None:
         """
@@ -121,14 +128,15 @@ class SingleCsvFileReader:
             # Unrecoverable errors can happen when closing the input file.
             pass
 
+        self._file = None
         self._reader = None
         self._row_cursor = None
         self._last_row_buffer = None
 
-    def cursor(self) -> _RowCursor:
+    def cursor(self) -> _RowCursor | None:
         """
         Return the current row cursor.
-        :return: Row cursor object
+        :return: Row cursor object or None if no cursor is available
         """
         return self._row_cursor
 
@@ -137,6 +145,7 @@ class SingleCsvFileReader:
         Returns the next rows sharing the same timestamp/sensor/target from the input file.
         :param row_cursor: Tuple of str representing the expected row cursor
         :return: List of dict representing the rows as column/value pairs
+        :raises ValueError: If timestamps move backward while reading rows
         """
         rows = []
 
@@ -150,8 +159,8 @@ class SingleCsvFileReader:
         for row in self._reader:
             current_cursor = _RowCursor(int(row['timestamp']), row['sensor'], row['target'])
 
-            if self._row_cursor is None:
-                self._row_cursor = current_cursor
+            if self._row_cursor is not None and current_cursor.timestamp < self._row_cursor.timestamp:
+                raise ValueError(f'Timestamp regression at {self.input_filepath}:{self._reader.line_num}')
 
             if current_cursor == self._row_cursor:
                 rows.append(row)
@@ -159,6 +168,9 @@ class SingleCsvFileReader:
                 self._row_cursor = current_cursor
                 self._last_row_buffer = row
                 break
+        else:
+            # The file is exhausted and has no pending cursor.
+            self._row_cursor = None
 
         return rows
 
@@ -183,12 +195,18 @@ class MultiCsvFileReader(CsvFilesReader):
     def open(self):
         """
         Open the input files and initialize theirs corresponding reader.
-        :raise: OSError if a file cannot be opened
+        :raises OSError: if a file cannot be opened
         """
-        for input_filepath in self.input_filepaths:
-            file_reader = SingleCsvFileReader(input_filepath)
-            file_reader.open()
-            self._file_readers[input_filepath.stem] = file_reader
+        pending_readers = {}
+        with ExitStack() as stack:
+            for input_filepath in self.input_filepaths:
+                file_reader = SingleCsvFileReader(input_filepath)
+                stack.callback(file_reader.close)  # Register cleanup before opening to cover partial initialization failures.
+                file_reader.open()
+                pending_readers[input_filepath.stem] = file_reader
+
+            self._file_readers.update(pending_readers)
+            stack.pop_all()  # Transfer resource ownership to _file_readers after successful initialization.
 
     def close(self):
         """
@@ -205,7 +223,7 @@ class MultiCsvFileReader(CsvFilesReader):
         """
         current_cursor = None
         if cursors := [cursor for reader in self._file_readers.values() if (cursor := reader.cursor()) is not None]:
-            current_cursor = min(cursors)  # type: ignore[arg-type]
+            current_cursor = min(cursors)
 
         rows = {}
         for group_name, reader in self._file_readers.items():
@@ -313,9 +331,12 @@ class MultiCsvFileWriter(CsvFilesWriter):
         """
         Write rows into output files.
         :param rows: List of dict representing the rows as column/value pairs
-        :raise: OSError if a file cannot be opened
+        :raises OSError: if a file cannot be opened
         """
         for group_name, group_rows in rows.items():
+            if not group_rows:
+                continue
+
             file_writer = self._file_writers.get(group_name)
             if file_writer is None:
                 fieldnames = list(next(iter(group_rows)).keys())
