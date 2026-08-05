@@ -31,7 +31,6 @@ import sys
 from dataclasses import dataclass
 from multiprocessing import Process, Event
 from signal import signal, SIGINT, SIGTERM
-from time import sleep
 
 from openstack.compute.v2.server import Server
 from openstack.connection import Connection
@@ -88,7 +87,7 @@ class OpenStackMonitorAgent(Process):
         Setup signal handlers for the current Process.
         """
         def stop_monitor(_, __):
-            self._stop_monitoring = True
+            self._stop_monitoring.set()
             sys.exit(0)
 
         signal(SIGTERM, stop_monitor)
@@ -104,11 +103,12 @@ class OpenStackMonitorAgent(Process):
         # Prevents orphaned entries that no longer exist in the OpenStack API.
         self.metadata_cache_manager.clear_metadata_cache()
 
-        while not self._stop_monitoring:
+        while not self._stop_monitoring.is_set():
             for server in self.fetch_servers_metadata(openstack_api):
                 self.metadata_cache_manager.update_server_metadata(server)
 
-            sleep(self.config.polling_interval)
+            if self._stop_monitoring.wait(self.config.polling_interval):
+                break
 
     @staticmethod
     def build_metadata_cache_entry_from_server(server: Server) -> ServerMetadata:

@@ -32,7 +32,6 @@ import sys
 from dataclasses import dataclass
 from multiprocessing import Process, Event
 from signal import signal, SIGTERM, SIGINT
-from time import sleep
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod, V1PodList, V1ContainerStatus
@@ -158,7 +157,9 @@ class K8sMonitorAgent(Process):
         while not self._stop_monitoring.is_set():
             resource_id = self.fetch_list_all_pod_for_all_namespaces(api_client)
             self.watch_list_pod_for_all_namespaces(api_client, resource_id)
-            sleep(K8S_MONITOR_RETRY_DELAY_SECONDS)
+
+            if self._stop_monitoring.wait(K8S_MONITOR_RETRY_DELAY_SECONDS):
+                break
 
     @staticmethod
     def get_containers_id_name_from_statuses(container_statuses: list[V1ContainerStatus]) -> dict[str, str]:
