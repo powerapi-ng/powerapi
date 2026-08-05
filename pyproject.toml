@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build >= 0.12.1, < 0.13"]
+build-backend = "uv_build"
 
 [project]
 name = "powerapi"
 description = "PowerAPI is a middleware toolkit for building software-defined power meters."
 readme = "README.md"
 keywords = ["powerapi", "energy", "power-meter", "green-computing"]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 version = "2.10.0"
 
@@ -15,7 +16,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
