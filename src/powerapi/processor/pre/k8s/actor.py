@@ -31,45 +31,48 @@ import logging
 from multiprocessing import Manager
 
 from powerapi.actor import Actor, State
-from powerapi.actor.message import StartMessage, PoisonPillMessage
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
-from .handlers import K8sPreProcessorActorHWPCReportHandler
-from .handlers import K8sPreProcessorActorStartMessageHandler, K8sPreProcessorActorPoisonPillMessageHandler
-from .metadata_cache_manager import K8sMetadataCacheManager
-from .monitor_agent import K8sMonitorAgent, K8sMonitorConfig
+
+from .handlers import (
+    ActorPoisonPillMessageHandler,
+    ActorStartMessageHandler,
+    HWPCReportHandler,
+)
+from .metadata_registry import KubernetesMetadataRegistry
+from .monitor_agent import KubernetesMonitorAgent, KubernetesMonitorConfig
 
 
-class K8sProcessorState(State):
+class KubernetesProcessorState(State):
     """
     State of the Kubernetes processor actor.
     """
 
-    def __init__(self, actor: Actor, monitor_config: K8sMonitorConfig):
+    def __init__(self, actor: Actor, monitor_config: KubernetesMonitorConfig):
         """
         Initializes a Kubernetes pre-processor state.
         """
         super().__init__(actor)
 
         self.manager = Manager()
-        self.metadata_cache_manager = K8sMetadataCacheManager(self.manager)
-        self.monitor_agent = K8sMonitorAgent(self.metadata_cache_manager, monitor_config)
+        self.metadata_registry = KubernetesMetadataRegistry(self.manager)
+        self.monitor_agent = KubernetesMonitorAgent(self.metadata_registry, monitor_config)
 
 
-class K8sPreProcessorActor(ProcessorActor):
+class KubernetesPreProcessorActor(ProcessorActor):
     """
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """
 
-    def __init__(self, name: str, monitor_config: K8sMonitorConfig, level_logger: int = logging.WARNING, timeout: int = 5000):
+    def __init__(self, name: str, monitor_config: KubernetesMonitorConfig, level_logger: int = logging.WARNING):
         """
         Initializes a Kubernetes pre-processor actor.
         :param name: The name of the actor
         :param monitor_config: Configuration of the monitoring agent
         :param level_logger: logging level of the actor
-        :param timeout: timeout in seconds
         """
-        super().__init__(name, level_logger, timeout)
+        super().__init__(name, level_logger, 5000)
 
         self.monitor_config = monitor_config
 
@@ -77,8 +80,8 @@ class K8sPreProcessorActor(ProcessorActor):
         """
         Set up the Kubernetes pre-processor actor.
         """
-        self.state = K8sProcessorState(self, self.monitor_config)
+        self.state = KubernetesProcessorState(self, self.monitor_config)
 
-        self.add_handler(StartMessage, K8sPreProcessorActorStartMessageHandler(self.state))
-        self.add_handler(HWPCReport, K8sPreProcessorActorHWPCReportHandler(self.state))
-        self.add_handler(PoisonPillMessage, K8sPreProcessorActorPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, ActorStartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, ActorPoisonPillMessageHandler(self.state))
+        self.add_handler(HWPCReport, HWPCReportHandler(self.state))

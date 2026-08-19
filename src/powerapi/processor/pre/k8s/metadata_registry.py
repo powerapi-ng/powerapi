@@ -28,58 +28,32 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections.abc import MutableMapping
-from dataclasses import dataclass
 from multiprocessing.managers import SyncManager
 
-ADDED_EVENT = 'ADDED'
-DELETED_EVENT = 'DELETED'
-MODIFIED_EVENT = 'MODIFIED'
 
-
-@dataclass
-class K8sContainerMetadata:
+class KubernetesMetadataRegistry:
     """
-    Represents a metadata cache entry for Kubernetes containers.
-    """
-    container_id: str
-    container_name: str
-    namespace: str
-    pod_name: str
-    pod_labels: dict
-
-
-class K8sMetadataCacheManager:
-    """
-    Kubernetes container metadata cache manager.
+    Kubernetes metadata registry.
     """
 
     def __init__(self, manager: SyncManager):
         """
-        :param manager: Manager of the shared metadata cache
+        :param manager: Manager of the shared metadata registry
         """
-        self.metadata_cache: MutableMapping[str, K8sContainerMetadata] = manager.dict()
+        self._container_metadata: MutableMapping[str, dict[str, str]] = manager.dict()
 
-    def update_container_metadata(self, event: str, container_metadata: K8sContainerMetadata):
+    def set_metadata(self, container_id: str, metadata: dict[str, str]) -> None:
         """
-        Updates the metadata cache according to an event.
-        :param event: Event of the metadata cache
-        :param container_metadata: Container metadata entry
+        Set the metadata for the given container ID.
+        :param container_id: Container ID
+        :param metadata: Metadata entry
         """
-        if event in {ADDED_EVENT, MODIFIED_EVENT}:
-            self.metadata_cache[container_metadata.container_id] = container_metadata
-        if event == DELETED_EVENT:
-            self.metadata_cache.pop(container_metadata.container_id, None)
+        self._container_metadata[container_id] = metadata
 
-    def get_container_metadata(self, container_id: str) -> K8sContainerMetadata | None:
+    def get_metadata(self, container_id: str) -> dict[str, str] | None:
         """
-        Get metadata for a specific container from the cache.
+        Get metadata for a specific container.
         :param container_id: Container ID (hexadecimal string of 64 characters, short format is not supported)
-        :return: Container metadata entry
+        :return: Metadata entry or None if not found
         """
-        return self.metadata_cache.get(container_id)
-
-    def clear_metadata_cache(self):
-        """
-        Clears all container metadata entries from the cache.
-        """
-        self.metadata_cache.clear()
+        return self._container_metadata.get(container_id)

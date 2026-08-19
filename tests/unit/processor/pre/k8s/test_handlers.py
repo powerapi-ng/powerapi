@@ -32,13 +32,51 @@ from unittest.mock import Mock
 
 import pytest
 
-pytest.importorskip('powerapi.processor.pre.k8s.actor')  # The actor module requires external dependencies.
-
-from powerapi.processor.pre.k8s.actor import K8sProcessorState
-from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorConfig
-from powerapi.processor.pre.k8s.handlers import K8sPreProcessorActorHWPCReportHandler
-from powerapi.processor.pre.k8s.metadata_cache_manager import K8sContainerMetadata
+from powerapi.processor.pre.k8s.handlers import (
+    ActorPoisonPillMessageHandler,
+    ActorStartMessageHandler,
+    HWPCReportHandler,
+)
 from powerapi.report import HWPCReport
+
+
+@pytest.fixture
+def start_message_handler():
+    """
+    Factory fixture creating a start message handler.
+    """
+
+    def _create_handler() -> ActorStartMessageHandler:
+        actor = Mock(name='processor-actor')
+        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
+
+        state = Mock(name='state')
+        state.actor = actor
+        state.monitor_agent = Mock(name='monitor_agent')
+
+        return ActorStartMessageHandler(state)
+
+    return _create_handler
+
+
+@pytest.fixture
+def poison_pill_message_handler():
+    """
+    Factory fixture creating a Poison-Pill message handler.
+    """
+
+    def _create_handler() -> ActorPoisonPillMessageHandler:
+        actor = Mock(name='processor-actor')
+        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
+
+        state = Mock(name='state')
+        state.actor = actor
+        state.manager = Mock(name='manager')
+        state.monitor_agent = Mock(name='monitor_agent')
+
+        return ActorPoisonPillMessageHandler(state)
+
+    return _create_handler
 
 
 @pytest.fixture
@@ -47,15 +85,10 @@ def hwpc_report_handler():
     Factory fixture creating an HwPC report handler.
     """
 
-    def _create_handler() -> tuple[K8sPreProcessorActorHWPCReportHandler, list[HWPCReport]]:
-        actor = Mock(name='processor-actor')
-        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
-
-        monitor_config = K8sMonitorConfig('manual', 'https://localhost:6443', 'pytest-token')
-        state = K8sProcessorState(actor, monitor_config)
-        state.metadata_cache_manager = Mock(name='metadata_cache_manager')
-
-        handler = K8sPreProcessorActorHWPCReportHandler(state)
+    def _create_handler() -> tuple[HWPCReportHandler, list[HWPCReport]]:
+        state = Mock(name='state')
+        state.metadata_registry = Mock(name='metadata_registry')
+        handler = HWPCReportHandler(state)
 
         reports_sent = []
         handler._send_report = Mock(side_effect=lambda msg: reports_sent.append(msg))
@@ -84,6 +117,34 @@ def make_pod_hwpc_report() -> tuple[HWPCReport, str]:
     return HWPCReport(timestamp, sensor, str(target), {}, metadata), container_id
 
 
+def test_start_handler_connects_targets_and_starts_monitor(start_message_handler):
+    """
+    The start handler should connect target actors and start monitoring.
+    """
+    handler = start_message_handler()
+
+    handler.initialization()
+
+    handler.state.monitor_agent.start.assert_called_once()
+    for actor in handler.state.actor.target_actors:
+        actor.connect_data.assert_called_once()
+
+
+def test_poison_pill_handler_stops_resources_and_disconnects_targets(poison_pill_message_handler):
+    """
+    The Poison-Pill handler should stop resources and disconnect targets.
+    """
+    handler = poison_pill_message_handler()
+
+    handler.teardown()
+
+    handler.state.monitor_agent.terminate.assert_called_once()
+    handler.state.monitor_agent.join.assert_called_once()
+    handler.state.manager.shutdown.assert_called_once()
+    for actor in handler.state.actor.target_actors:
+        actor.disconnect.assert_called_once()
+
+
 def test_hwpc_report_handler_adds_k8s_metadata_and_forwards_report(hwpc_report_handler):
     """
     Test that the HwPC report handler forwards a report for a valid k8s target when it is in the metadata cache.
@@ -91,23 +152,22 @@ def test_hwpc_report_handler_adds_k8s_metadata_and_forwards_report(hwpc_report_h
     handler, reports_sent = hwpc_report_handler()
     report, container_id = make_pod_hwpc_report()
 
-    container_metadata = K8sContainerMetadata(
-        container_id=container_id,
-        container_name='powerapi-test-container',
-        namespace='powerapi-test-namespace',
-        pod_name='powerapi-test-pod',
-        pod_labels={'app': 'powerapi'}
-    )
-    handler.state.metadata_cache_manager.get_container_metadata.return_value = container_metadata
+    k8s_metadata = {
+        'k8s_container_name': 'powerapi-test-container',
+        'k8s_pod_namespace': 'powerapi-test-namespace',
+        'k8s_pod_name': 'powerapi-test-pod',
+        'k8s_label_app': 'powerapi',
+    }
+    handler.state.metadata_registry.get_metadata.return_value = k8s_metadata
 
     handler.handle(report)
 
+    handler.state.metadata_registry.get_metadata.assert_called_once_with(container_id)
     assert reports_sent == [report]
     (processed_report,) = reports_sent
 
-    assert processed_report.target == container_metadata.container_name
-    assert processed_report.metadata['k8s'] == vars(container_metadata)
-    assert processed_report.metadata['scope'] == 'pytest'
+    assert processed_report.target == report.target
+    assert processed_report.metadata == report.metadata | k8s_metadata
 
 
 def test_hwpc_report_handler_drops_report_when_container_metadata_missing(hwpc_report_handler):
@@ -117,10 +177,11 @@ def test_hwpc_report_handler_drops_report_when_container_metadata_missing(hwpc_r
     handler, reports_sent = hwpc_report_handler()
     report, _ = make_pod_hwpc_report()
 
-    handler.state.metadata_cache_manager.get_container_metadata.return_value = None
+    handler.state.metadata_registry.get_metadata.return_value = None
 
     handler.handle(report)
 
+    handler.state.metadata_registry.get_metadata.assert_called_once()
     assert reports_sent == []
 
 
@@ -138,3 +199,4 @@ def test_hwpc_report_handler_forwards_non_k8s_targets(hwpc_report_handler):
 
     assert processed_report.target == 'test-container'
     assert processed_report.metadata == {'scope': 'pytest'}
+    handler.state.metadata_registry.get_metadata.assert_not_called()
