@@ -27,13 +27,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import StartHandler, PoisonPillMessageHandler
+from powerapi.handler import PoisonPillMessageHandler, StartHandler
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
-from ._utils import extract_container_id_from_k8s_cgroups_path, is_target_a_valid_k8s_cgroups_path
+
+from ._utils import (
+    extract_container_id_from_k8s_cgroups_path,
+    is_target_a_valid_k8s_cgroups_path,
+)
 
 
-class K8sPreProcessorActorStartMessageHandler(StartHandler):
+class ActorStartMessageHandler(StartHandler):
     """
     Start message handler for the Kubernetes processor actor.
     """
@@ -48,7 +52,7 @@ class K8sPreProcessorActorStartMessageHandler(StartHandler):
         self.state.monitor_agent.start()
 
 
-class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
+class ActorPoisonPillMessageHandler(PoisonPillMessageHandler):
     """
     Poison Pill message handler for the Kubernetes processor actor.
     """
@@ -66,7 +70,7 @@ class K8sPreProcessorActorPoisonPillMessageHandler(PoisonPillMessageHandler):
             actor.disconnect()
 
 
-class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
+class HWPCReportHandler(ProcessorReportHandler):
     """
     HWPCReport message handler for the Kubernetes processor actor.
     """
@@ -78,14 +82,12 @@ class K8sPreProcessorActorHWPCReportHandler(ProcessorReportHandler):
         """
         if is_target_a_valid_k8s_cgroups_path(msg.target):
             container_id = extract_container_id_from_k8s_cgroups_path(msg.target)
-            container_metadata = self.state.metadata_cache_manager.get_container_metadata(container_id)
-
+            container_metadata = self.state.metadata_registry.get_metadata(container_id)
             if container_metadata is None:
                 # Drop the report if the container metadata is not present in the cache.
                 # This is mainly to filter out the empty pause container present for every running POD.
                 return
 
-            msg.target = container_metadata.container_name
-            msg.metadata['k8s'] = vars(container_metadata)
+            msg.metadata.update(container_metadata)
 
         self._send_report(msg)

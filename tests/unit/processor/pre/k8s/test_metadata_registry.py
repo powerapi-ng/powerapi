@@ -26,18 +26,35 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from unittest.mock import Mock
 
-import pytest
-
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
-
-
-@pytest.fixture
-def metadata_registry():
+def test_set_and_get_metadata(metadata_registry):
     """
-    Return an OpenStack metadata registry.
+    Metadata can be retrieved using its container ID.
     """
-    manager = Mock()
-    manager.dict.return_value = {}
-    return OpenStackMetadataRegistry(manager)
+    container_id = 'e6eb9dd88e7189933861634cc9626b3a85a1f6425989caa51094df34c34c2787'
+    metadata = {'k8s_pod_name': 'powerapi-pytest'}
+
+    metadata_registry.set_metadata(container_id, metadata)
+
+    assert metadata_registry.get_metadata(container_id) == metadata
+
+
+def test_set_metadata_replaces_existing_entry(metadata_registry):
+    """
+    Setting metadata twice replaces the previous entry.
+    """
+    container_id = '35d31dfb0b83cf9d6c689711d9ab6f4667f6784107df3783a3333492cdbcbce2'
+    metadata_registry.set_metadata(container_id, {'version': 'old'})
+
+    metadata_registry.set_metadata(container_id, {'version': 'new'})
+
+    assert metadata_registry.get_metadata(container_id) == {'version': 'new'}
+
+
+def test_get_metadata_returns_none_for_unknown_container(metadata_registry):
+    """
+    An unknown container ID has no associated metadata.
+    """
+    container_id = '0000000000000000000000000000000000000000000000000000000000000000'
+
+    assert metadata_registry.get_metadata(container_id) is None

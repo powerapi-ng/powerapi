@@ -27,121 +27,246 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections.abc import Iterable
+from unittest.mock import Mock, call, patch, sentinel
+
 import pytest
 
-pytest.importorskip('powerapi.processor.pre.k8s.monitor_agent')  # The monitor agent requires external dependencies.
+pytest.importorskip('kubernetes')
 
-from kubernetes.client import V1Pod, V1ContainerStatus, Configuration, V1ObjectMeta, V1PodStatus
+from kubernetes.client import ApiException, CoreV1Api
+from urllib3.exceptions import ProtocolError
 
-from powerapi.processor.pre.k8s.monitor_agent import K8sMonitorAgent, K8sMonitorConfig
+from powerapi.processor.pre.k8s.metadata_registry import KubernetesMetadataRegistry
+from powerapi.processor.pre.k8s.monitor_agent import (
+    KubernetesMonitorAgent,
+    KubernetesMonitorConfig,
+    build_k8s_api_client_configuration,
+)
+from powerapi.processor.pre.k8s.pod_event_handler import KubernetesPodEventHandler
 
 
 @pytest.fixture
-def initialized_monitor_agent(initialized_metadata_cache_manager):
+def pod_event_handler():
     """
-    Returns an initialized monitor agent.
+    Return a mocked Pod event handler.
     """
-    monitor_config = K8sMonitorConfig('manual', 'https://localhost:6443', 'pytest-token')
-    agent = K8sMonitorAgent(initialized_metadata_cache_manager, monitor_config)
+    return Mock(spec=KubernetesPodEventHandler)
+
+
+@pytest.fixture
+def monitor_agent(pod_event_handler):
+    """
+    Return a monitor agent with a mocked Pod event handler.
+    """
+    config = KubernetesMonitorConfig(
+        api_mode='manual',
+        api_host='https://localhost:6443',
+        api_key='pytest-token',
+        label_mapping={},
+    )
+    agent = KubernetesMonitorAgent(Mock(spec=KubernetesMetadataRegistry), config)
+    agent.pod_event_handler = pod_event_handler
     return agent
 
 
-def generate_k8s_config_for_tests() -> Configuration:
+@pytest.fixture
+def watcher():
     """
-    Generate a Kubernetes configuration for tests.
+    Return the watcher created by the monitor agent.
     """
-    config = Configuration()
-    config.client_side_validation = False  # needs to be disabled for tests
-    return config
+    with patch('powerapi.processor.pre.k8s.monitor_agent.Watch', autospec=True) as watch_class:
+        yield watch_class.return_value
 
 
-def generate_container_status(container_id, container_name) -> V1ContainerStatus:
+@pytest.fixture
+def configure_monitor_agent(monitor_agent):
     """
-    Generate an initialized container status object.
+    Configure the monitor agent for a finite run without external calls.
     """
-    config = generate_k8s_config_for_tests()
-    status = V1ContainerStatus(container_id=container_id, name=container_name, local_vars_configuration=config)
-    return status
+
+    def _configure(
+        *,
+        fetch_pods: Mock | None = None,
+        watch_pods: Mock | None = None,
+        stop_event: Mock | None = None,
+        wait_results: Iterable[bool] = (True,),
+    ) -> KubernetesMonitorAgent:
+        if fetch_pods is None:
+            fetch_pods = Mock(return_value='pytest')
+        if watch_pods is None:
+            watch_pods = Mock()
+        if stop_event is None:
+            stop_event = Mock(spec_set=['is_set', 'wait'])
+
+        stop_event.is_set.return_value = False
+        stop_event.wait.side_effect = wait_results
+
+        monitor_agent._setup_signal_handlers = Mock()
+        monitor_agent._stop_monitoring = stop_event
+        monitor_agent.fetch_list_all_pod_for_all_namespaces = fetch_pods
+        monitor_agent.watch_list_pod_for_all_namespaces = watch_pods
+        return monitor_agent
+
+    return _configure
 
 
-def generate_pod(pod_name, pod_namespace, pod_labels, container_statuses: list[V1ContainerStatus]) -> V1Pod:
+def test_build_manual_configuration_sets_bearer_authentication():
     """
-    Generate an initialized POD object.
+    Manual configuration should set the API endpoint and bearer token.
     """
-    config = generate_k8s_config_for_tests()
-    metadata = V1ObjectMeta(name=pod_name, labels=pod_labels, namespace=pod_namespace, local_vars_configuration=config)
-    status = V1PodStatus(container_statuses=container_statuses, local_vars_configuration=config)
-    pod = V1Pod(metadata=metadata, status=status, local_vars_configuration=config)
-    return pod
+    configuration = build_k8s_api_client_configuration(
+        'manual',
+        'https://powerapi:6443',
+        'pytest-token',
+    )
+
+    assert configuration.host == 'https://powerapi:6443'
+    assert configuration.api_key['authorization'] == 'pytest-token'
+    assert configuration.api_key_prefix['authorization'] == 'Bearer'
 
 
-def test_extract_containers_id_name_from_statuses(initialized_monitor_agent):
+def test_build_manual_configuration_requires_api_host():
     """
-    Test extract the containers id and name from the statuses.
+    Manual configuration should reject a missing API host.
     """
-    cri = 'containerd'
-    cid = '0000000000000000000000000000000000000000000000000000000000000000'
-    container_id = f'{cri}://{cid}'
-    container_name = 'test-container-name'
-
-    status = generate_container_status(container_id, container_name)
-
-    res = initialized_monitor_agent.get_containers_id_name_from_statuses([status])
-
-    assert res == {cid: container_name}
+    with pytest.raises(ValueError, match='Kubernetes API host is not defined'):
+        build_k8s_api_client_configuration('manual', None, 'pytest-token')
 
 
-def test_extract_containers_id_name_from_statuses_with_none_container_id(initialized_monitor_agent):
+def test_build_manual_configuration_requires_api_key():
     """
-    Test extract the containers id and name from the statuses with None container id.
-    This happens when processing an event where the container is created but has not yet been started.
+    Manual configuration should reject a missing API key.
     """
-    container_id = None
-    container_name = 'test-container-name'
-
-    status = generate_container_status(container_id, container_name)
-
-    res = initialized_monitor_agent.get_containers_id_name_from_statuses([status])
-
-    assert res == {}
+    with pytest.raises(ValueError, match='Kubernetes API key is not defined'):
+        build_k8s_api_client_configuration('manual', 'https://localhost:6443', None)
 
 
-def test_building_metadata_cache_entry_from_pod(initialized_monitor_agent):
+def test_build_configuration_rejects_unknown_mode():
     """
-    Test building metadata cache entries from a Kubernetes POD object.
+    An unsupported Kubernetes API mode should be rejected.
     """
-    pod_name = 'test-pod'
-    pod_namespace = 'powerapi'
-    pod_labels = {'executor': 'pytest'}
-
-    cri = 'containerd'
-    cid = '0000000000000000000000000000000000000000000000000000000000000000'
-    container_id = f'{cri}://{cid}'
-    container_name = 'test-container'
-    container_statuses = [generate_container_status(container_id, container_name)]
-
-    pod = generate_pod(pod_name, pod_namespace, pod_labels, container_statuses)
-    cache_entries = initialized_monitor_agent.build_metadata_cache_entries_from_pod(pod)
-    assert len(cache_entries) == 1
-
-    cache_entry = cache_entries[0]
-    assert cache_entry.pod_name == pod_name
-    assert cache_entry.namespace == pod_namespace
-    assert cache_entry.pod_labels == pod_labels
-    assert cache_entry.container_id == cid
-    assert cache_entry.container_name == container_name
+    with pytest.raises(ValueError, match='Invalid Kubernetes API mode'):
+        build_k8s_api_client_configuration('pytest', None, None)
 
 
-def test_building_metadata_cache_entry_from_pod_without_containers(initialized_monitor_agent):
+def test_fetch_forwards_pods_and_returns_resource_version(monitor_agent, pod_event_handler):
     """
-    Test building metadata cache entries from a Kubernetes POD object without containers.
+    The initial list should be forwarded as added events.
     """
-    pod_name = 'test-pod'
-    pod_namespace = 'powerapi'
-    pod_labels = {'executor': 'pytest'}
+    api_client = Mock(spec=CoreV1Api)
+    api_client.list_pod_for_all_namespaces.return_value = Mock(
+        metadata=Mock(resource_version='42'),
+        items=[sentinel.first_pod, sentinel.second_pod],
+    )
 
-    container_statuses = []
+    resource_version = monitor_agent.fetch_list_all_pod_for_all_namespaces(api_client)
 
-    pod = generate_pod(pod_name, pod_namespace, pod_labels, container_statuses)
-    cache_entries = initialized_monitor_agent.build_metadata_cache_entries_from_pod(pod)
-    assert len(cache_entries) == 0
+    assert resource_version == '42'
+    api_client.list_pod_for_all_namespaces.assert_called_once_with(watch=False)
+    assert pod_event_handler.handle.call_args_list == [
+        call('ADDED', sentinel.first_pod),
+        call('ADDED', sentinel.second_pod),
+    ]
+
+
+def test_watch_forwards_events(monitor_agent, pod_event_handler, watcher):
+    """
+    Watch events should be delegated in stream order.
+    """
+    api_client = Mock(spec=CoreV1Api)
+    watcher.stream.return_value = iter([
+        {'type': 'ADDED', 'object': sentinel.added_pod},
+        {'type': 'MODIFIED', 'object': sentinel.modified_pod},
+    ])
+
+    monitor_agent.watch_list_pod_for_all_namespaces(api_client, '42')
+
+    watcher.stream.assert_called_once()
+    assert watcher.stream.call_args.kwargs['resource_version'] == '42'
+    assert pod_event_handler.handle.call_args_list == [
+        call('ADDED', sentinel.added_pod),
+        call('MODIFIED', sentinel.modified_pod),
+    ]
+    watcher.stop.assert_called_once()
+
+
+def test_watch_stops_before_propagating_transport_failure(monitor_agent, watcher):
+    """
+    A transport failure should propagate after watcher cleanup.
+    """
+    api_client = Mock(spec=CoreV1Api)
+    watcher.stream.side_effect = ProtocolError('pytest')
+
+    with pytest.raises(ProtocolError):
+        monitor_agent.watch_list_pod_for_all_namespaces(api_client, '42')
+
+    watcher.stop.assert_called_once()
+
+
+def test_watch_handles_invalid_event(monitor_agent, pod_event_handler, watcher):
+    """
+    An invalid event should end the watch without escaping the monitor.
+    """
+    api_client = Mock(spec=CoreV1Api)
+    watcher.stream.return_value = iter([
+        {'type': 'PYTEST', 'object': sentinel.invalid_pod},
+    ])
+    pod_event_handler.handle.side_effect = ValueError('unexpected event')
+
+    monitor_agent.watch_list_pod_for_all_namespaces(api_client, '42')
+
+    pod_event_handler.handle.assert_called_once_with('PYTEST', sentinel.invalid_pod)
+    watcher.stop.assert_called_once()
+
+
+def test_run_waits_after_fetch_failure_without_starting_watch(configure_monitor_agent):
+    """
+    A failed initial list should delay the retry without starting a watch.
+    """
+    stop_event = Mock()
+    fetch_pods = Mock(side_effect=ApiException(status=500, reason='pytest'))
+    watch_pods = Mock()
+    monitor_agent = configure_monitor_agent(
+        fetch_pods=fetch_pods,
+        watch_pods=watch_pods,
+        stop_event=stop_event,
+    )
+
+    monitor_agent.run()
+
+    fetch_pods.assert_called_once()
+    watch_pods.assert_not_called()
+    stop_event.wait.assert_called_once()
+
+
+def test_run_waits_after_watch_failure(configure_monitor_agent):
+    """
+    A failed watch should delay the retry after the initial list.
+    """
+    stop_event = Mock()
+    watch_pods = Mock(side_effect=ProtocolError('pytest'))
+    monitor_agent = configure_monitor_agent(watch_pods=watch_pods, stop_event=stop_event)
+
+    monitor_agent.run()
+
+    watch_pods.assert_called_once()
+    stop_event.wait.assert_called_once()
+
+
+def test_run_retries_after_delay(configure_monitor_agent):
+    """
+    The monitor should start another list-watch cycle after the retry delay.
+    """
+    fetch_pods = Mock(side_effect=[ProtocolError('pytest'), '42'])
+    watch_pods = Mock()
+    monitor_agent = configure_monitor_agent(
+        fetch_pods=fetch_pods,
+        watch_pods=watch_pods,
+        wait_results=[False, True],
+    )
+
+    monitor_agent.run()
+
+    assert fetch_pods.call_count == 2
+    watch_pods.assert_called_once()

@@ -31,7 +31,6 @@ from powerapi.handler import StartHandler, PoisonPillMessageHandler as PoisonPil
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
 from ._utils import get_instance_name_from_libvirt_cgroup
-from .metadata_cache_manager import ServerMetadata
 
 
 class StartMessageHandler(StartHandler):
@@ -73,15 +72,6 @@ class HWPCReportHandler(ProcessorReportHandler):
     Used to add the server metadata (from the OpenStack API) to the processed report.
     """
 
-    def try_get_server_metadata(self, sensor_name: str, instance_name: str) -> ServerMetadata | None:
-        """
-        Try to get the server metadata from the cache.
-        :param sensor_name: Name of the sensor
-        :param instance_name: Name of the instance to fetch metadata for
-        :return: Server metadata entry or None if not found
-        """
-        return self.state.metadata_cache_manager.get_server_metadata(sensor_name, instance_name)
-
     def handle(self, msg: HWPCReport):
         """
         Process an HWPCReport to add the OpenStack metadata.
@@ -89,12 +79,11 @@ class HWPCReportHandler(ProcessorReportHandler):
         """
         instance_name = get_instance_name_from_libvirt_cgroup(msg.target)
         if instance_name is not None:
-            server_metadata = self.try_get_server_metadata(msg.sensor, instance_name)
+            server_metadata = self.state.metadata_registry.get_metadata(msg.sensor, instance_name)
             if server_metadata is None:
-                # Drop the report if the server metadata is not present in the cache.
+                # Drop the report if the server metadata is not present in the registry.
                 return
 
-            msg.target = server_metadata.server_name
-            msg.metadata['openstack'] = vars(server_metadata)
+            msg.metadata.update(server_metadata)
 
         self._send_report(msg)

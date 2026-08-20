@@ -25,19 +25,3 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from unittest.mock import Mock
-
-import pytest
-
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
-
-
-@pytest.fixture
-def metadata_registry():
-    """
-    Return an OpenStack metadata registry.
-    """
-    manager = Mock()
-    manager.dict.return_value = {}
-    return OpenStackMetadataRegistry(manager)

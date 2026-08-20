@@ -28,11 +28,11 @@
 
 import pytest
 
-pytest.importorskip('powerapi.processor.pre.k8s.actor')  # The Kubernetes processor requires external dependencies to work.
+pytest.importorskip('kubernetes')
 
 from powerapi.cli.generator import PreProcessorGenerator
 from powerapi.exception import PowerAPIException
-from powerapi.processor.pre.k8s.actor import K8sPreProcessorActor
+from powerapi.processor.pre.k8s.actor import KubernetesPreProcessorActor
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     assert 'pytest-k8s-preprocessor' in preprocessors
 
     preprocessor = preprocessors['pytest-k8s-preprocessor']
-    assert isinstance(preprocessor, K8sPreProcessorActor)
+    assert isinstance(preprocessor, KubernetesPreProcessorActor)
 
     expected_preprocessor_attributes = k8s_processor_config['pre-processor']['pytest-k8s-preprocessor']
     assert preprocessor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']

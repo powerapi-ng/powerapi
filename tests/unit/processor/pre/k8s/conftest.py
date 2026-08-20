@@ -27,19 +27,18 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Manager
+from unittest.mock import Mock
 
 import pytest
 
-from powerapi.processor.pre.k8s.metadata_cache_manager import K8sMetadataCacheManager
+from powerapi.processor.pre.k8s.metadata_registry import KubernetesMetadataRegistry
 
 
 @pytest.fixture
-def initialized_metadata_cache_manager():
+def metadata_registry():
     """
-    Returns an initialized metadata cache manager.
+    Return a metadata registry.
     """
-    manager = Manager()
-    yield K8sMetadataCacheManager(manager)
-
-    manager.shutdown()
+    manager = Mock()
+    manager.dict.return_value = {}
+    return KubernetesMetadataRegistry(manager)

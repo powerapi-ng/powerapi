@@ -31,9 +31,51 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.processor.pre.openstack.handlers import HWPCReportHandler
-from powerapi.processor.pre.openstack.metadata_cache_manager import ServerMetadata
+from powerapi.processor.pre.openstack.handlers import (
+    HWPCReportHandler,
+    PoisonPillMessageHandler,
+    StartMessageHandler,
+)
 from powerapi.report import HWPCReport
+
+
+@pytest.fixture
+def start_message_handler():
+    """
+    Factory fixture creating a start message handler.
+    """
+
+    def _create_handler() -> StartMessageHandler:
+        actor = Mock(name='processor-actor')
+        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
+
+        state = Mock(name='state')
+        state.actor = actor
+        state.monitor_agent = Mock(name='monitor_agent')
+
+        return StartMessageHandler(state)
+
+    return _create_handler
+
+
+@pytest.fixture
+def poison_pill_message_handler():
+    """
+    Factory fixture creating a Poison-Pill message handler.
+    """
+
+    def _create_handler() -> PoisonPillMessageHandler:
+        actor = Mock(name='processor-actor')
+        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
+
+        state = Mock(name='state')
+        state.actor = actor
+        state.manager = Mock(name='manager')
+        state.monitor_agent = Mock(name='monitor_agent')
+
+        return PoisonPillMessageHandler(state)
+
+    return _create_handler
 
 
 @pytest.fixture
@@ -43,12 +85,8 @@ def hwpc_report_handler():
     """
 
     def _create_handler() -> tuple[HWPCReportHandler, list[HWPCReport]]:
-        actor = Mock(name='processor-actor')
-        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
-
-        state = Mock()
-        state.actor = actor
-        state.metadata_cache_manager = Mock(name='metadata_cache_manager')
+        state = Mock(name='state')
+        state.metadata_registry = Mock(name='metadata_registry')
 
         handler = HWPCReportHandler(state)
 
@@ -68,31 +106,55 @@ def make_libvirt_hwpc_report() -> HWPCReport:
     return HWPCReport(datetime.now(), 'compute-1', target, {}, {'scope': 'pytest'})
 
 
+def test_start_handler_connects_targets_and_starts_monitor(start_message_handler):
+    """
+    The start handler should connect target actors and start monitoring.
+    """
+    handler = start_message_handler()
+
+    handler.initialization()
+
+    handler.state.monitor_agent.start.assert_called_once()
+    for actor in handler.state.actor.target_actors:
+        actor.connect_data.assert_called_once()
+
+
+def test_poison_pill_handler_stops_resources_and_disconnects_targets(poison_pill_message_handler):
+    """
+    The Poison-Pill handler should stop resources and disconnect targets.
+    """
+    handler = poison_pill_message_handler()
+
+    handler.teardown()
+
+    handler.state.monitor_agent.terminate.assert_called_once()
+    handler.state.monitor_agent.join.assert_called_once()
+    handler.state.manager.shutdown.assert_called_once()
+    for actor in handler.state.actor.target_actors:
+        actor.disconnect.assert_called_once()
+
+
 def test_hwpc_report_handler_adds_openstack_metadata_and_forwards_report(hwpc_report_handler):
     """
-    Test that the OpenStack report handler forwards a report when metadata is in the cache.
+    Test that the OpenStack report handler forwards a report when metadata is in the registry.
     """
     handler, reports_sent = hwpc_report_handler()
     report = make_libvirt_hwpc_report()
+    target = report.target
 
-    server_metadata = ServerMetadata(
-        'server-id',
-        'server-name',
-        'compute-1',
-        'instance-00000003',
-        {'app': 'powerapi'}
-    )
-    handler.state.metadata_cache_manager.get_server_metadata.return_value = server_metadata
+    server_metadata = {'openstack_server_name': 'server-name', 'app': 'powerapi'}
+    handler.state.metadata_registry.get_metadata.return_value = server_metadata
 
     handler.handle(report)
 
     assert reports_sent == [report]
-    (processed_report,) = reports_sent
-
-    assert processed_report.target == server_metadata.server_name
-    assert processed_report.metadata['openstack'] == vars(server_metadata)
-    assert processed_report.metadata['scope'] == 'pytest'
-    handler.state.metadata_cache_manager.get_server_metadata.assert_called_once_with('compute-1', 'instance-00000003')
+    assert report.target == target
+    assert report.metadata == {
+        'scope': 'pytest',
+        'openstack_server_name': 'server-name',
+        'app': 'powerapi',
+    }
+    handler.state.metadata_registry.get_metadata.assert_called_once_with('compute-1', 'instance-00000003')
 
 
 def test_hwpc_report_handler_drops_report_when_server_metadata_missing(hwpc_report_handler):
@@ -102,7 +164,7 @@ def test_hwpc_report_handler_drops_report_when_server_metadata_missing(hwpc_repo
     handler, reports_sent = hwpc_report_handler()
     report = make_libvirt_hwpc_report()
 
-    handler.state.metadata_cache_manager.get_server_metadata.return_value = None
+    handler.state.metadata_registry.get_metadata.return_value = None
 
     handler.handle(report)
 
@@ -119,8 +181,6 @@ def test_hwpc_report_handler_forwards_non_openstack_targets(hwpc_report_handler)
     handler.handle(report)
 
     assert reports_sent == [report]
-    (processed_report,) = reports_sent
-
-    assert processed_report.target == 'plain-container'
-    assert processed_report.metadata == {'scope': 'pytest'}
-    handler.state.metadata_cache_manager.get_server_metadata.assert_not_called()
+    assert report.target == 'plain-container'
+    assert report.metadata == {'scope': 'pytest'}
+    handler.state.metadata_registry.get_metadata.assert_not_called()

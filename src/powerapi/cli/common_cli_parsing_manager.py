@@ -460,6 +460,12 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             help_text='Kubernetes API host for manual API mode',
         )
 
+        subparser_k8s_pre_processor.add_argument(
+            'l', 'labels',
+            help_text='Comma-separated list of Kubernetes pod labels added to reports as metadata',
+            argument_type=list
+        )
+
         self.add_subgroup_parser('pre-processor', subparser_k8s_pre_processor)
 
     def _register_openstack_pre_processor_parser(self):
@@ -473,6 +479,12 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             help_text='OpenStack API polling interval in seconds',
             argument_type=float,
             default_value=10.0
+        )
+
+        subparser_openstack_pre_processor.add_argument(
+            'm', 'metadata',
+            help_text='Comma-separated list of OpenStack server metadata fields added to reports',
+            argument_type=list
         )
 
         self.add_subgroup_parser('pre-processor', subparser_openstack_pre_processor)
