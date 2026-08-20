@@ -452,7 +452,7 @@ class PreProcessorGenerator(ProcessorGenerator):
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:
         """
-        Openstack pre-processor actor factory.
+        OpenStack pre-processor actor factory.
         :param processor_config: Pre-Processor configuration
         :return: Configured OpenStack pre-processor actor
         """
@@ -460,7 +460,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
 
         api_polling_interval = processor_config['polling-interval']
-        monitor_config = OpenStackMonitorConfig(api_polling_interval)
+        metadata_mapping = build_metadata_mapping(processor_config.get('metadata', []), prefix='openstack_metadata_')
+        monitor_config = OpenStackMonitorConfig(api_polling_interval, metadata_mapping)
 
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO

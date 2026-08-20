@@ -481,4 +481,10 @@ class CommonCLIParsingManager(RootConfigParsingManager):
             default_value=10.0
         )
 
+        subparser_openstack_pre_processor.add_argument(
+            'm', 'metadata',
+            help_text='Comma-separated list of OpenStack server metadata fields added to reports',
+            argument_type=list
+        )
+
         self.add_subgroup_parser('pre-processor', subparser_openstack_pre_processor)

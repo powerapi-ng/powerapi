@@ -28,24 +28,28 @@
 
 import logging
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
-from multiprocessing import Process, Event
-from signal import signal, SIGINT, SIGTERM
+from datetime import UTC, datetime
+from multiprocessing import Event, Process
+from signal import SIGINT, SIGTERM, signal
 
-from openstack.compute.v2.server import Server
 from openstack.connection import Connection
 from openstack.exceptions import SDKException
 
-from .metadata_cache_manager import OpenStackMetadataCacheManager, ServerMetadata
+from .metadata_registry import OpenStackMetadataRegistry
+from .server_change_handler import OpenStackServerChangeHandler
 
 
-@dataclass
+@dataclass(frozen=True)
 class OpenStackMonitorConfig:
     """
     OpenStack monitoring agent configuration.
     :param polling_interval: Interval in seconds between OpenStack API synchronizations.
+    :param metadata_mapping: Mapping from OpenStack server metadata names to canonical report metadata names.
     """
     polling_interval: float
+    metadata_mapping: Mapping[str, str]
 
 
 class OpenStackMonitorAgent(Process):
@@ -55,9 +59,9 @@ class OpenStackMonitorAgent(Process):
     Permission to read Nova Extended Server Attributes (OS-EXT-SRV-ATTR) is **mandatory** in order to map cgroups to servers.
     """
 
-    def __init__(self, cache_manager: OpenStackMetadataCacheManager, config: OpenStackMonitorConfig, level_logger: int = logging.WARNING):
+    def __init__(self, registry: OpenStackMetadataRegistry, config: OpenStackMonitorConfig, level_logger: int = logging.WARNING):
         """
-        :param cache_manager: Metadata cache manager
+        :param registry: OpenStack metadata registry
         :param config: Configuration of the monitor agent
         :param level_logger: Logger level
         """
@@ -69,8 +73,8 @@ class OpenStackMonitorAgent(Process):
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
 
-        self.metadata_cache_manager = cache_manager
         self.config = config
+        self.server_change_handler = OpenStackServerChangeHandler(registry, config.metadata_mapping)
 
         self._stop_monitoring = Event()
 
@@ -82,7 +86,7 @@ class OpenStackMonitorAgent(Process):
         """
         return Connection(app_name='PowerAPI')
 
-    def _setup_signal_handlers(self):
+    def _setup_signal_handlers(self) -> None:
         """
         Setup signal handlers for the current Process.
         """
@@ -93,46 +97,38 @@ class OpenStackMonitorAgent(Process):
         signal(SIGTERM, stop_monitor)
         signal(SIGINT, stop_monitor)
 
-    def run(self):
+    def run(self) -> None:
         """
         Main code executed by the OpenStack monitor agent.
         """
         self._setup_signal_handlers()
-        openstack_api = self._setup_openstack_api_client()
 
-        # Prevents orphaned entries that no longer exist in the OpenStack API.
-        self.metadata_cache_manager.clear_metadata_cache()
+        api_client = self._setup_openstack_api_client()
+        changes_since = None
 
         while not self._stop_monitoring.is_set():
-            for server in self.fetch_servers_metadata(openstack_api):
-                self.metadata_cache_manager.update_server_metadata(server)
+            try:
+                changes_since = self.fetch_server_changes(api_client, changes_since)
+            except SDKException as exn:
+                logging.warning('Failed to retrieve server changes from OpenStack API: %s', exn)
+            except (AttributeError, ValueError) as exn:
+                logging.error('Required server attribute is missing from the OpenStack API response: %s', exn)
 
             if self._stop_monitoring.wait(self.config.polling_interval):
                 break
 
-    @staticmethod
-    def build_metadata_cache_entry_from_server(server: Server) -> ServerMetadata:
+    def fetch_server_changes(self, openstack_api: Connection, changes_since: str | None = None) -> str:
         """
-        Build and return a metadata cache entry from an OpenStack server object.
-        :param server: OpenStack server object
-        :return: Cache key and server metadata entry
-        """
-        return ServerMetadata(server.id, server.name, server.host, server.instance_name, server.metadata)
-
-    def fetch_servers_metadata(self, openstack_api: Connection) -> list[ServerMetadata]:
-        """
-        Fetch servers metadata from the OpenStack API.
+        Fetch and handle OpenStack server changes.
+        When no synchronization timestamp is provided, all servers are fetched.
         :param openstack_api: OpenStack API client
-        :return: List of servers metadata
+        :param changes_since: ISO 8601 timestamp of the previous synchronization
+        :return: ISO 8601 timestamp to use for the next synchronization
         """
-        try:
-            return [
-                self.build_metadata_cache_entry_from_server(server)
-                for server in openstack_api.compute.servers(details=True, all_projects=True)
-            ]
-        except SDKException as exn:
-            logging.warning('Failed to retrieve server metadata from OpenStack API: %s', exn.message)
-        except (AttributeError, ValueError) as exn:
-            logging.error('Required server attribute is missing from the OpenStack API response: %s', exn)
+        next_changes_since = datetime.now(UTC).isoformat(timespec='seconds')
+        query = {} if changes_since is None else {'changes_since': changes_since}
 
-        return []
+        for server in openstack_api.compute.servers(details=True, all_projects=True, **query):
+            self.server_change_handler.handle(server)
+
+        return next_changes_since

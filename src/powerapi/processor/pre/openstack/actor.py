@@ -31,11 +31,16 @@ import logging
 from multiprocessing import Manager
 
 from powerapi.actor import Actor, State
-from powerapi.actor.message import StartMessage, PoisonPillMessage
-from powerapi.processor.pre.openstack.handlers import StartMessageHandler, PoisonPillMessageHandler, HWPCReportHandler
+from powerapi.actor.message import PoisonPillMessage, StartMessage
+from powerapi.processor.pre.openstack.handlers import (
+    HWPCReportHandler,
+    PoisonPillMessageHandler,
+    StartMessageHandler,
+)
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
-from .metadata_cache_manager import OpenStackMetadataCacheManager
+
+from .metadata_registry import OpenStackMetadataRegistry
 from .monitor_agent import OpenStackMonitorAgent, OpenStackMonitorConfig
 
 
@@ -53,8 +58,8 @@ class OpenStackProcessorState(State):
         super().__init__(actor)
 
         self.manager = Manager()
-        self.metadata_cache_manager = OpenStackMetadataCacheManager(self.manager)
-        self.monitor_agent = OpenStackMonitorAgent(self.metadata_cache_manager, monitor_config)
+        self.metadata_registry = OpenStackMetadataRegistry(self.manager)
+        self.monitor_agent = OpenStackMonitorAgent(self.metadata_registry, monitor_config)
 
 
 class OpenStackPreProcessorActor(ProcessorActor):

@@ -26,18 +26,31 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from unittest.mock import Mock
 
-import pytest
-
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
-
-
-@pytest.fixture
-def metadata_registry():
+def test_set_and_get_metadata(metadata_registry):
     """
-    Return an OpenStack metadata registry.
+    Metadata can be retrieved using its host and instance name.
     """
-    manager = Mock()
-    manager.dict.return_value = {}
-    return OpenStackMetadataRegistry(manager)
+    metadata = {'openstack_server_name': 'powerapi-pytest'}
+
+    metadata_registry.set_metadata('compute-1', 'instance-00000001', metadata)
+
+    assert metadata_registry.get_metadata('compute-1', 'instance-00000001') == metadata
+
+
+def test_set_metadata_replaces_existing_entry(metadata_registry):
+    """
+    Setting metadata twice replaces the previous entry.
+    """
+    metadata_registry.set_metadata('compute-1', 'instance-00000001', {'version': 'old'})
+
+    metadata_registry.set_metadata('compute-1', 'instance-00000001', {'version': 'new'})
+
+    assert metadata_registry.get_metadata('compute-1', 'instance-00000001') == {'version': 'new'}
+
+
+def test_get_metadata_returns_none_for_unknown_server(metadata_registry):
+    """
+    An unknown host and instance name have no associated metadata.
+    """
+    assert metadata_registry.get_metadata('compute-1', 'instance-00000001') is None

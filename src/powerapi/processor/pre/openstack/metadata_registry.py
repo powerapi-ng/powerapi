@@ -1,5 +1,4 @@
-# Copyright (c) 2025, Inria
-# Copyright (c) 2025, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,51 +27,34 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections.abc import MutableMapping
-from dataclasses import dataclass
 from multiprocessing.managers import SyncManager
 
 
-@dataclass(frozen=True)
-class ServerMetadata:
+class OpenStackMetadataRegistry:
     """
-    Represents an OpenStack server metadata cache entry.
-    """
-    server_id: str
-    server_name: str
-    host: str
-    instance_name: str
-    metadata: dict[str, str]
-
-
-class OpenStackMetadataCacheManager:
-    """
-    OpenStack metadata cache manager.
+    OpenStack metadata registry.
     """
 
     def __init__(self, manager: SyncManager):
         """
-        :param manager: Manager of the shared metadata cache
+        :param manager: Manager of the shared metadata registry
         """
-        self._metadata_cache: MutableMapping[tuple[str, str], ServerMetadata] = manager.dict()
+        self._server_metadata: MutableMapping[tuple[str, str], dict[str, str]] = manager.dict()
 
-    def get_server_metadata(self, host: str, instance_name: str) -> ServerMetadata | None:
+    def set_metadata(self, host: str, instance_name: str, metadata: dict[str, str]) -> None:
         """
-        Get metadata for the server of the specified host from the cache.
-        :param host: Name of the host (hypervisor) where the server is located
-        :param instance_name: Name of the instance (libvirt instance name)
-        :return: Server metadata cache entry or None if not found
+        Set metadata for the given OpenStack server.
+        :param host: Name of the host running the server
+        :param instance_name: Internal instance name of the server
+        :param metadata: Metadata entry
         """
-        return self._metadata_cache.get((host, instance_name), None)
+        self._server_metadata[(host, instance_name)] = metadata
 
-    def update_server_metadata(self, server_metadata: ServerMetadata) -> None:
+    def get_metadata(self, host: str, instance_name: str) -> dict[str, str] | None:
         """
-        Add or update metadata for a server.
-        :param server_metadata: Server metadata cache entry
+        Get metadata for the given OpenStack server.
+        :param host: Name of the host running the server
+        :param instance_name: Internal instance name of the server
+        :return: Metadata entry or None if not found
         """
-        self._metadata_cache[(server_metadata.host, server_metadata.instance_name)] = server_metadata
-
-    def clear_metadata_cache(self) -> None:
-        """
-        Clears all server metadata entries from the cache.
-        """
-        self._metadata_cache.clear()
+        return self._server_metadata.get((host, instance_name))

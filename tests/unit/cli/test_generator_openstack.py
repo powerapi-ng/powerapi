@@ -28,7 +28,7 @@
 
 import pytest
 
-pytest.importorskip('powerapi.processor.pre.openstack.actor')  # The OpenStack processor requires external dependencies to work.
+pytest.importorskip('openstack')
 
 from powerapi.cli.generator import PreProcessorGenerator
 from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
