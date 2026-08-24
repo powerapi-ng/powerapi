@@ -41,12 +41,11 @@ def test_get_power_report_encoder() -> None:
 
 def test_encode_power_report() -> None:
     """
-    Encoder should convert a PowerReport into a ClickHouse row and flatten its metadata.
+    Encoder should convert a PowerReport into a ClickHouse row with its metadata.
     """
-    metadata = {'scope': 'test', 'k8s': {'namespace': 'pytest'}}
+    metadata = {'scope': 'test', 'k8s_namespace': 'pytest'}
     report = PowerReport(datetime.now(tz=UTC), 'sensor', 'pytest', 42.5, metadata)
 
     encoded_report = PowerReportEncoder.encode(report)
 
-    expected_metadata = {'scope': 'test', 'k8s_namespace': 'pytest'}
-    assert encoded_report == (report.timestamp, 'sensor', 'pytest', 42.5, expected_metadata)
+    assert encoded_report == (report.timestamp, 'sensor', 'pytest', 42.5, metadata)

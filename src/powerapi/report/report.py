@@ -30,7 +30,6 @@
 from collections import Counter
 from collections.abc import Iterable
 from datetime import datetime
-from typing import Any
 from zlib import crc32
 
 from powerapi.actor.message import Message
@@ -43,7 +42,7 @@ class Report(Message):
     Report abstract class.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, str] | None = None):
         """
         :param timestamp: Timestamp of the measurements
         :param sensor: Name of the sensor from which the measurements were taken from
@@ -80,23 +79,4 @@ class Report(Message):
         return {
             tag_orig: (tag_new if conflict_count[tag_new] == 1 else f'{tag_new}_{crc32(tag_orig.encode()):x}')
             for tag_orig, tag_new in sanitized_tags.items()
-        }
-
-    @staticmethod
-    def flatten_tags(tags: dict[str, Any], separator: str = '_') -> dict[str, Any]:
-        """
-        Flatten nested dictionaries within a tags dictionary.
-
-        This method takes a dictionary of tags, which may contain nested dictionaries as values, and flattens them into
-        a single-level dictionary. Each key in the flattened dictionary is constructed by concatenating the keys from
-        the nested dictionaries with their parent keys, separated by the specified separator.
-
-        This is particularly useful for databases that only support canonical (non-nested) types as values.
-        :param tags: Input tags dict
-        :param separator: Separator to use for the flattened tags name
-        :return: Flattened tags dict
-        """
-        return {
-            f"{pkey}{separator}{ckey}" if isinstance(pvalue, dict) else pkey: cvalue for pkey, pvalue in tags.items()
-            for ckey, cvalue in (pvalue.items() if isinstance(pvalue, dict) else {pkey: pvalue}.items())
         }

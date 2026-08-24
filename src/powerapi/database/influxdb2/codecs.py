@@ -40,7 +40,7 @@ class PowerReportEncoder(ReportEncoder[PowerReport, dict]):
     def encode(report: PowerReport, opts: CodecOptions | None = None) -> dict:
         return {
             'measurement': 'powerrep',
-            'tags': {'sensor': report.sensor, 'target': report.target} | report.flatten_tags(report.metadata),
+            'tags': {'sensor': report.sensor, 'target': report.target} | report.metadata,
             'fields': {'power_estimation': report.power},
             'time': report.timestamp,
         }

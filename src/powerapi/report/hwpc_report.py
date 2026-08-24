@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
-from typing import Any
 
 from powerapi.report.report import Report
 
@@ -39,7 +38,7 @@ class HWPCReport(Report):
     Stores Hardware Performance Counters samples coming from the HwPC-Sensor.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: dict[str, dict], metadata: dict[str, Any] | None = None):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, groups: dict[str, dict], metadata: dict[str, str] | None = None):
         """
         :param timestamp: Timestamp of the report
         :param sensor: Sensor name

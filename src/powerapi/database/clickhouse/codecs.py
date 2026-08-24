@@ -42,7 +42,7 @@ class PowerReportEncoder(ReportEncoder[PowerReport, tuple]):
             report.sensor,
             report.target,
             report.power,
-            report.flatten_tags(report.metadata),
+            report.metadata,
         )
 
 
