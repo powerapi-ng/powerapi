@@ -38,7 +38,7 @@ TARGET1 = 'target1'
 
 @pytest.fixture
 def report1_socket0():
-    return PowerReport(TS1, SENSOR1, TARGET1, 1234, {'socket': 0, 'core': 0})
+    return PowerReport(TS1, SENSOR1, TARGET1, 1234, {'socket': '0', 'core': '0'})
 
 
 def validate_formula_id(formula_id_list, validation_list):
@@ -73,7 +73,7 @@ def test_get_formula_id_with_socket_rule_must_return_good_id(report1_socket0):
     get formula id from reports with a rule that dispatch by target :
     """
     ids = PowerDispatchRule(PowerDepthLevel.SOCKET).get_formula_id(report1_socket0)
-    validate_formula_id(ids, [(SENSOR1, 0)])
+    validate_formula_id(ids, [(SENSOR1, '0')])
 
 
 def test_get_formula_id_with_core_rule_must_return_good_id(report1_socket0):
@@ -81,4 +81,4 @@ def test_get_formula_id_with_core_rule_must_return_good_id(report1_socket0):
     get formula id from reports with a rule that dispatch by target :
     """
     ids = PowerDispatchRule(PowerDepthLevel.CORE).get_formula_id(report1_socket0)
-    validate_formula_id(ids, [(SENSOR1, 0, 0)])
+    validate_formula_id(ids, [(SENSOR1, '0', '0')])

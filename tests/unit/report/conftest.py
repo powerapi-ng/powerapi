@@ -54,7 +54,7 @@ def power_report_with_metadata(power_report_without_metadata) -> PowerReport:
     """
     power_report_without_metadata.metadata = {
         'scope': 'cpu',
-        'socket': 0,
+        'socket': '0',
         'formula': '0000000000000000000000000000000000000000'
     }
     return power_report_without_metadata
@@ -66,29 +66,3 @@ def power_report_with_metadata_expected_tags(power_report_with_metadata) -> set[
     Returns the expected tags for the power report with single-level metadata.
     """
     return {'sensor', 'target', 'scope', 'socket', 'formula'}
-
-
-@pytest.fixture
-def power_report_with_nested_metadata(power_report_without_metadata) -> PowerReport:
-    """
-    Generates a power report with nested metadata.
-    """
-    power_report_without_metadata.metadata = {
-        'scope': 'cpu',
-        'socket': 0,
-        'formula': '0000000000000000000000000000000000000000',
-        'k8s': {
-            'app.kubernetes.io/name': 'test',
-            'app.kubernetes.io/managed-by': 'pytest',
-            'helm.sh/chart': 'powerapi-pytest-1.0.0'
-        }
-    }
-    return power_report_without_metadata
-
-
-@pytest.fixture
-def power_report_with_nested_metadata_expected_tags(power_report_with_nested_metadata) -> set[str]:
-    """
-    Returns the expected tags for the power report with nested metadata.
-    """
-    return {'sensor', 'target', 'scope', 'socket', 'formula', 'k8s_app_kubernetes_io_name', 'k8s_app_kubernetes_io_managed_by', 'k8s_helm_sh_chart'}

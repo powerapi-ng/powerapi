@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from datetime import datetime
-from typing import Any
 
 from powerapi.report.report import Report
 
@@ -39,7 +38,7 @@ class FormulaReport(Report):
     Used to export information about a running formula.
     """
 
-    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, Any] | None = None):
+    def __init__(self, timestamp: datetime, sensor: str, target: str, metadata: dict[str, str] | None = None):
         """
         :param timestamp: Report timestamp
         :param sensor: Sensor name

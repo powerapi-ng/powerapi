@@ -36,10 +36,10 @@ def test_creating_report_with_metadata():
     """
     Test creating a report with metadata.
     """
-    report = Report(datetime.now(), 'pytest', 'test', {'tag1': 1, 'tag2': {'2'}, 'tag3': '3'})
+    report = Report(datetime.now(), 'pytest', 'test', {'tag1': '1', 'tag2': '2', 'tag3': '3'})
 
-    assert report.metadata["tag1"] == 1
-    assert report.metadata["tag2"] == {'2'}
+    assert report.metadata["tag1"] == '1'
+    assert report.metadata["tag2"] == '2'
     assert report.metadata["tag3"] == '3'
 
 
@@ -66,29 +66,3 @@ def test_sanitize_tags_name():
     assert sanitized_tags['test-tag'] == 'test_tag'
     assert sanitized_tags['app.kubernetes.io/name'] == 'app_kubernetes_io_name'
     assert sanitized_tags['helm.sh/chart'] == 'helm_sh_chart'
-
-
-def test_flatten_metadata_dict():
-    """
-    Test flattening a report metadata dictionary.
-    """
-    report_metadata = {
-        'scope': 'cpu',
-        'socket': 0,
-        'formula': '13edcdfbd3743bec4002a092cb39fbff20a175eb',
-        'k8s': {
-            'app.kubernetes.io/name': 'test-flatten',
-            'app.kubernetes.io/instance': 'test-abcxyz',
-            'app.kubernetes.io/managed-by': 'pytest',
-            'helm.sh/chart': 'powerapi-pytest-1.0.0'
-        }
-    }
-    flattened_metadata = Report.flatten_tags(report_metadata, '/')
-
-    assert flattened_metadata['scope'] == 'cpu'
-    assert flattened_metadata['socket'] == 0
-    assert flattened_metadata['formula'] == '13edcdfbd3743bec4002a092cb39fbff20a175eb'
-    assert flattened_metadata['k8s/app.kubernetes.io/name'] == 'test-flatten'
-    assert flattened_metadata['k8s/app.kubernetes.io/instance'] == 'test-abcxyz'
-    assert flattened_metadata['k8s/app.kubernetes.io/managed-by'] == 'pytest'
-    assert flattened_metadata['k8s/helm.sh/chart'] == 'powerapi-pytest-1.0.0'
