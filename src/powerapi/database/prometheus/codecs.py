@@ -58,7 +58,7 @@ class PowerReportEncoder(ReportEncoder[PowerReport, PowerReportMetrics]):
 
     @staticmethod
     def encode(report: PowerReport, opts: EncoderOptions | None = None) -> PowerReportMetrics:
-        dynamic_tags = [report.metadata.get(tag_name, 'unknown') for tag_name in opts.dynamic_tags_name]
+        dynamic_tags = [report.metadata.get(tag_name, '') for tag_name in opts.dynamic_tags_name]
         labels = (report.sensor, report.target, *dynamic_tags)
         return PowerReportMetrics(labels, report.timestamp.timestamp(), report.power)
 
