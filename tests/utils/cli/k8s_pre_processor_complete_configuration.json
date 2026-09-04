@@ -18,7 +18,7 @@
   },
   "pre-processor": {
       "my_processor": {
-          "type": "k8s",
+          "type": "kubernetes",
           "api-mode": "manual",
           "puller": "one_puller"
       }

@@ -27,241 +27,135 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import json
-import logging
 import sys
-from collections.abc import Callable
 from typing import Any
 
-from powerapi.cli.config_parser import RootConfigParser, SubgroupConfigParser, store_val
-from powerapi.exception import MissingArgumentException, BadTypeException, AlreadyAddedSubparserException, \
-    UnknownArgException, MissingValueException, BadContextException, RepeatedArgumentException, \
-    AlreadyAddedSubgroupException
+from powerapi.cli.cli_parser import CLIArgumentParser
+from powerapi.cli.config_loader import EnvironmentConfigLoader, JSONConfigLoader
+from powerapi.cli.config_parser import (
+    ComponentSchema,
+    ConfigurationSchema,
+    ConfigurationSectionSchema,
+)
+
 from ._utils import merge_dictionaries
 
 
-class BaseConfigParsingManagerInterface:
+class ConfigurationParsingManager:
     """
-    Abstract class for dealing with parsing of configurations.
+    Register the schema and orchestrate all configuration sources.
     """
 
-    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
-                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
+    def __init__(self) -> None:
+        self.schema = ConfigurationSchema()
+        self.argument_parser = CLIArgumentParser(self.schema)
+        self.json_loader = JSONConfigLoader()
+        self.environment_loader = EnvironmentConfigLoader(self.schema)
+
+    def add_argument_prefix(self, argument_prefix: str) -> None:
         """
-        Add an argument to the parser.
+        Register an environment-variable prefix for root properties.
+        :param argument_prefix: Environment-variable prefix to register.
+        :raises ValueError: If the prefix overlaps an existing prefix.
         """
-        raise NotImplementedError
+        self.schema.add_argument_prefix(argument_prefix=argument_prefix)
+
+    def add_group(self, name: str, help_text: str = '', prefix: str = '') -> None:
+        """
+        Register a configuration group and its environment prefix.
+        :param name: Configuration name of the group.
+        :param help_text: User-facing description of the group.
+        :param prefix: Environment-variable prefix assigned to the group.
+        :raises ValueError: If the group name is already registered.
+        """
+        self.schema.add_group(name, help_text=help_text, prefix=prefix)
+
+    def add_component(self, group_name: str, component: ComponentSchema) -> None:
+        """
+        Register a component schema in a group.
+        :param group_name: Group receiving the component schema.
+        :param component: Component schema to register.
+        :raises ValueError: If the group is unknown or the component type is already registered.
+        """
+        self.schema.add_component(group_name, component)
+
+    def add_section(self, group_name: str, section_name: str, section: ConfigurationSectionSchema) -> None:
+        """
+        Register a fixed configuration section in a group.
+        :param group_name: Group receiving the configuration section.
+        :param section_name: Name identifying and reserving the section in the group.
+        :param section: Configuration section schema to register.
+        :raises ValueError: If the group is unknown or the section name is already registered.
+        """
+        self.schema.add_section(group_name, section_name, section)
+
+    def add_argument(
+        self,
+        name: str,
+        *,
+        is_flag: bool = False,
+        default_value: Any = None,
+        help_text: str = '',
+        argument_type: type = str,
+        is_mandatory: bool = False,
+    ) -> None:
+        """
+        Register a root property in the configuration schema.
+        :param name: Configuration property name.
+        :param is_flag: Whether the option is a boolean flag.
+        :param default_value: Value used when the property is omitted.
+        :param help_text: Description displayed in command-line help.
+        :param argument_type: Type used to cast non-flag values.
+        :param is_mandatory: Whether the property must be defined.
+        :raises ValueError: If the property name is already registered.
+        """
+        self.schema.add_argument(
+            name,
+            is_flag=is_flag,
+            default_value=default_value,
+            help_text=help_text,
+            argument_type=argument_type,
+            is_mandatory=is_mandatory,
+        )
 
     def validate(self, conf: dict) -> dict:
         """
-        Validate the parsed configuration.
+        Validate and canonicalize a merged configuration.
+        :param conf: Merged configuration to validate.
+        :return: Canonical validated configuration with defaults applied.
+        :raises ConfigurationError: If the configuration is invalid.
         """
-        raise NotImplementedError
+        return self.schema.validate(conf)
 
-
-class SubgroupConfigParsingManager(BaseConfigParsingManagerInterface):
-    """
-    Sub Parser for MainConfigParser
-    """
-
-    def __init__(self, name: str):
-        self.subparser = {}
-        self.name = name
-        self.cli_parser = SubgroupConfigParser(name)
-
-    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
-                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
+    def _parse_configuration_sources(self, cli_line: list[str]) -> dict:
         """
-        Add an argument to the parser.
+        Load and merge every configuration source.
+        :param cli_line: Command-line arguments without the executable name.
+        :return: Merged configuration with CLI, environment, then file precedence.
+        :raises CLIParseException: If command-line arguments are invalid.
+        :raises FileNotFoundError: If the selected JSON configuration file does not exist.
+        :raises ConfigurationError: If the selected file does not contain a valid JSON configuration object.
         """
-        self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
-                                     help_text=help_text, argument_type=bool if is_flag else argument_type,
-                                     is_mandatory=is_mandatory)
+        parsed_cli = self.argument_parser.parse(cli_line)
+        parsed_config_file = self.json_loader.load(parsed_cli.config_file)
+        parsed_environment = self.environment_loader.load()
 
-    def validate(self, conf: dict) -> dict:
+        return merge_dictionaries(parsed_config_file, parsed_environment, parsed_cli.configuration)
+
+    def parse(self, args: list[str] | None = None) -> dict:
         """
-        Check the parsed configuration.
+        Load, merge, and validate configuration values.
+
+        Precedence is CLI, then environment variables, then the JSON file.
+        Parsing and validation errors propagate to the application boundary.
+        :param args: Command-line arguments including an optional executable name, or None to use ``sys.argv``.
+        :return: Merged, canonical, and validated PowerAPI configuration.
+        :raises CLIParseException: If command-line arguments are invalid.
+        :raises FileNotFoundError: If the selected JSON configuration file does not exist.
+        :raises ConfigurationError: If the selected file contains invalid JSON or the merged configuration is invalid.
         """
-
-        # check types
-        for args, value in conf.items():
-            for _, waited_value in self.cli_parser.get_arguments().items():
-                if args in waited_value.names:
-                    # check type
-                    if not isinstance(value, waited_value.type) and not waited_value.is_flag:
-                        raise BadTypeException(args, waited_value.type)
-
-        # Check that all the mandatory arguments are present
-        conf = self.cli_parser.validate(conf=conf)
-
-        return conf
-
-
-class RootConfigParsingManager(BaseConfigParsingManagerInterface):
-    """
-    Parser abstraction for the configuration
-    """
-
-    def __init__(self):
-        self.subparser = {}
-        self.cli_parser = RootConfigParser()
-
-    def add_argument_prefix(self, argument_prefix: str):
-        """
-        Add a simple argument prefix to the cli_parser
-        :param argument_prefix: a new argument prefix to be added
-        """
-        self.cli_parser.add_argument_prefix(argument_prefix=argument_prefix)
-
-    def add_subgroup(self, name: str, help_text: str = '', prefix: str = ''):
-        """
-        Add a group to the cli_parser
-        :param name: the group's name
-        :param help_text: a help text for the subgroup
-        :param prefix: a prefix related to the subgroup
-        """
-        try:
-            self.cli_parser.add_subgroup(subgroup_type=name, help_text=help_text, prefix=prefix)
-        except AlreadyAddedSubgroupException as exn:
-            logging.error("Configuration error: %s", exn.msg)
-            sys.exit(-1)
-
-    def add_subgroup_parser(self, subgroup_name: str, subgroup_parser: SubgroupConfigParsingManager):
-
-        """
-        Add a Subgroup Parser to call when <name> is encountered
-        When name is encountered, the subgroup parser such as subgroup_parser.name match conf[name].type
-        """
-        if subgroup_name in self.subparser:
-            if subgroup_parser.name in list(self.subparser[subgroup_name]):
-                raise AlreadyAddedSubparserException(subgroup_name)
-        else:
-            self.subparser[subgroup_name] = {}
-
-        self.subparser[subgroup_name][subgroup_parser.name] = subgroup_parser
-
-        self.cli_parser.add_subgroup_parser(subgroup_type=subgroup_name, subgroup_parser=subgroup_parser.cli_parser)
-
-    def _parse_cli(self, cli_line: list) -> dict:
-        return self.cli_parser.parse(cli_line)
-
-    def _parse_config_from_json_file(self, file_name: str, current_conf: dict) -> dict:
-        return merge_dictionaries(current_conf, self.cli_parser.parse_config_dict(file_name))
-
-    def _parse_config_from_environment_variables(self, current_conf: dict) -> dict:
-        return merge_dictionaries(current_conf, self.cli_parser.parse_config_environment_variables())
-
-    def add_argument(self, *names, is_flag: bool = False, action: Callable = store_val, default_value: Any = None,
-                     help_text: str = '', argument_type: type = str, is_mandatory: bool = False) -> None:
-        """
-        Add an argument to the parser.
-        """
-        self.cli_parser.add_argument(*names, is_flag=is_flag, action=action, default_value=default_value,
-                                     help_text=help_text, argument_type=bool if is_flag else argument_type,
-                                     is_mandatory=is_mandatory)
-
-    def validate(self, conf: dict) -> dict:
-        """
-        Check the parsed configuration
-        """
-
-        # check types
-        for current_argument_name, current_argument_value in conf.items():
-            is_an_arg = False
-            if current_argument_name in self.subparser:
-                for _, dic_value in current_argument_value.items():
-                    self.subparser[current_argument_name][dic_value["type"]].validate(dic_value)
-                    is_an_arg = True
-
-            if not is_an_arg:
-                for _, argument_definition in self.cli_parser.get_arguments().items():
-                    if current_argument_name in argument_definition.names:
-                        is_an_arg = True
-                        # check type
-                        if not isinstance(current_argument_value,
-                                          argument_definition.type) and not argument_definition.is_flag:
-                            raise BadTypeException(current_argument_name, argument_definition.type)
-
-            if not is_an_arg:
-                raise UnknownArgException(current_argument_name)
-
-        # Check that all the mandatory arguments are present
-        conf = self.cli_parser.validate(conf)
-
-        return conf
-
-    def parse(self, args: list | None = None) -> dict:
-        """
-        Parse the configurations defined via le CLI, Environment Variables and configuration file.
-        The priority of defined values is the following:
-        1. CLI
-        2. Environment Variables
-        3. Configuration File
-
-        Call the method to produce a configuration dictionary
-        check the configuration
-        """
-
-        if not args:
+        if args is None:
             args = sys.argv
 
-        current_position = 0
-        filename = None
-        for current_arg in args:
-            if current_arg == '--config-file':
-                if current_position + 1 == len(args):
-                    logging.error("CLI Error: Config filepath needed with argument --config-file")
-                    sys.exit(-1)
-
-                filename = args[current_position + 1]
-                args.pop(current_position + 1)
-                args.pop(current_position)
-                break
-            current_position += 1
-
-        try:
-
-            if len(args) > 1:
-                conf = self._parse_cli(args[1:])
-            else:
-                conf = {}
-            conf = self._parse_config_from_environment_variables(current_conf=conf)
-            if filename:
-                conf = self._parse_config_from_json_file(file_name=filename, current_conf=conf)
-
-            # We validate the conf
-            conf = self.validate(conf)
-
-        except MissingValueException as exn:
-            logging.error('CLI error: Argument "%s" expect a value', exn.argument_name)
-            sys.exit(-1)
-
-        except BadTypeException as exn:
-            logging.error('Configuration error: %s', exn.msg)
-            sys.exit(-1)
-
-        except UnknownArgException as exn:
-            logging.error('Configuration error: Argument "%s" is unknown', exn.argument_name)
-            sys.exit(-1)
-
-        except BadContextException as exn:
-            logging.error('CLI error: %s', exn.msg)
-            sys.exit(-1)
-
-        except FileNotFoundError:
-            logging.error("Configuration Error: Configuration file not found")
-            sys.exit(-1)
-
-        except json.JSONDecodeError as exn:
-            logging.error('JSON error: "%s" at line %d column %d', exn.msg, exn.lineno, exn.colno)
-            sys.exit(-1)
-
-        except MissingArgumentException as exn:
-            logging.error("Configuration Error: %s", exn.msg)
-            sys.exit(-1)
-
-        except RepeatedArgumentException as exn:
-            logging.error("Configuration Error: %s", exn.msg)
-            sys.exit(-1)
-
-        return conf
+        cli_line = args[1:] if args and not args[0].startswith('-') else args
+        return self.validate(self._parse_configuration_sources(cli_line))

@@ -28,10 +28,15 @@
 
 import pytest
 
-from powerapi.cli.common_cli_parsing_manager import CommonCLIParsingManager, PullerConfigParsingManager, \
-    PusherConfigParsingManager, PreProcessorConfigParsingManager, generate_env_prefix
-from powerapi.cli.config_parser import store_true
-from powerapi.exception import NoNameSpecifiedForSubgroupException
+from powerapi.cli.cli_parser import CLIParseException
+from powerapi.cli.common_cli_parsing_manager import (
+    CommonCLIParsingManager,
+    PreProcessorSchema,
+    PullerSchema,
+    PusherSchema,
+    generate_env_prefix,
+)
+from powerapi.exception import ConfigurationError
 
 
 def test_generate_env_prefix_with_no_component():
@@ -76,69 +81,36 @@ def test_generate_env_prefix_with_custom_root_prefix():
     assert generate_env_prefix('INPUT', root_prefix='MYAPP') == 'MYAPP_INPUT_'
 
 
-def test_puller_config_parser_registers_shared_name_argument():
+def test_puller_config_schema_registers_default_model_argument():
     """
-    Test that PullerConfigParsingManager registers the shared subgroup name argument.
+    Test that PullerSchema registers the default report model argument.
     """
-    parser = PullerConfigParsingManager('pytest')
-    name_argument = parser.cli_parser.get_arguments()['name']
+    schema = PullerSchema('pytest')
+    model_argument = schema.arguments['model']
 
-    assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is False
-
-
-def test_puller_config_parser_registers_default_model_argument():
-    """
-    Test that PullerConfigParsingManager registers the default report model argument.
-    """
-    parser = PullerConfigParsingManager('pytest')
-    model_argument = parser.cli_parser.get_arguments()['model']
-
-    assert model_argument.names == ['m', 'model']
+    assert model_argument.name == 'model'
     assert model_argument.default_value == 'HWPCReport'
 
 
-def test_pusher_config_parser_registers_shared_name_argument():
+def test_pusher_config_schema_registers_default_model_argument():
     """
-    Test that PusherConfigParsingManager registers the shared subgroup name argument.
+    Test that PusherSchema registers the default report model argument.
     """
-    parser = PusherConfigParsingManager('pytest')
-    name_argument = parser.cli_parser.get_arguments()['name']
+    schema = PusherSchema('pytest')
+    model_argument = schema.arguments['model']
 
-    assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is False
-
-
-def test_pusher_config_parser_registers_default_model_argument():
-    """
-    Test that PusherConfigParsingManager registers the default report model argument.
-    """
-    parser = PusherConfigParsingManager('pytest')
-    model_argument = parser.cli_parser.get_arguments()['model']
-
-    assert model_argument.names == ['m', 'model']
+    assert model_argument.name == 'model'
     assert model_argument.default_value == 'PowerReport'
 
 
-def test_pre_processor_config_parser_registers_shared_name_argument():
+def test_pre_processor_config_schema_registers_mandatory_puller_argument():
     """
-    Test that PreProcessorConfigParsingManager registers the shared subgroup name argument.
+    Test that PreProcessorSchema registers a mandatory puller argument.
     """
-    parser = PreProcessorConfigParsingManager('pytest')
-    name_argument = parser.cli_parser.get_arguments()['name']
+    schema = PreProcessorSchema('pytest')
+    puller_argument = schema.arguments['puller']
 
-    assert name_argument.names == ['n', 'name']
-    assert name_argument.is_mandatory is False
-
-
-def test_pre_processor_config_parser_registers_mandatory_puller_argument():
-    """
-    Test that PreProcessorConfigParsingManager registers a mandatory puller argument.
-    """
-    parser = PreProcessorConfigParsingManager('pytest')
-    puller_argument = parser.cli_parser.get_arguments()['puller']
-
-    assert puller_argument.names == ['p', 'puller']
+    assert puller_argument.name == 'puller'
     assert puller_argument.is_mandatory is True
 
 
@@ -146,32 +118,32 @@ def test_common_cli_manager_registers_root_environment_prefix():
     """
     Test that CommonCLIParsingManager registers the root PowerAPI environment prefix.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert parser_manager.cli_parser.arguments_prefix == ['POWERAPI_']
+    assert manager.schema.arguments_prefix == ['POWERAPI_']
 
 
-def test_common_cli_manager_registers_subgroup_environment_prefixes():
+def test_common_cli_manager_registers_group_environment_prefixes():
     """
-    Test that CommonCLIParsingManager registers every subgroup environment prefix.
+    Test that CommonCLIParsingManager registers every group environment prefix.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert parser_manager.cli_parser.get_groups_prefixes() == [
-        'POWERAPI_INPUT_',
-        'POWERAPI_OUTPUT_',
-        'POWERAPI_PRE_PROCESSOR_',
-        'POWERAPI_POST_PROCESSOR_',
-    ]
+    assert {name: group.prefix for name, group in manager.schema.groups.items() if group.prefix} == {
+        'input': 'POWERAPI_INPUT_',
+        'output': 'POWERAPI_OUTPUT_',
+        'pre-processor': 'POWERAPI_PRE_PROCESSOR_',
+        'post-processor': 'POWERAPI_POST_PROCESSOR_',
+    }
 
 
-def test_common_cli_manager_registers_top_level_subgroups():
+def test_common_cli_manager_registers_top_level_groups():
     """
-    Test that CommonCLIParsingManager registers every top-level subgroup.
+    Test that CommonCLIParsingManager registers every top-level group.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert set(parser_manager.cli_parser.subgroup_parsers) == {
+    assert set(manager.schema.groups) == {
         'input',
         'output',
         'pre-processor',
@@ -179,13 +151,13 @@ def test_common_cli_manager_registers_top_level_subgroups():
     }
 
 
-def test_common_cli_manager_registers_input_parsers():
+def test_common_cli_manager_registers_input_schemas():
     """
-    Test that CommonCLIParsingManager registers every built-in input parser.
+    Test that CommonCLIParsingManager registers every built-in input schema.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert set(parser_manager.subparser['input']) == {
+    assert set(manager.schema.groups['input'].components) == {
         'mongodb',
         'socket',
         'csv',
@@ -193,13 +165,13 @@ def test_common_cli_manager_registers_input_parsers():
     }
 
 
-def test_common_cli_manager_registers_output_parsers():
+def test_common_cli_manager_registers_output_schemas():
     """
-    Test that CommonCLIParsingManager registers every built-in output parser.
+    Test that CommonCLIParsingManager registers every built-in output schema.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert set(parser_manager.subparser['output']) == {
+    assert set(manager.schema.groups['output'].components) == {
         'mongodb',
         'prometheus',
         'csv',
@@ -209,14 +181,14 @@ def test_common_cli_manager_registers_output_parsers():
     }
 
 
-def test_common_cli_manager_registers_pre_processor_parsers():
+def test_common_cli_manager_registers_pre_processor_schemas():
     """
-    Test that CommonCLIParsingManager registers every built-in pre-processor parser.
+    Test that CommonCLIParsingManager registers every built-in pre-processor schema.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    assert set(parser_manager.subparser['pre-processor']) == {
-        'k8s',
+    assert set(manager.schema.groups['pre-processor'].components) == {
+        'kubernetes',
         'openstack',
     }
 
@@ -225,12 +197,11 @@ def test_common_cli_manager_registers_verbose_argument():
     """
     Test that CommonCLIParsingManager registers the verbose root argument.
     """
-    parser_manager = CommonCLIParsingManager()
-    verbose_argument = parser_manager.cli_parser.get_arguments()['verbose']
+    manager = CommonCLIParsingManager()
+    verbose_argument = manager.schema.arguments['verbose']
 
-    assert verbose_argument.names == ['v', 'verbose']
+    assert verbose_argument.name == 'verbose'
     assert verbose_argument.is_flag is True
-    assert verbose_argument.action is store_true
     assert verbose_argument.default_value is False
 
 
@@ -238,12 +209,11 @@ def test_common_cli_manager_registers_stream_argument():
     """
     Test that CommonCLIParsingManager registers the stream root argument.
     """
-    parser_manager = CommonCLIParsingManager()
-    stream_argument = parser_manager.cli_parser.get_arguments()['stream']
+    manager = CommonCLIParsingManager()
+    stream_argument = manager.schema.arguments['stream']
 
-    assert stream_argument.names == ['s', 'stream']
+    assert stream_argument.name == 'stream'
     assert stream_argument.is_flag is True
-    assert stream_argument.action is store_true
     assert stream_argument.default_value is False
 
 
@@ -251,7 +221,7 @@ def test_common_cli_manager_validates_output_config_without_name():
     """
     Test that output config validation can use the output key as the pusher name.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
     config = {
         'output': {
             'powerrep': {
@@ -262,7 +232,7 @@ def test_common_cli_manager_validates_output_config_without_name():
         },
     }
 
-    result = parser_manager.validate(config)
+    result = manager.validate(config)
 
     assert result['output']['powerrep']['type'] == 'json'
     assert result['output']['powerrep']['model'] == 'PowerReport'
@@ -270,33 +240,33 @@ def test_common_cli_manager_validates_output_config_without_name():
     assert result['output']['powerrep']['compression'] == 'auto'
 
 
-def test_common_cli_manager_requires_name_for_cli_subgroup():
+def test_common_cli_manager_rejects_legacy_contextual_configuration():
     """
-    Test that CLI subgroup parsing still requires -n/--name.
+    Test that the breaking CLI no longer accepts contextual component arguments.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    with pytest.raises(NoNameSpecifiedForSubgroupException):
-        parser_manager._parse_cli([
+    with pytest.raises(CLIParseException) as result:
+        manager.parse([
             '--output', 'json',
             '--filepath', '/tmp/powerapi-output.jsonl',
         ])
+
+    assert 'unrecognized arguments' in result.value.msg
 
 
 def test_common_cli_manager_parse_cli_configuration():
     """
     Test that CommonCLIParsingManager parses a representative CLI configuration.
     """
-    parser_manager = CommonCLIParsingManager()
+    manager = CommonCLIParsingManager()
 
-    result = parser_manager._parse_cli([
+    result = manager.parse([
         '--verbose',
-        '--input', 'csv',
-        '--name', 'pytest-puller',
-        '--files', 'a.csv,b.csv',
-        '--output', 'json',
-        '--name', 'pytest-pusher',
-        '--filepath', '/tmp/pytest-powerapi.jsonl'
+        '-C', 'input.pytest-puller.type=csv',
+        '-C', 'input.pytest-puller.files=a.csv,b.csv',
+        '-C', 'output.pytest-pusher.type=json',
+        '-C', 'output.pytest-pusher.filepath=/tmp/pytest-powerapi.jsonl',
     ])
 
     assert result['verbose'] is True
@@ -304,3 +274,71 @@ def test_common_cli_manager_parse_cli_configuration():
     assert result['input']['pytest-puller']['files'] == ['a.csv', 'b.csv']
     assert result['output']['pytest-pusher']['type'] == 'json'
     assert result['output']['pytest-pusher']['filepath'] == '/tmp/pytest-powerapi.jsonl'
+
+
+def test_common_cli_manager_resolves_component_type_after_merging_environment(monkeypatch):
+    """
+    Test that a partial CLI override inherits its component type from the environment.
+    """
+    monkeypatch.setenv('POWERAPI_INPUT_sensor_TYPE', 'socket')
+    manager = CommonCLIParsingManager()
+
+    result = manager.parse([
+        'powerapi',
+        '-C', 'input.sensor.port=9090',
+    ])
+
+    assert result['input']['sensor'] == {
+        'type': 'socket',
+        'model': 'HWPCReport',
+        'host': 'localhost',
+        'port': 9090,
+    }
+
+
+def test_common_cli_manager_rejects_unknown_dotted_component_property():
+    """
+    Test that an unknown dotted component property is rejected with its full path.
+    """
+    manager = CommonCLIParsingManager()
+
+    with pytest.raises(ConfigurationError) as result:
+        manager.parse([
+            'powerapi',
+            '-C', 'input.sensor.type=socket',
+            '-C', 'input.sensor.unknown=value',
+        ])
+
+    assert result.value.path == 'input.sensor.unknown'
+
+
+@pytest.mark.parametrize(('property_name', 'value'), [
+    ('p', 9090),
+    ('name', 'legacy-name'),
+])
+def test_common_cli_manager_rejects_legacy_component_properties(property_name, value):
+    """
+    Test that removed shortened component property names are rejected.
+    """
+    manager = CommonCLIParsingManager()
+    config = {'input': {'sensor': {'type': 'socket', property_name: value}}}
+
+    with pytest.raises(ConfigurationError) as result:
+        manager.validate(config)
+
+    assert result.value.path == f'input.sensor.{property_name}'
+
+
+def test_common_cli_manager_requires_component_type_after_merging():
+    """
+    Test that a component type is required after all configuration sources are merged.
+    """
+    manager = CommonCLIParsingManager()
+
+    with pytest.raises(ConfigurationError) as result:
+        manager.parse([
+            'powerapi',
+            '-C', 'input.sensor.port=9090',
+        ])
+
+    assert result.value.path == 'input.sensor.type'

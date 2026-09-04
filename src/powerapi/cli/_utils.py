@@ -27,25 +27,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-def find_longest_string_in_list(strings: list[str]) -> str:
-    """
-    Find the longest string from a given list of string.
-    :param strings: List of strings
-    """
-    return max(strings, key=len)
+from copy import deepcopy
+from typing import Any
 
 
 def string_to_bool(value: str) -> bool:
     """
-    Transforms a string to a boolean according to its content.
-    :param value: The string to be converted
-    :return: Boolean value
+    Convert a textual boolean value.
+    :param value: Textual boolean value.
+    :return: Converted boolean.
+    :raises ValueError: If the value is not a recognized boolean.
     """
-    return value.casefold() in ("yes", "y", "true", "t", "1")
+    normalized_value = value.strip().casefold()
+    if normalized_value in ('yes', 'y', 'true', 't', '1'):
+        return True
+    if normalized_value in ('no', 'n', 'false', 'f', '0'):
+        return False
+
+    raise ValueError(f'Invalid boolean value: {value}')
 
 
-def string_to_list(value: str) -> list:
+def string_to_list(value: str) -> list[str]:
     """
     Transforms a comma separated list to a list of strings.
     :param value: The string to be converted
@@ -57,48 +59,21 @@ def string_to_list(value: str) -> list:
     return [v.strip() for v in value.split(',')]
 
 
-def merge_dictionaries(source: dict, destination: dict) -> dict:
+def merge_dictionaries(*configurations: dict[str, Any]) -> dict[str, Any]:
     """
-    Recursively merge the source dictionary into destination.
-    :param source: Dictionary to be merged
-    :param destination: Dictionary where the source will be merged to
+    Recursively merge configurations from lowest to highest precedence.
+
+    Later configurations override earlier ones. Inputs are not modified.
+    :param configurations: Configuration dictionaries ordered from lowest to highest precedence.
+    :return: A new recursively merged configuration dictionary.
     """
-    for key, value in source.items():
-        if isinstance(value, dict) and key in destination and isinstance(destination[key], dict):
-            destination[key] = merge_dictionaries(value, destination[key])
-        else:
-            destination[key] = value
+    merged = {}
 
-    return destination
+    for configuration in configurations:
+        for key, value in configuration.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = merge_dictionaries(merged[key], value)
+            else:
+                merged[key] = deepcopy(value)
 
-
-def get_longest_related_suffix(var: str, suffixes: list) -> str:
-    """
-    Search for the longest suffix of a string variable in a provided list. It returns None if a suffix is not found
-    :param var: A string for looking its longest suffix
-    :param suffixes: A list of suffixes
-    """
-    suffix = None
-
-    for current_suffix in suffixes:
-        if var.endswith(current_suffix):
-            if suffix is None:
-                suffix = current_suffix
-            elif len(current_suffix) > len(suffix):
-                suffix = current_suffix
-
-    return suffix
-
-
-def to_lower_case_and_replace_separators(strings: list, old_separator: str, new_separator: str) -> list:
-    """
-    Transform all strings in a provided list to lower case and replace a given separator for a new one
-    :param strings: List of string to be converted to lower case
-    :param old_separator: The old separator in the list of strings
-    :param new_separator: The new separator in the list of strings
-    """
-    new_strings = []
-    for current_string in strings:
-        new_strings.append(current_string.lower().replace(old_separator, new_separator))
-
-    return new_strings
+    return merged

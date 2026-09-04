@@ -426,7 +426,7 @@ class PreProcessorGenerator(ProcessorGenerator):
     def __init__(self):
         super().__init__('pre-processor')
 
-        self.add_processor_factory('k8s', self._k8s_pre_processor_factory)
+        self.add_processor_factory('kubernetes', self._k8s_pre_processor_factory)
         self.add_processor_factory('openstack', self._openstack_pre_processor_factory)
 
     @staticmethod

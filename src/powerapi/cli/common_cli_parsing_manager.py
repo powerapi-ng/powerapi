@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.cli.config_parser import store_true
-from powerapi.cli.parsing_manager import RootConfigParsingManager, SubgroupConfigParsingManager
+from powerapi.cli.config_parser import ComponentSchema
+from powerapi.cli.parsing_manager import ConfigurationParsingManager
 
 
 def generate_env_prefix(*components: str, root_prefix: str = 'POWERAPI') -> str:
@@ -43,119 +43,107 @@ def generate_env_prefix(*components: str, root_prefix: str = 'POWERAPI') -> str:
     ) + '_'
 
 
-class PullerConfigParsingManager(SubgroupConfigParsingManager):
+class PullerSchema(ComponentSchema):
     """
-    Subgroup parser with arguments shared by every puller input.
+    Component schema with arguments shared by every puller input.
     """
 
     def __init__(self, name: str) -> None:
         """
-        Initialize a puller parser with common actor name and report model arguments.
+        Initialize a puller schema with the common report model argument.
         """
         super().__init__(name)
 
         self.add_argument(
-            'n', 'name',
-            help_text='Name assigned to this puller actor'
-        )
-        self.add_argument(
-            'm', 'model',
+            'model',
             help_text='Report type produced by this input source',
             default_value='HWPCReport'
         )
 
 
-class PusherConfigParsingManager(SubgroupConfigParsingManager):
+class PusherSchema(ComponentSchema):
     """
-    Subgroup parser with arguments shared by every pusher output.
+    Component schema with arguments shared by every pusher output.
     """
 
     def __init__(self, name: str) -> None:
         """
-        Initialize a pusher parser with common actor name and report model arguments.
+        Initialize a pusher schema with the common report model argument.
         """
         super().__init__(name)
 
         self.add_argument(
-            'n', 'name',
-            help_text='Name assigned to this pusher actor'
-        )
-        self.add_argument(
-            'm', 'model',
+            'model',
             help_text='Report type consumed by this output destination',
             default_value='PowerReport'
         )
 
 
-class PreProcessorConfigParsingManager(SubgroupConfigParsingManager):
+class PreProcessorSchema(ComponentSchema):
     """
-    Subgroup parser with arguments shared by every pre-processor.
+    Component schema with arguments shared by every pre-processor.
     """
 
     def __init__(self, name: str) -> None:
         """
-        Initialize a pre-processor parser with common actor name and puller binding arguments.
+        Initialize a pre-processor schema with the puller binding argument.
         """
         super().__init__(name)
 
         self.add_argument(
-            'n', 'name',
-            help_text='Name assigned to this pre-processor actor'
-        )
-        self.add_argument(
-            'p', 'puller',
+            'puller',
             help_text='Name of the puller actor this pre-processor receives reports from',
             is_mandatory=True,
         )
 
 
-class CommonCLIParsingManager(RootConfigParsingManager):
+class CommonCLIParsingManager(ConfigurationParsingManager):
     """
-    Root parser that registers PowerAPI's built-in CLI component options.
+    Configuration manager that registers PowerAPI's built-in CLI component options.
     """
 
     def __init__(self) -> None:
         """
-        Initialize the root parser and register all built-in component parsers.
+        Initialize the configuration manager and register all built-in component schemas.
         """
         super().__init__()
 
         self._register_environment_prefixes()
-        self._register_subgroups()
+        self._register_groups()
         self._register_root_arguments()
-        self._register_input_parsers()
-        self._register_output_parsers()
-        self._register_pre_processor_parsers()
+        self._register_input_schemas()
+        self._register_output_schemas()
+        self._register_pre_processor_schemas()
 
     def _register_environment_prefixes(self) -> None:
         """
-        Register environment variable prefixes accepted by the root parser.
+        Register environment variable prefixes accepted by the configuration manager.
         """
         self.add_argument_prefix(generate_env_prefix())
 
-    def _register_subgroups(self) -> None:
+    def _register_groups(self) -> None:
         """
         Register top-level component groups accepted by the CLI.
         """
-        self.add_subgroup(
+        self.add_group(
             name='input',
             prefix=generate_env_prefix('INPUT'),
-            help_text='Configure an input source: --input TYPE OPTIONS'
+            help_text='Configure an input source with -C input.NAME.PROPERTY=VALUE'
         )
-        self.add_subgroup(
+        self.add_group(
             name='output',
             prefix=generate_env_prefix('OUTPUT'),
-            help_text='Configure an output destination: --output TYPE OPTIONS'
+            help_text='Configure an output destination with -C output.NAME.PROPERTY=VALUE'
         )
-        self.add_subgroup(
+        self.add_group(
             name='pre-processor',
             prefix=generate_env_prefix('PRE_PROCESSOR'),
-            help_text='Configure a pre-processor: --pre-processor TYPE OPTIONS'
+            help_text='Configure a pre-processor with -C pre-processor.NAME.PROPERTY=VALUE'
         )
-        self.add_subgroup(
+        self.add_group(
             name='post-processor',
             prefix=generate_env_prefix('POST_PROCESSOR'),
-            help_text='Configure a post-processor: --post-processor TYPE OPTIONS'
+            help_text='Configure a post-processor with -C post-processor.NAME.PROPERTY=VALUE'
         )
 
     def _register_root_arguments(self) -> None:
@@ -163,328 +151,316 @@ class CommonCLIParsingManager(RootConfigParsingManager):
         Register root-level options that apply to the whole PowerAPI process.
         """
         self.add_argument(
-            'v', 'verbose',
+            'verbose',
             is_flag=True,
-            action=store_true,
             default_value=False,
             help_text='Enable verbose logging',
         )
         self.add_argument(
-            's', 'stream',
+            'stream',
             is_flag=True,
-            action=store_true,
             default_value=False,
             help_text='Enable stream processing mode',
         )
 
-    def _register_input_parsers(self):
+    def _register_input_schemas(self):
         """
-        Register all built-in input source parsers.
+        Register all built-in input source schemas.
         """
-        self._register_mongodb_input_parser()
-        self._register_socket_input_parser()
-        self._register_csv_input_parser()
-        self._register_json_input_parser()
+        self._register_mongodb_input_schema()
+        self._register_socket_input_schema()
+        self._register_csv_input_schema()
+        self._register_json_input_schema()
 
-    def _register_mongodb_input_parser(self):
+    def _register_mongodb_input_schema(self):
         """
-        Register the MongoDB input parser.
+        Register the MongoDB input schema.
         """
-        subparser_mongo_input = PullerConfigParsingManager('mongodb')
+        schema_mongo_input = PullerSchema('mongodb')
 
-        subparser_mongo_input.add_argument(
-            'u', 'uri',
+        schema_mongo_input.add_argument(
+            'uri',
             help_text='MongoDB connection URI',
             is_mandatory=True
         )
-        subparser_mongo_input.add_argument(
-            'd', 'db',
+        schema_mongo_input.add_argument(
+            'db',
             help_text='MongoDB database name',
             is_mandatory=True
         )
-        subparser_mongo_input.add_argument(
-            'c', 'collection',
+        schema_mongo_input.add_argument(
+            'collection',
             help_text='MongoDB collection name',
             is_mandatory=True
         )
 
-        self.add_subgroup_parser('input', subparser_mongo_input)
+        self.add_component('input', schema_mongo_input)
 
-    def _register_socket_input_parser(self):
+    def _register_socket_input_schema(self):
         """
-        Register the Socket input parser.
+        Register the Socket input schema.
         """
-        subparser_socket_input = PullerConfigParsingManager('socket')
+        schema_socket_input = PullerSchema('socket')
 
-        subparser_socket_input.add_argument(
-            'h', 'host',
+        schema_socket_input.add_argument(
+            'host',
             help_text='Host address the socket listens on',
             default_value='localhost'
         )
-        subparser_socket_input.add_argument(
-            'p', 'port',
+        schema_socket_input.add_argument(
+            'port',
             help_text="Port number the socket listens on",
             argument_type=int,
             default_value=9080,
         )
 
-        self.add_subgroup_parser('input', subparser_socket_input)
+        self.add_component('input', schema_socket_input)
 
-    def _register_csv_input_parser(self):
+    def _register_csv_input_schema(self):
         """
-        Register the CSV input parser.
+        Register the CSV input schema.
         """
-        subparser_csv_input = PullerConfigParsingManager('csv')
+        schema_csv_input = PullerSchema('csv')
 
-        subparser_csv_input.add_argument(
-            'f', 'files',
+        schema_csv_input.add_argument(
+            'files',
             help_text='Comma-separated list of CSV input files',
             argument_type=list,
             is_mandatory=True
         )
 
-        self.add_subgroup_parser('input', subparser_csv_input)
+        self.add_component('input', schema_csv_input)
 
-    def _register_json_input_parser(self):
+    def _register_json_input_schema(self):
         """
-        Register the JSON input parser.
+        Register the JSON input schema.
         """
-        subparser_json_input = PullerConfigParsingManager('json')
+        schema_json_input = PullerSchema('json')
 
-        subparser_json_input.add_argument(
-            'f', 'filepath',
+        schema_json_input.add_argument(
+            'filepath',
             help_text='Path to the JSON input file',
             is_mandatory=True
         )
-        subparser_json_input.add_argument(
-            'c', 'compression',
+        schema_json_input.add_argument(
+            'compression',
             help_text='Input compression format: auto, gzip, lzma, or none',
             default_value='auto'
         )
 
-        self.add_subgroup_parser('input', subparser_json_input)
+        self.add_component('input', schema_json_input)
 
-    def _register_output_parsers(self):
+    def _register_output_schemas(self):
         """
-        Register all built-in output destination parsers.
+        Register all built-in output destination schemas.
         """
-        self._register_mongodb_output_parser()
-        self._register_prometheus_output_parser()
-        self._register_csv_output_parser()
-        self._register_json_output_parser()
-        self._register_influxdb2_output_parser()
-        self._register_clickhouse_output_parser()
+        self._register_mongodb_output_schema()
+        self._register_prometheus_output_schema()
+        self._register_csv_output_schema()
+        self._register_json_output_schema()
+        self._register_influxdb2_output_schema()
+        self._register_clickhouse_output_schema()
 
-    def _register_mongodb_output_parser(self):
+    def _register_mongodb_output_schema(self):
         """
-        Register the MongoDB output parser.
+        Register the MongoDB output schema.
         """
-        subparser_mongo_output = PusherConfigParsingManager('mongodb')
+        schema_mongo_output = PusherSchema('mongodb')
 
-        subparser_mongo_output.add_argument(
-            'u', 'uri',
+        schema_mongo_output.add_argument(
+            'uri',
             help_text='MongoDB connection URI',
             is_mandatory=True
         )
-        subparser_mongo_output.add_argument(
-            'd', 'db',
+        schema_mongo_output.add_argument(
+            'db',
             help_text='MongoDB database name',
             is_mandatory=True
         )
-        subparser_mongo_output.add_argument(
-            'c', 'collection',
+        schema_mongo_output.add_argument(
+            'collection',
             help_text='MongoDB collection name',
             is_mandatory=True
         )
 
-        self.add_subgroup_parser('output', subparser_mongo_output)
+        self.add_component('output', schema_mongo_output)
 
-    def _register_prometheus_output_parser(self):
+    def _register_prometheus_output_schema(self):
         """
-        Register the Prometheus output parser.
+        Register the Prometheus output schema.
         """
-        subparser_prometheus_output = PusherConfigParsingManager('prometheus')
+        schema_prometheus_output = PusherSchema('prometheus')
 
-        subparser_prometheus_output.add_argument(
-            'u', 'addr',
+        schema_prometheus_output.add_argument(
+            'addr',
             help_text='Host address the Prometheus HTTP server listens on',
             default_value='localhost'
         )
-        subparser_prometheus_output.add_argument(
-            'p', 'port',
+        schema_prometheus_output.add_argument(
+            'port',
             help_text='Port number the Prometheus HTTP server listens on',
             argument_type=int,
             default_value=8000
         )
-        subparser_prometheus_output.add_argument(
-            'M', 'metric-name',
-            help_text='Prometheus metric name to expose',
-            default_value='power_estimation_watts'
-        )
-        subparser_prometheus_output.add_argument(
-            'd', 'metric-description',
-            help_text='Prometheus metric description',
-            default_value='Estimated power consumption of the target'
-        )
-        subparser_prometheus_output.add_argument(
-            't', 'tags',
+        schema_prometheus_output.add_argument(
+            'tags',
             help_text='Comma-separated list of report metadata fields exposed as metric labels',
             argument_type=list
         )
 
-        self.add_subgroup_parser('output', subparser_prometheus_output)
+        self.add_component('output', schema_prometheus_output)
 
-    def _register_csv_output_parser(self):
+    def _register_csv_output_schema(self):
         """
-        Register the CSV output parser.
+        Register the CSV output schema.
         """
-        subparser_csv_output = PusherConfigParsingManager('csv')
+        schema_csv_output = PusherSchema('csv')
 
-        subparser_csv_output.add_argument(
-            'd', 'directory',
+        schema_csv_output.add_argument(
+            'directory',
             help_text='Directory where CSV output files are written',
             is_mandatory=True
         )
 
-        self.add_subgroup_parser('output', subparser_csv_output)
+        self.add_component('output', schema_csv_output)
 
-    def _register_json_output_parser(self):
+    def _register_json_output_schema(self):
         """
-        Register the JSON output parser.
+        Register the JSON output schema.
         """
-        subparser_json_output = PusherConfigParsingManager('json')
+        schema_json_output = PusherSchema('json')
 
-        subparser_json_output.add_argument(
-            'f', 'filepath',
+        schema_json_output.add_argument(
+            'filepath',
             help_text='Path to the JSON output file',
             is_mandatory=True
         )
-        subparser_json_output.add_argument(
-            'c', 'compression',
+        schema_json_output.add_argument(
+            'compression',
             help_text='Output compression format: auto, gzip, lzma, or none',
             default_value='auto'
         )
 
-        self.add_subgroup_parser('output', subparser_json_output)
+        self.add_component('output', schema_json_output)
 
-    def _register_influxdb2_output_parser(self):
+    def _register_influxdb2_output_schema(self):
         """
-        Register the InfluxDB 2 output parser.
+        Register the InfluxDB 2 output schema.
         """
-        subparser_influx2_output = PusherConfigParsingManager('influxdb2')
+        schema_influx2_output = PusherSchema('influxdb2')
 
-        subparser_influx2_output.add_argument(
-            'u', 'uri',
+        schema_influx2_output.add_argument(
+            'uri',
             help_text='InfluxDB server URI',
             is_mandatory=True
         )
-        subparser_influx2_output.add_argument(
-            'k', 'token',
+        schema_influx2_output.add_argument(
+            'token',
             help_text='InfluxDB API token',
             is_mandatory=True
         )
-        subparser_influx2_output.add_argument(
-            'g', 'org',
+        schema_influx2_output.add_argument(
+            'org',
             help_text='InfluxDB organization name',
             is_mandatory=True
         )
-        subparser_influx2_output.add_argument(
-            'b', 'bucket',
+        schema_influx2_output.add_argument(
+            'bucket',
             help_text='InfluxDB bucket name',
             is_mandatory=True
         )
 
-        self.add_subgroup_parser('output', subparser_influx2_output)
+        self.add_component('output', schema_influx2_output)
 
-    def _register_clickhouse_output_parser(self):
+    def _register_clickhouse_output_schema(self):
         """
-        Register the ClickHouse output parser.
+        Register the ClickHouse output schema.
         """
-        subparser_clickhouse_output = PusherConfigParsingManager('clickhouse')
+        schema_clickhouse_output = PusherSchema('clickhouse')
 
-        subparser_clickhouse_output.add_argument(
-            'h', 'host',
+        schema_clickhouse_output.add_argument(
+            'host',
             help_text='ClickHouse server host',
             is_mandatory=True,
         )
-        subparser_clickhouse_output.add_argument(
-            'p', 'port',
+        schema_clickhouse_output.add_argument(
+            'port',
             help_text='ClickHouse server port',
             argument_type=int,
             default_value=8123,
         )
-        subparser_clickhouse_output.add_argument(
-            'u', 'username',
+        schema_clickhouse_output.add_argument(
+            'username',
             help_text='ClickHouse username',
             default_value='default',
         )
-        subparser_clickhouse_output.add_argument(
-            'P', 'password',
+        schema_clickhouse_output.add_argument(
+            'password',
             help_text='ClickHouse password',
             default_value='',
         )
-        subparser_clickhouse_output.add_argument(
-            'd', 'database',
+        schema_clickhouse_output.add_argument(
+            'database',
             help_text='ClickHouse database name',
             default_value='default',
         )
 
-        self.add_subgroup_parser('output', subparser_clickhouse_output)
+        self.add_component('output', schema_clickhouse_output)
 
-    def _register_pre_processor_parsers(self):
+    def _register_pre_processor_schemas(self):
         """
-        Register all built-in pre-processor parsers.
+        Register all built-in pre-processor schemas.
         """
-        self._register_k8s_pre_processor_parser()
-        self._register_openstack_pre_processor_parser()
+        self._register_k8s_pre_processor_schema()
+        self._register_openstack_pre_processor_schema()
 
-    def _register_k8s_pre_processor_parser(self):
+    def _register_k8s_pre_processor_schema(self):
         """
-        Register the Kubernetes pre-processor parser.
+        Register the Kubernetes pre-processor schema.
         """
-        subparser_k8s_pre_processor = PreProcessorConfigParsingManager('k8s')
+        schema_k8s_pre_processor = PreProcessorSchema('kubernetes')
 
-        subparser_k8s_pre_processor.add_argument(
-            'a', 'api-mode',
+        schema_k8s_pre_processor.add_argument(
+            'api-mode',
             help_text='Kubernetes API access mode: local, manual, or cluster',
             default_value='cluster'
         )
 
-        subparser_k8s_pre_processor.add_argument(
-            'k', 'api-key',
+        schema_k8s_pre_processor.add_argument(
+            'api-key',
             help_text='Kubernetes bearer token for manual API mode',
         )
 
-        subparser_k8s_pre_processor.add_argument(
-            'h', 'api-host',
+        schema_k8s_pre_processor.add_argument(
+            'api-host',
             help_text='Kubernetes API host for manual API mode',
         )
 
-        subparser_k8s_pre_processor.add_argument(
-            'l', 'labels',
+        schema_k8s_pre_processor.add_argument(
+            'labels',
             help_text='Comma-separated list of Kubernetes pod labels added to reports as metadata',
             argument_type=list
         )
 
-        self.add_subgroup_parser('pre-processor', subparser_k8s_pre_processor)
+        self.add_component('pre-processor', schema_k8s_pre_processor)
 
-    def _register_openstack_pre_processor_parser(self):
+    def _register_openstack_pre_processor_schema(self):
         """
-        Register the OpenStack pre-processor parser.
+        Register the OpenStack pre-processor schema.
         """
-        subparser_openstack_pre_processor = PreProcessorConfigParsingManager('openstack')
+        schema_openstack_pre_processor = PreProcessorSchema('openstack')
 
-        subparser_openstack_pre_processor.add_argument(
-            'i', "polling-interval",
+        schema_openstack_pre_processor.add_argument(
+            'polling-interval',
             help_text='OpenStack API polling interval in seconds',
             argument_type=float,
             default_value=10.0
         )
 
-        subparser_openstack_pre_processor.add_argument(
-            'm', 'metadata',
+        schema_openstack_pre_processor.add_argument(
+            'metadata',
             help_text='Comma-separated list of OpenStack server metadata fields added to reports',
             argument_type=list
         )
 
-        self.add_subgroup_parser('pre-processor', subparser_openstack_pre_processor)
+        self.add_component('pre-processor', schema_openstack_pre_processor)

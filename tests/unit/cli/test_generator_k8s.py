@@ -45,7 +45,7 @@ def k8s_processor_config():
         'verbose': True,
         'pre-processor': {
             'pytest-k8s-preprocessor': {
-                'type': 'k8s',
+                'type': 'kubernetes',
                 'api-mode': 'manual',
                 'api-host': 'https://127.0.0.1:36599',
                 'api-key': 'pytest-token-powerapi',

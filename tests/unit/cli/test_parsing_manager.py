@@ -27,1246 +27,205 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import json
 import sys
+
 import pytest
 
-from powerapi.cli.config_parser import store_true, store_val
-from powerapi.cli.parsing_manager import RootConfigParsingManager, \
-    SubgroupConfigParsingManager
-from powerapi.exception import AlreadyAddedArgumentException, BadTypeException, UnknownArgException, \
-    MissingValueException, SubgroupAlreadyExistException, SubgroupParserWithoutNameArgumentException, \
-    NoNameSpecifiedForSubgroupException, AlreadyAddedSubparserException, \
-    SameLengthArgumentNamesException, BadContextException
-from tests.utils.cli.base_config_parser import load_configuration_from_json_file, \
-    define_environment_variables_configuration_from_json_file, \
-    remove_environment_variables_configuration
+from powerapi.cli.cli_parser import CLIParseException
+from powerapi.cli.config_parser import ComponentSchema, ConfigurationSectionSchema
+from powerapi.cli.parsing_manager import ConfigurationParsingManager
+from powerapi.exception import ConfigurationError
 
 
-###############
-# PARSER TEST #
-###############
-def test_add_argument_to_cli_parser_that_already_exist_raise_an_exception():
+@pytest.fixture
+def parsing_manager() -> ConfigurationParsingManager:
     """
-    Tests if adding an argument that already exists to a parser raises an
-    AlreadyAddedArgumentException
+    Create a parsing manager with representative root and component configuration.
+    :return: Configured parsing manager.
     """
+    manager = ConfigurationParsingManager()
+    manager.add_argument_prefix('TEST_POWERAPI_')
+    manager.add_argument('verbose', is_flag=True, default_value=False)
+    manager.add_argument('interval', argument_type=int, default_value=10)
+    manager.add_group('input', prefix='TEST_POWERAPI_INPUT_')
 
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('a')
+    socket = ComponentSchema('socket')
+    socket.add_argument('host', default_value='localhost')
+    socket.add_argument('port', argument_type=int, default_value=9080)
+    socket.add_argument('tags', argument_type=list)
+    manager.add_component('input', socket)
 
-    with pytest.raises(AlreadyAddedArgumentException):
-        parser_manager.add_argument('a')
-
-    with pytest.raises(AlreadyAddedArgumentException):
-        parser_manager.add_argument('help')
-
-    assert len(parser_manager.cli_parser.arguments) == 3  # help argument + a argument
+    return manager
 
 
-#####################
-# MAIN PARSER TESTS #
-#####################
-def test_add_flag_arguments_with_short_name_to_cli_parser():
+def test_parse_merges_cli_assignments_and_validates_schema(parsing_manager):
     """
-    Test that adding flag arguments with a short name to cli parser modified short_arg string
+    Test that CLI values are merged, cast, and completed with schema defaults.
     """
-    parser_manager = RootConfigParsingManager()
-    assert parser_manager.cli_parser.short_arg == 'h'
-    parser_manager.add_argument('a', is_flag=True)
-    parser_manager.add_argument('x', is_flag=True)
-    assert parser_manager.cli_parser.short_arg == 'hax'
+    result = parsing_manager.parse([
+        'powerapi',
+        '--verbose',
+        '-C', 'input.sensor.type=socket',
+        '-C', 'input.sensor.port=9090',
+        '-C', 'input.sensor.tags=host,pod',
+    ])
 
-
-def test_add_flag_arguments_and_no_flag_arguments_with_short_name_to_cli_parser():
-    """
-    Test if adding arguments (flag and no flag) to the parser modified short_arg string.
-    long_arg list is not changed
-    """
-    parser_manager = RootConfigParsingManager()
-    assert parser_manager.cli_parser.short_arg == 'h'
-    parser_manager.add_argument('a', is_flag=True)
-    assert parser_manager.cli_parser.short_arg == 'ha'
-    parser_manager.add_argument('b')
-    assert parser_manager.cli_parser.short_arg == 'hab:'
-    parser_manager.add_argument('c', is_flag=True)
-    assert parser_manager.cli_parser.short_arg == 'hab:c'
-
-    assert len(parser_manager.cli_parser.long_arg) == 1  # Only help is arg argument
-
-    assert parser_manager.cli_parser.long_arg == ["help"]  # Only help is arg argument
-
-
-def test_add_arguments_with_long_name_to_cli_parser():
-    """
-    Test if adding arguments with long name to cli parser modifies long_arg list.
-    short_arg string is not changed
-    """
-    parser_manager = RootConfigParsingManager()
-    assert parser_manager.cli_parser.long_arg == ['help']
-    parser_manager.add_argument('aaa')
-    assert parser_manager.cli_parser.long_arg == ['help', 'aaa=']
-    parser_manager.add_argument('xx')
-    assert parser_manager.cli_parser.long_arg == ['help', 'aaa=', 'xx=']
-
-    assert parser_manager.cli_parser.short_arg == 'h'
-
-
-def test_add_flag_arguments_with_long_name_to_cli_parser():
-    """
-    Test if adding a flag arguments with long to the parser modifies the long_arg list.
-    short_arg string is not changed
-    """
-    parser_manager = RootConfigParsingManager()
-    assert parser_manager.cli_parser.long_arg == ['help']
-    parser_manager.add_argument('aaa', is_flag=True)
-    assert parser_manager.cli_parser.long_arg == ['help', 'aaa']
-    parser_manager.add_argument('tttt', is_flag=True)
-    assert parser_manager.cli_parser.long_arg == ['help', 'aaa', 'tttt']
-
-    assert parser_manager.cli_parser.short_arg == 'h'
-
-
-# full parsing test #
-def check_parse_cli_result(parser_manager: RootConfigParsingManager, input_str: str, outputs: dict):
-    """
-    Check that input_str is correctly parsed by parser
-    """
-    result = parser_manager._parse_cli(input_str.split())
-
-    assert len(result) == len(outputs)
-    assert result == outputs
-
-
-def test_arguments_string_parsing_with_empty_parsing_manager():
-    """
-    Test to parse arguments provided as string with a parsing parser and retrieve the following results :
-
-    - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : UnknownArgException(a)
-    - "-a --sub toto -b" : UnknownArgException(a)
-    - "-b" : UnknownArgException(b)
-
-    ConfigParsingManager description:
-
-    - base parser arguments : None
-    """
-    parser_manager = RootConfigParsingManager()
-
-    check_parse_cli_result(parser_manager, '', {})
-
-    with pytest.raises(UnknownArgException):
-        check_parse_cli_result(parser_manager, '-z', None)
-
-    with pytest.raises(UnknownArgException):
-        check_parse_cli_result(parser_manager, '-a', None)
-
-    with pytest.raises(UnknownArgException):
-        check_parse_cli_result(parser_manager, '-a --sub toto -b', None)
-
-    with pytest.raises(UnknownArgException):
-        check_parse_cli_result(parser_manager, '-b', None)
-
-
-def test_arguments_dict_validation_with_empty_parsing_manager():
-    """
-    Test validation of arguments dictionary with a parsing manager and retrieve the following results:
-
-    - "" : {}
-    - "-z value" : UnknownArgException(z)
-    - "-a 10 " : UnknownArgException(a)
-    - "-a 10 --sub toto -b" : UnknownArgException(a)
-    - "-b" : UnknownArgException(b)
-
-    ConfigParsingManager description:
-
-    - base parser arguments : None
-    """
-    parser_manager = RootConfigParsingManager()
-    dic_z = {
-        "z": "value"
+    assert result == {
+        'verbose': True,
+        'interval': 10,
+        'input': {
+            'sensor': {
+                'type': 'socket',
+                'host': 'localhost',
+                'port': 9090,
+                'tags': ['host', 'pod'],
+            },
+        },
     }
 
-    dic_a = {
-        "a": 10
+
+def test_parse_validates_fixed_section_without_component_type():
+    """
+    Test that CLI assignments configure a fixed group section without a type.
+    """
+    manager = ConfigurationParsingManager()
+    manager.add_group('formula')
+    smartwatts = ConfigurationSectionSchema()
+    smartwatts.add_argument('learn-error-window-size', argument_type=int)
+    manager.add_section('formula', 'smartwatts', smartwatts)
+
+    result = manager.parse([
+        'powerapi',
+        '-C', 'formula.smartwatts.learn-error-window-size=10',
+    ])
+
+    assert result == {
+        'formula': {
+            'smartwatts': {
+                'learn-error-window-size': 10,
+            },
+        },
     }
 
-    dic_a_sub = {
-        "a": 10,
-        "sub": {
-            "type": "toto",
-            "b": True
-        }
+
+@pytest.mark.parametrize('args', [
+    ['powerapi', '--interval', '12'],
+    ['--interval', '12'],
+])
+def test_parse_accepts_arguments_with_or_without_executable(parsing_manager, args):
+    """
+    Test that parsing accepts argument lists with or without an executable name.
+    """
+    assert parsing_manager.parse(args) == {'verbose': False, 'interval': 12}
+
+
+def test_parse_uses_sys_argv_by_default(parsing_manager, monkeypatch):
+    """
+    Test that parsing uses the process arguments when no argument list is provided.
+    """
+    monkeypatch.setattr(sys, 'argv', ['powerapi', '--interval', '12'])
+
+    assert parsing_manager.parse() == {'verbose': False, 'interval': 12}
+
+
+def test_parse_applies_defaults_when_sources_are_empty(parsing_manager):
+    """
+    Test that parsing an empty configuration applies root defaults.
+    """
+    assert parsing_manager.parse([]) == {'verbose': False, 'interval': 10}
+
+
+def test_parse_merges_sources_with_cli_then_environment_then_file_precedence(parsing_manager, monkeypatch, tmp_path):
+    """
+    Test CLI, environment, and file precedence for root and component values.
+    """
+    config_file = tmp_path / 'powerapi-pytest.json'
+    config_file.write_text(json.dumps({
+        'interval': 1,
+        'input': {
+            'sensor': {
+                'type': 'socket',
+                'host': 'file',
+                'port': 1001,
+                'tags': ['file'],
+            },
+        },
+    }), encoding='utf-8')
+    monkeypatch.setenv('TEST_POWERAPI_INTERVAL', '2')
+    monkeypatch.setenv('TEST_POWERAPI_INPUT_SENSOR_HOST', 'environment')
+    monkeypatch.setenv('TEST_POWERAPI_INPUT_SENSOR_PORT', '2002')
+
+    result = parsing_manager.parse([
+        'powerapi',
+        '--config-file', str(config_file),
+        '-C', 'interval=3',
+        '-C', 'input.sensor.port=3003',
+    ])
+
+    assert result == {
+        'verbose': False,
+        'interval': 3,
+        'input': {
+            'sensor': {
+                'type': 'socket',
+                'host': 'environment',
+                'port': 3003,
+                'tags': ['file'],
+            },
+        },
     }
 
-    dic_b = {
-        "b": True
+
+def test_parse_resolves_environment_component_type_for_partial_file_configuration(parsing_manager, monkeypatch, tmp_path):
+    """
+    Test that a partial file component inherits its type from the environment after merging.
+    """
+    config_file = tmp_path / 'powerapi-pytest.json'
+    config_file.write_text(json.dumps({
+        'input': {
+            'sensor': {
+                'port': 9080,
+            },
+        },
+    }), encoding='utf-8')
+    monkeypatch.setenv('TEST_POWERAPI_INPUT_SENSOR_TYPE', 'socket')
+
+    result = parsing_manager.parse([
+        'powerapi',
+        '--config-file', str(config_file),
+    ])
+
+    assert result['input']['sensor'] == {
+        'type': 'socket',
+        'host': 'localhost',
+        'port': 9080,
     }
 
-    with pytest.raises(UnknownArgException):
-        parser_manager.validate(dic_z)
 
-    with pytest.raises(UnknownArgException):
-        parser_manager.validate(dic_a)
-
-    with pytest.raises(UnknownArgException):
-        parser_manager.validate(dic_a_sub)
-
-    with pytest.raises(UnknownArgException):
-        parser_manager.validate(dic_b)
-
-
-def test_arguments_dict_validation_with_parsing_manager(root_config_parsing_manager):
-    """
-    Test validation of arguments dictionary with a parsing manager and retrieve the following results:
-
-    - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : UnknownArgException(sub)
-    - "-b" : UnknownArgException(b)
-
-    ConfigParsingManager description:
-
-    - base parser arguments : -a
-    """
-
-    dic_z = {
-        "z": True
-    }
-
-    dic_a = {
-        "a": True
-    }
-
-    dic_a_sub = {
-        "a": True,
-        "sub1": {
-            "type": "toto",
-            "b": True
-        }
-    }
-
-    dic_b = {
-        "b": True
-    }
-
-    with pytest.raises(UnknownArgException):
-        root_config_parsing_manager.validate(dic_z)
-
-    assert root_config_parsing_manager.validate(dic_a) == dic_a
-
-    with pytest.raises(UnknownArgException):
-        root_config_parsing_manager.validate(dic_a_sub)
-
-    with pytest.raises(UnknownArgException):
-        root_config_parsing_manager.validate(dic_b)
-
-
-def test_arguments_string_parsing_with_subgroup_parser_in_subgroup_parsing_manager(root_config_parsing_manager):
-    """
-    Test to parse arguments with a parsing manager containing a subgroup parser. It must retrieve the following
-    results :
-
-    - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b" : NoNameSpecifiedForSubgroupException
-    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
-    - "-b" : BadContextException(b, [toto])
-
-    ConfigParsingManager description:
-
-    - base parser arguments: -a
-    - subgroup parser toto bound to the argument sub with sub arguments: -b and --name
-    """
-
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    check_parse_cli_result(root_config_parsing_manager, "", {})
-
-    with pytest.raises(UnknownArgException):
-        check_parse_cli_result(root_config_parsing_manager, "-z", {})
-
-    check_parse_cli_result(root_config_parsing_manager, '-a', {'a': True})
-
-    with pytest.raises(NoNameSpecifiedForSubgroupException):
-        check_parse_cli_result(root_config_parsing_manager, '-a --sub toto -b', {})
-
-    check_parse_cli_result(root_config_parsing_manager, '-a --sub toto -b --name titi',
-                           {'a': True, 'sub': {'titi': {'type': 'toto', 'b': True}}})
-
-    with pytest.raises(BadContextException):
-        check_parse_cli_result(root_config_parsing_manager, "-b", {})
-
-
-def test_arguments_dict_validation_with_subgroup_parser_in_subgroup_parsing_manager(root_config_parsing_manager):
-    """
-    Test to validate arguments with a parsing manager containing a subgroup parser. It must retrieve the following
-    results:
-
-    - "" : {}
-    - "-z" : UnknownArgException(z)
-    - "-a" : {a: True}
-    - "-a --sub toto -b --name titi" : {a:True, sub: { titi: { 'type': 'toto', b: True}}}
-    - "-b" : UnknownArgException(b)
-
-    ConfigParsingManager description:
-
-    - base parser arguments : -a
-    - subparser toto bound to the argument sub with sub arguments : -b and --name
-    """
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('type', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    dic_a = {'a': True}
-
-    dic_z = {
-        "z": True
-    }
-
-    dic_b = {
-        'b': "type"
-    }
-
-    dic_a_sub = {
-        'a': True,
-        'sub': {
-            'titi':
-                {
-                    'type': 'toto',
-                    'b': "type"
-                }
-        }
-    }
-
-    with pytest.raises(UnknownArgException):
-        root_config_parsing_manager.validate(dic_z)
-
-    with pytest.raises(UnknownArgException):
-        root_config_parsing_manager.validate(dic_b)
-
-    assert root_config_parsing_manager.validate(dic_a) == dic_a
-
-    assert root_config_parsing_manager.validate(dic_a_sub) == dic_a_sub
-
-    assert root_config_parsing_manager.validate({}) == {}
-
-
-def test_parsing_of_two_subgroups_of_the_same_type_with_subgroup_parsing_manager(root_config_parsing_manager):
-    """
-    Test the parsing of two subgroups of the same type created with the following cli:
-    --sub toto --name titi --sub toto -b --name tutu
-
-    The result must be:
-    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'b':True}}}
-
-    """
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub toto -b --name tutu',
-                           {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'b': True}}})
-
-
-def test_validation_of_two_subgroups_of_the_same_type_in_subgroup_parsing_manager(root_config_parsing_manager):
-    """
-    Test the validation of two subgroups of the same type created with the following cli:
-    --sub toto --name titi --sub toto -b -n 'my_name'
-
-    The result must be:
-    {sub:{'titi' : {'type': 'toto'}, 'tutu': {'type': 'toto', 'n':'my_name'}}}
-
-    """
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('type')
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    expected_dic = {'sub': {'titi': {'type': 'toto'}, 'tutu': {'type': 'toto', 'n': 'my_name'}}}
-    assert root_config_parsing_manager.validate(expected_dic) == expected_dic
-
-
-def test_parsing_of_two_subgroups_of_different_type_in_subgroup_parsing_manager(root_config_parsing_manager):
-    """
-    Test the validation of two subgroups of different type created with the following cli:
-    Create two component with different type with the following cli :
-    --sub toto --name titi --sub tutu --name tete
-
-    The result must be:
-    {sub:{'titi' : {'type': 'toto'}, 'tete': {'type': 'tutu'}}}
-
-    """
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    subparser = SubgroupConfigParsingManager('tutu')
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub tutu --name tete',
-                           {'sub': {'titi': {'type': 'toto'}, 'tete': {'type': 'tutu'}}})
-
-
-def test_parsing_of_repeated_subgroups_in_subgroup_parsing_manager_raise_an_exception(root_config_parsing_manager):
-    """
-    Test the parsing of two subgroups with same type and name created with the following cli:
-    --sub toto --name titi --sub toto --name titi
-
-    SubgroupAlreadyExistException must be raised
-    """
-
-    subparser = SubgroupConfigParsingManager('toto')
-    subparser.add_argument('b', is_flag=True, action=store_true)
-    subparser.add_argument('n', 'name')
-    root_config_parsing_manager.add_subgroup_parser('sub', subparser)
-
-    with pytest.raises(SubgroupAlreadyExistException):
-        check_parse_cli_result(root_config_parsing_manager, '--sub toto --name titi --sub toto --name titi', None)
-
-
-def test_arguments_string_parsing_with_and_without_val_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test to parse arguments with and without value. The expected results are:
-
-    - "-c" : MissingValue(c)
-    - "-d" : MissingValue(d)
-    - "-c 1" : {c : 1}
-    - "-d 10" : {d : 10}
-
-    ConfigParsingManager description:
-
-    - base parser arguments: -a (flag), -c (no flag), -d (int)
-    """
-
-    root_config_parsing_manager.add_argument('c')
-
-    root_config_parsing_manager.add_argument('d', argument_type=int)
-
-    with pytest.raises(MissingValueException):
-        check_parse_cli_result(root_config_parsing_manager, '-c', None)
-
-    with pytest.raises(MissingValueException):
-        check_parse_cli_result(root_config_parsing_manager, '-d', None)
-
-    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'c': '1'})
-
-    check_parse_cli_result(root_config_parsing_manager, '-d 10', {'d': 10})
-
-
-def test_validation_of_arguments_dict_parsing_with_val_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test the validation of arguments with value. The expected results are:
-
-    - "-c 1" : {c : 1}
-    - "-d 89" : {d : 89}
-
-    ConfigParsingManager description:
-
-    - base parser arguments: -a (flag), -c (not flag), -d (int)
-    """
-    root_config_parsing_manager.add_argument('c')
-
-    root_config_parsing_manager.add_argument('d', argument_type=int)
-
-    dic_c = {'c': '1'}
-    dic_d = {'d': 89}
-
-    assert root_config_parsing_manager.validate(dic_c) == dic_c
-
-    assert root_config_parsing_manager.validate(dic_d) == dic_d
-
-
-def test_arguments_string_parsing_type_checking_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test that the type of argument is correctly checked by the parsing manager when a string is used as input
-    """
-    root_config_parsing_manager.add_argument('c', argument_type=int)
-
-    with pytest.raises(BadTypeException):
-        check_parse_cli_result(root_config_parsing_manager, '-c string', {'c': 'string'})
-
-    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'c': 1})
-
-
-def test_validation_of_arguments_dict_type_checking_in_root_parsing_manager(root_config_parsing_manager):
-    """
-        Test that the argument type is correctly validated by the parser when a dict is used as input
-    """
-    root_config_parsing_manager.add_argument('c', argument_type=int)
-
-    str_dic = {'c': 'string'}
-    int_dic = {'c': 42}
-
-    with pytest.raises(BadTypeException):
-        root_config_parsing_manager.validate(str_dic)
-
-    assert root_config_parsing_manager.validate(int_dic) == int_dic
-
-
-# multi name tests #
-def test_arguments_string_parsing_with_long_and_short_names_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test that arguments parsing only relates parsing result to long name in arguments with long and short names
-    """
-    root_config_parsing_manager.add_argument('c', 'coco')
-    root_config_parsing_manager.add_argument('d', 'xx', argument_type=int)
-
-    check_parse_cli_result(root_config_parsing_manager, '-c 1', {'coco': '1'})
-
-    check_parse_cli_result(root_config_parsing_manager, '-d 555', {'xx': 555})
-
-
-def test_add_arguments_with_two_short_names_raise_an_exception_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test if adding arguments to a parser with two short names raise a SameLengthArgumentNamesException
-    The arguments are not added
-    """
-    with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument('c', 'd')
-
-    with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument('t', 's')
-
-    assert len(root_config_parsing_manager.cli_parser.arguments) == 4  # --help, -h and sub
-
-    assert root_config_parsing_manager.cli_parser.long_arg == ['help', 'sub=']
-    assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
-
-
-def test_add_arguments_with_two_long_names_raise_an_exception_in_root_parsing_manager(root_config_parsing_manager):
-    """
-    Test if adding arguments to a parser with long names raise a SameLengthArgumentNamesException.
-    The arguments are not added
-    """
-    with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument('coco', 'dodo')
-
-    with pytest.raises(SameLengthArgumentNamesException):
-        root_config_parsing_manager.add_argument('ddddd', 'plplp')
-
-    assert len(root_config_parsing_manager.cli_parser.arguments) == 4  # -a, --help, -h and sub
-
-    assert root_config_parsing_manager.cli_parser.long_arg == ['help', 'sub=']
-    assert root_config_parsing_manager.cli_parser.short_arg == 'ha'
-
-
-# Type tests #
-def test_add_argument_with_default_type_in_root_parsing_manager():
-    """
-    Test if adding arguments without type has string (default type) as type
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('a')
-    parser_manager.add_argument('b')
-    result_a = parser_manager.parse('python -a 1'.split())
-    result_b = parser_manager.parse('python3 -b string'.split())
-    assert len(result_a) == 1
-    assert 'a' in result_a
-    assert isinstance(result_a['a'], str)
-
-    assert len(result_b) == 1
-    assert 'b' in result_b
-    assert isinstance(result_b['b'], str)
-
-
-def test_add_argument_with_type_in_root_parsing_manager():
-    """
-    Test if adding arguments with a type have currently this type
-
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('a', argument_type=int)
-    parser_manager.add_argument('b', argument_type=bool)
-
-    result = parser_manager.parse('python -a 1'.split())
-    assert len(result) == 1
-    assert 'a' in result
-    assert isinstance(result['a'], int)
-
-    result = parser_manager.parse('python3 -b false'.split())
-    assert len(result) == 1
-    assert 'b' in result
-    assert isinstance(result['b'], bool)
-
-
-def test_parsing_of_arguments_string_with_wrong_type_raise_an_exception_in_root_parsing_manager():
-    """
-    Test that parsing arguments with a wrong value type raises a BadTypeException
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('a', argument_type=int)
-
-    with pytest.raises(BadTypeException):
-        parser_manager._parse_cli('-a a'.split())
-
-
-# parse with Subparser tests #
-def test_add_subgroup_parser_that_already_exists_raises_an_exception_in_root_parsing_manager():
-    """
-    Test that adding a subgroup parser that already exists raises an
-    AlreadyAddedSubparserException
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_subgroup(name='toto')
-    subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument('n', 'name')
-    parser_manager.add_subgroup_parser('toto', subparser)
-
-    repeated_subparser = SubgroupConfigParsingManager('titi')
-    repeated_subparser.add_argument('n', 'name')
-
-    with pytest.raises(AlreadyAddedSubparserException):
-        parser_manager.add_subgroup_parser('toto', repeated_subparser)
-
-
-def test_parsing_of_arguments_string_with_subgroup_parser_with_long_and_short_arguments_names_in_root_parsing_manager():
-    """
-    Tests that parsing arguments of a subgroup parser with long and short names arguments
-    only binds parser results to the long name
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_subgroup(name='sub')
-    subparser = SubgroupConfigParsingManager('titi')
-    subparser.add_argument('a', 'aaa', is_flag=True, action=store_true, default_value=False)
-    subparser.add_argument('c', 'ttt', is_flag=False, action=store_val, argument_type=int)
-    subparser.add_argument('n', 'name')
-    parser_manager.add_subgroup_parser('sub', subparser)
-    check_parse_cli_result(parser_manager, '--sub titi -a --name tutu -c 15',
-                           {'sub': {'tutu': {'aaa': True, 'type': 'titi', 'ttt': 15}}})
-
-
-def test_add_subgroup_parser_without_name_argument_raise_an_exception_in_root_parsing_manager():
-    """
-    Test that adding a subgroup parser with no argument 'name' raises a
-    SubgroupParserWithoutNameArgumentException
-    """
-    parser = RootConfigParsingManager()
-    subparser = SubgroupConfigParsingManager('titi')
-
-    with pytest.raises(SubgroupParserWithoutNameArgumentException):
-        parser.add_subgroup_parser('toto', subparser)
-
-
-def test_parsing_empty_string_return_empty_configuration_in_root_parsing_manager():
-    """
-    Test that the result of parsing an empty string is a empty dict
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('a', default_value=1)
-    parser_manager.add_argument('xxx', default_value='val')
-    result = parser_manager._parse_cli(''.split())
-    assert len(result) == 0
-
-
-def test_validate_empty_dict_return_default_values_of_arguments_in_root_parsing_manager():
-    """
-    Test that the result of parsing an empty dict is a dict of arguments with their default value
-    """
-    parser_manager = RootConfigParsingManager()
-    parser_manager.add_argument('c', argument_type=int, default_value=1)
-    parser_manager.add_argument('hello', argument_type=str, default_value="world")
-
-    default_dic = {}
-    expected_dic = {'c': 1, 'hello': 'world'}
-
-    assert parser_manager.validate(default_dic) == expected_dic
-
-
-def test_parsing_configuration_file_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a json file containing a configuration is correctly parsed
-    """
-    config_file = 'root_manager_basic_configuration.json'
-    expected_dict = load_configuration_from_json_file(config_file)
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
-    assert result == expected_dict
-
-
-def test_parsing_configuration_file_with_long_and_short_names_for_arguments_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a json file containing a configuration with long and short names for arguments is correctly parsed
+def test_parse_propagates_cli_errors(parsing_manager):
     """
-    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['argumento2'] = expected_dict.pop('2')
-    expected_dict['arg5'] = expected_dict.pop('5')
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
-    assert result == expected_dict
-
-
-def test_parsing_configuration_file_with_no_argument_with_default_value_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a json file containing a configuration with no values for arguments with default values
-    is correctly parsed
-    """
-    config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['arg5'] = 'default value'
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
-
-    assert result == expected_dict
-
-
-def test_parsing_configuration_file_with_unknown_argument_terminate_execution_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a json file containing a configuration with unknown arguments stops execution of the application
-    """
-    config_file = 'root_manager_basic_configuration_with_unknown_argument.json'
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=f'--config-file {test_files_path}/{config_file}'.split())
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-
-def test_parsing_configuration_file_with_wrong_argument_terminate_execution_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a json file containing a configuration with unknown arguments stops execution of the application
-    """
-    config_file = 'root_manager_basic_configuration_with_argument_type_value.json'
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse(args=('--config-file ' + test_files_path + '/' + config_file).split())
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration.json'])
-def test_parsing_cli_configuration_in_root_parsing_manager(
-        config_file,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        cli_configuration):
-    """
-    Test that a list of strings containing a configuration is correctly parsed
-    """
-    expected_dict = load_configuration_from_json_file(config_file)
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-    assert result == expected_dict
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_long_and_short_names.json'])
-def test_parsing_cli_configuration_with_long_and_short_names_for_arguments_in_root_parsing_manager(
-        config_file, cli_configuration,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that a list of strings containing a configuration with long and short names for arguments is correctly parsed
-    """
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['argumento2'] = expected_dict.pop('2')
-    expected_dict['arg5'] = expected_dict.pop('5')
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-    assert result == expected_dict
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_no_argument_with_default_value.json'])
-def test_parsing_cli_configuration_with_no_argument_with_default_value_in_root_parsing_manager(
-        config_file, cli_configuration,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that a list of strings containing a configuration with no values for arguments with default values
-    is correctly parsed
-    """
-    expected_dict = load_configuration_from_json_file(config_file)
-
-    expected_dict['arg5'] = 'default value'
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_unknown_argument.json'])
-def test_parsing_cli_configuration_with_unknown_argument_terminate_execution_in_root_parsing_manager(
-        config_file, cli_configuration,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
-    """
-    Test that a list of strings containing a configuration with unknown arguments stops execution of the application
-    """
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-
-def test_parsing_environment_variables_configuration_in_root_parsing_manager(
-        empty_cli_configuration,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that a list of environment variables containing a configuration is correctly parsed
-    """
-    config_file = 'root_manager_basic_configuration.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_unknown_argument_terminate_execution_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that a list of environment variables containing a configuration is correctly parsed
-    """
-    config_file = 'root_manager_basic_configuration_with_unknown_argument.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_long_and_short_names_for_arguments_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a configuration defined via environment variables with long and short names for arguments is correctly
-    parsed
-    """
-    config_file = 'root_manager_basic_configuration_with_long_and_short_names.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['argumento2'] = expected_dict.pop('2')
-    expected_dict['arg5'] = expected_dict.pop('5')
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_no_argument_with_default_value_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that the parsing of a configuration defined via environment variables missing arguments with
-    default values results in a dict with the default values for those arguments
-    """
-    config_file = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['arg5'] = 'default value'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_no_argument_with_default_value.json'])
-def test_configuration_priority_between_cli_and_environment_variables_in_root_parsing_manager(
-        config_file, cli_configuration,
-        root_config_parsing_manager_with_mandatory_and_optional_arguments):
-    """
-    Test that arguments values defined via the CLI are preserved regarding values defined via environment variables
-    """
-    config_file_environment_variables = 'root_manager_basic_configuration.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict["arg5"] = "this is a value"  # This value is not defined by the CLI but it has to be present
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_no_argument_with_default_value.json'])
-def test_configuration_priority_between_cli_and_configuration_file_in_root_parsing_manager(config_file,
-                                                                                           cli_configuration,
-                                                                                           root_config_parsing_manager_with_mandatory_and_optional_arguments,
-                                                                                           test_files_path,
-                                                                                           monkeypatch):
-    """
-    Test that arguments values defined via the CLI are preserved regarding values defined via a configuration file
-    """
-    monkeypatch.setattr(sys, 'argv',  [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict["arg5"] = "this is a value"  # This value is not defined by the CLI but it has to be present
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-
-def test_configuration_priority_between_environment_variables_and_configuration_file_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path, monkeypatch):
-    """
-    Test that arguments values defined via environment variables are preserved regarding values defined via
-    a configuration file
-    """
-    config_file_environment_variables = 'root_manager_basic_configuration_with_no_argument_with_default_value.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file_environment_variables)
-    expected_dict["arg5"] = "this is a value"  # This value is not defined by the CLI but it has to be present
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-@pytest.mark.parametrize('config_file', ['root_manager_basic_configuration_with_no_argument_with_default_value.json'])
-def test_configuration_priority_between_cli_environment_variables_and_configuration_file_in_root_parsing_manager(
-        config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path, monkeypatch):
-    """
-    Test the following argument definition priority:
-    1. CLI
-    2. Environment Variables
-    3. Configuration file
-    """
-
-    config_file_environment_variables = 'root_manager_basic_configuration_with_long_and_short_names.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_basic_configuration.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict["arg5"] = "this is a value 3"
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_subgroups_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a configuration defined via environment variables with subgroups is correctly parsed
-    """
-    config_file = 'root_manager_configuration_with_subgroups.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_subgroups_and_long_and_short_names_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a configuration defined via environment variables with subgroups is correctly parsed
-    """
-    config_file = 'root_manager_configuration_with_subgroups_and_long_and_short_names.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file('root_manager_configuration_with_subgroups.json')
-    expected_dict['input']['in1']['name'] = 'i1_name'
-    expected_dict['output']['o1']['model'] = 'o1_model_x'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_subgroups_and_unknown_arguments_terminate_execution_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a configuration defined via environment variables with subgroups and unknown arguments terminates
-    the execution
-    """
-    config_file = 'root_manager_configuration_with_subgroups_and_unknown_arguments.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_subgroups_and_no_arguments_with_default_value_in_root_parsing_manager(
-        empty_cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
-    """
-    Test that a configuration defined via environment variables with subgroups without variables with default values
-    is correctly parsed
-    """
-    config_file = 'root_manager_configuration_with_subgroups_and_no_argument_default_value.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['input']['in1']['name'] = 'my_i1_instance'
-    expected_dict['output']['o1']['name'] = 'my_o1_instance'
-    expected_dict['output']['o2']['name'] = 'my_o2_instance'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_parsing_environment_variables_with_subgroups_and_wrong_type_terminate_execution_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments, test_files_path):
+    Test that command-line parsing errors propagate to the caller.
     """
-    Test that a configuration defined via environment variables with subgroups and wrong argument type terminates
-    the execution
-    """
-    config_file = 'root_manager_configuration_with_subgroups_and_wrong_argument_type_value.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result.type is SystemExit
-    assert result.value.code == -1
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-@pytest.mark.parametrize('config_file',
-                         ['root_manager_configuration_with_subgroups_and_no_argument_default_value.json'])
-def test_config_priority_between_cli_environ_variables_and_configuration_file_with_subgroups_in_root_parsing_manager(
-        config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path, monkeypatch):
-    """
-    Test the following argument definition priority for a configuration with subgroups:
-    1. CLI
-    2. Environment Variables
-    3. Configuration file
-    """
-
-    config_file_environment_variables = 'root_manager_configuration_with_subgroups_and_long_and_short_names.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_configuration_with_subgroups.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['input']['in1']['name'] = 'i1_name'
-    expected_dict['output']['o1']['name'] = 'o1_name'
-    expected_dict['output']['o2']['name'] = 'o2_name'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-@pytest.mark.parametrize('config_file',
-                         ['root_manager_configuration_with_subgroups_and_no_argument_default_value.json'])
-def test_config_priority_between_cli_and_environ_variables_with_subgroups_in_root_parsing_manager(
-        config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path):
-    """
-    Test that arguments values defined via the CLI are preserved regarding values defined via environment variables
-    with subgroups in configuration
-    """
-
-    config_file_environment_variables = 'root_manager_configuration_with_subgroups_and_long_and_short_names.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    expected_dict = load_configuration_from_json_file(file_name=config_file)
-    expected_dict['input']['in1']['name'] = 'i1_name'
-    expected_dict['output']['o1']['name'] = 'o1_name'
-    expected_dict['output']['o2']['name'] = 'o2_name'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
+    with pytest.raises(CLIParseException, match='unrecognized arguments'):
+        parsing_manager.parse(['powerapi', '--unknown'])
 
 
-@pytest.mark.parametrize('config_file',
-                         ['root_manager_configuration_with_subgroups_and_no_argument_default_value.json'])
-def test_config_priority_between_cli_and_configuration_file_with_subgroups_in_root_parsing_manager(
-        config_file, cli_configuration, root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path, monkeypatch):
+def test_parse_propagates_configuration_errors(parsing_manager):
     """
-    Test that arguments values defined via the CLI are preserved regarding values defined via a config file
-    with subgroups in configuration
+    Test that schema validation errors propagate with their configuration path.
     """
-    monkeypatch.setattr(sys, 'argv', [*sys.argv, '--config-file', test_files_path + '/root_manager_configuration_with_subgroups.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file)
-    expected_dict['input']['in1']['name'] = 'in1_name'
-    expected_dict['output']['o1']['name'] = 'o1_name'
-    expected_dict['output']['o2']['name'] = 'o2_name'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-
-def test_config_priority_between_environ_variables_and_configuration_file_with_subgroups_in_root_parsing_manager(
-        root_config_parsing_manager_with_mandatory_and_optional_arguments,
-        test_files_path, monkeypatch):
-    """
-    Test that arguments values defined via the environment variables are preserved regarding values defined via a config
-    file with subgroups in configuration
-    """
-
-    config_file_environment_variables = 'root_manager_configuration_with_subgroups_and_no_argument_default_value.json'
-    created_environment_variables = define_environment_variables_configuration_from_json_file(
-        file_name=config_file_environment_variables,
-        simple_argument_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        arguments_prefix[0],
-        group_arguments_prefix=root_config_parsing_manager_with_mandatory_and_optional_arguments.cli_parser.
-        get_groups_prefixes())
-
-    monkeypatch.setattr(sys, 'argv', ['--config-file', test_files_path + '/root_manager_configuration_with_subgroups_and_long_and_short_names.json'])
-
-    expected_dict = load_configuration_from_json_file(config_file_environment_variables)
-    expected_dict['input']['in1']['name'] = 'i1_name'
-    expected_dict['output']['o1']['name'] = 'o1_name'
-    expected_dict['output']['o2']['name'] = 'o2_name'
-
-    result = root_config_parsing_manager_with_mandatory_and_optional_arguments.parse()
-
-    assert result == expected_dict
-
-    remove_environment_variables_configuration(variables_names=created_environment_variables)
-
-
-def test_add_subgroup_in_root_parsing_manager():
-    """
-    Test that a subgroup is correctly added to a parsing manager
-    """
-    parser_manager = RootConfigParsingManager()
-
-    assert len(parser_manager.cli_parser.subgroup_parsers) == 0
-
-    parser_manager.add_subgroup(name='sub')
-
-    assert len(parser_manager.cli_parser.subgroup_parsers) == 1
-
-    parser_manager.add_subgroup(name='sub1')
-
-    assert len(parser_manager.cli_parser.subgroup_parsers) == 2
-
-    parser_manager.add_subgroup(name='sub3')
+    with pytest.raises(ConfigurationError) as result:
+        parsing_manager.parse(['powerapi', '-C', 'input.sensor.type=unknown'])
 
-    assert len(parser_manager.cli_parser.subgroup_parsers) == 3
+    assert result.value.path == 'input.sensor.type'
 
 
-def test_add_repeated_subgroup_terminate_execution_in_root_parsing_manager(root_config_parsing_manager):
+def test_parse_propagates_missing_configuration_file(parsing_manager, tmp_path):
     """
-    Test that adding a repeated terminates the execution
+    Test that selecting a missing configuration file raises FileNotFoundError.
     """
-    with pytest.raises(SystemExit) as result:
-        _ = root_config_parsing_manager.add_subgroup(name='sub')
+    missing_file = tmp_path / 'powerapi-pytest-missing.json'
 
-    assert result.type is SystemExit
-    assert result.value.code == -1
+    with pytest.raises(FileNotFoundError):
+        parsing_manager.parse(['powerapi', '--config-file', str(missing_file)])

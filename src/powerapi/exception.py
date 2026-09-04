@@ -34,7 +34,7 @@ class PowerAPIException(Exception):
     """
 
     def __init__(self, *args: object):
-        Exception.__init__(self, args)
+        Exception.__init__(self, *args)
 
 
 class PowerAPIExceptionWithMessage(PowerAPIException):
@@ -43,8 +43,25 @@ class PowerAPIExceptionWithMessage(PowerAPIException):
     """
 
     def __init__(self, msg):
-        PowerAPIException.__init__(self)
+        PowerAPIException.__init__(self, msg)
         self.msg = msg
+
+
+class ConfigurationError(PowerAPIExceptionWithMessage):
+    """
+    Exception raised when configuration loading or validation fails.
+    """
+
+    def __init__(self, reason: str, path: str | None = None):
+        """
+        Initialize a configuration error.
+        :param reason: User-facing explanation of the invalid configuration.
+        :param path: Dotted path of the invalid value, or None for an error affecting the full configuration.
+        """
+        self.reason = reason
+        self.path = path
+        prefix = f'Invalid configuration at "{path}": ' if path else 'Invalid configuration: '
+        super().__init__(prefix + reason)
 
 
 class BadInputData(PowerAPIException):
