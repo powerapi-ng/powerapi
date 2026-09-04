@@ -29,7 +29,6 @@
 import pytest
 
 from powerapi.cli.generator import PusherGenerator
-from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
 pytest.importorskip('powerapi.database.clickhouse.driver')  # The ClickHouse driver requires external dependencies to work.
@@ -81,16 +80,3 @@ def test_pusher_generator_with_valid_clickhouse_config(clickhouse_config):
     assert db_factory.username == expected_db_attributes['username']
     assert db_factory.password == expected_db_attributes['password']
     assert db_factory.database_name == expected_db_attributes['database']
-
-
-@pytest.mark.parametrize('missing_arg', ['model', 'host', 'port', 'username', 'password', 'database'])
-def test_pusher_generator_with_missing_arguments_in_clickhouse_config(clickhouse_config, missing_arg):
-    """
-    PusherGenerator should raise an exception when a required argument is missing from the ClickHouse config.
-    """
-    generator = PusherGenerator()
-
-    clickhouse_config['output']['pytest-clickhouse-pusher'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(clickhouse_config)

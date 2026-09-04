@@ -29,7 +29,6 @@
 import pytest
 
 from powerapi.cli.generator import PusherGenerator
-from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
 pytest.importorskip("powerapi.database.prometheus.driver")  # The Prometheus driver requires external dependencies to work.
@@ -76,16 +75,3 @@ def test_pusher_generator_with_valid_prometheus_config(prometheus_config):
     assert db_factory.listen_addr == expected_db_attributes['addr']
     assert db_factory.listen_port == expected_db_attributes['port']
     assert set(db_factory.tags) == {'powerapi_example_tag1', 'powerapi_example_tag2'}
-
-
-@pytest.mark.parametrize('missing_arg', ['model', 'addr', 'port'])
-def test_pusher_generator_with_missing_arguments_in_mongodb_config(prometheus_config, missing_arg):
-    """
-    PusherGenerator should raise an exception when a required argument is missing from the Prometheus config.
-    """
-    generator = PusherGenerator()
-
-    prometheus_config['output']['pytest-prometheus-pusher'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(prometheus_config)

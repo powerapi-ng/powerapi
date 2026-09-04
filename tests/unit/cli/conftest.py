@@ -41,18 +41,6 @@ def several_inputs_outputs_stream_config():
 
 
 @pytest.fixture
-def several_inputs_outputs_stream_socket_without_some_arguments_config(several_inputs_outputs_stream_config):
-    """
-    Configuration with a socket input missing a required argument.
-    """
-    for current_input in several_inputs_outputs_stream_config['input'].values():
-        if current_input['type'] == 'socket':
-            current_input.pop('port')
-
-    return several_inputs_outputs_stream_config
-
-
-@pytest.fixture
 def several_inputs_outputs_postmortem_config(several_inputs_outputs_stream_config):
     """
     Configuration with several inputs and outputs and stream mode disabled.

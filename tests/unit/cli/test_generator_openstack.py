@@ -46,7 +46,8 @@ def openstack_config():
             'pytest-openstack-preprocessor': {
                 'type': 'openstack',
                 'puller': 'pytest-json-puller',
-                'polling-interval': 10.0
+                'polling-interval': 10.0,
+                'metadata': ['environment'],
             }
         }
     }
@@ -67,3 +68,6 @@ def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
 
     expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
     assert preprocessor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
+    assert preprocessor.monitor_config.metadata_mapping == {
+        'environment': 'openstack_metadata_environment',
+    }

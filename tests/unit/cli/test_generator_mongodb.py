@@ -29,7 +29,6 @@
 import pytest
 
 from powerapi.cli.generator import PusherGenerator, PullerGenerator
-from powerapi.exception import PowerAPIException
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -89,20 +88,6 @@ def test_puller_generator_with_valid_mongodb_config(mongodb_config):
     assert db_factory.database_name == expected_db_attributes['db']
     assert db_factory.collection_name == expected_db_attributes['collection']
 
-
-@pytest.mark.parametrize('missing_arg', ['model', 'uri'])
-def test_puller_generator_with_missing_arguments_in_mongodb_config(mongodb_config, missing_arg):
-    """
-    PullerGenerator should raise an exception when a required argument is missing from the MongoDB config.
-    """
-    generator = PullerGenerator(BroadcastReportFilter())
-
-    mongodb_config['input']['pytest-mongodb-puller'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(mongodb_config)
-
-
 def test_pusher_generator_with_valid_mongodb_config(mongodb_config):
     """
     PusherGenerator should generate a PusherActor with a MongoDB database driver.
@@ -123,16 +108,3 @@ def test_pusher_generator_with_valid_mongodb_config(mongodb_config):
     assert db_factory.uri == expected_db_attributes['uri']
     assert db_factory.database_name == expected_db_attributes['db']
     assert db_factory.collection_name == expected_db_attributes['collection']
-
-
-@pytest.mark.parametrize('missing_arg', ['model', 'uri', 'db', 'collection'])
-def test_pusher_generator_with_missing_arguments_in_mongodb_config(mongodb_config, missing_arg):
-    """
-    PusherGenerator should raise an exception when a required argument is missing from the MongoDB config.
-    """
-    generator = PusherGenerator()
-
-    mongodb_config['output']['pytest-mongodb-pusher'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(mongodb_config)

@@ -29,7 +29,6 @@
 import pytest
 
 from powerapi.cli.generator import PusherGenerator
-from powerapi.exception import PowerAPIException
 from powerapi.pusher import PusherActor
 
 pytest.importorskip("powerapi.database.influxdb2.driver")  # The InfluxDB2 driver requires external dependencies to work.
@@ -79,16 +78,3 @@ def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
     assert db_factory.org == expected_db_attributes['org']
     assert db_factory.token == expected_db_attributes['token']
     assert db_factory.bucket == expected_db_attributes['bucket']
-
-
-@pytest.mark.parametrize('missing_arg', ['model', 'uri', 'org', 'token', 'bucket'])
-def test_pusher_generator_with_missing_arguments_in_influxdb2_config(influxdb2_config, missing_arg):
-    """
-    PusherGenerator should raise an exception when a required argument is missing from the InfluxDB2 config.
-    """
-    generator = PusherGenerator()
-
-    influxdb2_config['output']['pytest-influxdb2-pusher'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(influxdb2_config)

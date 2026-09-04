@@ -27,23 +27,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+from copy import deepcopy
+
 import pytest
 
-from powerapi.cli.generator import ModelNameDoesNotExist
-from powerapi.cli.generator import PullerGenerator, DBActorGenerator, PusherGenerator, PreProcessorGenerator
+from powerapi.cli.generator import (
+    PreProcessorGenerator,
+    PullerGenerator,
+    PusherGenerator,
+)
 from powerapi.database.csv.driver import CSVInputFactory, CSVOutputFactory
 from powerapi.database.json.driver import JsonInputFactory, JsonOutputFactory
 from powerapi.database.socket.driver import SocketInputFactory
-from powerapi.exception import PowerAPIException
+from powerapi.exception import ConfigurationError, PowerAPIException
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.report import PowerReport, FormulaReport
+from powerapi.report import FormulaReport, HWPCReport, PowerReport
+
+
+def _unavailable_factory(_: dict):
+    """
+    Simulate a component factory whose optional dependency is unavailable.
+    """
+    raise ImportError
 
 
 def test_generate_puller_from_empty_config_dict_raise_an_exception():
     """
-    Test that PullerGenerator raises a PowerAPIException when there is no input argument
+    Test that PullerGenerator raises a PowerAPIException when there is no input argument.
     """
     conf = {}
     generator = PullerGenerator(BroadcastReportFilter())
@@ -52,16 +65,32 @@ def test_generate_puller_from_empty_config_dict_raise_an_exception():
         generator.generate(conf)
 
 
-def test_generate_several_pullers_from_config(several_inputs_outputs_stream_config):
+@pytest.mark.parametrize('input_type', ['csv', 'json'])
+def test_generate_file_puller_in_stream_mode_raise_an_exception(several_inputs_outputs_stream_config, input_type):
     """
-    Test that several inputs are correctly used to generate the related actors
+    Test that PullerGenerator rejects input types that do not support stream mode.
+    """
+    config = deepcopy(several_inputs_outputs_stream_config)
+    config['input'] = {name: value for name, value in config['input'].items() if value['type'] == input_type}
+    generator = PullerGenerator(BroadcastReportFilter())
+
+    with pytest.raises(ConfigurationError) as raised_exception:
+        generator.generate(config)
+
+    assert raised_exception.value.path == 'stream'
+    assert raised_exception.value.reason == f'Stream mode cannot be used with a {input_type} input'
+
+
+def test_generate_several_pullers_from_config(several_inputs_outputs_postmortem_config):
+    """
+    Test that several inputs are correctly used to generate the related actors.
     """
     generator = PullerGenerator(BroadcastReportFilter())
-    pullers = generator.generate(several_inputs_outputs_stream_config)
+    pullers = generator.generate(several_inputs_outputs_postmortem_config)
 
-    assert len(pullers) == len(several_inputs_outputs_stream_config['input'])
+    assert len(pullers) == len(several_inputs_outputs_postmortem_config['input'])
 
-    for puller_name, current_puller_infos in several_inputs_outputs_stream_config['input'].items():
+    for puller_name, current_puller_infos in several_inputs_outputs_postmortem_config['input'].items():
         assert puller_name in pullers
         assert isinstance(pullers[puller_name], PullerActor)
 
@@ -81,55 +110,113 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_stream_conf
             pytest.fail(f'Unsupported puller type: {current_puller_infos["type"]}')
 
 
-def test_generate_puller_raise_exception_when_missing_arguments_in_socket_input(
-        several_inputs_outputs_stream_socket_without_some_arguments_config):
+def test_generate_streaming_puller_preserves_runtime_settings(several_inputs_outputs_stream_config):
     """
-    Test that PullerGenerator raise a PowerAPIException when some arguments are missing for socket input
+    Test that a streaming puller receives its filter, stream mode, and logging level.
+    """
+    config = deepcopy(several_inputs_outputs_stream_config)
+    config['input'] = {'puller3': config['input']['puller3']}
+    report_filter = BroadcastReportFilter()
+
+    puller = PullerGenerator(report_filter).generate(config)['puller3']
+
+    assert puller.report_filter is report_filter
+    assert puller.stream_mode is True
+    assert puller.logging_level == logging.DEBUG
+
+
+def test_generate_puller_with_registered_report_model(several_inputs_outputs_postmortem_config):
+    """
+    Test that a registered report model is resolved when generating a puller.
+    """
+    config = deepcopy(several_inputs_outputs_postmortem_config)
+    config['input'] = {'puller2': config['input']['puller2']}
+    config['input']['puller2']['model'] = 'CustomReport'
+    generator = PullerGenerator(BroadcastReportFilter())
+    generator.add_report_class('CustomReport', HWPCReport)
+
+    puller = generator.generate(config)['puller2']
+
+    assert puller.database_factory.report_type is HWPCReport
+
+
+def test_register_existing_report_model_raises_value_error():
+    """
+    Test that a report model cannot be registered more than once.
     """
     generator = PullerGenerator(BroadcastReportFilter())
 
-    with pytest.raises(PowerAPIException):
-        generator.generate(several_inputs_outputs_stream_socket_without_some_arguments_config)
+    with pytest.raises(ValueError, match='Report model "HWPCReport" is already registered'):
+        generator.add_report_class('HWPCReport', HWPCReport)
 
 
-def test_remove_model_factory_that_does_not_exist_on_a_DBActorGenerator_must_raise_ModelNameDoesNotExist():
+def test_register_existing_database_type_raises_value_error():
     """
-    Test that an exception is raised when a model factory that does not exist is erased
+    Test that a database type cannot be registered more than once.
     """
-    generator = DBActorGenerator('input')
-    num_report_classes = len(generator.report_classes)
+    generator = PullerGenerator(BroadcastReportFilter())
 
-    with pytest.raises(ModelNameDoesNotExist):
-        generator.remove_report_class('model')
-
-    assert len(generator.report_classes) == num_report_classes
+    with pytest.raises(ValueError, match='Database type "csv" is already registered'):
+        generator.add_db_factory('csv', generator.database_factories['csv'])
 
 
-def test_remove_hwpc_report_model_and_generate_puller_from_a_config_using_model(several_inputs_outputs_stream_config):
+def test_generate_puller_with_unknown_report_model_raises_an_exception(several_inputs_outputs_postmortem_config):
     """
     PullerGenerator should raise an exception when the model of an input is not defined.
     """
+    config = deepcopy(several_inputs_outputs_postmortem_config)
+    next(iter(config['input'].values()))['model'] = 'UnknownReport'
     generator = PullerGenerator(BroadcastReportFilter())
-    generator.remove_report_class('HWPCReport')
 
-    with pytest.raises(PowerAPIException):
-        _ = generator.generate(several_inputs_outputs_stream_config)
+    with pytest.raises(PowerAPIException, match='Configuration error: Unknown report model "UnknownReport"'):
+        generator.generate(config)
 
 
-def test_remove_csv_database_factory_and_generate_puller_from_a_config_using_type(several_inputs_outputs_stream_config):
+def test_generate_puller_with_unknown_database_type_raises_an_exception(several_inputs_outputs_postmortem_config):
     """
     PullerGenerator should raise an exception when the database of an input is not defined.
     """
+    config = deepcopy(several_inputs_outputs_postmortem_config)
+    next(iter(config['input'].values()))['type'] = 'unknown'
     generator = PullerGenerator(BroadcastReportFilter())
-    generator.remove_db_factory('csv')
 
-    with pytest.raises(PowerAPIException):
-        _ = generator.generate(several_inputs_outputs_stream_config)
+    with pytest.raises(PowerAPIException, match='Configuration error: Invalid database type: unknown'):
+        generator.generate(config)
 
 
-def test_generate_pusher_from_empty_config_dict_raise_an_exception():
+def test_generate_puller_with_unavailable_database_dependency_raises_an_exception(several_inputs_outputs_postmortem_config):
     """
-    Test that PusherGenerator raise an exception when there is no output argument
+    Test that a missing database dependency is reported as a configuration error.
+    """
+    config = deepcopy(several_inputs_outputs_postmortem_config)
+    config['input'] = {'puller2': config['input']['puller2']}
+    config['input']['puller2']['type'] = 'unavailable'
+    generator = PullerGenerator(BroadcastReportFilter())
+    generator.add_db_factory('unavailable', _unavailable_factory)
+
+    with pytest.raises(PowerAPIException, match='Dependencies for unavailable database are not installed'):
+        generator.generate(config)
+
+
+def test_generate_does_not_modify_configuration(several_inputs_outputs_postmortem_config):
+    """
+    Test that generating pullers and pushers repeatedly preserves the canonical configuration.
+    """
+    expected = deepcopy(several_inputs_outputs_postmortem_config)
+    puller_generator = PullerGenerator(BroadcastReportFilter())
+    pusher_generator = PusherGenerator()
+
+    puller_generator.generate(several_inputs_outputs_postmortem_config)
+    pusher_generator.generate(several_inputs_outputs_postmortem_config)
+    puller_generator.generate(several_inputs_outputs_postmortem_config)
+    pusher_generator.generate(several_inputs_outputs_postmortem_config)
+
+    assert several_inputs_outputs_postmortem_config == expected
+
+
+def test_generate_pusher_from_empty_config_dict_raises_an_exception():
+    """
+    Test that PusherGenerator raises an exception when there is no output argument.
     """
     conf = {}
     generator = PusherGenerator()
@@ -140,7 +227,7 @@ def test_generate_pusher_from_empty_config_dict_raise_an_exception():
 
 def test_generate_several_pushers_from_config(several_inputs_outputs_stream_config):
     """
-    Test that several outputs are correctly used to generate the related actors
+    Test that several outputs are correctly used to generate the related actors.
 
     """
     generator = PusherGenerator()
@@ -181,12 +268,65 @@ def test_generate_pusher_report_type_to_actor_mapping(single_input_multiple_outp
     assert [proxy.actor_type for proxy in report_mapping[FormulaReport]] == [PusherActor]
 
 
-def test_generate_pre_processor_from_empty_config_dict_raise_an_exception():
+def test_generate_pusher_report_mapping_without_output_group_raises_an_exception():
     """
-    Test that PreProcessGenerator raise an exception when there is no processor argument
+    Test that report mapping requires the output component group.
+    """
+    generator = PusherGenerator()
+
+    with pytest.raises(PowerAPIException, match='Configuration error: Component "output" is not defined'):
+        generator.generate_report_mapping({}, {})
+
+
+def test_generate_pusher_report_mapping_with_missing_actor_raises_an_exception():
+    """
+    Test that report mapping rejects an output without a generated actor.
+    """
+    config = {'output': {'missing': {'model': 'PowerReport'}}}
+    generator = PusherGenerator()
+
+    with pytest.raises(PowerAPIException, match='Actor "missing" is not defined'):
+        generator.generate_report_mapping(config, {})
+
+
+def test_generate_pre_processor_from_empty_config_dict_raises_an_exception():
+    """
+    Test that PreProcessGenerator raises an exception when there is no processor argument.
     """
     conf = {}
     generator = PreProcessorGenerator()
 
     with pytest.raises(PowerAPIException):
         generator.generate(conf)
+
+
+def test_register_existing_processor_type_raises_value_error():
+    """
+    Test that a processor type cannot be registered more than once.
+    """
+    generator = PreProcessorGenerator()
+
+    with pytest.raises(ValueError, match='Processor type "kubernetes" is already registered'):
+        generator.add_processor_factory('kubernetes', generator.processor_factories['kubernetes'])
+
+
+def test_generate_unknown_processor_type_raises_an_exception():
+    """
+    Test that generating an unknown processor type raises a configuration error.
+    """
+    config = {'verbose': False, 'pre-processor': {'processor': {'type': 'unknown'}}}
+
+    with pytest.raises(PowerAPIException, match='Configuration error: Invalid processor type: unknown'):
+        PreProcessorGenerator().generate(config)
+
+
+def test_generate_processor_with_unavailable_dependency_raises_an_exception():
+    """
+    Test that a missing processor dependency is reported as a configuration error.
+    """
+    config = {'verbose': False, 'pre-processor': {'processor': {'type': 'unavailable'}}}
+    generator = PreProcessorGenerator()
+    generator.add_processor_factory('unavailable', _unavailable_factory)
+
+    with pytest.raises(PowerAPIException, match='Dependencies for unavailable processor are not installed'):
+        generator.generate(config)

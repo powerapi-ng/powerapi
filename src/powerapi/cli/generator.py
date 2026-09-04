@@ -32,185 +32,176 @@ from collections.abc import Callable
 
 from powerapi.actor import Actor, ActorProxy
 from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
-from powerapi.exception import PowerAPIException, ModelNameAlreadyUsed, DatabaseNameDoesNotExist, ModelNameDoesNotExist, \
-    DatabaseNameAlreadyUsed, ProcessorTypeDoesNotExist, ProcessorTypeAlreadyUsed
+from powerapi.exception import ConfigurationError, PowerAPIException
 from powerapi.filter import ReportFilter
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
-from powerapi.report import HWPCReport, PowerReport, Report, FormulaReport
+from powerapi.report import FormulaReport, HWPCReport, PowerReport, Report
 from powerapi.utils.metadata import build_metadata_mapping
 
 COMPONENT_TYPE_KEY = 'type'
 COMPONENT_MODEL_KEY = 'model'
-COMPONENT_DB_NAME_KEY = 'db'
-COMPONENT_DB_COLLECTION_KEY = 'collection'
-COMPONENT_DB_MANAGER_KEY = 'db_manager'
-COMPONENT_DB_MAX_BUFFER_SIZE_KEY = 'max_buffer_size'
-COMPONENT_URI_KEY = 'uri'
 
 ACTOR_NAME_KEY = 'actor_name'
-REGEXP_KEY = 'regexp'
-
-K8S_API_MODE_KEY = 'api-mode'
-K8S_API_KEY_KEY = 'api-key'
-K8S_API_HOST_KEY = 'api-host'
-
-LISTENER_ACTOR_KEY = 'listener_actor'
 
 GENERAL_CONF_STREAM_MODE_KEY = 'stream'
 GENERAL_CONF_VERBOSE_KEY = 'verbose'
 
+_NON_STREAMING_INPUT_TYPES = frozenset(('csv', 'json'))
 
-class Generator:
+
+class Generator[ActorT: Actor]:
     """
-    Generate an actor class and actor start message from config dict.
-    The config dict has the following structure:
-    {
-        "arg1_key": value,
-        "arg2_key": value
-        ...
-        "component_group_name1":{
-            "arg1_cpn1_key": value,
-            "arg2_cpn1_key": value,
-            ...
-
-        }
-        component_group_name2:{
-            ...
-        }
-        ...
-    }
-    """
-
-    def __init__(self, component_group_name):
-        self.component_group_name = component_group_name
-
-    def generate(self, main_config: dict) -> dict[str, Actor]:
-        """
-        Generate an actor class and actor start message from config dict
-        """
-        if self.component_group_name not in main_config:
-            raise PowerAPIException(f'Configuration error : Component {self.component_group_name} group is unknown')
-
-        actors = {}
-        for component_name, component_config in main_config[self.component_group_name].items():
-            try:
-                actors[component_name] = self._gen_actor(component_config, main_config, component_name)
-            except KeyError as exn:
-                raise PowerAPIException(f'Configuration error: Missing "{exn.args[0]}" argument for {component_name} component') from exn
-            except ValueError as exn:
-                raise PowerAPIException(f'Configuration error: Invalid parameter for {component_name} component: {exn.args[0]}') from exn
-
-        return actors
-
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> Actor:
-        raise NotImplementedError()
-
-
-class BaseGenerator(Generator):
-    """
-    Generate an Actor and Start message from config
+    Generate actors for one configured component group.
     """
 
     def __init__(self, component_group_name: str):
-        Generator.__init__(self, component_group_name)
+        """
+        Initialize a generator for a component group.
+        :param component_group_name: Name of the component group to generate.
+        """
+        self.component_group_name = component_group_name
+
+    def generate(self, main_config: dict) -> dict[str, ActorT]:
+        """
+        Generate every actor configured in the component group.
+        :param main_config: Canonical PowerAPI configuration.
+        :return: Generated actors indexed by component name.
+        :raises PowerAPIException: If the component group is missing or a component configuration is invalid.
+        """
+        if self.component_group_name not in main_config:
+            raise PowerAPIException(f'Configuration error: Component "{self.component_group_name}" is not defined')
+
+        actors = {}
+        for component_name, component_config in main_config[self.component_group_name].items():
+            actors[component_name] = self._gen_actor(component_config, main_config, component_name)
+
+        return actors
+
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ActorT:
+        """
+        Generate one actor from its component configuration.
+        :param component_config: Canonical component configuration.
+        :param main_config: Canonical PowerAPI configuration.
+        :param component_name: Name of the component to generate.
+        :return: Generated actor.
+        """
+        raise NotImplementedError()
+
+
+class DBActorGenerator[ActorT: Actor, DBFactoryT: ReadableDatabaseFactory | WritableDatabaseFactory](Generator[ActorT]):
+    """
+    Resolve database factories before generating database-backed actors.
+    """
+
+    def __init__(self, component_group_name: str):
+        """
+        Initialize a database-backed actor generator.
+        :param component_group_name: Name of the component group to generate.
+        """
+        super().__init__(component_group_name)
         self.report_classes: dict[str, type[Report]] = {
             'HWPCReport': HWPCReport,
             'PowerReport': PowerReport,
             'FormulaReport': FormulaReport,
         }
+        self.database_factories: dict[str, Callable[[dict], DBFactoryT]] = {}
 
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
-        model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
-        component_config[COMPONENT_MODEL_KEY] = model
-
-        actor = self._actor_factory(component_name, main_config, component_config)
-        return actor
-
-    def _get_report_class(self, model_name: str, component_config: dict):
-        if model_name not in self.report_classes:
-            raise PowerAPIException(f'Configuration error: model type {model_name} unknown')
-
-        return self.report_classes[component_config[COMPONENT_MODEL_KEY]]
-
-    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict):
-        raise NotImplementedError
-
-
-class DBActorGenerator(BaseGenerator):
-    """
-    ActorGenerator that initialise the start message with a database from config
-    """
-
-    def __init__(self, component_group_name: str):
-        super().__init__(component_group_name)
-
-        self.db_factory: dict[str, Callable[[dict], ReadableDatabaseFactory | WritableDatabaseFactory]] = {}
-
-    def remove_report_class(self, model_name: str):
+    def _get_report_class(self, model_name: str) -> type[Report]:
         """
-        remove a Model from generator
+        Resolve a configured report model name.
+        :param model_name: Registered report model name.
+        :return: Report class registered for the configured model.
+        :raises PowerAPIException: If the report model is unknown.
         """
-        if model_name not in self.report_classes:
-            raise ModelNameDoesNotExist(model_name)
-
-        del self.report_classes[model_name]
-
-    def remove_db_factory(self, database_name: str):
-        """
-        remove a database from generator
-        """
-        if database_name not in self.db_factory:
-            raise DatabaseNameDoesNotExist(database_name)
-
-        del self.db_factory[database_name]
+        try:
+            return self.report_classes[model_name]
+        except KeyError as error:
+            raise PowerAPIException(f'Configuration error: Unknown report model "{model_name}"') from error
 
     def add_report_class(self, model_name: str, report_class: type[Report]):
         """
-        add a report class to generator
+        Register a report class.
+        :param model_name: Name identifying the report model.
+        :param report_class: Report class associated with the model name.
+        :raises ValueError: If the report model is already registered.
         """
         if model_name in self.report_classes:
-            raise ModelNameAlreadyUsed(model_name)
+            raise ValueError(f'Report model "{model_name}" is already registered')
 
         self.report_classes[model_name] = report_class
 
-    def add_db_factory(self, db_name: str, db_factory_function: Callable[[dict], ReadableDatabaseFactory | WritableDatabaseFactory]):
+    def add_db_factory(self, db_name: str, db_factory_function: Callable[[dict], DBFactoryT]):
         """
-        add a database to generator
+        Register a database factory.
+        :param db_name: Database type handled by the factory.
+        :param db_factory_function: Function creating a database factory from component configuration.
+        :raises ValueError: If the database type is already registered.
         """
-        if db_name in self.db_factory:
-            raise DatabaseNameAlreadyUsed(db_name)
+        if db_name in self.database_factories:
+            raise ValueError(f'Database type "{db_name}" is already registered')
 
-        self.db_factory[db_name] = db_factory_function
+        self.database_factories[db_name] = db_factory_function
 
-    def _generate_db(self, db_name: str, component_config: dict):
+    def _create_database_factory(self, db_name: str, component_config: dict) -> DBFactoryT:
+        """
+        Create a database factory for a component.
+        :param db_name: Registered database type.
+        :param component_config: Canonical component configuration.
+        :return: Configured readable or writable database factory.
+        :raises PowerAPIException: If the database type is unknown or its optional dependencies are unavailable.
+        """
         try:
-            return self.db_factory[db_name](component_config)
-        except KeyError as exn:
-            raise PowerAPIException('Configuration error: Invalid database type: %s', db_name) from exn
-        except ImportError as exn:
-            raise PowerAPIException('Dependencies for %s database are not installed', db_name) from exn
+            factory = self.database_factories[db_name]
+        except KeyError as error:
+            raise PowerAPIException(f'Configuration error: Invalid database type: {db_name}') from error
 
-    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str):
-        model = self._get_report_class(component_config[COMPONENT_MODEL_KEY], component_config)
-        component_config[COMPONENT_MODEL_KEY] = model
-        database_manager = self._generate_db(component_config[COMPONENT_TYPE_KEY], component_config)
-        component_config[COMPONENT_DB_MANAGER_KEY] = database_manager
+        try:
+            return factory(component_config)
+        except ImportError as error:
+            raise PowerAPIException(f'Dependencies for {db_name} database are not installed') from error
 
-        actor = self._actor_factory(component_name, main_config, component_config)
-        return actor
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ActorT:
+        """
+        Resolve the report model and database factory before generating an actor.
+        :param component_config: Canonical component configuration.
+        :param main_config: Canonical PowerAPI configuration.
+        :param component_name: Name of the component to generate.
+        :return: Generated database-backed actor.
+        :raises PowerAPIException: If the report model or database type is unknown or a dependency is unavailable.
+        """
+        factory_config = dict(component_config)
+        factory_config[COMPONENT_MODEL_KEY] = self._get_report_class(component_config[COMPONENT_MODEL_KEY])
+        database_factory = self._create_database_factory(
+            component_config[COMPONENT_TYPE_KEY],
+            factory_config,
+        )
+
+        return self._actor_factory(component_name, main_config, database_factory)
+
+    def _actor_factory(self, actor_name: str, main_config: dict, database_factory: DBFactoryT) -> ActorT:
+        """
+        Create a database-backed actor from a resolved component configuration.
+        :param actor_name: Name assigned to the actor.
+        :param main_config: Canonical PowerAPI configuration.
+        :param database_factory: Configured database factory.
+        :return: Generated actor.
+        """
+        raise NotImplementedError
 
 
-class PullerGenerator(DBActorGenerator):
+class PullerGenerator(DBActorGenerator[PullerActor, ReadableDatabaseFactory]):
     """
-    Generate Puller Actor class and Puller start message from config
+    Generate puller actors from input component configurations.
     """
 
     @staticmethod
     def _csv_input_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
-        CSV Input database factory method.
+        Create a CSV input database factory.
+        :param conf: Canonical CSV input configuration.
+        :return: Configured CSV input factory.
         """
         from powerapi.database.csv.driver import CSVInputFactory
         return CSVInputFactory(conf['model'], conf['files'])
@@ -218,7 +209,9 @@ class PullerGenerator(DBActorGenerator):
     @staticmethod
     def _json_input_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
-        JSON Input database factory method.
+        Create a JSON input database factory.
+        :param conf: Canonical JSON input configuration.
+        :return: Configured JSON input factory.
         """
         from powerapi.database.json.driver import JsonInputFactory
         return JsonInputFactory(conf['model'], conf['filepath'], conf['compression'])
@@ -226,7 +219,9 @@ class PullerGenerator(DBActorGenerator):
     @staticmethod
     def _socket_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
-        Socket Input database factory method.
+        Create a socket input database factory.
+        :param conf: Canonical socket input configuration.
+        :return: Configured socket input factory.
         """
         from powerapi.database.socket.driver import SocketInputFactory
         return SocketInputFactory(conf['model'], conf['host'], conf['port'])
@@ -234,14 +229,17 @@ class PullerGenerator(DBActorGenerator):
     @staticmethod
     def _mongodb_database_factory(conf: dict) -> ReadableDatabaseFactory:
         """
-        MongoDB Input database factory method.
+        Create a MongoDB input database factory.
+        :param conf: Canonical MongoDB input configuration.
+        :return: Configured MongoDB input factory.
         """
         from powerapi.database.mongodb.driver import MongodbInputFactory
         return MongodbInputFactory(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
     def __init__(self, report_filter: ReportFilter):
         """
-        :param report_filter: Report filter to apply for incoming reports
+        Initialize a puller generator with the built-in input types.
+        :param report_filter: Report filter applied to incoming reports.
         """
         super().__init__('input')
 
@@ -252,29 +250,45 @@ class PullerGenerator(DBActorGenerator):
         self.add_db_factory('socket', self._socket_database_factory)
         self.add_db_factory('mongodb', self._mongodb_database_factory)
 
-    def _actor_factory(self, actor_name: str, main_config, component_config: dict) -> PullerActor:
+    def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> PullerActor:
         """
-        Actor factory method.
-        :param actor_name: Name of the actor
-        :param main_config: Global configuration
-        :param component_config: Actor configuration
-        :return: Configured Puller actor
+        Generate a puller after checking that its input supports the configured execution mode.
+        :param component_config: Canonical input component configuration.
+        :param main_config: Canonical PowerAPI configuration.
+        :param component_name: Name of the input component.
+        :return: Configured puller actor.
+        :raises ConfigurationError: If stream mode is enabled for a non-streaming input type.
         """
-        database = component_config[COMPONENT_DB_MANAGER_KEY]
+        input_type = component_config[COMPONENT_TYPE_KEY]
+        if main_config[GENERAL_CONF_STREAM_MODE_KEY] and input_type in _NON_STREAMING_INPUT_TYPES:
+            raise ConfigurationError(f'Stream mode cannot be used with a {input_type} input', GENERAL_CONF_STREAM_MODE_KEY)
+
+        return super()._gen_actor(component_config, main_config, component_name)
+
+    def _actor_factory(self, actor_name: str, main_config: dict, database_factory: ReadableDatabaseFactory) -> PullerActor:
+        """
+        Create a puller actor.
+        :param actor_name: Name assigned to the actor.
+        :param main_config: Canonical PowerAPI configuration.
+        :param database_factory: Configured readable database factory.
+        :return: Configured puller actor.
+        """
         stream_mode = main_config[GENERAL_CONF_STREAM_MODE_KEY]
         logging_level = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
-        return PullerActor(actor_name, database, self.report_filter, stream_mode, level_logger=logging_level)
+        return PullerActor(actor_name, database_factory, self.report_filter, stream_mode, level_logger=logging_level)
 
 
-class PusherGenerator(DBActorGenerator):
+class PusherGenerator(DBActorGenerator[PusherActor, WritableDatabaseFactory]):
     """
-    Generate Pusher actor and Pusher start message from config
+    Generate pusher actors from output component configurations.
     """
 
     @staticmethod
     def _csv_output_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        CSV Output database factory method.
+        Create a CSV output database factory.
+        :param conf: Canonical CSV output configuration.
+        :return: Configured CSV output factory.
         """
         from powerapi.database.csv.driver import CSVOutputFactory
         return CSVOutputFactory(conf['model'], conf['directory'])
@@ -282,7 +296,9 @@ class PusherGenerator(DBActorGenerator):
     @staticmethod
     def _json_output_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        JSON Output database factory method.
+        Create a JSON output database factory.
+        :param conf: Canonical JSON output configuration.
+        :return: Configured JSON output factory.
         """
         from powerapi.database.json.driver import JsonOutputFactory
         return JsonOutputFactory(conf['model'], conf['filepath'], conf['compression'])
@@ -290,7 +306,9 @@ class PusherGenerator(DBActorGenerator):
     @staticmethod
     def _mongodb_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        MongoDB Output database factory method.
+        Create a MongoDB output database factory.
+        :param conf: Canonical MongoDB output configuration.
+        :return: Configured MongoDB output factory.
         """
         from powerapi.database.mongodb.driver import MongodbOutputFactory
         return MongodbOutputFactory(conf['model'], conf['uri'], conf['db'], conf['collection'])
@@ -298,7 +316,9 @@ class PusherGenerator(DBActorGenerator):
     @staticmethod
     def _influxdb2_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        InfluxDB2 database factory method.
+        Create an InfluxDB 2 output database factory.
+        :param conf: Canonical InfluxDB 2 output configuration.
+        :return: Configured InfluxDB 2 output factory.
         """
         from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
         return InfluxDB2OutputFactory(conf['model'], conf['uri'], conf['org'], conf['bucket'], conf['token'])
@@ -306,7 +326,9 @@ class PusherGenerator(DBActorGenerator):
     @staticmethod
     def _prometheus_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        Prometheus database factory method.
+        Create a Prometheus output database factory.
+        :param conf: Canonical Prometheus output configuration.
+        :return: Configured Prometheus output factory.
         """
         from powerapi.database.prometheus.driver import PrometheusOutputFactory
         return PrometheusOutputFactory(conf['model'], conf['addr'], conf['port'], conf.get('tags', []))
@@ -314,12 +336,17 @@ class PusherGenerator(DBActorGenerator):
     @staticmethod
     def _clickhouse_database_factory(conf: dict) -> WritableDatabaseFactory:
         """
-        ClickHouse output database factory method.
+        Create a ClickHouse output database factory.
+        :param conf: Canonical ClickHouse output configuration.
+        :return: Configured ClickHouse output factory.
         """
         from powerapi.database.clickhouse.driver import ClickHouseOutputFactory
         return ClickHouseOutputFactory(conf['model'], conf['host'], conf['port'], conf['username'], conf['password'], conf['database'])
 
     def __init__(self):
+        """
+        Initialize a pusher generator with the built-in output types.
+        """
         super().__init__('output')
 
         self.add_db_factory('csv', self._csv_output_database_factory)
@@ -329,24 +356,24 @@ class PusherGenerator(DBActorGenerator):
         self.add_db_factory('prometheus', self._prometheus_database_factory)
         self.add_db_factory('clickhouse', self._clickhouse_database_factory)
 
-    def _actor_factory(self, actor_name: str, main_config: dict, component_config: dict) -> PusherActor:
+    def _actor_factory(self, actor_name: str, main_config: dict, database_factory: WritableDatabaseFactory) -> PusherActor:
         """
-        Actor factory method.
-        :param actor_name: Name of the actor
-        :param main_config: Global configuration
-        :param component_config: Actor configuration
-        :return: Configured Pusher actor
+        Create a pusher actor.
+        :param actor_name: Name assigned to the actor.
+        :param main_config: Canonical PowerAPI configuration.
+        :param database_factory: Configured writable database factory.
+        :return: Configured pusher actor.
         """
-        database = component_config[COMPONENT_DB_MANAGER_KEY]
         level_logger = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
-        return PusherActor(actor_name, database, logger_level=level_logger)
+        return PusherActor(actor_name, database_factory, logger_level=level_logger)
 
-    def generate_report_mapping(self, main_config: dict, actors: dict[str, Actor]) -> dict[type[Report], list[ActorProxy]]:
+    def generate_report_mapping(self, main_config: dict, actors: dict[str, PusherActor]) -> dict[type[Report], list[ActorProxy]]:
         """
-        Generate the report type to pusher actor mapping.
-        :param main_config: Main configuration
-        :param actors: Dictionary of actors (result of the `generate` method)
-        :return: Dictionary mapping the report type to actors that should process it
+        Map report types to generated pusher proxies.
+        :param main_config: Canonical PowerAPI configuration.
+        :param actors: Generated pusher actors indexed by component name.
+        :return: Pusher proxies indexed by report type.
+        :raises PowerAPIException: If the output group or a configured actor is missing.
         """
         if self.component_group_name not in main_config:
             raise PowerAPIException(f'Configuration error: Component "{self.component_group_name}" is not defined')
@@ -355,67 +382,73 @@ class PusherGenerator(DBActorGenerator):
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
                 actor_proxy = actors[component_name].get_proxy()
-                report_type_to_actor.setdefault(component_config[COMPONENT_MODEL_KEY], []).append(actor_proxy)
-            except KeyError as exn:
-                raise PowerAPIException(f'Actor "{component_name}" is not defined') from exn
+            except KeyError as error:
+                raise PowerAPIException(f'Actor "{component_name}" is not defined') from error
+
+            report_type = self._get_report_class(component_config[COMPONENT_MODEL_KEY])
+            report_type_to_actor.setdefault(report_type, []).append(actor_proxy)
 
         return report_type_to_actor
 
 
-class ProcessorGenerator(Generator):
+class ProcessorGenerator(Generator[ProcessorActor]):
     """
     Generator that initializes the processor actor(s) from the configuration.
     """
 
     def __init__(self, component_group_name: str):
         """
-        :param component_group_name: Name of the component group
+        Initialize a processor generator.
+        :param component_group_name: Name of the component group to generate.
         """
         super().__init__(component_group_name)
 
-        self.processor_factory: dict[str, Callable[[dict], ProcessorActor]] = {}
+        self.processor_factories: dict[str, Callable[[dict], ProcessorActor]] = {}
 
-    def remove_processor_factory(self, processor_type: str) -> None:
+    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable[[dict], ProcessorActor]) -> None:
         """
-        Remove the given processor actor factory from the generator.
-        :param processor_type: Processor type name
+        Register a processor actor factory.
+        :param processor_type: Processor type handled by the factory.
+        :param processor_factory_function: Function creating a processor actor from component configuration.
+        :raises ValueError: If the processor type is already registered.
         """
-        if processor_type not in self.processor_factory:
-            raise ProcessorTypeDoesNotExist(processor_type)
+        if processor_type in self.processor_factories:
+            raise ValueError(f'Processor type "{processor_type}" is already registered')
 
-        del self.processor_factory[processor_type]
+        self.processor_factories[processor_type] = processor_factory_function
 
-    def add_processor_factory(self, processor_type: str, processor_factory_function: Callable) -> None:
+    def _create_processor(self, processor_name: str, component_config: dict) -> ProcessorActor:
         """
-        Add the given processor actor factory to the generator.
-        :param processor_type: Processor type name
-        :param processor_factory_function: Factory method used to generate the processor actors
+        Create a processor actor for a component.
+        :param processor_name: Registered processor type.
+        :param component_config: Resolved processor component configuration.
+        :return: Configured processor actor.
+        :raises PowerAPIException: If the processor type is unknown or its optional dependencies are unavailable.
         """
-        if processor_type in self.processor_factory:
-            raise ProcessorTypeAlreadyUsed(processor_type)
-
-        self.processor_factory[processor_type] = processor_factory_function
-
-    def _generate_processor(self, processor_name: str, component_config: dict) -> ProcessorActor:
         try:
-            return self.processor_factory[processor_name](component_config)
-        except KeyError as exn:
-            raise PowerAPIException('Configuration error: Invalid processor type: %s', processor_name) from exn
-        except ImportError as exn:
-            raise PowerAPIException('Dependencies for %s processor are not installed', processor_name) from exn
+            factory = self.processor_factories[processor_name]
+        except KeyError as error:
+            raise PowerAPIException(f'Configuration error: Invalid processor type: {processor_name}') from error
+
+        try:
+            return factory(component_config)
+        except ImportError as error:
+            raise PowerAPIException(f'Dependencies for {processor_name} processor are not installed') from error
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ProcessorActor:
         """
-        Helper method to generate a processor actor from the given configuration.
-        :param component_config: Configuration of the processor component
-        :param main_config: Global configuration
-        :param component_name: Name of the processor actor to generate
-        :return: Processor actor
+        Add shared processor settings and generate one processor actor.
+        :param component_config: Canonical component configuration.
+        :param main_config: Canonical PowerAPI configuration.
+        :param component_name: Name of the processor actor to generate.
+        :return: Configured processor actor.
+        :raises PowerAPIException: If the processor type is unknown or its optional dependencies are unavailable.
         """
+        runtime_config = dict(component_config)
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]
-        component_config[ACTOR_NAME_KEY] = component_name
-        component_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
-        return self._generate_processor(processor_actor_type, component_config)
+        runtime_config[ACTOR_NAME_KEY] = component_name
+        runtime_config[GENERAL_CONF_VERBOSE_KEY] = main_config[GENERAL_CONF_VERBOSE_KEY]
+        return self._create_processor(processor_actor_type, runtime_config)
 
 
 class PreProcessorGenerator(ProcessorGenerator):
@@ -424,6 +457,9 @@ class PreProcessorGenerator(ProcessorGenerator):
     """
 
     def __init__(self):
+        """
+        Initialize a pre-processor generator with the built-in processor types.
+        """
         super().__init__('pre-processor')
 
         self.add_processor_factory('kubernetes', self._k8s_pre_processor_factory)
@@ -432,16 +468,16 @@ class PreProcessorGenerator(ProcessorGenerator):
     @staticmethod
     def _k8s_pre_processor_factory(processor_config: dict) -> ProcessorActor:
         """
-        Kubernetes pre-processor actor factory.
-        :param processor_config: Pre-Processor configuration
-        :return: Configured Kubernetes pre-processor actor
+        Create a Kubernetes pre-processor actor.
+        :param processor_config: Resolved Kubernetes pre-processor configuration.
+        :return: Configured Kubernetes pre-processor actor.
         """
         from powerapi.processor.pre.k8s.actor import KubernetesPreProcessorActor
         from powerapi.processor.pre.k8s.monitor_agent import KubernetesMonitorConfig
 
-        api_mode = processor_config[K8S_API_MODE_KEY]
-        api_host = processor_config.get(K8S_API_HOST_KEY, None)
-        api_key = processor_config.get(K8S_API_KEY_KEY, None)
+        api_mode = processor_config['api-mode']
+        api_host = processor_config.get('api-host')
+        api_key = processor_config.get('api-key')
         label_mapping = build_metadata_mapping(processor_config.get('labels', []), prefix='k8s_pod_label_')
         monitor_config = KubernetesMonitorConfig(api_mode, api_host, api_key, label_mapping)
 
@@ -452,12 +488,14 @@ class PreProcessorGenerator(ProcessorGenerator):
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:
         """
-        OpenStack pre-processor actor factory.
-        :param processor_config: Pre-Processor configuration
-        :return: Configured OpenStack pre-processor actor
+        Create an OpenStack pre-processor actor.
+        :param processor_config: Resolved OpenStack pre-processor configuration.
+        :return: Configured OpenStack pre-processor actor.
         """
         from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
-        from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
+        from powerapi.processor.pre.openstack.monitor_agent import (
+            OpenStackMonitorConfig,
+        )
 
         api_polling_interval = processor_config['polling-interval']
         metadata_mapping = build_metadata_mapping(processor_config.get('metadata', []), prefix='openstack_metadata_')
