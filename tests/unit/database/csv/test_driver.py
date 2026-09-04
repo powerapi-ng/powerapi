@@ -32,6 +32,7 @@ from pathlib import Path
 import pytest
 
 from powerapi.database.csv.driver import CSVInput, CSVInputFactory, CSVOutput, CSVOutputFactory
+from powerapi.database.exceptions import ConnectionFailed
 from powerapi.report import FormulaReport, HWPCReport, PowerReport, Report
 
 
@@ -64,6 +65,16 @@ def test_csv_input_factory_is_picklable() -> None:
     factory = CSVInputFactory(HWPCReport, ['core.csv', 'msr.csv'])
 
     pickle.dumps(factory)
+
+
+def test_csv_input_connect_with_missing_file_raise_connection_failed(tmp_path) -> None:
+    """
+    CSV input should report a controlled connection failure when an input file cannot be opened.
+    """
+    csv_input = CSVInput(HWPCReport, [str(tmp_path / 'missing.csv')])
+
+    with pytest.raises(ConnectionFailed):
+        csv_input.connect()
 
 
 @pytest.mark.parametrize('report_type', [PowerReport, FormulaReport])
