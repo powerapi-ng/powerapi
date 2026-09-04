@@ -78,36 +78,21 @@ def generate_cli_configuration_from_json_file(file_name: str) -> list:
 
 def generate_cli_configuration_from_dictionary(configuration: dict, group_name: str = '') -> list:
     """
-    Generate a list with arguments defined in dictionary. The list always has arguments --arg1_name, arg1_value,
-    -arg2_name, arg2_value... Each
-    argument name has as prefix '-' if it is short (its length == 1) or '--' if it is long (its length>1)
+    Generate repeatable dotted CLI configuration assignments from a dictionary.
     :param str configuration: The dictionary with the configuration
     :param str group_name: The name of the group that is currently being created
     """
     conf_as_list = []
 
     for argument_name, argument_value in configuration.items():
-        prefix = '--'
-        if len(argument_name) == 1:
-            prefix = '-'
-
-        if not isinstance(argument_value, dict):
-            conf_as_list.append(prefix + argument_name)
-            conf_as_list.append(str(argument_value))
-
+        argument_path = '.'.join(filter(None, (group_name, argument_name)))
+        if isinstance(argument_value, dict):
+            conf_as_list.extend(generate_cli_configuration_from_dictionary(
+                configuration=argument_value,
+                group_name=argument_path,
+            ))
         else:
-
-            if 'type' in argument_value:
-                conf_as_list.append(group_name)
-                conf_as_list.append(argument_value['type'])
-                argument_value.pop('type')
-                conf_as_list.append('--name')
-                conf_as_list.append(argument_name)
-            else:
-                group_name = prefix + argument_name
-
-            conf_as_list.extend(generate_cli_configuration_from_dictionary(configuration=argument_value,
-                                                                           group_name=group_name))
+            conf_as_list.extend(('-C', f'{argument_path}={argument_value}'))
 
     return conf_as_list
 

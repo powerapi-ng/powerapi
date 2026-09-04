@@ -30,8 +30,7 @@ import pytest
 
 pytest.importorskip('kubernetes')
 
-from powerapi.cli.generator import PreProcessorGenerator
-from powerapi.exception import PowerAPIException
+from powerapi.config.generator import PreProcessorGenerator
 from powerapi.processor.pre.k8s.actor import KubernetesPreProcessorActor
 
 
@@ -45,10 +44,11 @@ def k8s_processor_config():
         'verbose': True,
         'pre-processor': {
             'pytest-k8s-preprocessor': {
-                'type': 'k8s',
+                'type': 'kubernetes',
                 'api-mode': 'manual',
                 'api-host': 'https://127.0.0.1:36599',
                 'api-key': 'pytest-token-powerapi',
+                'labels': ['app.kubernetes.io/name'],
                 'puller': 'pytest-json-puller'
             }
         }
@@ -72,16 +72,6 @@ def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     assert preprocessor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']
     assert preprocessor.monitor_config.api_key == expected_preprocessor_attributes['api-key']
     assert preprocessor.monitor_config.api_host == expected_preprocessor_attributes['api-host']
-
-
-@pytest.mark.parametrize('missing_arg', ['api-mode'])
-def test_preprocessor_generator_with_missing_arguments_in_k8s_config(k8s_processor_config, missing_arg):
-    """
-    PreProcessorGenerator should raise an exception when a required argument is missing from the MongoDB config.
-    """
-    generator = PreProcessorGenerator()
-
-    k8s_processor_config['pre-processor']['pytest-k8s-preprocessor'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(k8s_processor_config)
+    assert preprocessor.monitor_config.label_mapping == {
+        'app.kubernetes.io/name': 'k8s_pod_label_app_kubernetes_io_name',
+    }

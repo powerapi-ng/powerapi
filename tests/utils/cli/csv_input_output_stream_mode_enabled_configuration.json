@@ -5,16 +5,14 @@
       "puller": {
           "model": "HWPCReport",
           "type": "csv",
-          "files": ["/tmp/rapl.csv", "/tmp/msr.csv"],
-          "name": "my_puller"
+          "files": ["/tmp/rapl.csv", "/tmp/msr.csv"]
       }
   },
   "output": {
       "pusher_power": {
           "type": "csv",
           "model": "PowerReport",
-          "directory": "/tmp/formula_results",
-          "name": "my_pusher"
+          "directory": "/tmp/formula_results"
       }
   }
 }

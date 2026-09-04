@@ -5,15 +5,13 @@
       "puller2": {
           "model": "HWPCReport",
           "type": "csv",
-          "files": ["/tmp/rapl.csv", "/tmp/msr.csv"],
-          "name": "puller2"
+          "files": ["/tmp/rapl.csv", "/tmp/msr.csv"]
       },
       "puller3": {
           "model": "HWPCReport",
           "type": "socket",
           "host": "localhost",
-          "port": 1111,
-          "name": "puller3"
+          "port": 1111
       },
       "puller4": {
           "model": "HWPCReport",

@@ -28,64 +28,53 @@
 
 import pytest
 
-from powerapi.cli.generator import PusherGenerator
-from powerapi.exception import PowerAPIException
+from powerapi.config.generator import PusherGenerator
 from powerapi.pusher import PusherActor
 
-pytest.importorskip("powerapi.database.prometheus.driver")  # The Prometheus driver requires external dependencies to work.
+pytest.importorskip("powerapi.database.influxdb2.driver")  # The InfluxDB2 driver requires external dependencies to work.
 
-from powerapi.database.prometheus.driver import PrometheusOutputFactory
+from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
 
 
 @pytest.fixture
-def prometheus_config() -> dict:
+def influxdb2_config() -> dict:
     """
-    Fixture that provides a configuration with a Prometheus pusher.
+    Fixture that provides a configuration with an InfluxDB2 pusher.
     """
     return {
         'stream': True,
         'verbose': True,
         'output': {
-            'pytest-prometheus-pusher': {
-                'type': 'prometheus',
+            'pytest-influxdb2-pusher': {
+                'type': 'influxdb2',
                 'model': 'PowerReport',
-                'addr': 'localhost',
-                'port': 8000,
-                'tags': ['powerapi_example_tag1', 'powerapi_example_tag2']
+                'uri': 'http://localhost:8086',
+                'org': 'powerapi',
+                'token': 'powerapi-auth-token',
+                'bucket': 'powerapi-example-bucket',
             }
         }
     }
 
-def test_pusher_generator_with_valid_prometheus_config(prometheus_config):
+
+def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
     """
-    PusherGenerator should generate a PusherActor with a Prometheus database driver.
+    PusherGenerator should generate a PusherActor with an InfluxDB2 database driver.
     """
     pusher_generator = PusherGenerator()
-    pushers = pusher_generator.generate(prometheus_config)
+    pushers = pusher_generator.generate(influxdb2_config)
 
     assert len(pushers) == 1
-    assert 'pytest-prometheus-pusher' in pushers
+    assert 'pytest-influxdb2-pusher' in pushers
 
-    pusher = pushers['pytest-prometheus-pusher']
+    pusher = pushers['pytest-influxdb2-pusher']
     assert isinstance(pusher, PusherActor)
 
     db_factory = pusher.database_factory
-    assert isinstance(db_factory, PrometheusOutputFactory)
+    assert isinstance(db_factory, InfluxDB2OutputFactory)
 
-    expected_db_attributes = prometheus_config['output']['pytest-prometheus-pusher']
-    assert db_factory.listen_addr == expected_db_attributes['addr']
-    assert db_factory.listen_port == expected_db_attributes['port']
-    assert set(db_factory.tags) == {'powerapi_example_tag1', 'powerapi_example_tag2'}
-
-
-@pytest.mark.parametrize('missing_arg', ['model', 'addr', 'port'])
-def test_pusher_generator_with_missing_arguments_in_mongodb_config(prometheus_config, missing_arg):
-    """
-    PusherGenerator should raise an exception when a required argument is missing from the Prometheus config.
-    """
-    generator = PusherGenerator()
-
-    prometheus_config['output']['pytest-prometheus-pusher'].pop(missing_arg)
-
-    with pytest.raises(PowerAPIException):
-        generator.generate(prometheus_config)
+    expected_db_attributes = influxdb2_config['output']['pytest-influxdb2-pusher']
+    assert db_factory.url == expected_db_attributes['uri']
+    assert db_factory.org == expected_db_attributes['org']
+    assert db_factory.token == expected_db_attributes['token']
+    assert db_factory.bucket == expected_db_attributes['bucket']

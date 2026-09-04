@@ -28,42 +28,16 @@
 
 import pytest
 
-pytest.importorskip('openstack')
+from powerapi.database.exceptions import ConnectionFailed
+from powerapi.database.json.driver import JsonInput
+from powerapi.report import HWPCReport
 
-from powerapi.cli.generator import PreProcessorGenerator
-from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
 
-
-@pytest.fixture
-def openstack_config():
+def test_json_input_connect_with_missing_file_raise_connection_failed(tmp_path) -> None:
     """
-    Fixture that provides a configuration with an OpenStack pre-processor.
+    JSON input should report a controlled connection failure when its input file cannot be opened.
     """
-    return {
-        'stream': True,
-        'verbose': True,
-        'pre-processor': {
-            'pytest-openstack-preprocessor': {
-                'type': 'openstack',
-                'puller': 'pytest-json-puller',
-                'polling-interval': 10.0
-            }
-        }
-    }
+    json_input = JsonInput(HWPCReport, str(tmp_path / 'missing.jsonl'), 'auto')
 
-
-def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
-    """
-    PreProcessorGenerator should generate an OpenStackPreProcessorActor when given a valid config.
-    """
-    generator = PreProcessorGenerator()
-    preprocessors = generator.generate(openstack_config)
-
-    assert len(preprocessors) == 1
-    assert 'pytest-openstack-preprocessor' in preprocessors
-
-    preprocessor = preprocessors['pytest-openstack-preprocessor']
-    assert isinstance(preprocessor, OpenStackPreProcessorActor)
-
-    expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
-    assert preprocessor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
+    with pytest.raises(ConnectionFailed):
+        json_input.connect()
