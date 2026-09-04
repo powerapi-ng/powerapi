@@ -32,7 +32,7 @@ from copy import deepcopy
 
 import pytest
 
-from powerapi.cli.generator import (
+from powerapi.config.generator import (
     PreProcessorGenerator,
     PullerGenerator,
     PusherGenerator,

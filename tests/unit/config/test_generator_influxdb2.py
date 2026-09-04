@@ -28,46 +28,53 @@
 
 import pytest
 
-pytest.importorskip('openstack')
+from powerapi.config.generator import PusherGenerator
+from powerapi.pusher import PusherActor
 
-from powerapi.cli.generator import PreProcessorGenerator
-from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
+pytest.importorskip("powerapi.database.influxdb2.driver")  # The InfluxDB2 driver requires external dependencies to work.
+
+from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
 
 
 @pytest.fixture
-def openstack_config():
+def influxdb2_config() -> dict:
     """
-    Fixture that provides a configuration with an OpenStack pre-processor.
+    Fixture that provides a configuration with an InfluxDB2 pusher.
     """
     return {
         'stream': True,
         'verbose': True,
-        'pre-processor': {
-            'pytest-openstack-preprocessor': {
-                'type': 'openstack',
-                'puller': 'pytest-json-puller',
-                'polling-interval': 10.0,
-                'metadata': ['environment'],
+        'output': {
+            'pytest-influxdb2-pusher': {
+                'type': 'influxdb2',
+                'model': 'PowerReport',
+                'uri': 'http://localhost:8086',
+                'org': 'powerapi',
+                'token': 'powerapi-auth-token',
+                'bucket': 'powerapi-example-bucket',
             }
         }
     }
 
 
-def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
+def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
     """
-    PreProcessorGenerator should generate an OpenStackPreProcessorActor when given a valid config.
+    PusherGenerator should generate a PusherActor with an InfluxDB2 database driver.
     """
-    generator = PreProcessorGenerator()
-    preprocessors = generator.generate(openstack_config)
+    pusher_generator = PusherGenerator()
+    pushers = pusher_generator.generate(influxdb2_config)
 
-    assert len(preprocessors) == 1
-    assert 'pytest-openstack-preprocessor' in preprocessors
+    assert len(pushers) == 1
+    assert 'pytest-influxdb2-pusher' in pushers
 
-    preprocessor = preprocessors['pytest-openstack-preprocessor']
-    assert isinstance(preprocessor, OpenStackPreProcessorActor)
+    pusher = pushers['pytest-influxdb2-pusher']
+    assert isinstance(pusher, PusherActor)
 
-    expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
-    assert preprocessor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
-    assert preprocessor.monitor_config.metadata_mapping == {
-        'environment': 'openstack_metadata_environment',
-    }
+    db_factory = pusher.database_factory
+    assert isinstance(db_factory, InfluxDB2OutputFactory)
+
+    expected_db_attributes = influxdb2_config['output']['pytest-influxdb2-pusher']
+    assert db_factory.url == expected_db_attributes['uri']
+    assert db_factory.org == expected_db_attributes['org']
+    assert db_factory.token == expected_db_attributes['token']
+    assert db_factory.bucket == expected_db_attributes['bucket']

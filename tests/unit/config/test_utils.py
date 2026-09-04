@@ -28,7 +28,7 @@
 
 import pytest
 
-from powerapi.cli._utils import merge_dictionaries, string_to_bool, string_to_list
+from powerapi.config._utils import merge_dictionaries, string_to_bool, string_to_list
 
 
 @pytest.mark.parametrize('value', [' YES ', 'y', 'true', 't', '1'])

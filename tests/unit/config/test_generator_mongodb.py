@@ -28,7 +28,7 @@
 
 import pytest
 
-from powerapi.cli.generator import PusherGenerator, PullerGenerator
+from powerapi.config.generator import PusherGenerator, PullerGenerator
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor

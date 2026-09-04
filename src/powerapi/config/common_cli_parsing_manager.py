@@ -27,8 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.cli.config_parser import ComponentSchema
-from powerapi.cli.parsing_manager import ConfigurationParsingManager
+from powerapi.config.config_parser import ComponentSchema
+from powerapi.config.parsing_manager import ConfigurationParsingManager
 
 
 def generate_env_prefix(*components: str, root_prefix: str = 'POWERAPI') -> str:

@@ -30,9 +30,9 @@
 import sys
 from typing import Any
 
-from powerapi.cli.cli_parser import CLIArgumentParser
-from powerapi.cli.config_loader import EnvironmentConfigLoader, JSONConfigLoader
-from powerapi.cli.config_parser import (
+from powerapi.config.cli_parser import CLIArgumentParser
+from powerapi.config.config_loader import EnvironmentConfigLoader, JSONConfigLoader
+from powerapi.config.config_parser import (
     ComponentSchema,
     ConfigurationSchema,
     ConfigurationSectionSchema,

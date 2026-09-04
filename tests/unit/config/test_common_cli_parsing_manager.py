@@ -28,8 +28,8 @@
 
 import pytest
 
-from powerapi.cli.cli_parser import CLIParseException
-from powerapi.cli.common_cli_parsing_manager import (
+from powerapi.config.cli_parser import CLIParseException
+from powerapi.config.common_cli_parsing_manager import (
     CommonCLIParsingManager,
     PreProcessorSchema,
     PullerSchema,

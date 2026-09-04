@@ -30,7 +30,7 @@ import json
 import os
 from collections.abc import Iterable
 
-from powerapi.cli.config_parser import (
+from powerapi.config.config_parser import (
     ComponentGroupSchema,
     ConfigurationSchema,
 )

@@ -32,9 +32,9 @@ import sys
 
 import pytest
 
-from powerapi.cli.cli_parser import CLIParseException
-from powerapi.cli.config_parser import ComponentSchema, ConfigurationSectionSchema
-from powerapi.cli.parsing_manager import ConfigurationParsingManager
+from powerapi.config.cli_parser import CLIParseException
+from powerapi.config.config_parser import ComponentSchema, ConfigurationSectionSchema
+from powerapi.config.parsing_manager import ConfigurationParsingManager
 from powerapi.exception import ConfigurationError
 
 

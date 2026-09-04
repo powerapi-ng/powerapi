@@ -32,8 +32,8 @@ from unittest.mock import Mock
 import pytest
 
 from powerapi.actor import ActorProxy
-from powerapi.cli.binding_manager import PreProcessorBindingManager
-from powerapi.cli.generator import PreProcessorGenerator, PullerGenerator
+from powerapi.config.binding_manager import PreProcessorBindingManager
+from powerapi.config.generator import PreProcessorGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor
 from powerapi.exception import UnexistingActorException, UnsupportedActorTypeException, TargetActorAlreadyUsed
 from powerapi.filter import BroadcastReportFilter

@@ -29,7 +29,7 @@
 import argparse
 from dataclasses import dataclass
 
-from powerapi.cli.config_parser import (
+from powerapi.config.config_parser import (
     ArgumentDefinition,
     ComponentGroupSchema,
     ComponentSchema,

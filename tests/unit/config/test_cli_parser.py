@@ -30,9 +30,9 @@ import argparse
 
 import pytest
 
-from powerapi.cli import cli_parser
-from powerapi.cli.cli_parser import CLIArgumentParser, CLIParseException
-from powerapi.cli.config_parser import (
+from powerapi.config import cli_parser
+from powerapi.config.cli_parser import CLIArgumentParser, CLIParseException
+from powerapi.config.config_parser import (
     ComponentSchema,
     ConfigurationSchema,
     ConfigurationSectionSchema,

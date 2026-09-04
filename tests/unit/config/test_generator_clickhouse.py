@@ -28,53 +28,55 @@
 
 import pytest
 
-from powerapi.cli.generator import PusherGenerator
+from powerapi.config.generator import PusherGenerator
 from powerapi.pusher import PusherActor
 
-pytest.importorskip("powerapi.database.influxdb2.driver")  # The InfluxDB2 driver requires external dependencies to work.
+pytest.importorskip('powerapi.database.clickhouse.driver')  # The ClickHouse driver requires external dependencies to work.
 
-from powerapi.database.influxdb2.driver import InfluxDB2OutputFactory
+from powerapi.database.clickhouse.driver import ClickHouseOutputFactory
 
 
 @pytest.fixture
-def influxdb2_config() -> dict:
+def clickhouse_config() -> dict:
     """
-    Fixture that provides a configuration with an InfluxDB2 pusher.
+    Fixture that provides a configuration with a ClickHouse pusher.
     """
     return {
         'stream': True,
         'verbose': True,
         'output': {
-            'pytest-influxdb2-pusher': {
-                'type': 'influxdb2',
+            'pytest-clickhouse-pusher': {
+                'type': 'clickhouse',
                 'model': 'PowerReport',
-                'uri': 'http://localhost:8086',
-                'org': 'powerapi',
-                'token': 'powerapi-auth-token',
-                'bucket': 'powerapi-example-bucket',
-            }
-        }
+                'host': 'example.clickhouse.cloud',
+                'port': 8443,
+                'username': 'powerapi',
+                'password': 'pytest-powerapi-password',
+                'database': 'powerapi',
+            },
+        },
     }
 
 
-def test_pusher_generator_with_valid_influxdb2_config(influxdb2_config):
+def test_pusher_generator_with_valid_clickhouse_config(clickhouse_config):
     """
-    PusherGenerator should generate a PusherActor with an InfluxDB2 database driver.
+    PusherGenerator should generate a PusherActor with a ClickHouse database driver.
     """
     pusher_generator = PusherGenerator()
-    pushers = pusher_generator.generate(influxdb2_config)
+    pushers = pusher_generator.generate(clickhouse_config)
 
     assert len(pushers) == 1
-    assert 'pytest-influxdb2-pusher' in pushers
+    assert 'pytest-clickhouse-pusher' in pushers
 
-    pusher = pushers['pytest-influxdb2-pusher']
+    pusher = pushers['pytest-clickhouse-pusher']
     assert isinstance(pusher, PusherActor)
 
     db_factory = pusher.database_factory
-    assert isinstance(db_factory, InfluxDB2OutputFactory)
+    assert isinstance(db_factory, ClickHouseOutputFactory)
 
-    expected_db_attributes = influxdb2_config['output']['pytest-influxdb2-pusher']
-    assert db_factory.url == expected_db_attributes['uri']
-    assert db_factory.org == expected_db_attributes['org']
-    assert db_factory.token == expected_db_attributes['token']
-    assert db_factory.bucket == expected_db_attributes['bucket']
+    expected_db_attributes = clickhouse_config['output']['pytest-clickhouse-pusher']
+    assert db_factory.host == expected_db_attributes['host']
+    assert db_factory.port == expected_db_attributes['port']
+    assert db_factory.username == expected_db_attributes['username']
+    assert db_factory.password == expected_db_attributes['password']
+    assert db_factory.database_name == expected_db_attributes['database']

@@ -30,8 +30,8 @@ import json
 
 import pytest
 
-from powerapi.cli.config_loader import EnvironmentConfigLoader, JSONConfigLoader
-from powerapi.cli.config_parser import (
+from powerapi.config.config_loader import EnvironmentConfigLoader, JSONConfigLoader
+from powerapi.config.config_parser import (
     ComponentSchema,
     ConfigurationSchema,
     ConfigurationSectionSchema,

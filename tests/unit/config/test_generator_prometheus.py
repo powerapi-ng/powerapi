@@ -28,7 +28,7 @@
 
 import pytest
 
-from powerapi.cli.generator import PusherGenerator
+from powerapi.config.generator import PusherGenerator
 from powerapi.pusher import PusherActor
 
 pytest.importorskip("powerapi.database.prometheus.driver")  # The Prometheus driver requires external dependencies to work.
