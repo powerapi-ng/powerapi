@@ -28,7 +28,7 @@
 
 import pytest
 
-from powerapi.database.exceptions import ConnectionFailed
+from powerapi.database.exceptions import DatabaseConnectionError
 from powerapi.database.json.driver import JsonInput
 from powerapi.report import HWPCReport
 
@@ -39,5 +39,5 @@ def test_json_input_connect_with_missing_file_raise_connection_failed(tmp_path) 
     """
     json_input = JsonInput(HWPCReport, str(tmp_path / 'missing.jsonl'), 'auto')
 
-    with pytest.raises(ConnectionFailed):
+    with pytest.raises(DatabaseConnectionError):
         json_input.connect()

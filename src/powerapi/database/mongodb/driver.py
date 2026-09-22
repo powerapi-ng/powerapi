@@ -33,7 +33,7 @@ from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
 from powerapi.database.driver import DatabaseDriver, ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError, DatabaseWriteError
 from powerapi.database.mongodb.codecs import ReportEncoders, ReportDecoders
 from powerapi.report import Report
 
@@ -63,7 +63,7 @@ class _MongodbDriver(DatabaseDriver):
     def connect(self):
         """
         Connect to the MongoDB server.
-        :raise ConnectionFailed: If the connection to the MongoDB server fails.
+        :raise DatabaseConnectionError: If the connection to the MongoDB server fails.
         """
         try:
             self._client = MongoClient(self.uri)
@@ -73,7 +73,7 @@ class _MongodbDriver(DatabaseDriver):
             self._collection = database.get_collection(self.collection_name)
             self._cursor = self._collection.find({})
         except PyMongoError as exn:
-            raise ConnectionFailed(f'Failed to connect to the MongoDB server: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to connect to the MongoDB server: {exn}') from exn
 
     def disconnect(self):
         """
@@ -136,12 +136,12 @@ class MongodbInput(_MongodbDriver, ReadableDatabase):
         Read reports from the MongoDB database.
         :param stream_mode: If true, handle the reports as a continuous stream of data (**destructive**)
         :return: Iterable of reports
-        :raise ReadFailed: If the read operation fails
+        :raise DatabaseReadError: If the read operation fails
         """
         try:
             return self._streaming_reports_generator() if stream_mode else self._reports_generator()
         except PyMongoError as exn:
-            raise ReadFailed(f'Failed to retrieve reports from the MongoDB database: {exn}') from exn
+            raise DatabaseReadError(f'Failed to retrieve reports from the MongoDB database: {exn}') from exn
 
 class MongodbInputFactory(ReadableDatabaseFactory):
     """
@@ -197,13 +197,13 @@ class MongodbOutput(_MongodbDriver, WritableDatabase):
         """
         Write the reports into the MongoDB database.
         :param reports: Iterable of reports
-        :raise WriteFailed: If the write operation fails
+        :raise DatabaseWriteError: If the write operation fails
         """
         try:
             encoded_reports = [self._report_encoder.encode(report) for report in reports]
             self._collection.insert_many(encoded_reports)
         except PyMongoError as exn:
-            raise WriteFailed(f'Failed to write reports to the MongoDB database: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to write reports to the MongoDB database: {exn}') from exn
 
 
 class MongodbOutputFactory(WritableDatabaseFactory):

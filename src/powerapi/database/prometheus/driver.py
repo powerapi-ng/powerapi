@@ -32,7 +32,7 @@ from collections.abc import Iterable
 from prometheus_client import start_http_server, CollectorRegistry
 
 from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseWriteError
 from powerapi.database.prometheus.codecs import ReportEncoders, EncoderOptions
 from powerapi.database.prometheus.collectors import ReportProcessorFactory
 from powerapi.report import Report
@@ -67,7 +67,7 @@ class PrometheusOutput(WritableDatabase):
     def connect(self) -> None:
         """
         Connect the Prometheus database.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             registry = CollectorRegistry(auto_describe=True)
@@ -76,7 +76,7 @@ class PrometheusOutput(WritableDatabase):
             addr, port = self.listen_addr
             self._http_server, self._http_server_thread = start_http_server(port, addr, registry=registry)
         except (OSError, RuntimeError) as exn:
-            raise ConnectionFailed(f'Failed to connect the Prometheus database: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to connect the Prometheus database: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -97,12 +97,12 @@ class PrometheusOutput(WritableDatabase):
         """
         Write the reports into the Prometheus database.
         :param reports: Iterable of reports
-        :raise: WriteFailed if the write operation fails
+        :raise: DatabaseWriteError if the write operation fails
         """
         try:
             self._metrics_collector.submit(reports, self._report_encoder, self._report_encoder_opts)
         except (ValueError, TypeError) as exn:
-            raise WriteFailed(f'Failed to save the report to Prometheus database: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to save the report to Prometheus database: {exn}') from exn
 
 
 class PrometheusOutputFactory(WritableDatabaseFactory):

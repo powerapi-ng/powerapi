@@ -32,7 +32,7 @@ from queue import SimpleQueue, Empty
 from threading import Thread
 
 from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed
+from powerapi.database.exceptions import DatabaseConnectionError
 from powerapi.database.socket.codecs import ReportDecoders
 from powerapi.database.socket.tcp_server import tcpserver_thread_target
 from powerapi.report import Report
@@ -61,12 +61,12 @@ class SocketInput(ReadableDatabase):
     def connect(self) -> None:
         """
         Connect the Socket database driver.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             self._tcp_server_thread.start()
         except RuntimeError as exn:
-            raise ConnectionFailed(f'Failed to connect the Socket database: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to connect the Socket database: {exn}') from exn
 
     def disconnect(self) -> None:
         """

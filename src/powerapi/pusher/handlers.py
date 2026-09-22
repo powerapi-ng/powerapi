@@ -32,7 +32,7 @@ import time
 
 from powerapi.actor import State
 from powerapi.actor.message import ErrorMessage
-from powerapi.database.exceptions import DBError
+from powerapi.database.exceptions import DatabaseError
 from powerapi.handler import InitHandler, StartHandler, PoisonPillMessageHandler
 from powerapi.report import Report
 
@@ -54,8 +54,8 @@ class PusherStartHandler(StartHandler):
             logging.error('Failed to create the database driver: %s', exn)
             self.state.actor.send_control(ErrorMessage('Database driver creation failed'))
             self.state.alive = False
-        except DBError as exn:
-            logging.error('Failed to initialize the database driver: %s', exn.msg)
+        except DatabaseError as exn:
+            logging.error('Failed to initialize the database driver: %s', exn)
             self.state.actor.send_control(ErrorMessage('Database initialization failed'))
             self.state.alive = False
 
@@ -78,8 +78,8 @@ class PusherPoisonPillMessageHandler(PoisonPillMessageHandler):
             try:
                 self.state.database_driver.write(self.state.buffer)
                 self.state.buffer.clear()
-            except DBError as exn:
-                logging.error('The reports could not be saved before shutting down actor: %s', exn.msg)
+            except DatabaseError as exn:
+                logging.error('The reports could not be saved before shutting down actor: %s', exn)
 
         self.state.database_driver.disconnect()
 
@@ -116,7 +116,7 @@ class ReportHandler(InitHandler):
             try:
                 self.state.database_driver.write(self.state.buffer)
                 self.state.buffer = []
-            except DBError as exn:
-                logging.error('The reports could not be saved: %s', exn.msg)
+            except DatabaseError as exn:
+                logging.error('The reports could not be saved: %s', exn)
             finally:
                 self._last_write_ts = time.monotonic()
