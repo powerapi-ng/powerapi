@@ -65,7 +65,7 @@ class BackendSupervisor(Supervisor):
         :param actor: Actor to launch
         :param start_message: Whether to send a start message to the actor
         :param init_timeout: Maximum time in milliseconds to wait for an actor to be initialized
-        :raise ActorAlreadySupervisedException: When trying to launch an actor that is already supervised
+        :raise ValueError: When trying to launch an actor that is already supervised
         :raise ActorInitializationError: When the actor initialization process failed
         """
         super().launch_actor(actor, start_message, init_timeout)

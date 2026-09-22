@@ -32,7 +32,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from powerapi.actor.supervisor import Supervisor
-from powerapi.exception import UnknownMessageTypeException
 
 if TYPE_CHECKING:
     from powerapi.handler import Handler
@@ -62,12 +61,9 @@ class State:
         Return the corresponding handler for the given message type.
         :param msg: The message
         :return: The handler for the given message type
-        :raises UnknownMessageTypeException: If the message type does not have a corresponding handler
+        :raises KeyError: If the message type does not have a corresponding handler
         """
-        try:
-            return self.handlers[msg.__class__.__name__]
-        except KeyError as e:
-            raise UnknownMessageTypeException() from e
+        return self.handlers[msg.__class__.__name__]
 
     def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True):
         """

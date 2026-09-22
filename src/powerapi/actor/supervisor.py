@@ -32,27 +32,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from powerapi.actor.message import StartMessage, ErrorMessage
-from powerapi.exception import PowerAPIException
 
 if TYPE_CHECKING:
     from powerapi.actor import Actor
 
 
-class ActorAlreadySupervisedException(PowerAPIException):
-    """
-    Exception raised when trying to launch an actor that is already supervised.
-    """
-
-
-class ActorInitializationError(PowerAPIException):
+class ActorInitializationError(RuntimeError):
     """
     Exception raised when the initialization of the actor failed.
     """
-
-    def __init__(self, error_msg: str):
-        super().__init__()
-
-        self.error_msg = error_msg
 
 
 class Supervisor:
@@ -70,11 +58,11 @@ class Supervisor:
         :param actor: Actor to launch
         :param start_message: Whether to send a start message to the actor
         :param init_timeout: Maximum time in seconds to wait for an actor to initialize
-        :raise ActorAlreadySupervisedException: When trying to launch an actor that is already supervised
+        :raise ValueError: When trying to launch an actor that is already supervised
         :raise ActorInitializationError: When the actor initialization process failed
         """
         if actor in self.supervised_actors:
-            raise ActorAlreadySupervisedException()
+            raise ValueError(f'Actor "{actor.name}" is already supervised')
 
         actor.start()
 

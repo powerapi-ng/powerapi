@@ -33,14 +33,6 @@ from typing import Any
 
 import zmq
 
-from powerapi.exception import PowerAPIException
-
-
-class NotConnectedException(PowerAPIException):
-    """
-    Exception raised when attempting to do an operation on a disconnected socket.
-    """
-
 
 class SocketInterface:
     """
@@ -148,7 +140,7 @@ class SocketInterface:
         :return: Message received
         """
         if self._control_socket is None:
-            raise NotConnectedException()
+            raise RuntimeError('Control socket is not connected')
 
         if self._control_socket.poll(timeout):
             return self._recv_serialized(self._control_socket)
@@ -161,7 +153,7 @@ class SocketInterface:
         :param msg: Message to send
         """
         if self._control_socket is None:
-            raise NotConnectedException()
+            raise RuntimeError('Control socket is not connected')
 
         self._send_serialized(self._control_socket, msg)
 
@@ -181,7 +173,7 @@ class SocketInterface:
         :param msg: Message to send
         """
         if self._data_socket is None:
-            raise NotConnectedException()
+            raise RuntimeError('Data socket is not connected')
 
         self._send_serialized(self._data_socket, msg)
 
@@ -193,7 +185,7 @@ class SocketInterface:
         :return: The received message or None if the timeout is reached
         """
         if self._sockets_poller is None:
-            raise NotConnectedException()
+            raise RuntimeError('Socket interface is not set up')
 
         for socket, _ in self._sockets_poller.poll(timeout):
             return self._recv_serialized(socket)

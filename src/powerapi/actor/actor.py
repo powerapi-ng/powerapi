@@ -39,20 +39,12 @@ from typing import TYPE_CHECKING
 import setproctitle
 
 from powerapi.actor.message import PoisonPillMessage
-from powerapi.exception import PowerAPIExceptionWithMessage, UnknownMessageTypeException
-from powerapi.handler import HandlerException
 from .socket_interface import SocketInterface
 from .state import State
 
 if TYPE_CHECKING:
     from powerapi.actor.message import Message
     from powerapi.handler import Handler
-
-
-class InitializationException(PowerAPIExceptionWithMessage):
-    """
-    Exception raised when an actor failed to initialize itself.
-    """
 
 
 class Actor(multiprocessing.Process):
@@ -166,11 +158,11 @@ class Actor(multiprocessing.Process):
 
         try:
             handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
-        except UnknownMessageTypeException:
+        except KeyError:
             logging.warning("Unknown message type: %s", msg)
-        except HandlerException:
-            logging.warning("Failed to handle message: %s", msg)
+            return
+
+        handler.handle_message(msg)
 
     def _teardown_actor(self) -> None:
         """
