@@ -32,7 +32,7 @@ from collections.abc import Callable
 
 from powerapi.actor import Actor, ActorProxy
 from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
-from powerapi.exception import ConfigurationError, PowerAPIException
+from powerapi.config.exceptions import ConfigurationError
 from powerapi.filter import ReportFilter
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
@@ -68,10 +68,10 @@ class Generator[ActorT: Actor]:
         Generate every actor configured in the component group.
         :param main_config: Canonical PowerAPI configuration.
         :return: Generated actors indexed by component name.
-        :raises PowerAPIException: If the component group is missing or a component configuration is invalid.
+        :raises ConfigurationError: If the component group is missing or a component configuration is invalid.
         """
         if self.component_group_name not in main_config:
-            raise PowerAPIException(f'Configuration error: Component "{self.component_group_name}" is not defined')
+            raise ConfigurationError(f'Component "{self.component_group_name}" is not defined')
 
         actors = {}
         for component_name, component_config in main_config[self.component_group_name].items():
@@ -113,12 +113,12 @@ class DBActorGenerator[ActorT: Actor, DBFactoryT: ReadableDatabaseFactory | Writ
         Resolve a configured report model name.
         :param model_name: Registered report model name.
         :return: Report class registered for the configured model.
-        :raises PowerAPIException: If the report model is unknown.
+        :raises ConfigurationError: If the report model is unknown.
         """
         try:
             return self.report_classes[model_name]
         except KeyError as error:
-            raise PowerAPIException(f'Configuration error: Unknown report model "{model_name}"') from error
+            raise ConfigurationError(f'Unknown report model "{model_name}"') from error
 
     def add_report_class(self, model_name: str, report_class: type[Report]):
         """
@@ -150,17 +150,17 @@ class DBActorGenerator[ActorT: Actor, DBFactoryT: ReadableDatabaseFactory | Writ
         :param db_name: Registered database type.
         :param component_config: Canonical component configuration.
         :return: Configured readable or writable database factory.
-        :raises PowerAPIException: If the database type is unknown or its optional dependencies are unavailable.
+        :raises ConfigurationError: If the database type is unknown or its optional dependencies are unavailable.
         """
         try:
             factory = self.database_factories[db_name]
         except KeyError as error:
-            raise PowerAPIException(f'Configuration error: Invalid database type: {db_name}') from error
+            raise ConfigurationError(f'Invalid database type: {db_name}') from error
 
         try:
             return factory(component_config)
         except ImportError as error:
-            raise PowerAPIException(f'Dependencies for {db_name} database are not installed') from error
+            raise ConfigurationError(f'Dependencies for {db_name} database are not installed') from error
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ActorT:
         """
@@ -169,7 +169,7 @@ class DBActorGenerator[ActorT: Actor, DBFactoryT: ReadableDatabaseFactory | Writ
         :param main_config: Canonical PowerAPI configuration.
         :param component_name: Name of the component to generate.
         :return: Generated database-backed actor.
-        :raises PowerAPIException: If the report model or database type is unknown or a dependency is unavailable.
+        :raises ConfigurationError: If the report model or database type is unknown or a dependency is unavailable.
         """
         factory_config = dict(component_config)
         factory_config[COMPONENT_MODEL_KEY] = self._get_report_class(component_config[COMPONENT_MODEL_KEY])
@@ -373,17 +373,17 @@ class PusherGenerator(DBActorGenerator[PusherActor, WritableDatabaseFactory]):
         :param main_config: Canonical PowerAPI configuration.
         :param actors: Generated pusher actors indexed by component name.
         :return: Pusher proxies indexed by report type.
-        :raises PowerAPIException: If the output group or a configured actor is missing.
+        :raises ConfigurationError: If the output group or a configured actor is missing.
         """
         if self.component_group_name not in main_config:
-            raise PowerAPIException(f'Configuration error: Component "{self.component_group_name}" is not defined')
+            raise ConfigurationError(f'Component "{self.component_group_name}" is not defined')
 
         report_type_to_actor = {}
         for component_name, component_config in main_config[self.component_group_name].items():
             try:
                 actor_proxy = actors[component_name].get_proxy()
             except KeyError as error:
-                raise PowerAPIException(f'Actor "{component_name}" is not defined') from error
+                raise ConfigurationError(f'Actor "{component_name}" is not defined') from error
 
             report_type = self._get_report_class(component_config[COMPONENT_MODEL_KEY])
             report_type_to_actor.setdefault(report_type, []).append(actor_proxy)
@@ -423,17 +423,17 @@ class ProcessorGenerator(Generator[ProcessorActor]):
         :param processor_name: Registered processor type.
         :param component_config: Resolved processor component configuration.
         :return: Configured processor actor.
-        :raises PowerAPIException: If the processor type is unknown or its optional dependencies are unavailable.
+        :raises ConfigurationError: If the processor type is unknown or its optional dependencies are unavailable.
         """
         try:
             factory = self.processor_factories[processor_name]
         except KeyError as error:
-            raise PowerAPIException(f'Configuration error: Invalid processor type: {processor_name}') from error
+            raise ConfigurationError(f'Invalid processor type: {processor_name}') from error
 
         try:
             return factory(component_config)
         except ImportError as error:
-            raise PowerAPIException(f'Dependencies for {processor_name} processor are not installed') from error
+            raise ConfigurationError(f'Dependencies for {processor_name} processor are not installed') from error
 
     def _gen_actor(self, component_config: dict, main_config: dict, component_name: str) -> ProcessorActor:
         """
@@ -442,7 +442,7 @@ class ProcessorGenerator(Generator[ProcessorActor]):
         :param main_config: Canonical PowerAPI configuration.
         :param component_name: Name of the processor actor to generate.
         :return: Configured processor actor.
-        :raises PowerAPIException: If the processor type is unknown or its optional dependencies are unavailable.
+        :raises ConfigurationError: If the processor type is unknown or its optional dependencies are unavailable.
         """
         runtime_config = dict(component_config)
         processor_actor_type = component_config[COMPONENT_TYPE_KEY]

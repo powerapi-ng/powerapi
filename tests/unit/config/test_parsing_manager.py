@@ -32,10 +32,9 @@ import sys
 
 import pytest
 
-from powerapi.config.cli_parser import CLIParseException
+from powerapi.config.exceptions import ConfigurationError
 from powerapi.config.config_parser import ComponentSchema, ConfigurationSectionSchema
 from powerapi.config.parsing_manager import ConfigurationParsingManager
-from powerapi.exception import ConfigurationError
 
 
 @pytest.fixture
@@ -207,7 +206,7 @@ def test_parse_propagates_cli_errors(parsing_manager):
     """
     Test that command-line parsing errors propagate to the caller.
     """
-    with pytest.raises(CLIParseException, match='unrecognized arguments'):
+    with pytest.raises(ValueError, match='unrecognized arguments'):
         parsing_manager.parse(['powerapi', '--unknown'])
 
 

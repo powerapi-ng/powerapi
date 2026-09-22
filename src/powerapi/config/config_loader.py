@@ -34,7 +34,7 @@ from powerapi.config.config_parser import (
     ComponentGroupSchema,
     ConfigurationSchema,
 )
-from powerapi.exception import ConfigurationError
+from powerapi.config.exceptions import ConfigurationError
 
 _EnvironmentItems = Iterable[tuple[str, str]]
 

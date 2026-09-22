@@ -28,7 +28,7 @@
 
 import pytest
 
-from powerapi.config.cli_parser import CLIParseException
+from powerapi.config.exceptions import ConfigurationError
 from powerapi.config.common_cli_parsing_manager import (
     CommonCLIParsingManager,
     PreProcessorSchema,
@@ -36,7 +36,6 @@ from powerapi.config.common_cli_parsing_manager import (
     PusherSchema,
     generate_env_prefix,
 )
-from powerapi.exception import ConfigurationError
 
 
 def test_generate_env_prefix_with_no_component():
@@ -246,13 +245,13 @@ def test_common_cli_manager_rejects_legacy_contextual_configuration():
     """
     manager = CommonCLIParsingManager()
 
-    with pytest.raises(CLIParseException) as result:
+    with pytest.raises(ValueError, match='Failed to parse CLI') as result:
         manager.parse([
             '--output', 'json',
             '--filepath', '/tmp/powerapi-output.jsonl',
         ])
 
-    assert 'unrecognized arguments' in result.value.msg
+    assert 'unrecognized arguments' in str(result.value)
 
 
 def test_common_cli_manager_parse_cli_configuration():

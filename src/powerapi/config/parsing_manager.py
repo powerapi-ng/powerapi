@@ -132,7 +132,7 @@ class ConfigurationParsingManager:
         Load and merge every configuration source.
         :param cli_line: Command-line arguments without the executable name.
         :return: Merged configuration with CLI, environment, then file precedence.
-        :raises CLIParseException: If command-line arguments are invalid.
+        :raises ValueError: If command-line arguments are invalid.
         :raises FileNotFoundError: If the selected JSON configuration file does not exist.
         :raises ConfigurationError: If the selected file does not contain a valid JSON configuration object.
         """
@@ -150,7 +150,7 @@ class ConfigurationParsingManager:
         Parsing and validation errors propagate to the application boundary.
         :param args: Command-line arguments including an optional executable name, or None to use ``sys.argv``.
         :return: Merged, canonical, and validated PowerAPI configuration.
-        :raises CLIParseException: If command-line arguments are invalid.
+        :raises ValueError: If command-line arguments are invalid.
         :raises FileNotFoundError: If the selected JSON configuration file does not exist.
         :raises ConfigurationError: If the selected file contains invalid JSON or the merged configuration is invalid.
         """

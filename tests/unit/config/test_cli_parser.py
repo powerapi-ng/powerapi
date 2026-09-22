@@ -31,7 +31,7 @@ import argparse
 import pytest
 
 from powerapi.config import cli_parser
-from powerapi.config.cli_parser import CLIArgumentParser, CLIParseException
+from powerapi.config.cli_parser import CLIArgumentParser
 from powerapi.config.config_parser import (
     ComponentSchema,
     ConfigurationSchema,
@@ -81,7 +81,7 @@ def test_cli_argument_parser_rejects_invalid_assignment(expression):
     """
     Test that malformed or unsupported assignment paths are rejected.
     """
-    with pytest.raises(CLIParseException):
+    with pytest.raises(ValueError, match='Invalid configuration assignment'):
         create_parser().parse(['-C', expression])
 
 
@@ -128,7 +128,7 @@ def test_cli_argument_parser_rejects_structural_conflict(expressions):
     """
     arguments = [argument for expression in expressions for argument in ('-C', expression)]
 
-    with pytest.raises(CLIParseException):
+    with pytest.raises(ValueError, match='Conflicting configuration path'):
         create_parser().parse(arguments)
 
 
@@ -181,16 +181,16 @@ def test_cli_argument_parser_keeps_internal_values_separate_from_root_arguments(
 
 def test_cli_argument_parser_reports_argument_conflict_as_cli_error():
     """
-    Test that schema option conflicts are reported as CLIParseException.
+    Test that schema option conflicts are reported as ValueError.
     """
     schema = ConfigurationSchema()
     schema.add_argument('config-file')
     parser = CLIArgumentParser(schema)
 
-    with pytest.raises(CLIParseException) as result:
+    with pytest.raises(ValueError, match='Failed to add argument') as result:
         parser.parse([])
 
-    assert result.value.msg == 'Failed to add argument: argument --config-file: conflicting option string: --config-file'
+    assert str(result.value) == 'Failed to add argument: argument --config-file: conflicting option string: --config-file'
     assert isinstance(result.value.__cause__, argparse.ArgumentError)
 
 
@@ -252,10 +252,10 @@ def test_cli_argument_parser_rejects_contextual_argument():
     """
     parser = create_parser()
 
-    with pytest.raises(CLIParseException) as result:
+    with pytest.raises(ValueError, match='Failed to parse CLI') as result:
         parser.parse(['--input', 'socket'])
 
-    assert result.value.msg == 'Failed to parse CLI: unrecognized arguments: --input socket'
+    assert str(result.value) == 'Failed to parse CLI: unrecognized arguments: --input socket'
     assert isinstance(result.value.__cause__, argparse.ArgumentError)
 
 

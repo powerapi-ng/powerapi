@@ -35,7 +35,6 @@ from powerapi.actor import ActorProxy
 from powerapi.config.binding_manager import PreProcessorBindingManager
 from powerapi.config.generator import PreProcessorGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor
-from powerapi.exception import UnexistingActorException, UnsupportedActorTypeException, TargetActorAlreadyUsed
 from powerapi.filter import BroadcastReportFilter
 from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.puller import PullerActor
@@ -154,7 +153,7 @@ def test_preprocessor_binding_manager_with_invalid_puller_name(puller_generator,
     processors = preprocessor_generator.generate(preprocessor_config)
     binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
 
-    with pytest.raises(UnexistingActorException):
+    with pytest.raises(ValueError, match='Actor "invalid-puller-target" is not defined'):
         binding_manager.process_bindings()
 
 
@@ -168,7 +167,7 @@ def test_preprocessor_binding_manager_with_invalid_puller_type(puller_generator,
     processors = preprocessor_generator.generate(preprocessor_config)
     binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
 
-    with pytest.raises(UnsupportedActorTypeException):
+    with pytest.raises(ValueError, match='Actor "pytest-socket-puller" is not a puller'):
         binding_manager.process_bindings()
 
 
@@ -183,5 +182,5 @@ def test_preprocessor_binding_manager_with_duplicate_target(puller_generator, pr
     processors = preprocessor_generator.generate(preprocessor_config)
     binding_manager = PreProcessorBindingManager(preprocessor_config, pullers, processors)
 
-    with pytest.raises(TargetActorAlreadyUsed):
+    with pytest.raises(ValueError, match='targeted by multiple processors'):
         binding_manager.process_bindings()

@@ -31,7 +31,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
-from powerapi.exception import ConfigurationError
+from powerapi.config.exceptions import ConfigurationError
 
 from ._utils import string_to_bool, string_to_list
 
