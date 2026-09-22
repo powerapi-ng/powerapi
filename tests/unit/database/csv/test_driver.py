@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 from powerapi.database.csv.driver import CSVInput, CSVInputFactory, CSVOutput, CSVOutputFactory
-from powerapi.database.exceptions import ConnectionFailed
+from powerapi.database.exceptions import DatabaseConnectionError
 from powerapi.report import FormulaReport, HWPCReport, PowerReport, Report
 
 
@@ -73,7 +73,7 @@ def test_csv_input_connect_with_missing_file_raise_connection_failed(tmp_path) -
     """
     csv_input = CSVInput(HWPCReport, [str(tmp_path / 'missing.csv')])
 
-    with pytest.raises(ConnectionFailed):
+    with pytest.raises(DatabaseConnectionError):
         csv_input.connect()
 
 

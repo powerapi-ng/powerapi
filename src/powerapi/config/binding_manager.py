@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import UnsupportedActorTypeException, UnexistingActorException, TargetActorAlreadyUsed
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.puller import PullerActor
 
@@ -77,11 +76,11 @@ class ProcessorBindingManager(BindingManager):
     def check_processor_targets(self, processor_name: str, processor: ProcessorActor):
         """
         Check that targets of a processor exist in the dictionary of targets.
-        If it is not the case, it raises a UnexistingActorException
+        :raises ValueError: If a configured target does not exist.
         """
         for target_actor_name in self._get_processor_target_names(processor_name):
             if target_actor_name not in self.actors:
-                raise UnexistingActorException(target_actor_name)
+                raise ValueError(f'Actor "{target_actor_name}" is not defined')
 
     def check_processors_targets_are_unique(self):
         """
@@ -92,7 +91,7 @@ class ProcessorBindingManager(BindingManager):
         for processor_name, _ in self.processors.items():
             for target_actor_name in self._get_processor_target_names(processor_name):
                 if target_actor_name in used_targets:
-                    raise TargetActorAlreadyUsed(target_actor_name)
+                    raise ValueError(f'Actor "{target_actor_name}" is targeted by multiple processors')
                 used_targets.append(target_actor_name)
 
 
@@ -128,12 +127,12 @@ class PreProcessorBindingManager(ProcessorBindingManager):
     def check_processor_targets(self, processor_name: str, processor: ProcessorActor):
         """
         Check that targets of a processor exist in the dictionary of targets.
-        If it is not the case, it raises a UnexistingActorException
+        If it is not the case, it raises a ValueError.
         It also checks that the actor is a PullerActor instance.
-        If it is not the case, it raises UnsupportedActorTypeException
+        If it is not the case, it raises ValueError.
         """
         super().check_processor_targets(processor_name, processor)
         for target_actor_name in self._get_processor_target_names(processor_name):
             actor = self.actors[target_actor_name]
             if not isinstance(actor, PullerActor):
-                raise UnsupportedActorTypeException(type(actor).__name__)
+                raise ValueError(f'Actor "{target_actor_name}" is not a puller')

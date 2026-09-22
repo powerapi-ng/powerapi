@@ -34,7 +34,7 @@ from clickhouse_connect.driver.exceptions import ClickHouseError
 from powerapi.database.clickhouse.codecs import ReportEncoders
 from powerapi.database.clickhouse.schema import TableSchemaRegistry
 from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseWriteError
 from powerapi.report import Report
 
 
@@ -88,7 +88,7 @@ class ClickHouseOutput(WritableDatabase):
     def connect(self) -> None:
         """
         Connect to the ClickHouse server.
-        :raise ConnectionFailed: If the connection to the ClickHouse server fails.
+        :raise DatabaseConnectionError: If the connection to the ClickHouse server fails.
         """
         try:
             self._client = clickhouse_connect.get_client(
@@ -102,7 +102,7 @@ class ClickHouseOutput(WritableDatabase):
             self._create_table()
             self._create_insert_context()
         except (ClickHouseError, OSError, ValueError) as exn:
-            raise ConnectionFailed(f'Failed to connect to the ClickHouse server: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to connect to the ClickHouse server: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -118,13 +118,13 @@ class ClickHouseOutput(WritableDatabase):
         """
         Write reports to the ClickHouse database.
         :param reports: Iterable of reports
-        :raise WriteFailed: If the write operation fails
+        :raise DatabaseWriteError: If the write operation fails
         """
         try:
             encoded_reports = [self._report_encoder.encode(report) for report in reports]
             self._client.insert(data=encoded_reports, context=self._insert_context)
         except (ClickHouseError, OSError, TypeError, ValueError) as exn:
-            raise WriteFailed(f'Failed to write reports to the ClickHouse database: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to write reports to the ClickHouse database: {exn}') from exn
 
 
 class ClickHouseOutputFactory(WritableDatabaseFactory):

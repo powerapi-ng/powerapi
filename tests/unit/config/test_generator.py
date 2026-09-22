@@ -40,7 +40,7 @@ from powerapi.config.generator import (
 from powerapi.database.csv.driver import CSVInputFactory, CSVOutputFactory
 from powerapi.database.json.driver import JsonInputFactory, JsonOutputFactory
 from powerapi.database.socket.driver import SocketInputFactory
-from powerapi.exception import ConfigurationError, PowerAPIException
+from powerapi.config.exceptions import ConfigurationError
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -56,12 +56,12 @@ def _unavailable_factory(_: dict):
 
 def test_generate_puller_from_empty_config_dict_raise_an_exception():
     """
-    Test that PullerGenerator raises a PowerAPIException when there is no input argument.
+    Test that PullerGenerator raises a ConfigurationError when there is no input argument.
     """
     conf = {}
     generator = PullerGenerator(BroadcastReportFilter())
 
-    with pytest.raises(PowerAPIException):
+    with pytest.raises(ConfigurationError):
         generator.generate(conf)
 
 
@@ -168,7 +168,7 @@ def test_generate_puller_with_unknown_report_model_raises_an_exception(several_i
     next(iter(config['input'].values()))['model'] = 'UnknownReport'
     generator = PullerGenerator(BroadcastReportFilter())
 
-    with pytest.raises(PowerAPIException, match='Configuration error: Unknown report model "UnknownReport"'):
+    with pytest.raises(ConfigurationError, match='Invalid configuration: Unknown report model "UnknownReport"'):
         generator.generate(config)
 
 
@@ -180,7 +180,7 @@ def test_generate_puller_with_unknown_database_type_raises_an_exception(several_
     next(iter(config['input'].values()))['type'] = 'unknown'
     generator = PullerGenerator(BroadcastReportFilter())
 
-    with pytest.raises(PowerAPIException, match='Configuration error: Invalid database type: unknown'):
+    with pytest.raises(ConfigurationError, match='Invalid configuration: Invalid database type: unknown'):
         generator.generate(config)
 
 
@@ -194,7 +194,7 @@ def test_generate_puller_with_unavailable_database_dependency_raises_an_exceptio
     generator = PullerGenerator(BroadcastReportFilter())
     generator.add_db_factory('unavailable', _unavailable_factory)
 
-    with pytest.raises(PowerAPIException, match='Dependencies for unavailable database are not installed'):
+    with pytest.raises(ConfigurationError, match='Dependencies for unavailable database are not installed'):
         generator.generate(config)
 
 
@@ -221,7 +221,7 @@ def test_generate_pusher_from_empty_config_dict_raises_an_exception():
     conf = {}
     generator = PusherGenerator()
 
-    with pytest.raises(PowerAPIException):
+    with pytest.raises(ConfigurationError):
         generator.generate(conf)
 
 
@@ -274,7 +274,7 @@ def test_generate_pusher_report_mapping_without_output_group_raises_an_exception
     """
     generator = PusherGenerator()
 
-    with pytest.raises(PowerAPIException, match='Configuration error: Component "output" is not defined'):
+    with pytest.raises(ConfigurationError, match='Invalid configuration: Component "output" is not defined'):
         generator.generate_report_mapping({}, {})
 
 
@@ -285,7 +285,7 @@ def test_generate_pusher_report_mapping_with_missing_actor_raises_an_exception()
     config = {'output': {'missing': {'model': 'PowerReport'}}}
     generator = PusherGenerator()
 
-    with pytest.raises(PowerAPIException, match='Actor "missing" is not defined'):
+    with pytest.raises(ConfigurationError, match='Actor "missing" is not defined'):
         generator.generate_report_mapping(config, {})
 
 
@@ -296,7 +296,7 @@ def test_generate_pre_processor_from_empty_config_dict_raises_an_exception():
     conf = {}
     generator = PreProcessorGenerator()
 
-    with pytest.raises(PowerAPIException):
+    with pytest.raises(ConfigurationError):
         generator.generate(conf)
 
 
@@ -316,7 +316,7 @@ def test_generate_unknown_processor_type_raises_an_exception():
     """
     config = {'verbose': False, 'pre-processor': {'processor': {'type': 'unknown'}}}
 
-    with pytest.raises(PowerAPIException, match='Configuration error: Invalid processor type: unknown'):
+    with pytest.raises(ConfigurationError, match='Invalid configuration: Invalid processor type: unknown'):
         PreProcessorGenerator().generate(config)
 
 
@@ -328,5 +328,5 @@ def test_generate_processor_with_unavailable_dependency_raises_an_exception():
     generator = PreProcessorGenerator()
     generator.add_processor_factory('unavailable', _unavailable_factory)
 
-    with pytest.raises(PowerAPIException, match='Dependencies for unavailable processor are not installed'):
+    with pytest.raises(ConfigurationError, match='Dependencies for unavailable processor are not installed'):
         generator.generate(config)

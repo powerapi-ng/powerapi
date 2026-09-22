@@ -33,7 +33,7 @@ from pathlib import Path
 from powerapi.database.csv.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.csv.fileio_handlers import MultiCsvFileReader, MultiCsvFileWriter
 from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, ReadFailed, WriteFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError, DatabaseWriteError
 from powerapi.report import Report
 
 
@@ -58,12 +58,12 @@ class CSVInput(ReadableDatabase):
     def connect(self) -> None:
         """
         Connect the CSV input database driver.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             self._input_file_handler.open()
         except (OSError, KeyError, TypeError, ValueError) as exn:
-            raise ConnectionFailed(f'Failed to open CSV input file: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to open CSV input file: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -84,13 +84,13 @@ class CSVInput(ReadableDatabase):
         Read reports from the CSV database.
         :param stream_mode: No-Op for this driver, stream mode is not supported
         :return: Iterable of reports
-        :raise: ReadFailed if the read operation fails
+        :raise: DatabaseReadError if the read operation fails
         """
         try:
             while rows := self._input_file_handler.next_rows():
                 yield self._report_decoder.decode(rows)
         except (OSError, KeyError, TypeError, ValueError) as exn:
-            raise ReadFailed(f'Failed to read reports from CSV files: {exn}') from exn
+            raise DatabaseReadError(f'Failed to read reports from CSV files: {exn}') from exn
 
 
 class CSVInputFactory(ReadableDatabaseFactory):
@@ -138,13 +138,13 @@ class CSVOutput(WritableDatabase):
     def connect(self) -> None:
         """
         Connect the CSV output database driver.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             self.output_directory.mkdir(parents=True, exist_ok=True)
             self._output_file_handler.open()
         except OSError as exn:
-            raise ConnectionFailed(f'Invalid CSV output directory: {exn}') from exn
+            raise DatabaseConnectionError(f'Invalid CSV output directory: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -164,13 +164,13 @@ class CSVOutput(WritableDatabase):
         """
         Write the reports into CSV file(s).
         :param reports: Iterable of reports
-        :raise: WriteFailed if the operation fails
+        :raise: DatabaseWriteError if the operation fails
         """
         try:
             for report in reports:
                 self._output_file_handler.write_rows(self._report_encoder.encode(report))
         except (OSError, ValueError) as exn:
-            raise WriteFailed(f'Failed to write reports to CSV files: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to write reports to CSV files: {exn}') from exn
 
 
 class CSVOutputFactory(WritableDatabaseFactory):

@@ -31,22 +31,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from powerapi.exception import PowerAPIException, UnknownMessageTypeException
-
 if TYPE_CHECKING:
     from powerapi.actor.message import Message
-
-
-class HandlerException(PowerAPIException):
-    """
-    Exception raised when a problem appear in a handler
-    """
-
-    def __init__(self, msg):
-        """
-        :param str msg: Message of the error
-        """
-        PowerAPIException.__init__(self, msg)
 
 
 class Handler:
@@ -88,11 +74,11 @@ class Handler:
         """
         try:
             handler = self.state.get_corresponding_handler(msg)
-            handler.handle_message(msg)
-        except UnknownMessageTypeException:
-            self.state.actor.logger.warning("UnknownMessageTypeException: %s", msg)
-        except HandlerException:
-            self.state.actor.logger.warning("HandlerException: %s", msg)
+        except KeyError:
+            self.state.actor.logger.warning("Unknown message type: %s", msg)
+            return
+
+        handler.handle_message(msg)
 
 
 class InitHandler(Handler):

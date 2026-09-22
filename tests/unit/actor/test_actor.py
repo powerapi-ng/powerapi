@@ -33,7 +33,6 @@ import secrets
 import pytest
 
 from powerapi.actor import Actor, State, Message, StartMessage, PoisonPillMessage, OKMessage, ErrorMessage
-from powerapi.exception import UnknownMessageTypeException
 from powerapi.handler import StartHandler, PoisonPillMessageHandler, Handler
 
 
@@ -92,6 +91,11 @@ class LoopbackMessageHandler(Handler):
         """
         message.processed = True
         self.state.actor.send_control(message)
+
+
+class KeyErrorMessageHandler(Handler):
+    def handle(self, message: DummyMessage) -> None:
+        raise KeyError('handler failure')
 
 
 class DummyActorState(State):
@@ -249,7 +253,7 @@ def test_retrieve_handler_for_known_message_with_subtype_excluded():
     dummy_handler = LoopbackMessageHandler(state)
     state.add_handler(DummyMessage, dummy_handler, include_subclasses=False)
 
-    with pytest.raises(UnknownMessageTypeException):
+    with pytest.raises(KeyError, match='DummyMessageSubtype'):
         state.get_corresponding_handler(DummyMessageSubtype('test-dummy-subtype'))
 
 
@@ -259,5 +263,14 @@ def test_retrieve_handler_for_unknown_message_type():
     """
     state = DummyActorState(None)
 
-    with pytest.raises(UnknownMessageTypeException):
-         state.get_corresponding_handler(DummyMessage('test-dummy'))
+    with pytest.raises(KeyError, match='DummyMessage'):
+        state.get_corresponding_handler(DummyMessage('test-dummy'))
+
+
+def test_handler_key_error_is_not_mistaken_for_an_unknown_message():
+    state = DummyActorState(None)
+    handler = KeyErrorMessageHandler(state)
+    state.add_handler(DummyMessage, handler)
+
+    with pytest.raises(KeyError, match='handler failure'):
+        handler.delegate_message_handling(DummyMessage('test-dummy'))

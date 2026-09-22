@@ -31,7 +31,7 @@ import logging
 
 import pytest
 
-from powerapi.actor import Actor, Supervisor, ActorInitializationError, ActorAlreadySupervisedException
+from powerapi.actor import Actor, Supervisor, ActorInitializationError
 from .test_actor import LoopbackActor, CrashActor, DummyMessage
 
 
@@ -73,7 +73,7 @@ def test_launch_actor_already_supervised(supervisor):
     actor = LoopbackActor()
     supervisor.launch_actor(actor)
 
-    with pytest.raises(ActorAlreadySupervisedException):
+    with pytest.raises(ValueError, match='already supervised'):
         supervisor.launch_actor(actor)
 
     supervisor.kill_actors()
@@ -86,7 +86,7 @@ def test_launch_actor_with_failed_initialization(supervisor):
     """
     actor = Actor('test-actor-1', level_logger=logging.DEBUG)
 
-    with pytest.raises(ActorInitializationError):
+    with pytest.raises(ActorInitializationError, match='crashed during its initialization'):
         supervisor.launch_actor(actor, init_timeout=0.5)
 
     supervisor.join(timeout=5.0)
@@ -99,7 +99,7 @@ def test_launch_actor_failed_with_error_message(supervisor):
     """
     actor = CrashActor()
 
-    with pytest.raises(ActorInitializationError):
+    with pytest.raises(ActorInitializationError, match='pytest-error-message'):
         supervisor.launch_actor(actor)
 
     actor.join(timeout=5.0)

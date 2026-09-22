@@ -27,31 +27,26 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.exception import PowerAPIExceptionWithMessage
 
-
-class DBError(PowerAPIExceptionWithMessage):
+class DatabaseError(RuntimeError):
     """
     Exception raised when an error occurs during a database operation.
     """
-    pass
 
-class ConnectionFailed(DBError):
+
+class DatabaseConnectionError(DatabaseError):
     """
     Exception raised when a database fails to connect.
     """
 
-class NotConnected(DBError):
-    """
-    Exception raised when trying to do an operation on a database that is not connected.
-    """
 
-class WriteFailed(DBError):
+class DatabaseWriteError(DatabaseError):
     """
     Exception raised when a write operation fails.
     """
 
-class ReadFailed(DBError):
+
+class DatabaseReadError(DatabaseError):
     """
     Exception raised when a read operation fails.
     """

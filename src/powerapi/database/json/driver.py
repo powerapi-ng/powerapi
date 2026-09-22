@@ -32,7 +32,7 @@ from os import fsync
 from pathlib import Path
 
 from powerapi.database.driver import ReadableDatabase, ReadableDatabaseFactory, WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, WriteFailed, ReadFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError, DatabaseWriteError
 from powerapi.database.json.codecs import ReportDecoders, ReportEncoders
 from powerapi.database.json.file_handlers import FileHandlerRegistry
 from powerapi.report import Report
@@ -61,12 +61,12 @@ class JsonInput(ReadableDatabase):
     def connect(self) -> None:
         """
         Connect the JSON input database driver.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             self._file = self._file_handler.open(self.input_filepath, 'r')
         except OSError as exn:
-            raise ConnectionFailed(f'Failed to open input file: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to open input file: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -102,12 +102,12 @@ class JsonInput(ReadableDatabase):
         Read reports from a `jsonl` file.
         :param stream_mode: No-OP, this database driver does not support stream mode.
         :return: Iterable of reports
-        :raise: ReadFailed if the read operation fails
+        :raise: DatabaseReadError if the read operation fails
         """
         try:
             return self._reports_generator()
         except OSError as exn:
-            raise ReadFailed(f'Failed to read reports from input file: {exn}') from exn
+            raise DatabaseReadError(f'Failed to read reports from input file: {exn}') from exn
 
 
 class JsonInputFactory(ReadableDatabaseFactory):
@@ -158,12 +158,12 @@ class JsonOutput(WritableDatabase):
     def connect(self) -> None:
         """
         Connect the JSON output database driver.
-        :raise: ConnectionFailed if the operation fails
+        :raise: DatabaseConnectionError if the operation fails
         """
         try:
             self._file = self._file_handler.open(self.output_filepath, 'w')
         except OSError as exn:
-            raise ConnectionFailed(f'Failed to open output file: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to open output file: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -189,12 +189,12 @@ class JsonOutput(WritableDatabase):
         """
         Write the reports into a `jsonl` file.
         :param reports: Iterable of reports
-        :raise: WriteFailed if the operation fails
+        :raise: DatabaseWriteError if the operation fails
         """
         try:
             self._file.writelines([self._report_encoder.encode(report) for report in reports])
         except OSError as exn:
-            raise WriteFailed(f'Failed to write reports to output file: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to write reports to output file: {exn}') from exn
 
 
 class JsonOutputFactory(WritableDatabaseFactory):

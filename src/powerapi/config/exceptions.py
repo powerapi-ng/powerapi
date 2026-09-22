@@ -26,18 +26,28 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
 
-from powerapi.database.exceptions import DatabaseConnectionError
-from powerapi.database.json.driver import JsonInput
-from powerapi.report import HWPCReport
-
-
-def test_json_input_connect_with_missing_file_raise_connection_failed(tmp_path) -> None:
+class ConfigurationError(ValueError):
     """
-    JSON input should report a controlled connection failure when its input file cannot be opened.
+    Exception raised when configuration loading or validation fails.
     """
-    json_input = JsonInput(HWPCReport, str(tmp_path / 'missing.jsonl'), 'auto')
 
-    with pytest.raises(DatabaseConnectionError):
-        json_input.connect()
+    def __init__(self, reason: str, path: str | None = None):
+        """
+        Initialize a configuration error.
+        :param reason: User-facing explanation of the invalid configuration.
+        :param path: Dotted path of the invalid value, or None for an error affecting the full configuration.
+        """
+        self.reason = reason
+        self.path = path
+        super().__init__(reason, self.path)
+
+    def __str__(self) -> str:
+        """
+        Return the user-facing configuration error.
+        :return: Error message including the configuration path when available.
+        """
+        if self.path is not None:
+            return f'Invalid configuration at "{self.path}": {self.reason}'
+
+        return f'Invalid configuration: {self.reason}'

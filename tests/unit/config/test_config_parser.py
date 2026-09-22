@@ -36,7 +36,7 @@ from powerapi.config.config_parser import (
     ConfigurationSchema,
     ConfigurationSectionSchema,
 )
-from powerapi.exception import ConfigurationError
+from powerapi.config.exceptions import ConfigurationError
 
 
 def test_schema_registers_argument_definition():
@@ -205,7 +205,7 @@ def test_root_schema_prefixes_component_validation_error():
 
     assert result.value.path == 'input.sensor.port'
     assert result.value.reason == 'Expected int'
-    assert result.value.msg == 'Invalid configuration at "input.sensor.port": Expected int'
+    assert str(result.value) == 'Invalid configuration at "input.sensor.port": Expected int'
 
 
 @pytest.mark.parametrize('configuration', [

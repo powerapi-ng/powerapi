@@ -36,7 +36,7 @@ from threading import Thread, Event
 from time import sleep
 from typing import TYPE_CHECKING
 
-from powerapi.database.exceptions import ConnectionFailed, ReadFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError
 
 if TYPE_CHECKING:
     from powerapi.database.driver import ReadableDatabaseFactory
@@ -92,8 +92,8 @@ class DatabasePollerThread(Thread):
         except ValueError as exn:
             logging.error('Failed to create the database driver: %s', exn)
             return
-        except ConnectionFailed as exn:
-            logging.error('Failed to connect the database driver: %s', exn.msg)
+        except DatabaseConnectionError as exn:
+            logging.error('Failed to connect the database driver: %s', exn)
             return
 
         for dispatcher in self.report_filter.dispatchers():
@@ -111,8 +111,8 @@ class DatabasePollerThread(Thread):
                 if not self.stream_mode:
                     logging.info('No reports available from database, shutting down poller thread')
                     break
-            except ReadFailed as exn:
-                logging.error('Failed to fetch reports from database: %s', exn.msg)
+            except DatabaseReadError as exn:
+                logging.error('Failed to fetch reports from database: %s', exn)
 
             sleep(self.poll_interval)
 

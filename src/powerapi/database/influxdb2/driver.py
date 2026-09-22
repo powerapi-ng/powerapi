@@ -34,7 +34,7 @@ from influxdb_client.client.exceptions import InfluxDBError
 from urllib3.exceptions import HTTPError
 
 from powerapi.database.driver import WritableDatabase, WritableDatabaseFactory
-from powerapi.database.exceptions import ConnectionFailed, WriteFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseWriteError
 from powerapi.database.influxdb2.codecs import ReportEncoders
 from powerapi.report import Report
 
@@ -72,7 +72,7 @@ class InfluxDB2Output(WritableDatabase):
             if self._buckets_api.find_bucket_by_name(self._bucket_name) is None:
                 self._buckets_api.create_bucket(bucket_name=self._bucket_name)
         except (OSError, HTTPError, InfluxDBError) as exn:
-            raise ConnectionFailed(f'Failed to connect to the InfluxDB server: {exn}') from exn
+            raise DatabaseConnectionError(f'Failed to connect to the InfluxDB server: {exn}') from exn
 
     def disconnect(self) -> None:
         """
@@ -92,13 +92,13 @@ class InfluxDB2Output(WritableDatabase):
         """
         Write the reports into the InfluxDB database.
         :param reports: Iterable of reports
-        :raise: WriteFailed if the write operation fails
+        :raise: DatabaseWriteError if the write operation fails
         """
         try:
             encoded_reports = [self._report_encoder.encode(report) for report in reports]
             self._write_api.write(self._bucket_name, record=encoded_reports)
         except (OSError, HTTPError, InfluxDBError) as exn:
-            raise WriteFailed(f'Failed to save report to the InfluxDB database: {exn}') from exn
+            raise DatabaseWriteError(f'Failed to save report to the InfluxDB database: {exn}') from exn
 
 
 class InfluxDB2OutputFactory(WritableDatabaseFactory):

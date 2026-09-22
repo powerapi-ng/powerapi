@@ -36,16 +36,9 @@ from powerapi.config.config_parser import (
     ConfigurationSchema,
     ConfigurationSectionSchema,
 )
-from powerapi.exception import PowerAPIExceptionWithMessage
 
 _CONFIG_ASSIGNMENTS_DEST = '_powerapi_config_assignments'
 _CONFIG_FILE_DEST = '_powerapi_config_file'
-
-
-class CLIParseException(PowerAPIExceptionWithMessage):
-    """
-    Exception raised when command-line arguments cannot be parsed.
-    """
 
 
 @dataclass(frozen=True)
@@ -142,17 +135,17 @@ def _parse_assignment(expression: str) -> ConfigAssignment:
     Parse a dotted ``PATH=VALUE`` configuration assignment.
     :param expression: Assignment expression to parse.
     :return: Parsed configuration path and raw value.
-    :raises CLIParseException: If the expression does not contain a valid supported path.
+    :raises ValueError: If the expression does not contain a valid supported path.
     """
     path_expression, separator, value = expression.partition('=')
     if separator == '':
-        raise CLIParseException(f'Invalid configuration assignment "{expression}": expected PATH=VALUE')
+        raise ValueError(f'Invalid configuration assignment "{expression}": expected PATH=VALUE')
 
     path = tuple(path_expression.split('.'))
     if any(segment == '' for segment in path):
-        raise CLIParseException(f'Invalid configuration assignment "{expression}": path contains an empty segment')
+        raise ValueError(f'Invalid configuration assignment "{expression}": path contains an empty segment')
     if len(path) not in (1, 3):
-        raise CLIParseException(f'Invalid configuration assignment "{expression}": expected PROPERTY or GROUP.COMPONENT.PROPERTY')
+        raise ValueError(f'Invalid configuration assignment "{expression}": expected PROPERTY or GROUP.COMPONENT.PROPERTY')
 
     return ConfigAssignment(path=path, value=value)
 
@@ -162,7 +155,7 @@ def _apply_assignment(configuration: dict, assignment: ConfigAssignment) -> None
     Apply an assignment to a nested configuration.
     :param configuration: Configuration to update.
     :param assignment: Parsed assignment to apply.
-    :raises CLIParseException: If the assignment conflicts with an existing path.
+    :raises ValueError: If the assignment conflicts with an existing path.
     """
     target = configuration
     dotted_path = '.'.join(assignment.path)
@@ -170,11 +163,11 @@ def _apply_assignment(configuration: dict, assignment: ConfigAssignment) -> None
     for segment in assignment.path[:-1]:
         target = target.setdefault(segment, {})
         if not isinstance(target, dict):
-            raise CLIParseException(f'Conflicting configuration path: "{dotted_path}"')
+            raise ValueError(f'Conflicting configuration path: "{dotted_path}"')
 
     property_name = assignment.path[-1]
     if isinstance(target.get(property_name), dict):
-        raise CLIParseException(f'Conflicting configuration path: "{dotted_path}"')
+        raise ValueError(f'Conflicting configuration path: "{dotted_path}"')
 
     target[property_name] = assignment.value
 
@@ -184,7 +177,7 @@ def _build_configuration(expressions: list[str]) -> dict:
     Build a nested configuration dictionary from dotted assignments.
     :param expressions: Assignment expressions ordered as they appeared on the command line.
     :return: Nested configuration containing the assigned raw values.
-    :raises CLIParseException: If an expression is invalid or conflicts with another path.
+    :raises ValueError: If an expression is invalid or conflicts with another path.
     """
     configuration = {}
 
@@ -379,7 +372,7 @@ class CLIArgumentParser:
         Register one schema argument as a command-line option.
         :param argument: Schema argument to register.
         :param parser: Argument parser receiving the option.
-        :raises CLIParseException: If the option conflicts with an existing command-line option.
+        :raises ValueError: If the option conflicts with an existing command-line option.
         """
         kwargs = {
             'default': argparse.SUPPRESS,
@@ -392,13 +385,13 @@ class CLIArgumentParser:
         try:
             parser.add_argument(f'--{argument.name}', **kwargs)
         except argparse.ArgumentError as error:
-            raise CLIParseException(f'Failed to add argument: {error}') from error
+            raise ValueError(f'Failed to add argument: {error}') from error
 
     def _build_parser(self) -> argparse.ArgumentParser:
         """
         Build an argument parser from the current configuration schema.
         :return: Configured argument parser.
-        :raises CLIParseException: If schema arguments define conflicting command-line options.
+        :raises ValueError: If schema arguments define conflicting command-line options.
         """
         parser = argparse.ArgumentParser(
             allow_abbrev=False,
@@ -433,13 +426,13 @@ class CLIArgumentParser:
         Parse command-line arguments without validating component schemas.
         :param args: Command-line arguments without the executable name.
         :return: Parsed root configuration, dotted assignments, and optional configuration file path.
-        :raises CLIParseException: If argparse rejects the arguments or a dotted assignment is invalid.
+        :raises ValueError: If argparse rejects the arguments or a dotted assignment is invalid.
         """
         parser = self._build_parser()
         try:
             namespace = parser.parse_args(args)
         except argparse.ArgumentError as error:
-            raise CLIParseException(f'Failed to parse CLI: {error}') from error
+            raise ValueError(f'Failed to parse CLI: {error}') from error
 
         parsed_arguments = dict(vars(namespace))
         expressions = parsed_arguments.pop(_CONFIG_ASSIGNMENTS_DEST) or []

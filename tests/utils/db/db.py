@@ -34,7 +34,7 @@ from multiprocessing import Manager
 from uuid import uuid4
 
 from powerapi.database.driver import ReadableWritableDatabase, ReadableDatabaseFactory, WritableDatabaseFactory
-from powerapi.database.exceptions import ReadFailed, WriteFailed, ConnectionFailed
+from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError, DatabaseWriteError
 from powerapi.report import Report
 
 
@@ -168,10 +168,10 @@ class FailingLocalQueueDatabase(LocalQueueDatabase):
     def connect(self) -> None:
         """
         Connect the database.
-        :raises ReadFailed: if the operation is configured to fail
+        :raises DatabaseConnectionError: if the operation is configured to fail
         """
         if self.fail_connect:
-            raise ConnectionFailed('This database is setup to always fail its connection')
+            raise DatabaseConnectionError('This database is setup to always fail its connection')
 
         super().connect()
 
@@ -180,10 +180,10 @@ class FailingLocalQueueDatabase(LocalQueueDatabase):
         Read reports from the database.
         :param stream_mode: No-Op for this driver, steam mode is not supported
         :return: Iterable of reports
-        :raises ReadFailed: if the operation is configured to fail
+        :raises DatabaseReadError: if the operation is configured to fail
         """
         if self.fail_read:
-            raise ReadFailed('This database is setup to always fail its reads')
+            raise DatabaseReadError('This database is setup to always fail its reads')
 
         return super().read(stream_mode)
 
@@ -191,10 +191,10 @@ class FailingLocalQueueDatabase(LocalQueueDatabase):
         """
         Write the reports to the database.
         :param reports: Iterable of reports
-        :raises WriteFailed: if the operation is configured to fail
+        :raises DatabaseWriteError: if the operation is configured to fail
         """
         if self.fail_write:
-            raise WriteFailed('This database is setup to always fail its writes')
+            raise DatabaseWriteError('This database is setup to always fail its writes')
 
         super().write(reports)
 

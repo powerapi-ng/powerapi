@@ -33,7 +33,7 @@ from pathlib import Path
 import pytest
 import zmq
 
-from powerapi.actor import SocketInterface, NotConnectedException
+from powerapi.actor import SocketInterface
 
 
 def check_socket(socket: zmq.Socket, socket_type: int, socket_filepath: Path) -> None:
@@ -159,7 +159,7 @@ def test_data_send_not_connected(socket_interface):
     """
     Test that sending a message to a disconnected data socket raises an error.
     """
-    with pytest.raises(NotConnectedException):
+    with pytest.raises(RuntimeError, match='Data socket is not connected'):
         socket_interface.send_data('test-data-msg')
 
 
@@ -186,7 +186,7 @@ def test_control_send_not_connected(socket_interface):
     """
     Test that sending a message to a disconnected control socket raises an error.
     """
-    with pytest.raises(NotConnectedException):
+    with pytest.raises(RuntimeError, match='Control socket is not connected'):
         socket_interface.send_control('test-control-msg')
 
 
@@ -204,7 +204,7 @@ def test_control_receive_not_connected(socket_interface):
     """
     Test that trying to receive a message from a disconnected control socket raises an error.
     """
-    with pytest.raises(NotConnectedException):
+    with pytest.raises(RuntimeError, match='Control socket is not connected'):
         socket_interface.receive_control()
 
 
@@ -235,7 +235,7 @@ def test_multiple_receive_not_connected(socket_interface):
     """
     Test that trying to receive a message from a disconnected socket interface raises an error.
     """
-    with pytest.raises(NotConnectedException):
+    with pytest.raises(RuntimeError, match='Socket interface is not set up'):
         socket_interface.receive()
 
 
