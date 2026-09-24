@@ -32,7 +32,7 @@ from multiprocessing import Manager
 
 from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
-from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.report import HWPCReport
 
 from .handlers import HWPCReportHandler
@@ -77,7 +77,7 @@ class KubernetesProcessorState(State):
             actor.disconnect()
 
 
-class KubernetesPreProcessorActor(ProcessorActor):
+class KubernetesPreProcessorActor(PreProcessorActor):
     """
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """

@@ -33,7 +33,7 @@ from multiprocessing import Manager
 from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.processor.pre.openstack.handlers import HWPCReportHandler
-from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.report import HWPCReport
 
 from .metadata_registry import OpenStackMetadataRegistry
@@ -79,7 +79,7 @@ class OpenStackProcessorState(State):
             actor.disconnect()
 
 
-class OpenStackPreProcessorActor(ProcessorActor):
+class OpenStackPreProcessorActor(PreProcessorActor):
     """
     Pre-Processor Actor that adds OpenStack related metadata to reports.
     """
