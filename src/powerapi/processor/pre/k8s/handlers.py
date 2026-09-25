@@ -27,7 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import PoisonPillMessageHandler, StartHandler
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
 
@@ -37,40 +36,7 @@ from ._utils import (
 )
 
 
-class ActorStartMessageHandler(StartHandler):
-    """
-    Start message handler for the Kubernetes processor actor.
-    """
-
-    def initialization(self):
-        """
-        Initialize the Kubernetes processor.
-        """
-        for actor in self.state.actor.target_actors:
-            actor.connect_data()
-
-        self.state.monitor_agent.start()
-
-
-class ActorPoisonPillMessageHandler(PoisonPillMessageHandler):
-    """
-    Poison Pill message handler for the Kubernetes processor actor.
-    """
-
-    def teardown(self, soft: bool = False):
-        """
-        Teardown the Kubernetes processor.
-        """
-        self.state.monitor_agent.terminate()
-        self.state.monitor_agent.join()
-
-        self.state.manager.shutdown()
-
-        for actor in self.state.actor.target_actors:
-            actor.disconnect()
-
-
-class HWPCReportHandler(ProcessorReportHandler):
+class HWPCReportHandler(ProcessorReportHandler[HWPCReport]):
     """
     HWPCReport message handler for the Kubernetes processor actor.
     """

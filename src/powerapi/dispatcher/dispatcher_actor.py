@@ -32,10 +32,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Protocol
 
-from powerapi.actor import Actor, State
+from powerapi.actor import Actor, PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
-from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
-from powerapi.handler import StartHandler
+from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler
 from powerapi.report import Report
 
 if TYPE_CHECKING:
@@ -97,6 +96,17 @@ class DispatcherState(State):
 
         return self.formula_proxy[formula_id]
 
+    def teardown(self, graceful: bool = False) -> None:
+        """
+        Disconnect and stop supervised formula actors.
+        :param graceful: Whether the actor is performing a graceful shutdown
+        """
+        for proxy in self.formula_proxy.values():
+            proxy.disconnect()
+
+        self.supervisor.kill_actors(graceful=graceful)
+        self.supervisor.join(timeout=5.0)
+
 
 class DispatcherActor(Actor):
     """
@@ -104,6 +114,7 @@ class DispatcherActor(Actor):
     This actor process the reports coming from the pullers and dispatches them to the formula actors according the
     provided routing table. When a report doesn't have any formula assigned, the dispatcher will create a new formula.
     """
+    state: DispatcherState
 
     def __init__(self, name: str, formula_factory: FormulaFactory, pushers: dict[type[Report], list[ActorProxy]],
                  route_table: RouteTable, level_logger: int = logging.WARNING, timeout=None):
@@ -127,6 +138,6 @@ class DispatcherActor(Actor):
         """
         self.state = DispatcherState(self)
 
-        self.add_handler(StartMessage, StartHandler(self.state))
-        self.add_handler(PoisonPillMessage, DispatcherPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(Report, FormulaDispatcherReportHandler(self.state))

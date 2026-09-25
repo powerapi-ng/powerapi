@@ -33,17 +33,13 @@ import pytest
 
 pytest.importorskip('openstack')
 
-from powerapi.actor import State
+from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.processor.pre.openstack.actor import (
     OpenStackPreProcessorActor,
     OpenStackProcessorState,
 )
-from powerapi.processor.pre.openstack.handlers import (
-    HWPCReportHandler,
-    PoisonPillMessageHandler,
-    StartMessageHandler,
-)
+from powerapi.processor.pre.openstack.handlers import HWPCReportHandler
 from powerapi.report import HWPCReport
 
 

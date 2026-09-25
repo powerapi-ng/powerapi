@@ -31,7 +31,8 @@ from __future__ import annotations
 
 import logging
 
-from powerapi.actor import Actor, ActorProxy, State
+from powerapi.actor import Actor, ActorProxy, PoisonPillMessageHandler, StartMessageHandler, State
+from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.report import Report
 
 
@@ -50,7 +51,7 @@ class FormulaState(State):
 
         self.pushers = pushers
 
-    def connect_to_pushers(self):
+    def initialize(self) -> None:
         """
         Connect to the pusher actors.
         """
@@ -58,9 +59,10 @@ class FormulaState(State):
             for pusher in pushers:
                 pusher.connect_data()
 
-    def disconnect_from_pushers(self):
+    def teardown(self, graceful: bool = False) -> None:
         """
         Disconnect from the pusher actors.
+        :param graceful: Whether the actor is performing a graceful shutdown
         """
         for pushers in self.pushers.values():
             for pusher in pushers:
@@ -72,29 +74,32 @@ class FormulaActor(Actor):
     Abstract formula actor class.
     Used to implement formula actors that compute power estimations from received reports.
     """
+    state: FormulaState
 
-    def __init__(self, name: str, pushers: dict[type[Report], list[ActorProxy]], level_logger = logging.WARNING, timeout = None):
+    def __init__(self, name: str, pushers: dict[type[Report], list[ActorProxy]], level_logger = logging.WARNING):
         """
         Initialize a new Formula actor.
         :param name: Actor name
         :param pushers: Mapping of report types to pusher actors
         :param level_logger: Level of the logger
-        :param timeout: Time in millisecond to wait for a message before calling the timeout handler
         """
-        super().__init__(name, level_logger, timeout)
+        super().__init__(name, level_logger, None)
 
-        self.state: FormulaState | None = None
         self.pushers = pushers
 
-    def setup(self):
+    def create_state(self) -> FormulaState:
+        """
+        Create the formula state inside the actor process.
+        Override this method to provide a specialized formula state.
+        :return: Formula actor state
+        """
+        return FormulaState(self, self.pushers)
+
+    def setup(self) -> None:
         """
         Initializes the formula actor.
         """
-        self.state = FormulaState(self, self.pushers)
-        self.state.connect_to_pushers()
+        self.state = self.create_state()
 
-    def teardown(self):
-        """
-        Teardown the formula actor.
-        """
-        self.state.disconnect_from_pushers()
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))

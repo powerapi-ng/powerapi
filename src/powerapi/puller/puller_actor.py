@@ -29,12 +29,11 @@
 
 import logging
 
-from powerapi.actor import Actor, State
-from powerapi.actor.message import StartMessage, PoisonPillMessage
+from powerapi.actor import Actor, PoisonPillMessageHandler, StartMessageHandler, State
+from powerapi.actor.message import ErrorMessage, StartMessage, PoisonPillMessage
 from powerapi.database.driver import ReadableDatabaseFactory
 from powerapi.filter import ReportFilter
 from powerapi.puller.database_poller import DatabasePollerThread
-from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 
 
 class PullerState(State):
@@ -57,12 +56,36 @@ class PullerState(State):
 
         self.db_poller_thread = DatabasePollerThread(database_factory, report_filter, stream_mode)
 
+    def initialize(self) -> None:
+        """
+        Start the database poller.
+        """
+        if not self.report_filter:
+            self.actor.send_control(ErrorMessage('Report filter is empty'))
+            self.alive = False
+            return
+
+        self.db_poller_thread.start()
+        self.db_poller_thread.wait_ready(timeout=5.0)
+        if not self.db_poller_thread.is_alive():
+            self.actor.send_control(ErrorMessage('Database poller thread failed to start'))
+            self.alive = False
+
+    def teardown(self, graceful: bool = False) -> None:
+        """
+        Stop the database poller.
+        :param graceful: Whether the actor is performing a graceful shutdown
+        """
+        self.db_poller_thread.stop()
+        self.db_poller_thread.join(timeout=5.0)
+
 
 class PullerActor(Actor):
     """
     Puller Actor class.
     This actor allows to retrieve reports from a database and send them to theirs corresponding dispatcher.
     """
+    state: PullerState
 
     def __init__(self, name: str, database_factory: ReadableDatabaseFactory, report_filter: ReportFilter, stream_mode: bool = False, level_logger: int = logging.WARNING):
         """
@@ -83,5 +106,5 @@ class PullerActor(Actor):
         """
         self.state = PullerState(self, self.database_factory, self.report_filter, self.stream_mode)
 
-        self.add_handler(StartMessage, PullerStartMessageHandler(self.state))
-        self.add_handler(PoisonPillMessage, PullerPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))

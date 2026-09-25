@@ -29,6 +29,7 @@
 
 from powerapi.actor.socket_interface import SocketInterface
 from powerapi.actor.message import Message, StartMessage, OKMessage, ErrorMessage, PoisonPillMessage
+from powerapi.actor.handler import Handler, InitializedStateHandler, StartMessageHandler, PoisonPillMessageHandler
 from powerapi.actor.state import State
 from powerapi.actor.actor import Actor, ActorProxy
 from powerapi.actor.supervisor import Supervisor, ActorInitializationError

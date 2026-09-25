@@ -32,51 +32,24 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.processor.pre.k8s.handlers import (
-    ActorPoisonPillMessageHandler,
-    ActorStartMessageHandler,
-    HWPCReportHandler,
-)
+from powerapi.processor.pre.k8s.actor import KubernetesProcessorState
+from powerapi.processor.pre.k8s.handlers import HWPCReportHandler
 from powerapi.report import HWPCReport
 
 
 @pytest.fixture
-def start_message_handler():
+def processor_state():
     """
-    Factory fixture creating a start message handler.
+    Return a Kubernetes processor state with mocked lifecycle resources.
     """
+    actor = Mock(name='processor-actor')
+    actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
 
-    def _create_handler() -> ActorStartMessageHandler:
-        actor = Mock(name='processor-actor')
-        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
-
-        state = Mock(name='state')
-        state.actor = actor
-        state.monitor_agent = Mock(name='monitor_agent')
-
-        return ActorStartMessageHandler(state)
-
-    return _create_handler
-
-
-@pytest.fixture
-def poison_pill_message_handler():
-    """
-    Factory fixture creating a Poison-Pill message handler.
-    """
-
-    def _create_handler() -> ActorPoisonPillMessageHandler:
-        actor = Mock(name='processor-actor')
-        actor.target_actors = [Mock(name='target_actor_a'), Mock(name='target_actor_b')]
-
-        state = Mock(name='state')
-        state.actor = actor
-        state.manager = Mock(name='manager')
-        state.monitor_agent = Mock(name='monitor_agent')
-
-        return ActorPoisonPillMessageHandler(state)
-
-    return _create_handler
+    state = KubernetesProcessorState.__new__(KubernetesProcessorState)
+    state.actor = actor
+    state.manager = Mock(name='manager')
+    state.monitor_agent = Mock(name='monitor_agent')
+    return state
 
 
 @pytest.fixture
@@ -117,31 +90,27 @@ def make_pod_hwpc_report() -> tuple[HWPCReport, str]:
     return HWPCReport(timestamp, sensor, str(target), {}, metadata), container_id
 
 
-def test_start_handler_connects_targets_and_starts_monitor(start_message_handler):
+def test_state_initialization_connects_targets_and_starts_monitor(processor_state):
     """
     The start handler should connect target actors and start monitoring.
     """
-    handler = start_message_handler()
+    processor_state.initialize()
 
-    handler.initialization()
-
-    handler.state.monitor_agent.start.assert_called_once()
-    for actor in handler.state.actor.target_actors:
+    processor_state.monitor_agent.start.assert_called_once()
+    for actor in processor_state.actor.target_actors:
         actor.connect_data.assert_called_once()
 
 
-def test_poison_pill_handler_stops_resources_and_disconnects_targets(poison_pill_message_handler):
+def test_state_teardown_stops_resources_and_disconnects_targets(processor_state):
     """
     The Poison-Pill handler should stop resources and disconnect targets.
     """
-    handler = poison_pill_message_handler()
+    processor_state.teardown()
 
-    handler.teardown()
-
-    handler.state.monitor_agent.terminate.assert_called_once()
-    handler.state.monitor_agent.join.assert_called_once()
-    handler.state.manager.shutdown.assert_called_once()
-    for actor in handler.state.actor.target_actors:
+    processor_state.monitor_agent.terminate.assert_called_once()
+    processor_state.monitor_agent.join.assert_called_once()
+    processor_state.manager.shutdown.assert_called_once()
+    for actor in processor_state.actor.target_actors:
         actor.disconnect.assert_called_once()
 
 

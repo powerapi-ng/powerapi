@@ -27,46 +27,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import StartHandler, PoisonPillMessageHandler as PoisonPillHandler
 from powerapi.processor.handlers import ProcessorReportHandler
 from powerapi.report import HWPCReport
 from ._utils import get_instance_name_from_libvirt_cgroup
 
 
-class StartMessageHandler(StartHandler):
-    """
-    Start message handler for the OpenStack processor actor.
-    """
-
-    def initialization(self):
-        """
-        Initialize the OpenStack processor.
-        """
-        for actor in self.state.actor.target_actors:
-            actor.connect_data()
-
-        self.state.monitor_agent.start()
-
-
-class PoisonPillMessageHandler(PoisonPillHandler):
-    """
-    PoisonPill message handler for the OpenStack processor actor.
-    """
-
-    def teardown(self, soft: bool = False):
-        """
-        Teardown the OpenStack processor.
-        """
-        self.state.monitor_agent.terminate()
-        self.state.monitor_agent.join()
-
-        self.state.manager.shutdown()
-
-        for actor in self.state.actor.target_actors:
-            actor.disconnect()
-
-
-class HWPCReportHandler(ProcessorReportHandler):
+class HWPCReportHandler(ProcessorReportHandler[HWPCReport]):
     """
     Generic report handler for the OpenStack processor actor.
     Used to add the server metadata (from the OpenStack API) to the processed report.

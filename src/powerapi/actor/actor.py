@@ -38,13 +38,12 @@ from typing import TYPE_CHECKING
 
 import setproctitle
 
-from powerapi.actor.message import PoisonPillMessage
+from .message import Message, PoisonPillMessage
 from .socket_interface import SocketInterface
 from .state import State
 
 if TYPE_CHECKING:
-    from powerapi.actor.message import Message
-    from powerapi.handler import Handler
+    from powerapi.actor.handler import Handler
 
 
 class Actor(multiprocessing.Process):
@@ -56,6 +55,7 @@ class Actor(multiprocessing.Process):
 
     PowerAPI components are implemented as specialized actors in a data-processing pipeline.
     """
+    state: State
 
     def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int | None = None):
         """
@@ -68,7 +68,6 @@ class Actor(multiprocessing.Process):
 
         self.logging_level = level_logger
 
-        self.state: State | None = None
         self.socket_interface = SocketInterface(name, timeout)
         self.low_exception = []
 
@@ -109,8 +108,7 @@ class Actor(multiprocessing.Process):
             logging.debug("Received signal %s (%s), terminating actor...", signame, signum)
 
             msg = PoisonPillMessage(soft=False)
-            handler = self.state.get_corresponding_handler(msg)
-            handler.handle(msg)
+            self.state.dispatch_message(msg)
 
             self._teardown_actor()
             sys.exit(0)
@@ -156,13 +154,7 @@ class Actor(multiprocessing.Process):
         if msg is None:
             return  # Timeout
 
-        try:
-            handler = self.state.get_corresponding_handler(msg)
-        except KeyError:
-            logging.warning("Unknown message type: %s", msg)
-            return
-
-        handler.handle_message(msg)
+        self.state.dispatch_message(msg)
 
     def _teardown_actor(self) -> None:
         """
