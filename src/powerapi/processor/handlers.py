@@ -27,11 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import InitHandler
+from powerapi.actor import InitializedStateHandler
 from powerapi.report import Report
 
 
-class ProcessorReportHandler(InitHandler):
+class ProcessorReportHandler[ReportT: Report](InitializedStateHandler[ReportT]):
     """
     Processor report handler class.
     Used by processor actors to handles incoming reports.

@@ -33,17 +33,13 @@ import pytest
 
 pytest.importorskip("kubernetes")
 
-from powerapi.actor import State
+from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.processor.pre.k8s.actor import (
     KubernetesPreProcessorActor,
     KubernetesProcessorState,
 )
-from powerapi.processor.pre.k8s.handlers import (
-    ActorPoisonPillMessageHandler,
-    ActorStartMessageHandler,
-    HWPCReportHandler,
-)
+from powerapi.processor.pre.k8s.handlers import HWPCReportHandler
 from powerapi.report import HWPCReport
 
 
@@ -67,8 +63,8 @@ def test_processor_state_builds_metadata_components():
 @pytest.mark.parametrize(
     ("message", "expected_handler_type"),
     [
-        (StartMessage(), ActorStartMessageHandler),
-        (PoisonPillMessage(), ActorPoisonPillMessageHandler),
+        (StartMessage(), StartMessageHandler),
+        (PoisonPillMessage(), PoisonPillMessageHandler),
         (HWPCReport(datetime.now(), "pytest", "pytest", {}), HWPCReportHandler)
     ],
     ids=["start_message", "poison_pill_message", "hwpc_report"],

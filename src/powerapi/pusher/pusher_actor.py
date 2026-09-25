@@ -29,10 +29,11 @@
 
 import logging
 
-from powerapi.actor import Actor, State
-from powerapi.actor.message import PoisonPillMessage, StartMessage
+from powerapi.actor import Actor, PoisonPillMessageHandler, StartMessageHandler, State
+from powerapi.actor.message import ErrorMessage, PoisonPillMessage, StartMessage
 from powerapi.database.driver import WritableDatabaseFactory, WritableDatabase
-from powerapi.pusher.handlers import ReportHandler, PusherStartHandler, PusherPoisonPillMessageHandler
+from powerapi.database.exceptions import DatabaseError
+from powerapi.pusher.handlers import ReportHandler
 from powerapi.report import Report
 
 
@@ -52,12 +53,47 @@ class PusherState(State):
         self.database_driver: WritableDatabase | None = None
         self.buffer: list[Report] = []
 
+    def initialize(self) -> None:
+        """
+        Create and connect the database driver.
+        """
+        try:
+            database_driver = self.database_factory.create()
+            database_driver.connect()
+            self.database_driver = database_driver
+        except ValueError as exn:
+            logging.error('Failed to create the database driver: %s', exn)
+            self.actor.send_control(ErrorMessage('Database driver creation failed'))
+            self.alive = False
+        except DatabaseError as exn:
+            logging.error('Failed to initialize the database driver: %s', exn)
+            self.actor.send_control(ErrorMessage('Database initialization failed'))
+            self.alive = False
+
+    def teardown(self, graceful: bool = False) -> None:
+        """
+        Flush buffered reports and disconnect the database driver.
+        :param graceful: Whether the actor is performing a graceful shutdown
+        """
+        if self.database_driver is None:
+            return
+
+        if self.buffer:
+            try:
+                self.database_driver.write(self.buffer)
+                self.buffer.clear()
+            except DatabaseError as exn:
+                logging.error('The reports could not be saved before shutting down actor: %s', exn)
+
+        self.database_driver.disconnect()
+
 
 class PusherActor(Actor):
     """
     Pusher Actor class.
     This actor allows to persist Reports sent by a Formula to a database.
     """
+    state: PusherState
 
     def __init__(self, name: str, database_factory: WritableDatabaseFactory, flush_interval: float = 0.100, max_buffer_size: int = 50, logger_level: int = logging.WARNING):
         """
@@ -79,6 +115,6 @@ class PusherActor(Actor):
         """
         self.state = PusherState(self, self.database_factory)
 
-        self.add_handler(StartMessage, PusherStartHandler(self.state))
-        self.add_handler(PoisonPillMessage, PusherPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(Report, ReportHandler(self.state, self.flush_interval, self.max_buffer_size))

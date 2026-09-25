@@ -27,28 +27,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.handler import InitHandler, PoisonPillMessageHandler
+from powerapi.actor import InitializedStateHandler
 from powerapi.report import Report
 
 
-class DispatcherPoisonPillMessageHandler(PoisonPillMessageHandler):
-    """
-    Poison pill message handler for the dispatcher actor.
-    """
-
-    def teardown(self, soft: bool = False):
-        """
-        Teardown the dispatcher actor.
-        All supervised formula actor(s) will be terminated.
-        """
-        for proxy in self.state.formula_proxy.values():
-            proxy.disconnect()
-
-        self.state.supervisor.kill_actors(graceful=soft)
-        self.state.supervisor.join(timeout=5.0)
-
-
-class FormulaDispatcherReportHandler(InitHandler):
+class FormulaDispatcherReportHandler(InitializedStateHandler[Report]):
     """
     Generic report handler for the dispatcher actor.
     """

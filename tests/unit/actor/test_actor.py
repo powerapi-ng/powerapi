@@ -29,11 +29,22 @@
 
 import logging
 import secrets
+from unittest.mock import Mock
 
 import pytest
 
-from powerapi.actor import Actor, State, Message, StartMessage, PoisonPillMessage, OKMessage, ErrorMessage
-from powerapi.handler import StartHandler, PoisonPillMessageHandler, Handler
+from powerapi.actor import (
+    Actor,
+    ErrorMessage,
+    Handler,
+    Message,
+    OKMessage,
+    PoisonPillMessage,
+    PoisonPillMessageHandler,
+    StartMessage,
+    StartMessageHandler,
+    State,
+)
 
 
 class UnknownMessage(Message):
@@ -63,7 +74,7 @@ class DummyMessageSubtype(DummyMessage):
     """
 
 
-class FailingStartMessageHandler(Handler):
+class FailingStartMessageHandler(Handler[StartMessage]):
     """
     Failing start message handler.
     Always sends back an error message to the control channel of the actor.
@@ -79,7 +90,7 @@ class FailingStartMessageHandler(Handler):
         self.state.actor.send_control(self.ERROR_MSG)
 
 
-class LoopbackMessageHandler(Handler):
+class LoopbackMessageHandler(Handler[DummyMessage]):
     """
     Loopback message handler.
     Set the processed flag to received messages and sends them back to the control channel.
@@ -93,7 +104,7 @@ class LoopbackMessageHandler(Handler):
         self.state.actor.send_control(message)
 
 
-class KeyErrorMessageHandler(Handler):
+class KeyErrorMessageHandler(Handler[DummyMessage]):
     def handle(self, message: DummyMessage) -> None:
         raise KeyError('handler failure')
 
@@ -127,7 +138,7 @@ class LoopbackActor(DummyActorBase):
         """
         self.state = DummyActorState(self)
 
-        self.add_handler(StartMessage, StartHandler(self.state))
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(DummyMessage, LoopbackMessageHandler(self.state))
 
@@ -268,9 +279,47 @@ def test_retrieve_handler_for_unknown_message_type():
 
 
 def test_handler_key_error_is_not_mistaken_for_an_unknown_message():
-    state = DummyActorState(None)
+    """
+    Exceptions raised by handlers should not be treated as unknown messages.
+    """
+    actor = Actor('pytest')
+    state = DummyActorState(actor)
+    actor.state = state
     handler = KeyErrorMessageHandler(state)
     state.add_handler(DummyMessage, handler)
 
     with pytest.raises(KeyError, match='handler failure'):
-        handler.delegate_message_handling(DummyMessage('test-dummy'))
+        state.dispatch_message(DummyMessage('test-dummy'))
+
+
+def test_start_message_handler_initializes_state():
+    """
+    The start-message handler should initialize the actor state.
+    """
+    state = Mock(initialized=False, alive=True)
+    handler = StartMessageHandler(state)
+
+    handler.handle(StartMessage())
+
+    state.initialize.assert_called_once_with()
+    state.actor.send_control.assert_called_once()
+    assert isinstance(state.actor.send_control.call_args.args[0], OKMessage)
+    assert state.initialized is True
+
+
+def test_soft_poison_pill_dispatches_pending_messages_before_state_teardown():
+    """
+    A soft shutdown should dispatch pending messages before tearing down the state.
+    """
+    events = []
+    pending_message = DummyMessage('pending')
+    actor = Mock()
+    actor.socket_interface.receive.side_effect = [pending_message, None]
+    state = Mock(actor=actor, alive=True)
+    state.dispatch_message.side_effect = lambda msg: events.append(('dispatch', msg))
+    state.teardown.side_effect = lambda **kwargs: events.append(('teardown', kwargs['graceful']))
+
+    PoisonPillMessageHandler(state).handle(PoisonPillMessage(soft=True))
+
+    assert events == [('dispatch', pending_message), ('teardown', True)]
+    assert state.alive is False

@@ -29,13 +29,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
+from powerapi.actor.message import Message
 from powerapi.actor.supervisor import Supervisor
 
 if TYPE_CHECKING:
-    from powerapi.handler import Handler
-    from powerapi.actor.message import Message
+    from powerapi.actor.handler import Handler
 
 
 class State:
@@ -53,8 +54,19 @@ class State:
         self.initialized = False
         self.alive = True
 
-        self.handlers = {}
+        self.handlers: dict[str, Handler] = {}
         self.supervisor = Supervisor()
+
+    def initialize(self) -> None:
+        """
+        Initialize resources after the actor receives a start message.
+        """
+
+    def teardown(self, graceful: bool = False) -> None:
+        """
+        Release resources before the actor stops.
+        :param graceful: Whether the actor is performing a graceful shutdown
+        """
 
     def get_corresponding_handler(self, msg: Message) -> Handler:
         """
@@ -65,7 +77,7 @@ class State:
         """
         return self.handlers[msg.__class__.__name__]
 
-    def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True):
+    def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True) -> None:
         """
         Add a handler for the given message type.
         :param message_type: The message type
@@ -77,3 +89,16 @@ class State:
         if include_subclasses:
             for child_type in message_type.__subclasses__():
                 self.handlers[child_type.__name__] = handler
+
+    def dispatch_message(self, msg: Message) -> None:
+        """
+        Dispatch a message to its registered handler.
+        :param msg: Message to dispatch
+        """
+        try:
+            handler = self.get_corresponding_handler(msg)
+        except KeyError:
+            logging.warning("Unknown message type: %s", msg)
+            return
+
+        handler.handle_message(msg)

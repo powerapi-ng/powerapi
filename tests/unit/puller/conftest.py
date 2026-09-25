@@ -33,8 +33,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler
 from powerapi.filter import BroadcastReportFilter
-from powerapi.puller.handlers import PullerStartMessageHandler, PullerPoisonPillMessageHandler
 from powerapi.puller.puller_actor import PullerState
 from tests.utils.db import PrebuiltDatabaseFactory
 
@@ -86,7 +86,7 @@ def puller_start_handler(make_fake_failing_database, fake_database_poller):
     """
     Factory fixture for creating a puller start handler.
     """
-    def _create_handler(report_filter: ReportFilter) -> PullerStartMessageHandler:
+    def _create_handler(report_filter: ReportFilter) -> StartMessageHandler:
         actor = Mock()
         database = make_fake_failing_database()
         database_factory = PrebuiltDatabaseFactory(database)
@@ -94,7 +94,7 @@ def puller_start_handler(make_fake_failing_database, fake_database_poller):
         state = PullerState(actor, database_factory, report_filter, stream_mode=False)
         state.db_poller_thread = fake_database_poller
 
-        handler = PullerStartMessageHandler(state)
+        handler = StartMessageHandler(state)
         return handler
 
     return _create_handler
@@ -105,7 +105,7 @@ def puller_poison_pill_handler(make_fake_failing_database, empty_report_filter, 
     """
     Factory fixture for creating a puller poison-pill handler.
     """
-    def _create_handler() -> PullerPoisonPillMessageHandler:
+    def _create_handler() -> PoisonPillMessageHandler:
         actor = Mock()
         actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
 
@@ -115,7 +115,7 @@ def puller_poison_pill_handler(make_fake_failing_database, empty_report_filter, 
         state = PullerState(actor, database_factory, empty_report_filter, stream_mode=False)
         state.db_poller_thread = fake_database_poller
 
-        handler = PullerPoisonPillMessageHandler(state)
+        handler = PoisonPillMessageHandler(state)
         return handler
 
     return _create_handler

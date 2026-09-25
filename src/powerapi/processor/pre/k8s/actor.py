@@ -30,16 +30,12 @@
 import logging
 from multiprocessing import Manager
 
-from powerapi.actor import Actor, State
+from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
 from powerapi.processor.processor_actor import ProcessorActor
 from powerapi.report import HWPCReport
 
-from .handlers import (
-    ActorPoisonPillMessageHandler,
-    ActorStartMessageHandler,
-    HWPCReportHandler,
-)
+from .handlers import HWPCReportHandler
 from .metadata_registry import KubernetesMetadataRegistry
 from .monitor_agent import KubernetesMonitorAgent, KubernetesMonitorConfig
 
@@ -49,7 +45,7 @@ class KubernetesProcessorState(State):
     State of the Kubernetes processor actor.
     """
 
-    def __init__(self, actor: Actor, monitor_config: KubernetesMonitorConfig):
+    def __init__(self, actor: ProcessorActor, monitor_config: KubernetesMonitorConfig):
         """
         Initializes a Kubernetes pre-processor state.
         """
@@ -59,11 +55,34 @@ class KubernetesProcessorState(State):
         self.metadata_registry = KubernetesMetadataRegistry(self.manager)
         self.monitor_agent = KubernetesMonitorAgent(self.metadata_registry, monitor_config)
 
+    def initialize(self) -> None:
+        """
+        Connect targets and start monitoring Kubernetes.
+        """
+        for actor in self.actor.target_actors:
+            actor.connect_data()
+
+        self.monitor_agent.start()
+
+    def teardown(self, graceful: bool = False) -> None:
+        """
+        Stop monitoring and disconnect target actors.
+        :param graceful: Whether the actor is performing a graceful shutdown
+        """
+        self.monitor_agent.terminate()
+        self.monitor_agent.join()
+        self.manager.shutdown()
+
+        for actor in self.actor.target_actors:
+            actor.disconnect()
+
 
 class KubernetesPreProcessorActor(ProcessorActor):
     """
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """
+
+    state: KubernetesProcessorState
 
     def __init__(self, name: str, monitor_config: KubernetesMonitorConfig, level_logger: int = logging.WARNING):
         """
@@ -82,6 +101,6 @@ class KubernetesPreProcessorActor(ProcessorActor):
         """
         self.state = KubernetesProcessorState(self, self.monitor_config)
 
-        self.add_handler(StartMessage, ActorStartMessageHandler(self.state))
-        self.add_handler(PoisonPillMessage, ActorPoisonPillMessageHandler(self.state))
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
         self.add_handler(HWPCReport, HWPCReportHandler(self.state))

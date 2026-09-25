@@ -31,11 +31,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.actor import PoisonPillMessage, ActorProxy
+from powerapi.actor import ActorProxy, PoisonPillMessage, PoisonPillMessageHandler
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.dispatcher import RouteTable
 from powerapi.dispatcher.dispatcher_actor import DispatcherState
-from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler, DispatcherPoisonPillMessageHandler
+from powerapi.dispatcher.handlers import FormulaDispatcherReportHandler
 from powerapi.report import Report
 
 
@@ -105,7 +105,7 @@ def dispatcher_poison_pill_handler():
     Factory fixture for creating a poison-pill message handler with a mocked dispatcher actor.
     """
 
-    def _create_handler() -> DispatcherPoisonPillMessageHandler:
+    def _create_handler() -> PoisonPillMessageHandler:
         actor = Mock(name='dispatcher-actor')
         actor.pushers = {}
         actor.route_table = RouteTable()
@@ -114,7 +114,7 @@ def dispatcher_poison_pill_handler():
         state = DispatcherState(actor)
         state.supervisor = Mock(name='supervisor')
 
-        handler = DispatcherPoisonPillMessageHandler(state)
+        handler = PoisonPillMessageHandler(state)
         return handler
 
     return _create_handler
