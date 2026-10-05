@@ -76,8 +76,9 @@ class PullerState(State):
         Stop the database poller.
         :param graceful: Whether the actor is performing a graceful shutdown
         """
-        self.db_poller_thread.stop()
-        self.db_poller_thread.join(timeout=5.0)
+        if self.db_poller_thread.ident is not None:
+            self.db_poller_thread.stop()
+            self.db_poller_thread.join(timeout=5.0)
 
 
 class PullerActor(Actor):

@@ -31,7 +31,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.actor import ActorProxy, PoisonPillMessage, PoisonPillMessageHandler
+from powerapi.actor import ActorProxy
 from powerapi.dispatch_rule import DispatchRule
 from powerapi.dispatcher import RouteTable
 from powerapi.dispatcher.dispatcher_actor import DispatcherState
@@ -100,24 +100,14 @@ def dispatcher_report_handler():
 
 
 @pytest.fixture
-def dispatcher_poison_pill_handler():
+def dispatcher_state():
     """
-    Factory fixture for creating a poison-pill message handler with a mocked dispatcher actor.
+    Return a dispatcher state with a mocked actor and supervisor.
     """
-
-    def _create_handler() -> PoisonPillMessageHandler:
-        actor = Mock(name='dispatcher-actor')
-        actor.pushers = {}
-        actor.route_table = RouteTable()
-        actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
-
-        state = DispatcherState(actor)
-        state.supervisor = Mock(name='supervisor')
-
-        handler = PoisonPillMessageHandler(state)
-        return handler
-
-    return _create_handler
+    actor = Mock(name='dispatcher-actor', pushers={}, route_table=RouteTable())
+    state = DispatcherState(actor)
+    state.supervisor = Mock(name='supervisor')
+    return state
 
 
 @pytest.mark.parametrize('dispatch_rule', [SingleFormulaDispatchRule(), MultipleFormulaDispatchRule()])
@@ -138,19 +128,17 @@ def test_report_handler_forwards_report_to_formula(dispatcher_report_handler, di
 
 
 @pytest.mark.parametrize('graceful_flag', [True, False])
-def test_poison_pill_handler_disconnects_proxies_and_stops_formula_actors(dispatcher_poison_pill_handler, graceful_flag):
+def test_dispatcher_state_teardown_disconnects_proxies_and_stops_formula_actors(dispatcher_state, graceful_flag):
     """
-    Poison-Pill handler should disconnect proxies and stop supervised formula actors before shutting down the dispatcher.
+    Dispatcher teardown should disconnect proxies and stop supervised formula actors.
     """
-    handler = dispatcher_poison_pill_handler()
     proxy_a = Mock(name='formula-a-proxy')
     proxy_b = Mock(name='formula-b-proxy')
-    handler.state.formula_proxy = {('formula-a',): proxy_a, ('formula-b',): proxy_b}
+    dispatcher_state.formula_proxy = {('formula-a',): proxy_a, ('formula-b',): proxy_b}
 
-    handler.handle(PoisonPillMessage(soft=graceful_flag))
+    dispatcher_state.teardown(graceful=graceful_flag)
 
     proxy_a.disconnect.assert_called_once()
     proxy_b.disconnect.assert_called_once()
-    handler.state.supervisor.kill_actors.assert_called_once_with(graceful=graceful_flag)
-    handler.state.supervisor.join.assert_called_once()
-    assert handler.state.alive is False
+    dispatcher_state.supervisor.kill_actors.assert_called_once_with(graceful=graceful_flag)
+    dispatcher_state.supervisor.join.assert_called_once()

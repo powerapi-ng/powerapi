@@ -33,7 +33,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler
+from powerapi.actor import StartMessageHandler
 from powerapi.filter import BroadcastReportFilter
 from powerapi.puller.puller_actor import PullerState
 from tests.utils.db import PrebuiltDatabaseFactory
@@ -69,8 +69,10 @@ def fake_database_poller():
     Fixture for a fake database poller.
     """
     db_poller = Mock()
+    db_poller.ident = None
 
     def set_is_alive_flag():
+        db_poller.ident = 1
         db_poller.is_alive.return_value = True
 
     def unset_is_alive_flag():
@@ -95,27 +97,6 @@ def puller_start_handler(make_fake_failing_database, fake_database_poller):
         state.db_poller_thread = fake_database_poller
 
         handler = StartMessageHandler(state)
-        return handler
-
-    return _create_handler
-
-
-@pytest.fixture
-def puller_poison_pill_handler(make_fake_failing_database, empty_report_filter, fake_database_poller):
-    """
-    Factory fixture for creating a puller poison-pill handler.
-    """
-    def _create_handler() -> PoisonPillMessageHandler:
-        actor = Mock()
-        actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
-
-        database = make_fake_failing_database()
-        database_factory = PrebuiltDatabaseFactory(database)
-
-        state = PullerState(actor, database_factory, empty_report_filter, stream_mode=False)
-        state.db_poller_thread = fake_database_poller
-
-        handler = PoisonPillMessageHandler(state)
         return handler
 
     return _create_handler

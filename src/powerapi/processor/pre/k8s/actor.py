@@ -69,8 +69,10 @@ class KubernetesProcessorState(State):
         Stop monitoring and disconnect target actors.
         :param graceful: Whether the actor is performing a graceful shutdown
         """
-        self.monitor_agent.terminate()
-        self.monitor_agent.join()
+        if self.monitor_agent.pid is not None:
+            self.monitor_agent.terminate()
+            self.monitor_agent.join()
+
         self.manager.shutdown()
 
         for actor in self.actor.target_actors:

@@ -53,6 +53,7 @@ class State:
 
         self.initialized = False
         self.alive = True
+        self.graceful_shutdown = False
 
         self.handlers: dict[str, Handler] = {}
         self.supervisor = Supervisor()
