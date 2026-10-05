@@ -28,11 +28,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
+from unittest.mock import MagicMock
 
 import pytest
 
-from powerapi.actor import Actor, Supervisor, ActorInitializationError
-from .test_actor import LoopbackActor, CrashActor, DummyMessage
+from powerapi.actor import Actor, ActorInitializationError, Supervisor
+
+from .test_actor import CrashActor, DummyMessage, LoopbackActor
 
 
 @pytest.fixture
@@ -86,7 +88,7 @@ def test_launch_actor_with_failed_initialization(supervisor):
     """
     actor = Actor('test-actor-1', level_logger=logging.DEBUG)
 
-    with pytest.raises(ActorInitializationError, match='crashed during its initialization'):
+    with pytest.raises(ActorInitializationError, match='Actor did not return a valid initialization response'):
         supervisor.launch_actor(actor, init_timeout=0.5)
 
     supervisor.join(timeout=5.0)
@@ -104,3 +106,21 @@ def test_launch_actor_failed_with_error_message(supervisor):
 
     actor.join(timeout=5.0)
     assert actor.is_alive() is False
+
+
+@pytest.mark.parametrize('response', [None, 'unexpected'])
+def test_launch_actor_terminates_on_invalid_initialization_response(supervisor, response):
+    """
+    Test that an invalid initialization response terminates the actor.
+    """
+    actor = MagicMock(spec=Actor)
+    proxy = actor.get_proxy.return_value.__enter__.return_value
+    proxy.receive_control.return_value = response
+
+    with pytest.raises(ActorInitializationError, match='Actor did not return a valid initialization response'):
+        supervisor.launch_actor(actor)
+
+    actor.start.assert_called_once()
+    actor.terminate.assert_called_once()
+    actor.join.assert_called_once()
+    assert supervisor.supervised_actors == []

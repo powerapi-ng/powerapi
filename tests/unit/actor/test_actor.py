@@ -307,19 +307,109 @@ def test_start_message_handler_initializes_state():
     assert state.initialized is True
 
 
-def test_soft_poison_pill_dispatches_pending_messages_before_state_teardown():
+def test_poison_pill_dispatches_pending_messages_before_state_teardown():
     """
-    A soft shutdown should dispatch pending messages before tearing down the state.
+    Test that a poison pill dispatches pending messages and defers state teardown.
     """
-    events = []
     pending_message = DummyMessage('pending')
     actor = Mock()
     actor.socket_interface.receive.side_effect = [pending_message, None]
     state = Mock(actor=actor, alive=True)
-    state.dispatch_message.side_effect = lambda msg: events.append(('dispatch', msg))
-    state.teardown.side_effect = lambda **kwargs: events.append(('teardown', kwargs['graceful']))
+    handler = PoisonPillMessageHandler(state)
 
-    PoisonPillMessageHandler(state).handle(PoisonPillMessage(soft=True))
+    handler.handle(PoisonPillMessage())
 
-    assert events == [('dispatch', pending_message), ('teardown', True)]
+    state.dispatch_message.assert_called_once_with(pending_message)
+    state.teardown.assert_not_called()
     assert state.alive is False
+
+
+def test_actor_finalizes_once_after_poison_pill():
+    """
+    Test that actor resources are finalized once after receiving a poison pill.
+    """
+    actor = Actor('lifecycle-test')
+    state = State(actor)
+    state.teardown = Mock()
+    handler = PoisonPillMessageHandler(state)
+    actor.state = state
+    actor.teardown = Mock()
+    actor.socket_interface = Mock()
+    actor.socket_interface.receive.return_value = None
+    actor._setup_actor = Mock()
+    actor._process_received_messages = Mock(side_effect=lambda: handler.handle(PoisonPillMessage()))
+
+    actor.run()
+
+    state.teardown.assert_called_once_with()
+    actor.teardown.assert_called_once()
+    actor.socket_interface.close.assert_called_once()
+
+
+def test_poison_pill_handler_ignores_message_when_state_is_stopped():
+    """
+    Test that another poison pill is ignored after actor shutdown starts.
+    """
+    actor = Mock()
+    state = State(actor)
+    state.alive = False
+    handler = PoisonPillMessageHandler(state)
+
+    handler.handle(PoisonPillMessage())
+
+    actor.socket_interface.receive.assert_not_called()
+    assert state.alive is False
+
+
+def test_actor_teardown_runs_when_setup_fails_before_state_exists():
+    """
+    Test that actor teardown runs when setup fails before creating the state.
+    """
+    actor = Actor('setup-failure-test')
+    actor.socket_interface = Mock()
+    actor.teardown = Mock()
+    actor._setup_actor = Mock(side_effect=RuntimeError('setup failed'))
+
+    with pytest.raises(RuntimeError, match='setup failed'):
+        actor.run()
+
+    actor.teardown.assert_called_once()
+    actor.socket_interface.close.assert_called_once()
+
+
+def test_actor_teardown_continues_when_state_teardown_fails():
+    """
+    Test that actor teardown continues when state teardown fails.
+    """
+    actor = Actor('teardown-failure-test')
+    state = State(actor)
+    state.alive = False
+    state.teardown = Mock(side_effect=RuntimeError('teardown failed'))
+    actor.state = state
+    actor.teardown = Mock()
+    actor.socket_interface = Mock()
+    actor._setup_actor = Mock()
+
+    with pytest.raises(RuntimeError, match='teardown failed'):
+        actor.run()
+
+    state.teardown.assert_called_once()
+    actor.teardown.assert_called_once()
+    actor.socket_interface.close.assert_called_once()
+
+
+def test_actor_tears_down_and_propagates_processing_error():
+    """
+    Test that processing errors trigger actor teardown and propagate.
+    """
+    actor = Actor('processing-error-test')
+    state = State(actor)
+    actor.state = state
+    actor._setup_actor = Mock()
+    actor._process_received_messages = Mock(side_effect=RuntimeError('processing failed'))
+    actor._teardown_actor = Mock()
+
+    with pytest.raises(RuntimeError, match='processing failed'):
+        actor.run()
+
+    actor._teardown_actor.assert_called_once()

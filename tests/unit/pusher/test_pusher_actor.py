@@ -29,7 +29,7 @@
 
 import time
 
-from powerapi.actor import StartMessage, PoisonPillMessage
+from powerapi.actor import StartMessage
 from tests.utils.db import make_report, generate_reports
 
 
@@ -182,43 +182,39 @@ def test_start_handler_fails_create_database_kill_actor(pusher_start_handler):
     handler.state.actor.send_control.assert_called_once()  # ErrorMessage sent to supervisor
 
 
-def test_poison_pill_handler_without_database_driver(pusher_poison_pill_handler):
+def test_pusher_state_teardown_without_database_driver(pusher_state):
     """
-    Test that poison pill handler skips teardown when no database driver exists.
+    Test that pusher teardown succeeds without a database driver.
     """
-    handler, _ = pusher_poison_pill_handler()
+    state, _ = pusher_state()
+    state.database_driver = None
 
-    handler.state.database_driver = None
-
-    handler.handle(PoisonPillMessage(soft=False))
-
-    assert handler.state.alive is False
+    state.teardown()
 
 
-def test_poison_pill_handler_write_reports_in_buffer_before_stopping(pusher_poison_pill_handler):
+def test_pusher_state_teardown_writes_buffered_reports(pusher_state):
     """
-    Test that poison pill handler writes reports to database before stopping.
+    Test that pusher teardown writes buffered reports to the database.
     """
-    handler, database = pusher_poison_pill_handler()
+    state, database = pusher_state()
     buffer_reports = generate_reports(5)
 
-    handler.state.buffer = buffer_reports[:]
-    handler.handle(PoisonPillMessage(soft=False))
+    state.buffer = buffer_reports[:]
+    state.teardown()
     saved_reports = database.read()
-    assert handler.state.buffer == []
+    assert state.buffer == []
     assert saved_reports == buffer_reports
-    assert handler.state.alive is False
 
 
-def test_poison_pill_handler_fail_write_reports_in_buffer_before_stopping(pusher_poison_pill_handler):
+def test_pusher_state_teardown_keeps_buffer_when_write_fails(pusher_state):
     """
-    Test that poison pill handler gracefully handle failure when writing reports to the database.
+    Test that pusher teardown keeps buffered reports when writing fails.
     """
-    handler, _ = pusher_poison_pill_handler(fail_write=True)
+    state, _ = pusher_state(fail_write=True)
 
     buffer_reports = generate_reports(5)
-    handler.state.buffer = buffer_reports[:]
+    state.buffer = buffer_reports[:]
 
-    handler.handle(PoisonPillMessage(soft=False))
-    assert handler.state.buffer == buffer_reports
-    assert handler.state.alive is False
+    state.teardown()
+
+    assert state.buffer == buffer_reports

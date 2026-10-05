@@ -70,10 +70,9 @@ class PusherState(State):
             self.actor.send_control(ErrorMessage('Database initialization failed'))
             self.alive = False
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Flush buffered reports and disconnect the database driver.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
         if self.database_driver is None:
             return

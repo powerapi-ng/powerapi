@@ -59,10 +59,9 @@ class FormulaState(State):
             for pusher in pushers:
                 pusher.connect_data()
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Disconnect from the pusher actors.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
         for pushers in self.pushers.values():
             for pusher in pushers:

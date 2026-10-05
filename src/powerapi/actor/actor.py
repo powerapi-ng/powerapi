@@ -33,7 +33,6 @@ import logging
 import multiprocessing
 import signal
 import sys
-import traceback
 from typing import TYPE_CHECKING
 
 import setproctitle
@@ -69,27 +68,17 @@ class Actor(multiprocessing.Process):
         self.logging_level = level_logger
 
         self.socket_interface = SocketInterface(name, timeout)
-        self.low_exception = []
 
     def run(self) -> None:
         """
         Main code executed by the actor
         """
-        self._setup_actor()
-
-        while self.state.alive:
-            try:
+        try:
+            self._setup_actor()
+            while self.state.alive:
                 self._process_received_messages()
-            except Exception as exn:
-                if type(exn) in self.low_exception:
-                    logging.error('Minor exception raised, restart actor !')
-                    traceback.print_exc()
-                else:
-                    self.state.alive = False
-                    logging.error('Major Exception raised, stop actor')
-                    traceback.print_exc()
-
-        self._teardown_actor()
+        finally:
+            self._teardown_actor()
 
     def _logging_setup(self) -> None:
         """
@@ -98,22 +87,17 @@ class Actor(multiprocessing.Process):
         fmt = '%(asctime)s || %(levelname)s || %(process)d %(processName)s || %(message)s'
         logging.basicConfig(format=fmt, level=self.logging_level)
 
-    def _signal_handler_setup(self) -> None:
+    @staticmethod
+    def _signal_handler_setup() -> None:
         """
-        Define how to handle signal interrupts
+        Define how to handle signal interrupts.
         """
-
         def term_handler(signum, _):
             signame = signal.Signals(signum).name
             logging.debug("Received signal %s (%s), terminating actor...", signame, signum)
-
-            msg = PoisonPillMessage(soft=False)
-            self.state.dispatch_message(msg)
-
-            self._teardown_actor()
             sys.exit(0)
 
-        signal.signal(signal.SIGTERM, term_handler)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGINT, term_handler)
 
     def _setup_actor(self) -> None:
@@ -150,18 +134,22 @@ class Actor(multiprocessing.Process):
         Process the messages received by the actor.
         """
         msg = self.socket_interface.receive()
-        logging.debug('Received message: %s', msg)
         if msg is None:
             return  # Timeout
 
+        logging.debug('Received message: %s', msg)
         self.state.dispatch_message(msg)
 
     def _teardown_actor(self) -> None:
         """
         Internal teardown routine executed by the actor before it stops.
         """
-        self.teardown()
-        self.socket_interface.close()
+        try:
+            if hasattr(self, 'state'):
+                self.state.teardown()
+        finally:
+            self.teardown()
+            self.socket_interface.close()
 
         logging.debug('Actor "%s" teardown', self.name)
 
@@ -229,10 +217,10 @@ class ActorProxy:
         """
         self._ipc_interface.send_control(msg)
 
-    def receive_control(self, timeout: int | None = None) -> Message:
+    def receive_control(self, timeout: int | None = None) -> Message | None:
         """
         Receive a message from the actor's control channel.
-        :param timeout: Timeout in seconds, None blocks indefinitely
+        :param timeout: Timeout in milliseconds, None blocks indefinitely.
         :return: The received message
         """
         return self._ipc_interface.receive_control(timeout)
@@ -250,12 +238,11 @@ class ActorProxy:
         """
         self._ipc_interface.send_data(msg)
 
-    def kill(self, graceful: bool = True) -> None:
+    def kill(self) -> None:
         """
-        Sends a kill message to the actor.
-        :param graceful: If true, the actor will process its pending messages before stopping; If false, stop immediately.
+        Request the actor to drain pending messages and stop.
         """
-        self.send_control(PoisonPillMessage(soft=graceful))
+        self.send_control(PoisonPillMessage())
 
     def disconnect(self) -> None:
         """

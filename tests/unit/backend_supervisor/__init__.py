@@ -1,5 +1,4 @@
-# Copyright (c) 2022, Inria
-# Copyright (c) 2022, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,39 +25,3 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-class Message:
-    """
-    Abstract actor Message class.
-    """
-
-
-class OKMessage(Message):
-    """
-    Message sent by an actor after a successful startup.
-    """
-
-
-class ErrorMessage(Message):
-    """
-    Message sent by an actor when an error occurs during startup.
-    """
-
-    def __init__(self, error_message: str):
-        """
-        :param error_message: Message associated to the encountered error.
-        """
-        self.error_message = error_message
-
-
-class StartMessage(Message):
-    """
-    Message sent to an actor to initiate its startup.
-    """
-
-
-class PoisonPillMessage(Message):
-    """
-    Message sent to an actor to drain pending messages and initiate shutdown.
-    """

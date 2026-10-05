@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor import StartMessage, PoisonPillMessage
+from powerapi.actor import StartMessage
 
 
 def test_start_handler_empty_report_filter_kill_actor(puller_start_handler, empty_report_filter):
@@ -38,6 +38,20 @@ def test_start_handler_empty_report_filter_kill_actor(puller_start_handler, empt
     handler.handle(StartMessage())
 
     assert handler.state.alive is False
+
+
+def test_puller_state_teardown_ignores_unstarted_database_poller(puller_start_handler, empty_report_filter):
+    """
+    Test that puller teardown ignores an unstarted database poller.
+    """
+    handler = puller_start_handler(empty_report_filter)
+    handler.handle(StartMessage())
+    state = handler.state
+
+    state.teardown()
+
+    state.db_poller_thread.stop.assert_not_called()
+    state.db_poller_thread.join.assert_not_called()
 
 
 def test_start_handler_initializes_database_poller(puller_start_handler, broadcast_report_filter):
@@ -65,13 +79,15 @@ def test_start_handler_fail_initialize_database_poller_kill_actor(puller_start_h
     handler.state.db_poller_thread.start.assert_called_once()
 
 
-def test_poison_pill_handler_stop_database_poller(puller_poison_pill_handler):
+def test_puller_state_teardown_stops_database_poller(puller_start_handler, broadcast_report_filter):
     """
-    Test that poison pill handler stops the database poller before killing the actor.
+    Test that puller teardown stops the database poller.
     """
-    handler = puller_poison_pill_handler()
-    handler.handle(PoisonPillMessage(soft=False))
+    handler = puller_start_handler(broadcast_report_filter)
+    handler.handle(StartMessage())
+    state = handler.state
 
-    assert handler.state.alive is False
-    handler.state.db_poller_thread.stop.assert_called_once()
-    handler.state.db_poller_thread.join.assert_called_once()
+    state.teardown()
+
+    state.db_poller_thread.stop.assert_called_once()
+    state.db_poller_thread.join.assert_called_once()

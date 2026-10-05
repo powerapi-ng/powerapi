@@ -62,10 +62,9 @@ class State:
         Initialize resources after the actor receives a start message.
         """
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Release resources before the actor stops.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
 
     def get_corresponding_handler(self, msg: Message) -> Handler:

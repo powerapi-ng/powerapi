@@ -111,12 +111,12 @@ class PoisonPillMessageHandler(Handler[PoisonPillMessage]):
 
     def handle(self, msg: PoisonPillMessage) -> None:
         """
-        Drain pending messages when requested and stop the actor state.
+        Drain pending messages and stop the actor.
         :param msg: Poison-pill message
         """
-        if msg.is_soft:
-            while (pending_msg := self.state.actor.socket_interface.receive(timeout=100)) is not None:
-                self.state.dispatch_message(pending_msg)
+        if not self.state.alive:
+            return
 
-        self.state.teardown(graceful=msg.is_soft)
         self.state.alive = False
+        while (pending_msg := self.state.actor.socket_interface.receive(timeout=100)) is not None:
+            self.state.dispatch_message(pending_msg)

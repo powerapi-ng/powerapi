@@ -34,7 +34,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler
+from powerapi.actor import StartMessageHandler
 from powerapi.pusher.handlers import ReportHandler
 from powerapi.pusher.pusher_actor import PusherState
 from tests.utils.db import PrebuiltDatabaseFactory
@@ -60,25 +60,19 @@ def pusher_start_handler(make_fake_failing_database):
 
 
 @pytest.fixture
-def pusher_poison_pill_handler(make_fake_failing_database):
+def pusher_state(make_fake_failing_database):
     """
-    Factory fixture for creating a pusher poison-pill handler.
+    Factory fixture for creating an initialized pusher state.
     """
 
-    def _create_handler(fail_write: bool = False) -> tuple[PoisonPillMessageHandler, FailingLocalQueueDatabase]:
+    def _create_state(fail_write: bool = False) -> tuple[PusherState, FailingLocalQueueDatabase]:
         db = make_fake_failing_database(fail_write=fail_write)
         db_factory = PrebuiltDatabaseFactory(db)
-
-        actor = Mock()
-        actor.socket_interface.receive.return_value = None  # Prevents an infinite loop when triggering a graceful shutdown.
-
-        state = PusherState(actor, db_factory)
+        state = PusherState(Mock(), db_factory)
         state.database_driver = db
+        return state, db
 
-        handler = PoisonPillMessageHandler(state)
-        return handler, db
-
-    return _create_handler
+    return _create_state
 
 
 @pytest.fixture

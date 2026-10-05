@@ -32,7 +32,7 @@ from multiprocessing import Manager
 
 from powerapi.actor import PoisonPillMessageHandler, StartMessageHandler, State
 from powerapi.actor.message import PoisonPillMessage, StartMessage
-from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.report import HWPCReport
 
 from .handlers import HWPCReportHandler
@@ -64,20 +64,21 @@ class KubernetesProcessorState(State):
 
         self.monitor_agent.start()
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Stop monitoring and disconnect target actors.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
-        self.monitor_agent.terminate()
-        self.monitor_agent.join()
+        if self.monitor_agent.pid is not None:
+            self.monitor_agent.terminate()
+            self.monitor_agent.join()
+
         self.manager.shutdown()
 
         for actor in self.actor.target_actors:
             actor.disconnect()
 
 
-class KubernetesPreProcessorActor(ProcessorActor):
+class KubernetesPreProcessorActor(PreProcessorActor):
     """
     Pre-Processor Actor that adds Kubernetes related metadata to reports.
     """
