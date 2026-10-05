@@ -71,10 +71,9 @@ class PullerState(State):
             self.actor.send_control(ErrorMessage('Database poller thread failed to start'))
             self.alive = False
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Stop the database poller.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
         if self.db_poller_thread.ident is not None:
             self.db_poller_thread.stop()

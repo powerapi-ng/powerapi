@@ -60,11 +60,5 @@ class StartMessage(Message):
 
 class PoisonPillMessage(Message):
     """
-    Message sent to an actor to initiate its shutdown.
+    Message sent to an actor to drain pending messages and initiate shutdown.
     """
-
-    def __init__(self, soft: bool = True):
-        """
-        :param bool soft: Indicate whether the actor should process all its messages before shutting down.
-        """
-        self.is_soft = soft

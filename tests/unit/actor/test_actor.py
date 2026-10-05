@@ -307,9 +307,9 @@ def test_start_message_handler_initializes_state():
     assert state.initialized is True
 
 
-def test_soft_poison_pill_dispatches_pending_messages_before_state_teardown():
+def test_poison_pill_dispatches_pending_messages_before_state_teardown():
     """
-    A soft shutdown should dispatch pending messages and defer state teardown.
+    Test that a poison pill dispatches pending messages and defers state teardown.
     """
     pending_message = DummyMessage('pending')
     actor = Mock()
@@ -317,16 +317,14 @@ def test_soft_poison_pill_dispatches_pending_messages_before_state_teardown():
     state = Mock(actor=actor, alive=True)
     handler = PoisonPillMessageHandler(state)
 
-    handler.handle(PoisonPillMessage(soft=True))
+    handler.handle(PoisonPillMessage())
 
     state.dispatch_message.assert_called_once_with(pending_message)
     state.teardown.assert_not_called()
-    assert state.graceful_shutdown is True
     assert state.alive is False
 
 
-@pytest.mark.parametrize('graceful', [True, False])
-def test_actor_finalizes_once_after_poison_pill(graceful):
+def test_actor_finalizes_once_after_poison_pill():
     """
     Test that actor resources are finalized once after receiving a poison pill.
     """
@@ -339,11 +337,11 @@ def test_actor_finalizes_once_after_poison_pill(graceful):
     actor.socket_interface = Mock()
     actor.socket_interface.receive.return_value = None
     actor._setup_actor = Mock()
-    actor._process_received_messages = Mock(side_effect=lambda: handler.handle(PoisonPillMessage(soft=graceful)))
+    actor._process_received_messages = Mock(side_effect=lambda: handler.handle(PoisonPillMessage()))
 
     actor.run()
 
-    state.teardown.assert_called_once_with(graceful=graceful)
+    state.teardown.assert_called_once_with()
     actor.teardown.assert_called_once()
     actor.socket_interface.close.assert_called_once()
 
@@ -357,10 +355,10 @@ def test_poison_pill_handler_ignores_message_when_state_is_stopped():
     state.alive = False
     handler = PoisonPillMessageHandler(state)
 
-    handler.handle(PoisonPillMessage(soft=True))
+    handler.handle(PoisonPillMessage())
 
     actor.socket_interface.receive.assert_not_called()
-    assert state.graceful_shutdown is False
+    assert state.alive is False
 
 
 def test_actor_teardown_runs_when_setup_fails_before_state_exists():

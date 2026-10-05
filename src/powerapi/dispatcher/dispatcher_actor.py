@@ -96,15 +96,14 @@ class DispatcherState(State):
 
         return self.formula_proxy[formula_id]
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Disconnect and stop supervised formula actors.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
         for proxy in self.formula_proxy.values():
             proxy.disconnect()
 
-        self.supervisor.kill_actors(graceful=graceful)
+        self.supervisor.kill_actors()
         self.supervisor.join(timeout=5.0)
 
 

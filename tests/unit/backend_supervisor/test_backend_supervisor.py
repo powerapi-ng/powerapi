@@ -52,10 +52,10 @@ def test_backend_kill_actors_stops_each_stage_before_the_next():
         supervisor.kill_actors()
 
     assert stop_stage.call_args_list == [
-        call(supervisor.pullers, graceful=True),
-        call(supervisor.pre_processors, graceful=True),
-        call(supervisor.dispatchers, graceful=True),
-        call(supervisor.pushers, graceful=True),
+        call(supervisor.pullers),
+        call(supervisor.pre_processors),
+        call(supervisor.dispatchers),
+        call(supervisor.pushers),
     ]
 
 
@@ -76,9 +76,9 @@ def test_backend_nonstream_join_stops_downstream_stages():
 
     puller.join.assert_called_once_with(timeout=2.0)
     assert stop_stage.call_args_list == [
-        call(supervisor.pre_processors, graceful=True, timeout=2.0),
-        call(supervisor.dispatchers, graceful=True, timeout=2.0),
-        call(supervisor.pushers, graceful=True, timeout=2.0),
+        call(supervisor.pre_processors, timeout=2.0),
+        call(supervisor.dispatchers, timeout=2.0),
+        call(supervisor.pushers, timeout=2.0),
     ]
 
 

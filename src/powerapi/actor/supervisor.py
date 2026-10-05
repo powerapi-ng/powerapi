@@ -104,12 +104,11 @@ class Supervisor:
         for actor in self.supervised_actors:
             actor.join(timeout=timeout)
 
-    def kill_actors(self, graceful: bool = True) -> None:
+    def kill_actors(self) -> None:
         """
-        Kill all supervised actors.
-        :param graceful: If true, the actors will process pending messages before stopping; If false, stop immediately
+        Request all supervised actors to drain pending messages and stop.
         """
         for actor in self.supervised_actors:
             if actor.is_alive():
                 with actor.get_proxy(connect_control=True) as proxy:
-                    proxy.kill(graceful=graceful)
+                    proxy.kill()

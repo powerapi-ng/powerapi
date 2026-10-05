@@ -64,10 +64,9 @@ class KubernetesProcessorState(State):
 
         self.monitor_agent.start()
 
-    def teardown(self, graceful: bool = False) -> None:
+    def teardown(self) -> None:
         """
         Stop monitoring and disconnect target actors.
-        :param graceful: Whether the actor is performing a graceful shutdown
         """
         if self.monitor_agent.pid is not None:
             self.monitor_agent.terminate()

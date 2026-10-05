@@ -86,26 +86,24 @@ class BackendSupervisor(Supervisor):
         stage.append(actor)
 
     @staticmethod
-    def _kill_actor(actor: Actor, graceful: bool) -> None:
+    def _kill_actor(actor: Actor) -> None:
         """
-        Request cooperative shutdown of an actor without waiting for it to stop.
+        Request an actor to drain pending messages and stop without waiting for it.
         :param actor: Actor to stop
-        :param graceful: Whether to drain pending messages before cleanup and exit
         """
         with actor.get_proxy(connect_control=True) as proxy:
-            proxy.kill(graceful=graceful)
+            proxy.kill()
 
-    def _stop_stage(self, actors: list[Actor], graceful: bool, timeout: float | None = None) -> None:
+    def _stop_stage(self, actors: list[Actor], timeout: float | None = None) -> None:
         """
-        Request shutdown for the whole stage, then wait before proceeding downstream.
+        Request draining shutdown for the whole stage, then wait before proceeding downstream.
         :param actors: Actors in the pipeline stage
-        :param graceful: Whether actors should process pending messages before stopping
         :param timeout: Maximum wait in seconds per actor; None waits indefinitely
         :raises TimeoutError: An actor did not stop; downstream stages must remain running
         """
         for actor in actors:
             if actor.is_alive():
-                self._kill_actor(actor, graceful=graceful)
+                self._kill_actor(actor)
 
         for actor in actors:
             actor.join(timeout=timeout)
@@ -125,7 +123,7 @@ class BackendSupervisor(Supervisor):
                 raise TimeoutError(f'Actor "{puller.name}" did not stop before timeout')
 
         for stage in (self.pre_processors, self.dispatchers, self.pushers):
-            self._stop_stage(stage, graceful=True, timeout=timeout)
+            self._stop_stage(stage, timeout=timeout)
 
     def join(self, timeout: float | None = None) -> None:
         """
@@ -140,12 +138,11 @@ class BackendSupervisor(Supervisor):
         else:
             self._join_stream_mode_off(timeout=timeout)
 
-    def kill_actors(self, graceful: bool = True) -> None:
+    def kill_actors(self) -> None:
         """
-        Stop and wait for each pipeline stage before stopping the next one.
+        Drain, stop, and wait for each pipeline stage before stopping the next one.
         Stages are stopped in order: pullers, pre-processors, dispatchers, then pushers.
         This method blocks until all stages have stopped.
-        :param graceful: If true, drain pending messages before cleanup and exit; if false, skip draining
         """
         for stage in (self.pullers, self.pre_processors, self.dispatchers, self.pushers):
-            self._stop_stage(stage, graceful=graceful)
+            self._stop_stage(stage)

@@ -146,7 +146,7 @@ class Actor(multiprocessing.Process):
         """
         try:
             if hasattr(self, 'state'):
-                self.state.teardown(graceful=self.state.graceful_shutdown)
+                self.state.teardown()
         finally:
             self.teardown()
             self.socket_interface.close()
@@ -238,12 +238,11 @@ class ActorProxy:
         """
         self._ipc_interface.send_data(msg)
 
-    def kill(self, graceful: bool = True) -> None:
+    def kill(self) -> None:
         """
-        Sends a kill message to the actor.
-        :param graceful: If true, the actor will process its pending messages before stopping; If false, stop immediately.
+        Request the actor to drain pending messages and stop.
         """
-        self.send_control(PoisonPillMessage(soft=graceful))
+        self.send_control(PoisonPillMessage())
 
     def disconnect(self) -> None:
         """

@@ -127,8 +127,7 @@ def test_report_handler_forwards_report_to_formula(dispatcher_report_handler, di
         formula.send_data.assert_called_once_with(report)
 
 
-@pytest.mark.parametrize('graceful_flag', [True, False])
-def test_dispatcher_state_teardown_disconnects_proxies_and_stops_formula_actors(dispatcher_state, graceful_flag):
+def test_dispatcher_state_teardown_disconnects_proxies_and_stops_formula_actors(dispatcher_state):
     """
     Dispatcher teardown should disconnect proxies and stop supervised formula actors.
     """
@@ -136,9 +135,9 @@ def test_dispatcher_state_teardown_disconnects_proxies_and_stops_formula_actors(
     proxy_b = Mock(name='formula-b-proxy')
     dispatcher_state.formula_proxy = {('formula-a',): proxy_a, ('formula-b',): proxy_b}
 
-    dispatcher_state.teardown(graceful=graceful_flag)
+    dispatcher_state.teardown()
 
     proxy_a.disconnect.assert_called_once()
     proxy_b.disconnect.assert_called_once()
-    dispatcher_state.supervisor.kill_actors.assert_called_once_with(graceful=graceful_flag)
+    dispatcher_state.supervisor.kill_actors.assert_called_once_with()
     dispatcher_state.supervisor.join.assert_called_once()
