@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from powerapi.actor.message import StartMessage, ErrorMessage
+from powerapi.actor.message import ErrorMessage, OKMessage, StartMessage
 
 if TYPE_CHECKING:
     from powerapi.actor import Actor
@@ -52,12 +52,34 @@ class Supervisor:
     def __init__(self):
         self.supervised_actors: list[Actor] = []
 
-    def launch_actor(self, actor: Actor, start_message: bool = True, init_timeout: float = 5.0) -> None:
+    @staticmethod
+    def _initialize_actor(actor: Actor, timeout: float) -> None:
         """
-        Launch the actor and supervise it.
+        Request actor initialization and check its response.
+        :param actor: Started actor to initialize
+        :param timeout: Maximum wait in seconds for the response
+        :raise ActorInitializationError: Initialization fails or no valid response is received
+        """
+        with actor.get_proxy(connect_control=True) as proxy:
+            proxy.send_control(StartMessage())
+            response = proxy.receive_control(timeout=int(timeout * 1000))
+            match response:
+                case OKMessage():
+                    return
+
+                case ErrorMessage():
+                    raise ActorInitializationError(response.error_message)
+
+                case _:
+                    raise ActorInitializationError('Actor did not return a valid initialization response')
+
+    def launch_actor(self, actor: Actor, init_timeout: float = 5.0) -> None:
+        """
+        Launch the actor and supervise it after successful initialization.
+        Exceptions during the initialization handshake trigger termination and
+        joining before they are re-raised. The actor is registered only on success.
         :param actor: Actor to launch
-        :param start_message: Whether to send a start message to the actor
-        :param init_timeout: Maximum time in seconds to wait for an actor to initialize
+        :param init_timeout: Maximum wait in seconds for the initialization response, excluding sends and cleanup
         :raise ValueError: When trying to launch an actor that is already supervised
         :raise ActorInitializationError: When the actor initialization process failed
         """
@@ -65,23 +87,14 @@ class Supervisor:
             raise ValueError(f'Actor "{actor.name}" is already supervised')
 
         actor.start()
-
-        if start_message:
-            with actor.get_proxy(connect_control=True) as proxy:
-                proxy.send_control(StartMessage())
-                response = proxy.receive_control(timeout=int(init_timeout * 1000))
-                match response:
-                    case ErrorMessage():
-                        proxy.kill(graceful=False)
-                        actor.join()
-                        raise ActorInitializationError(response.error_message)
-
-                    case None:
-                        actor.terminate()  # Actor process is expected to be dead, this is just to be sure.
-                        actor.join()
-                        raise ActorInitializationError('Actor process crashed during its initialization')
-
-        self.supervised_actors.append(actor)
+        try:
+            self._initialize_actor(actor, init_timeout)
+        except (Exception, KeyboardInterrupt):
+            actor.terminate()
+            actor.join()
+            raise
+        else:
+            self.supervised_actors.append(actor)
 
     def join(self, timeout: float | None = None) -> None:
         """
