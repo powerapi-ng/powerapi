@@ -29,6 +29,7 @@
 
 from hashlib import blake2b
 from pathlib import Path
+from tempfile import gettempdir
 from typing import Any
 
 import zmq
@@ -56,7 +57,7 @@ class SocketInterface:
         self._is_endpoint: bool = False
 
     @staticmethod
-    def _generate_socket_path(actor_name: str, socket_purpose: str, basedir: str = '/tmp') -> Path:
+    def _generate_socket_path(actor_name: str, socket_purpose: str, basedir: str = gettempdir()) -> Path:
         """
         Generate a deterministic filesystem path for an IPC socket.
         :param actor_name: Name of the actor whose endpoint is being accessed
@@ -105,24 +106,6 @@ class SocketInterface:
             self.control_socket_filepath.unlink(missing_ok=True)
             self.data_socket_filepath.unlink(missing_ok=True)
 
-    @staticmethod
-    def _send_serialized(socket: zmq.Socket, msg: Any) -> None:
-        """
-        Sends a serialized message to the given socket.
-        :param socket: Socket to use
-        :param msg: Message to serialize and send
-        """
-        socket.send_pyobj(msg)
-
-    @staticmethod
-    def _recv_serialized(socket: zmq.Socket) -> Any:
-        """
-        Receive, deserialize and returns a message from the given socket.
-        :param socket: Socket to use
-        :return: Message received
-        """
-        return socket.recv_pyobj()
-
     def connect_control(self) -> None:
         """
         Connect to the control socket of the actor.
@@ -143,7 +126,7 @@ class SocketInterface:
             raise RuntimeError('Control socket is not connected')
 
         if self._control_socket.poll(timeout):
-            return self._recv_serialized(self._control_socket)
+            return self._control_socket.recv_pyobj()
 
         return None
 
@@ -155,7 +138,7 @@ class SocketInterface:
         if self._control_socket is None:
             raise RuntimeError('Control socket is not connected')
 
-        self._send_serialized(self._control_socket, msg)
+        self._control_socket.send_pyobj(msg)
 
     def connect_data(self) -> None:
         """
@@ -175,7 +158,7 @@ class SocketInterface:
         if self._data_socket is None:
             raise RuntimeError('Data socket is not connected')
 
-        self._send_serialized(self._data_socket, msg)
+        self._data_socket.send_pyobj(msg)
 
     def receive(self, timeout: int | None = None) -> Any:
         """
@@ -188,6 +171,6 @@ class SocketInterface:
             raise RuntimeError('Socket interface is not set up')
 
         for socket, _ in self._sockets_poller.poll(timeout):
-            return self._recv_serialized(socket)
+            return socket.recv_pyobj()
 
         return None
