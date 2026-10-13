@@ -40,13 +40,11 @@ class SocketInterface:
     Interface to handle communication between actors.
     """
 
-    def __init__(self, actor_name: str, timeout: int | None):
+    def __init__(self, actor_name: str):
         """
         :param str actor_name: Name of the actor whose endpoint is being accessed
-        :param int timeout: Maximum time, in milliseconds, to wait for an operation
         """
         self.actor_name = actor_name
-        self.timeout = timeout
 
         self.data_socket_filepath = self._generate_socket_path(actor_name, 'data')
         self.control_socket_filepath = self._generate_socket_path(actor_name, 'control')
@@ -112,9 +110,8 @@ class SocketInterface:
         This method should only be called by actors that wants to communicate with another actor's endpoint.
         """
         self._control_socket = zmq.Context.instance().socket(zmq.DEALER)
-        self._control_socket.setsockopt(zmq.LINGER, 0)
+        self._control_socket.setsockopt(zmq.LINGER, -1)
         self._control_socket.connect(f'ipc://{self.control_socket_filepath}')
-        self._control_socket.poll(zmq.POLLIN | zmq.POLLOUT)  # Very important, prevents synchronization problems.
 
     def receive_control(self, timeout: int | None = None) -> Any:
         """
@@ -148,7 +145,6 @@ class SocketInterface:
         self._data_socket = zmq.Context.instance().socket(zmq.PUSH)
         self._data_socket.setsockopt(zmq.LINGER, -1)
         self._data_socket.connect(f'ipc://{self.data_socket_filepath}')
-        self._data_socket.poll(zmq.POLLOUT)  # Very important, prevents synchronization problems.
 
     def send_data(self, msg: Any) -> None:
         """

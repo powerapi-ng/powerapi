@@ -44,14 +44,13 @@ class ProcessorActor(Actor):
     Used to process reports before sending them to target actor(s).
     """
 
-    def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int = 5000):
+    def __init__(self, name: str, level_logger: int = logging.WARNING):
         """
         Initializes a new processor actor.
         :param name: Name of the processor actor
         :param level_logger: Logging level of the actor
-        :param timeout: Timeout in milliseconds
         """
-        super().__init__(name, level_logger, timeout)
+        super().__init__(name, level_logger)
 
         self.target_actors: list[ActorProxy] = []
 

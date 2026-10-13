@@ -92,7 +92,7 @@ class KubernetesPreProcessorActor(PreProcessorActor):
         :param monitor_config: Configuration of the monitoring agent
         :param level_logger: logging level of the actor
         """
-        super().__init__(name, level_logger, 5000)
+        super().__init__(name, level_logger)
 
         self.monitor_config = monitor_config
 

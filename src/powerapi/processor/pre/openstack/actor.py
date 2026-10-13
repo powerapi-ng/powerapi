@@ -94,7 +94,7 @@ class OpenStackPreProcessorActor(PreProcessorActor):
         :param monitor_config: Monitoring agent configuration
         :param level_logger: Logging level of the actor
         """
-        super().__init__(name, level_logger, 5000)
+        super().__init__(name, level_logger)
 
         self.monitor_config = monitor_config
 
