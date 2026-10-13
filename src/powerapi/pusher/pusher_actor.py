@@ -102,7 +102,7 @@ class PusherActor(Actor):
         :param max_buffer_size: Maximum number of reports that can be buffered before a forced flush to the database
         :param logger_level: Define the level of the logger for the actor
         """
-        super().__init__(name, logger_level, 1000)
+        super().__init__(name, logger_level)
 
         self.database_factory = database_factory
         self.flush_interval = flush_interval

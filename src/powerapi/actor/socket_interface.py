@@ -40,13 +40,11 @@ class SocketInterface:
     Interface to handle communication between actors.
     """
 
-    def __init__(self, actor_name: str, timeout: int | None):
+    def __init__(self, actor_name: str):
         """
         :param str actor_name: Name of the actor whose endpoint is being accessed
-        :param int timeout: Maximum time, in milliseconds, to wait for an operation
         """
         self.actor_name = actor_name
-        self.timeout = timeout
 
         self.data_socket_filepath = self._generate_socket_path(actor_name, 'data')
         self.control_socket_filepath = self._generate_socket_path(actor_name, 'control')

@@ -82,7 +82,7 @@ class FormulaActor(Actor):
         :param pushers: Mapping of report types to pusher actors
         :param level_logger: Level of the logger
         """
-        super().__init__(name, level_logger, None)
+        super().__init__(name, level_logger)
 
         self.pushers = pushers
 

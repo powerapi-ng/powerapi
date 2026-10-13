@@ -56,18 +56,17 @@ class Actor(multiprocessing.Process):
     """
     state: State
 
-    def __init__(self, name: str, level_logger: int = logging.WARNING, timeout: int | None = None):
+    def __init__(self, name: str, level_logger: int = logging.WARNING):
         """
         Initialize
         :param name: Name of the actor
         :param level_logger: Logging level of the actor
-        :param timeout: Timeout of IPC operations in milliseconds, None for waiting indefinitely
         """
         super().__init__(name=name)
 
         self.logging_level = level_logger
 
-        self.socket_interface = SocketInterface(name, timeout)
+        self.socket_interface = SocketInterface(name)
 
     def run(self) -> None:
         """
@@ -202,7 +201,7 @@ class ActorProxy:
         self.actor_name = actor_name
         self.actor_type = actor_type
 
-        self._ipc_interface = SocketInterface(actor_name, None)
+        self._ipc_interface = SocketInterface(actor_name)
 
     def connect_control(self) -> None:
         """

@@ -57,7 +57,7 @@ def socket_interface():
     Returns an uninitialized socket interface.
     """
     actor_name = f'pytest-{secrets.token_hex()}'  # Prevent collisions on IPC files between runs.
-    return SocketInterface(actor_name, 100)
+    return SocketInterface(actor_name)
 
 
 @pytest.fixture

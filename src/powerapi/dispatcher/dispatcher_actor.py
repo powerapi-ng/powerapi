@@ -116,16 +116,15 @@ class DispatcherActor(Actor):
     state: DispatcherState
 
     def __init__(self, name: str, formula_factory: FormulaFactory, pushers: dict[type[Report], list[ActorProxy]],
-                 route_table: RouteTable, level_logger: int = logging.WARNING, timeout=None):
+                 route_table: RouteTable, level_logger: int = logging.WARNING):
         """
         Initialize a new dispatcher actor.
         :param name: Actor name
         :param formula_factory: Factory function for Formula actors
         :param route_table: Routing table to use for dispatching the reports between formulas
         :param level_logger: Logging level of the actor
-        :param timeout: Maximum time to wait for a message (in milliseconds)
         """
-        super().__init__(name, level_logger, timeout)
+        super().__init__(name, level_logger)
 
         self.formula_factory = formula_factory
         self.pushers = pushers

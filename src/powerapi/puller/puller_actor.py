@@ -94,7 +94,7 @@ class PullerActor(Actor):
         :param report_filter: Filter to use when dispatching reports
         :param level_logger: Define the level of the logger for the actor
         """
-        super().__init__(name, level_logger, 1000)
+        super().__init__(name, level_logger)
 
         self.database_factory = database_factory
         self.report_filter = report_filter
