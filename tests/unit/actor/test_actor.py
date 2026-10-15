@@ -248,7 +248,7 @@ def test_poison_pill_dispatches_pending_messages_before_state_teardown():
 
     handler.handle(PoisonPillMessage())
 
-    state.dispatch_message.assert_called_once_with(pending_message)
+    state.handle_message.assert_called_once_with(pending_message)
     state.teardown.assert_not_called()
     assert state.alive is False
 

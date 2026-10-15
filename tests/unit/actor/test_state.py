@@ -234,4 +234,4 @@ def test_handler_key_error_is_not_mistaken_for_an_unknown_message():
     state.add_handler(DummyMessage, handler)
 
     with pytest.raises(KeyError, match='handler failure'):
-        state.dispatch_message(DummyMessage('test-dummy'))
+        state.handle_message(DummyMessage('test-dummy'))

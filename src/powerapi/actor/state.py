@@ -109,10 +109,10 @@ class State:
         self.handlers[message_type] = handler
         self._resolved_handlers.clear()
 
-    def dispatch_message(self, msg: Message) -> None:
+    def handle_message(self, msg: Message) -> None:
         """
-        Dispatch a message to its registered handler.
-        :param msg: Message to dispatch
+        Handle a message using its registered handler.
+        :param msg: Message to handle
         """
         try:
             handler = self.get_corresponding_handler(msg)

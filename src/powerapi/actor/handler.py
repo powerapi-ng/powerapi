@@ -119,4 +119,4 @@ class PoisonPillMessageHandler(Handler[PoisonPillMessage]):
 
         self.state.alive = False
         while (pending_msg := self.state.actor.socket_interface.receive(timeout=100)) is not None:
-            self.state.dispatch_message(pending_msg)
+            self.state.handle_message(pending_msg)
