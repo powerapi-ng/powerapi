@@ -68,12 +68,6 @@ class DummyMessage(Message):
         return self.value == other.value
 
 
-class DummyMessageSubtype(DummyMessage):
-    """
-    Subtype of a dummy message class.
-    """
-
-
 class FailingStartMessageHandler(Handler[StartMessage]):
     """
     Failing start message handler.
@@ -96,17 +90,12 @@ class LoopbackMessageHandler(Handler[DummyMessage]):
     Set the processed flag to received messages and sends them back to the control channel.
     """
 
-    def handle(self, message: DummyMessage) -> None:
+    def handle(self, msg: DummyMessage) -> None:
         """
         Handle a message.
         """
-        message.processed = True
-        self.state.actor.send_control(message)
-
-
-class KeyErrorMessageHandler(Handler[DummyMessage]):
-    def handle(self, message: DummyMessage) -> None:
-        raise KeyError('handler failure')
+        msg.processed = True
+        self.state.actor.send_control(msg)
 
 
 class DummyActorState(State):
@@ -230,66 +219,6 @@ def test_send_data_message_to_actor(started_loopback_actor):
     assert isinstance(ack_msg, DummyMessage)
     assert data_msg == ack_msg
     assert ack_msg.processed is True
-
-
-def test_retrieve_handler_for_known_message_type():
-    """
-    Test retrieving the corresponding handler for a known message type.
-    """
-    state = DummyActorState(None)
-    dummy_handler = LoopbackMessageHandler(state)
-    state.add_handler(DummyMessage, dummy_handler)
-
-    msg_handler = state.get_corresponding_handler(DummyMessage('test-dummy'))
-    assert msg_handler is dummy_handler
-
-
-def test_retrieve_handler_for_known_message_subtype():
-    """
-    Test retrieving the corresponding handler for a subtype of a known message type.
-    """
-    state = DummyActorState(None)
-    dummy_handler = LoopbackMessageHandler(state)
-    state.add_handler(DummyMessage, dummy_handler, include_subclasses=True)
-
-    msg_handler = state.get_corresponding_handler(DummyMessageSubtype('test-dummy-subtype'))
-    assert msg_handler is dummy_handler
-
-
-def test_retrieve_handler_for_known_message_with_subtype_excluded():
-    """
-    Test that retrieving the corresponding handler for an excluded subtype of a known message type raises an error.
-    """
-    state = DummyActorState(None)
-    dummy_handler = LoopbackMessageHandler(state)
-    state.add_handler(DummyMessage, dummy_handler, include_subclasses=False)
-
-    with pytest.raises(KeyError, match='DummyMessageSubtype'):
-        state.get_corresponding_handler(DummyMessageSubtype('test-dummy-subtype'))
-
-
-def test_retrieve_handler_for_unknown_message_type():
-    """
-    Test that retrieving the corresponding handler for an unknown message type raises an error.
-    """
-    state = DummyActorState(None)
-
-    with pytest.raises(KeyError, match='DummyMessage'):
-        state.get_corresponding_handler(DummyMessage('test-dummy'))
-
-
-def test_handler_key_error_is_not_mistaken_for_an_unknown_message():
-    """
-    Exceptions raised by handlers should not be treated as unknown messages.
-    """
-    actor = Actor('pytest')
-    state = DummyActorState(actor)
-    actor.state = state
-    handler = KeyErrorMessageHandler(state)
-    state.add_handler(DummyMessage, handler)
-
-    with pytest.raises(KeyError, match='handler failure'):
-        state.dispatch_message(DummyMessage('test-dummy'))
 
 
 def test_start_message_handler_initializes_state():

@@ -54,8 +54,10 @@ class State:
         self.initialized = False
         self.alive = True
 
-        self.handlers: dict[str, Handler] = {}
+        self.handlers: dict[type[Message], Handler] = {}
         self.supervisor = Supervisor()
+
+        self._resolved_handlers: dict[type[Message], Handler] = {}
 
     def initialize(self) -> None:
         """
@@ -69,25 +71,43 @@ class State:
 
     def get_corresponding_handler(self, msg: Message) -> Handler:
         """
-        Return the corresponding handler for the given message type.
+        Return the most specific registered handler, caching successful lookups.
         :param msg: The message
         :return: The handler for the given message type
         :raises KeyError: If the message type does not have a corresponding handler
         """
-        return self.handlers[msg.__class__.__name__]
+        message_type = type(msg)
+        try:
+            return self._resolved_handlers[message_type]
+        except KeyError:
+            return self._resolve_handler(message_type)
 
-    def add_handler(self, message_type: type[Message], handler: Handler, include_subclasses: bool = True) -> None:
+    def _resolve_handler(self, message_type: type[Message]) -> Handler:
         """
-        Add a handler for the given message type.
+        Resolve a handler in method resolution order and cache the successful lookup.
+        :param message_type: The message class to resolve
+        :return: The most specific registered handler
+        :raises KeyError: If no handler is registered for the class or its bases
+        """
+        for base in message_type.__mro__:
+            handler = self.handlers.get(base)
+            if handler is not None:
+                self._resolved_handlers[message_type] = handler
+                return handler
+
+        raise KeyError(message_type)
+
+    def add_handler(self, message_type: type[Message], handler: Handler) -> None:
+        """
+        Register a handler for a message class and its subclasses.
+        Exact registrations take precedence over base classes in method resolution order.
+        Registering the same class again replaces its handler.
+        Every registration clears the handler resolution cache.
         :param message_type: The message type
         :param handler: The corresponding handler
-        :param include_subclasses: Whether to include subclasses of the message type
         """
-        self.handlers[message_type.__name__] = handler
-
-        if include_subclasses:
-            for child_type in message_type.__subclasses__():
-                self.handlers[child_type.__name__] = handler
+        self.handlers[message_type] = handler
+        self._resolved_handlers.clear()
 
     def dispatch_message(self, msg: Message) -> None:
         """
