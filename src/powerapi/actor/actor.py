@@ -137,7 +137,7 @@ class Actor(multiprocessing.Process):
             return  # Timeout
 
         logging.debug('Received message: %s', msg)
-        self.state.dispatch_message(msg)
+        self.state.handle_message(msg)
 
     def _teardown_actor(self) -> None:
         """
