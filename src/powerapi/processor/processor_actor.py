@@ -32,27 +32,80 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from powerapi.actor import Actor
+from powerapi.actor.actor import Actor
+from powerapi.actor.handler import PoisonPillMessageHandler, StartMessageHandler
+from powerapi.actor.message import PoisonPillMessage, StartMessage
+from powerapi.actor.state import State
+from powerapi.processor.handlers import ProcessorReportHandler
 
 if TYPE_CHECKING:
     from powerapi.actor import ActorProxy
+    from powerapi.processor.processor import Processor
+
+
+class ProcessorState(State):
+    """
+    Adapt a processing component lifecycle to actor execution.
+    """
+
+    def __init__(self, actor: ProcessorActor, processor: Processor):
+        """
+        Store the processor and actor without acquiring resources.
+        :param actor: Actor executing the processor
+        :param processor: Processing component owned by this state
+        """
+        super().__init__(actor)
+
+        self.processor = processor
+
+    def initialize(self) -> None:
+        """
+        Connect targets and initialize the processor.
+        """
+        for target in self.actor.target_actors:
+            target.connect_data()
+
+        self.processor.initialize()
+        for report_processor in self.processor.get_report_processors():
+            self.actor.add_handler(report_processor.report_type, ProcessorReportHandler(self, report_processor))
+
+    def teardown(self) -> None:
+        """
+        Release processor resources and disconnect targets.
+        """
+        try:
+            self.processor.teardown()
+        finally:
+            for target in self.actor.target_actors:
+                target.disconnect()
 
 
 class ProcessorActor(Actor):
     """
-    Processor actor class.
-    Used to process reports before sending them to target actor(s).
+    Process reports and forward results to target actors.
     """
+    state: ProcessorState
 
-    def __init__(self, name: str, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, processor: Processor, level_logger: int = logging.WARNING):
         """
-        Initializes a new processor actor.
+        Initialize a new processor actor.
         :param name: Name of the processor actor
+        :param processor: Processing component executed by the actor
         :param level_logger: Logging level of the actor
         """
         super().__init__(name, level_logger)
 
         self.target_actors: list[ActorProxy] = []
+        self.processor = processor
+
+    def setup(self) -> None:
+        """
+        Register lifecycle handlers; report handlers are bound during initialization.
+        """
+        self.state = ProcessorState(self, self.processor)
+
+        self.add_handler(StartMessage, StartMessageHandler(self.state))
+        self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
 
     def add_target_actor(self, actor: ActorProxy) -> None:
         """
@@ -64,13 +117,11 @@ class ProcessorActor(Actor):
 
 class PreProcessorActor(ProcessorActor):
     """
-    Pre-Processor actor class.
-    Used to process reports coming from puller(s) before sending them to a formula.
+    Process reports from pullers before forwarding them to a formula.
     """
 
 
 class PostProcessorActor(ProcessorActor):
     """
-    Post-Processor actor class.
-    Used to process reports produced by a formula before sending them to pusher(s).
+    Process reports from a formula before forwarding them to pushers.
     """

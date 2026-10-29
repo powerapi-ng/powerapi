@@ -31,10 +31,10 @@ import logging
 from collections.abc import Callable
 
 from powerapi.actor import Actor, ActorProxy
-from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
 from powerapi.config.exceptions import ConfigurationError
+from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
 from powerapi.filter import ReportFilter
-from powerapi.processor.processor_actor import ProcessorActor
+from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.report import FormulaReport, HWPCReport, PowerReport, Report
@@ -472,8 +472,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Resolved Kubernetes pre-processor configuration.
         :return: Configured Kubernetes pre-processor actor.
         """
-        from powerapi.processor.pre.k8s.actor import KubernetesPreProcessorActor
         from powerapi.processor.pre.k8s.monitor_agent import KubernetesMonitorConfig
+        from powerapi.processor.pre.k8s.processor import KubernetesProcessor
 
         api_mode = processor_config['api-mode']
         api_host = processor_config.get('api-host')
@@ -483,7 +483,7 @@ class PreProcessorGenerator(ProcessorGenerator):
 
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return KubernetesPreProcessorActor(name, monitor_config, level_logger)
+        return PreProcessorActor(name, KubernetesProcessor(monitor_config), level_logger)
 
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:
@@ -492,10 +492,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Resolved OpenStack pre-processor configuration.
         :return: Configured OpenStack pre-processor actor.
         """
-        from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
-        from powerapi.processor.pre.openstack.monitor_agent import (
-            OpenStackMonitorConfig,
-        )
+        from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
+        from powerapi.processor.pre.openstack.processor import OpenStackProcessor
 
         api_polling_interval = processor_config['polling-interval']
         metadata_mapping = build_metadata_mapping(processor_config.get('metadata', []), prefix='openstack_metadata_')
@@ -503,4 +501,4 @@ class PreProcessorGenerator(ProcessorGenerator):
 
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return OpenStackPreProcessorActor(name, monitor_config, level_logger)
+        return PreProcessorActor(name, OpenStackProcessor(monitor_config), level_logger)

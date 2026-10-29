@@ -31,7 +31,8 @@ import pytest
 pytest.importorskip('kubernetes')
 
 from powerapi.config.generator import PreProcessorGenerator
-from powerapi.processor.pre.k8s.actor import KubernetesPreProcessorActor
+from powerapi.processor import PreProcessorActor
+from powerapi.processor.pre.k8s.processor import KubernetesProcessor
 
 
 @pytest.fixture
@@ -57,7 +58,7 @@ def k8s_processor_config():
 
 def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     """
-    PreProcessorGenerator should generate a K8sPreProcessorActor.
+    The generator should wrap a Kubernetes report processor in a pre-processor actor.
     """
     generator = PreProcessorGenerator()
     preprocessors = generator.generate(k8s_processor_config)
@@ -66,12 +67,13 @@ def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     assert 'pytest-k8s-preprocessor' in preprocessors
 
     preprocessor = preprocessors['pytest-k8s-preprocessor']
-    assert isinstance(preprocessor, KubernetesPreProcessorActor)
+    assert isinstance(preprocessor, PreProcessorActor)
+    assert isinstance(preprocessor.processor, KubernetesProcessor)
 
     expected_preprocessor_attributes = k8s_processor_config['pre-processor']['pytest-k8s-preprocessor']
-    assert preprocessor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']
-    assert preprocessor.monitor_config.api_key == expected_preprocessor_attributes['api-key']
-    assert preprocessor.monitor_config.api_host == expected_preprocessor_attributes['api-host']
-    assert preprocessor.monitor_config.label_mapping == {
+    assert preprocessor.processor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']
+    assert preprocessor.processor.monitor_config.api_key == expected_preprocessor_attributes['api-key']
+    assert preprocessor.processor.monitor_config.api_host == expected_preprocessor_attributes['api-host']
+    assert preprocessor.processor.monitor_config.label_mapping == {
         'app.kubernetes.io/name': 'k8s_pod_label_app_kubernetes_io_name',
     }
