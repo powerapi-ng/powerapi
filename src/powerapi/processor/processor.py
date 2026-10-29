@@ -1,5 +1,4 @@
-# Copyright (c) 2023, Inria
-# Copyright (c) 2023, University of Lille
+# Copyright (c) 2026, Inria
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,33 +26,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.processor.handlers import ProcessorReportHandler
-from powerapi.report import HWPCReport
+from collections.abc import Iterable
+from typing import Any
 
-from ._utils import (
-    extract_container_id_from_k8s_cgroups_path,
-    is_target_a_valid_k8s_cgroups_path,
-)
+from powerapi.report import Report
 
 
-class HWPCReportHandler(ProcessorReportHandler[HWPCReport]):
+class ReportProcessor[R: Report]:
     """
-    HWPCReport message handler for the Kubernetes processor actor.
+    Process reports of a specific type.
     """
 
-    def handle(self, msg: HWPCReport):
+    def __init__(self, report_type: type[R]):
         """
-        Process an HWPCReport to add the Kubernetes metadata.
-        :param msg: The HWPCReport to process
+        Initialize a report processor for the given report type.
+        :param report_type: Report type accepted by the processor
         """
-        if is_target_a_valid_k8s_cgroups_path(msg.target):
-            container_id = extract_container_id_from_k8s_cgroups_path(msg.target)
-            container_metadata = self.state.metadata_registry.get_metadata(container_id)
-            if container_metadata is None:
-                # Drop the report if the container metadata is not present in the cache.
-                # This is mainly to filter out the empty pause container present for every running POD.
-                return
+        self.report_type = report_type
 
-            msg.metadata.update(container_metadata)
+    def process(self, report: R) -> R | None:
+        """
+        Process or drop the incoming report.
+        :param report: Report to process
+        :return: The report, possibly modified, or None if dropped
+        """
+        raise NotImplementedError()
 
-        self._send_report(msg)
+
+class Processor:
+    """
+    Manage shared resources for report processors.
+    """
+
+    def initialize(self) -> None:
+        """
+        Initialize shared processing resources.
+        """
+
+    def get_report_processors(self) -> Iterable[ReportProcessor[Any]]:
+        """
+        Return initialized report processors for all supported report types.
+        :return: Iterable of initialized report processors
+        """
+        raise NotImplementedError()
+
+    def teardown(self) -> None:
+        """
+        Clean up resources allocated during initialization.
+        """

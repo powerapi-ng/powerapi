@@ -36,6 +36,7 @@ from powerapi.config.binding_manager import PreProcessorBindingManager
 from powerapi.config.generator import PreProcessorGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor
 from powerapi.filter import BroadcastReportFilter
+from powerapi.processor.processor import Processor
 from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.puller import PullerActor
 
@@ -91,7 +92,7 @@ def preprocessor_generator() -> PreProcessorGenerator:
     generator = PreProcessorGenerator()
 
     def _noop_processor_factory(_) -> ProcessorActor:
-        return NoopPreprocessor('pytest-noop-preprocessor')
+        return NoopPreprocessor('pytest-noop-preprocessor', processor=Mock(spec=Processor))
 
     generator.add_processor_factory('noop', _noop_processor_factory)
     return generator

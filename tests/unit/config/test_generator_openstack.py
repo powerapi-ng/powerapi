@@ -31,7 +31,8 @@ import pytest
 pytest.importorskip('openstack')
 
 from powerapi.config.generator import PreProcessorGenerator
-from powerapi.processor.pre.openstack.actor import OpenStackPreProcessorActor
+from powerapi.processor import PreProcessorActor
+from powerapi.processor.pre.openstack.processor import OpenStackProcessor
 
 
 @pytest.fixture
@@ -55,7 +56,7 @@ def openstack_config():
 
 def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
     """
-    PreProcessorGenerator should generate an OpenStackPreProcessorActor when given a valid config.
+    The generator should wrap an OpenStack report processor in a pre-processor actor.
     """
     generator = PreProcessorGenerator()
     preprocessors = generator.generate(openstack_config)
@@ -64,10 +65,11 @@ def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
     assert 'pytest-openstack-preprocessor' in preprocessors
 
     preprocessor = preprocessors['pytest-openstack-preprocessor']
-    assert isinstance(preprocessor, OpenStackPreProcessorActor)
+    assert isinstance(preprocessor, PreProcessorActor)
+    assert isinstance(preprocessor.processor, OpenStackProcessor)
 
     expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
-    assert preprocessor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
-    assert preprocessor.monitor_config.metadata_mapping == {
+    assert preprocessor.processor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
+    assert preprocessor.processor.monitor_config.metadata_mapping == {
         'environment': 'openstack_metadata_environment',
     }
