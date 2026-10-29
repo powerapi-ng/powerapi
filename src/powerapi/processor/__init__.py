@@ -28,3 +28,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from powerapi.processor.processor_actor import ProcessorActor, PreProcessorActor, PostProcessorActor
+from powerapi.processor.processor import Processor, ReportProcessor
