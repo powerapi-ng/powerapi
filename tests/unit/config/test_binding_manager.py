@@ -92,7 +92,7 @@ def preprocessor_generator() -> PreProcessorGenerator:
     generator = PreProcessorGenerator()
 
     def _noop_processor_factory(_) -> ProcessorActor:
-        return NoopPreprocessor('pytest-noop-preprocessor', processor=Mock(spec=Processor))
+        return NoopPreprocessor('pytest-noop-preprocessor', processors=(Mock(spec=Processor),))
 
     generator.add_processor_factory('noop', _noop_processor_factory)
     return generator

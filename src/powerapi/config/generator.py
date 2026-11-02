@@ -483,7 +483,7 @@ class PreProcessorGenerator(ProcessorGenerator):
 
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return PreProcessorActor(name, KubernetesProcessor(monitor_config), level_logger)
+        return PreProcessorActor(name, [KubernetesProcessor(monitor_config)], level_logger)
 
     @staticmethod
     def _openstack_pre_processor_factory(processor_config: dict) -> ProcessorActor:
@@ -501,4 +501,4 @@ class PreProcessorGenerator(ProcessorGenerator):
 
         name = processor_config[ACTOR_NAME_KEY]
         level_logger = logging.DEBUG if processor_config[GENERAL_CONF_VERBOSE_KEY] else logging.INFO
-        return PreProcessorActor(name, OpenStackProcessor(monitor_config), level_logger)
+        return PreProcessorActor(name, [OpenStackProcessor(monitor_config)], level_logger)

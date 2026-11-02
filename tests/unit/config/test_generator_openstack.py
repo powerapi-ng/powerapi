@@ -56,20 +56,21 @@ def openstack_config():
 
 def test_preprocessor_generator_with_valid_openstack_config(openstack_config):
     """
-    The generator should wrap an OpenStack report processor in a pre-processor actor.
+    The generator should wrap an OpenStack processor in a pre-processor actor.
     """
     generator = PreProcessorGenerator()
-    preprocessors = generator.generate(openstack_config)
+    preprocessor_actors = generator.generate(openstack_config)
 
-    assert len(preprocessors) == 1
-    assert 'pytest-openstack-preprocessor' in preprocessors
+    assert len(preprocessor_actors) == 1
+    assert 'pytest-openstack-preprocessor' in preprocessor_actors
 
-    preprocessor = preprocessors['pytest-openstack-preprocessor']
-    assert isinstance(preprocessor, PreProcessorActor)
-    assert isinstance(preprocessor.processor, OpenStackProcessor)
+    preprocessor_actor = preprocessor_actors['pytest-openstack-preprocessor']
+    assert isinstance(preprocessor_actor, PreProcessorActor)
+    openstack_processor, = preprocessor_actor.processors
+    assert isinstance(openstack_processor, OpenStackProcessor)
 
-    expected_preprocessor_attributes = openstack_config['pre-processor']['pytest-openstack-preprocessor']
-    assert preprocessor.processor.monitor_config.polling_interval == expected_preprocessor_attributes['polling-interval']
-    assert preprocessor.processor.monitor_config.metadata_mapping == {
+    expected_config = openstack_config['pre-processor']['pytest-openstack-preprocessor']
+    assert openstack_processor.monitor_config.polling_interval == expected_config['polling-interval']
+    assert openstack_processor.monitor_config.metadata_mapping == {
         'environment': 'openstack_metadata_environment',
     }
