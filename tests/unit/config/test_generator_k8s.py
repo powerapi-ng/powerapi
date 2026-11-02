@@ -58,22 +58,23 @@ def k8s_processor_config():
 
 def test_preprocessor_generator_with_valid_k8s_config(k8s_processor_config):
     """
-    The generator should wrap a Kubernetes report processor in a pre-processor actor.
+    The generator should wrap a Kubernetes processor in a pre-processor actor.
     """
     generator = PreProcessorGenerator()
-    preprocessors = generator.generate(k8s_processor_config)
+    preprocessor_actors = generator.generate(k8s_processor_config)
 
-    assert len(preprocessors) == 1
-    assert 'pytest-k8s-preprocessor' in preprocessors
+    assert len(preprocessor_actors) == 1
+    assert 'pytest-k8s-preprocessor' in preprocessor_actors
 
-    preprocessor = preprocessors['pytest-k8s-preprocessor']
-    assert isinstance(preprocessor, PreProcessorActor)
-    assert isinstance(preprocessor.processor, KubernetesProcessor)
+    preprocessor_actor = preprocessor_actors['pytest-k8s-preprocessor']
+    assert isinstance(preprocessor_actor, PreProcessorActor)
+    kubernetes_processor, = preprocessor_actor.processors
+    assert isinstance(kubernetes_processor, KubernetesProcessor)
 
-    expected_preprocessor_attributes = k8s_processor_config['pre-processor']['pytest-k8s-preprocessor']
-    assert preprocessor.processor.monitor_config.api_mode == expected_preprocessor_attributes['api-mode']
-    assert preprocessor.processor.monitor_config.api_key == expected_preprocessor_attributes['api-key']
-    assert preprocessor.processor.monitor_config.api_host == expected_preprocessor_attributes['api-host']
-    assert preprocessor.processor.monitor_config.label_mapping == {
+    expected_config = k8s_processor_config['pre-processor']['pytest-k8s-preprocessor']
+    assert kubernetes_processor.monitor_config.api_mode == expected_config['api-mode']
+    assert kubernetes_processor.monitor_config.api_key == expected_config['api-key']
+    assert kubernetes_processor.monitor_config.api_host == expected_config['api-host']
+    assert kubernetes_processor.monitor_config.label_mapping == {
         'app.kubernetes.io/name': 'k8s_pod_label_app_kubernetes_io_name',
     }

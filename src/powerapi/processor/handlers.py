@@ -27,6 +27,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from collections.abc import Iterable
+
 from powerapi.actor import InitializedStateHandler, State
 from powerapi.processor.processor import ReportProcessor
 from powerapi.report import Report
@@ -37,23 +39,27 @@ class ProcessorReportHandler[ReportT: Report](InitializedStateHandler[ReportT]):
     Process incoming reports and forward retained results.
     """
 
-    def __init__(self, state: State, processor: ReportProcessor[ReportT]):
+    def __init__(self, state: State, processors: Iterable[ReportProcessor[ReportT]]):
         """
-        Initialize a report handler with its processing implementation.
+        Initialize a report handler with an ordered processing chain.
         :param state: Actor state used for initialization gating and forwarding
-        :param processor: Processor accepting the registered report type
+        :param processors: Processors accepting the registered report type, in execution order
         """
         super().__init__(state)
-        self._report_processor = processor
+        self._report_processors = tuple(processors)
 
     def handle(self, msg: ReportT) -> None:
         """
         Process a report and forward it unless it was dropped.
         :param msg: Incoming report
         """
-        report = self._report_processor.process(msg)
-        if report is not None:
-            self._send_report(report)
+        report = msg
+        for processor in self._report_processors:
+            report = processor.process(report)
+            if report is None:
+                return
+
+        self._send_report(report)
 
     def _send_report(self, report: Report) -> None:
         """

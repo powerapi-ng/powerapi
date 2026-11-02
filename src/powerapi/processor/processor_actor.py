@@ -39,42 +39,52 @@ from powerapi.actor.state import State
 from powerapi.processor.handlers import ProcessorReportHandler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from powerapi.actor import ActorProxy
     from powerapi.processor.processor import Processor
 
 
 class ProcessorState(State):
     """
-    Adapt a processing component lifecycle to actor execution.
+    Adapt processing component lifecycles to actor execution.
     """
 
-    def __init__(self, actor: ProcessorActor, processor: Processor):
+    def __init__(self, actor: ProcessorActor, processors: Iterable[Processor]):
         """
-        Store the processor and actor without acquiring resources.
+        Store the processors and actor without acquiring resources.
         :param actor: Actor executing the processor
-        :param processor: Processing component owned by this state
+        :param processors: Processing components in execution order
         """
         super().__init__(actor)
 
-        self.processor = processor
+        self.processors = tuple(processors)
+        self._initialized_processors: list[Processor] = []
 
     def initialize(self) -> None:
         """
-        Connect targets and initialize the processor.
+        Connect targets, initialize processors, and register ordered report chains.
         """
         for target in self.actor.target_actors:
             target.connect_data()
 
-        self.processor.initialize()
-        for report_processor in self.processor.get_report_processors():
-            self.actor.add_handler(report_processor.report_type, ProcessorReportHandler(self, report_processor))
+        processors_by_type = {}
+        for processor in self.processors:
+            processor.initialize()
+            self._initialized_processors.append(processor)
+            for report_processor in processor.get_report_processors():
+                processors_by_type.setdefault(report_processor.report_type, []).append(report_processor)
+
+        for report_type, report_processors in processors_by_type.items():
+            self.actor.add_handler(report_type, ProcessorReportHandler(self, report_processors))
 
     def teardown(self) -> None:
         """
         Release processor resources and disconnect targets.
         """
         try:
-            self.processor.teardown()
+            for processor in reversed(self._initialized_processors):
+                processor.teardown()
         finally:
             for target in self.actor.target_actors:
                 target.disconnect()
@@ -86,23 +96,23 @@ class ProcessorActor(Actor):
     """
     state: ProcessorState
 
-    def __init__(self, name: str, processor: Processor, level_logger: int = logging.WARNING):
+    def __init__(self, name: str, processors: Iterable[Processor], level_logger: int = logging.WARNING):
         """
         Initialize a new processor actor.
         :param name: Name of the processor actor
-        :param processor: Processing component executed by the actor
+        :param processors: Processing components in execution order
         :param level_logger: Logging level of the actor
         """
         super().__init__(name, level_logger)
 
         self.target_actors: list[ActorProxy] = []
-        self.processor = processor
+        self.processors = tuple(processors)
 
     def setup(self) -> None:
         """
         Register lifecycle handlers; report handlers are bound during initialization.
         """
-        self.state = ProcessorState(self, self.processor)
+        self.state = ProcessorState(self, self.processors)
 
         self.add_handler(StartMessage, StartMessageHandler(self.state))
         self.add_handler(PoisonPillMessage, PoisonPillMessageHandler(self.state))
