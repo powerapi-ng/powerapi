@@ -28,12 +28,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from powerapi.actor import Actor, ActorProxy
 from powerapi.config.exceptions import ConfigurationError
 from powerapi.database.driver import ReadableDatabaseFactory, WritableDatabaseFactory
-from powerapi.filter import ReportFilter
 from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
@@ -236,14 +235,14 @@ class PullerGenerator(DBActorGenerator[PullerActor, ReadableDatabaseFactory]):
         from powerapi.database.mongodb.driver import MongodbInputFactory
         return MongodbInputFactory(conf['model'], conf['uri'], conf['db'], conf['collection'])
 
-    def __init__(self, report_filter: ReportFilter):
+    def __init__(self, target_actors: Iterable[ActorProxy]):
         """
         Initialize a puller generator with the built-in input types.
-        :param report_filter: Report filter applied to incoming reports.
+        :param target_actors: Actors receiving every retrieved report.
         """
         super().__init__('input')
 
-        self.report_filter = report_filter
+        self.target_actors = list(target_actors)
 
         self.add_db_factory('csv', self._csv_input_database_factory)
         self.add_db_factory('json', self._json_input_database_factory)
@@ -275,7 +274,7 @@ class PullerGenerator(DBActorGenerator[PullerActor, ReadableDatabaseFactory]):
         """
         stream_mode = main_config[GENERAL_CONF_STREAM_MODE_KEY]
         logging_level = logging.DEBUG if main_config[GENERAL_CONF_VERBOSE_KEY] else logging.WARNING
-        return PullerActor(actor_name, database_factory, self.report_filter, stream_mode, level_logger=logging_level)
+        return PullerActor(actor_name, database_factory, self.target_actors, stream_mode, level_logger=logging_level)
 
 
 class PusherGenerator(DBActorGenerator[PusherActor, WritableDatabaseFactory]):

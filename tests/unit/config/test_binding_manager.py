@@ -35,7 +35,6 @@ from powerapi.actor import ActorProxy
 from powerapi.config.binding_manager import PreProcessorBindingManager
 from powerapi.config.generator import PreProcessorGenerator, PullerGenerator
 from powerapi.dispatcher import DispatcherActor
-from powerapi.filter import BroadcastReportFilter
 from powerapi.processor.processor import Processor
 from powerapi.processor.processor_actor import PreProcessorActor, ProcessorActor
 from powerapi.puller import PullerActor
@@ -77,10 +76,8 @@ def puller_generator() -> PullerGenerator:
     """
     Fixture that provides a generator for the puller actors.
     """
-    report_filter = BroadcastReportFilter()
-    report_filter.register(lambda _: True, Mock(actor_name='pytest-dispatcher', actor_type=DispatcherActor, spec=ActorProxy))
-
-    generator = PullerGenerator(report_filter)
+    target_actors = [Mock(actor_name='pytest-dispatcher', actor_type=DispatcherActor, spec=ActorProxy)]
+    generator = PullerGenerator(target_actors)
     return generator
 
 
@@ -109,13 +106,13 @@ def test_preprocessor_binding_manager_replace_puller_target(puller_generator, pr
     puller = pullers['pytest-socket-puller']
     assert isinstance(puller, PullerActor)
 
-    puller_target_proxy, = puller.report_filter.dispatchers()
+    puller_target_proxy, = puller.target_actors
     assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
     assert puller_target_proxy.actor_name == 'pytest-dispatcher'
 
     binding_manager.process_bindings()
 
-    puller_target_proxy, = puller.report_filter.dispatchers()
+    puller_target_proxy, = puller.target_actors
     assert issubclass(puller_target_proxy.actor_type, PreProcessorActor)
     assert puller_target_proxy.actor_name == 'pytest-noop-preprocessor'
 
@@ -133,13 +130,13 @@ def test_preprocessor_binding_manager_with_empty_preprocessor_config(puller_gene
     puller = pullers['pytest-socket-puller']
     assert isinstance(puller, PullerActor)
 
-    puller_target_proxy, = puller.report_filter.dispatchers()
+    puller_target_proxy, = puller.target_actors
     assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
     assert puller_target_proxy.actor_name == 'pytest-dispatcher'
 
     binding_manager.process_bindings()
 
-    puller_target_proxy, = puller.report_filter.dispatchers()
+    puller_target_proxy, = puller.target_actors
     assert issubclass(puller_target_proxy.actor_type, DispatcherActor)
     assert puller_target_proxy.actor_name == 'pytest-dispatcher'
 
@@ -185,3 +182,35 @@ def test_preprocessor_binding_manager_with_duplicate_target(puller_generator, pr
 
     with pytest.raises(ValueError, match='targeted by multiple processors'):
         binding_manager.process_bindings()
+
+
+def test_preprocessor_binding_only_changes_targeted_puller(preprocessor_generator, preprocessor_config):
+    """
+    Test that inserting a preprocessor changes only the intended puller's connections and leaves unrelated pullers unchanged.
+    """
+    preprocessor_config['input']['other-puller'] = dict(preprocessor_config['input']['pytest-socket-puller'])
+    destinations = [Mock(spec=ActorProxy), Mock(spec=ActorProxy)]
+    pullers = PullerGenerator(destinations).generate(preprocessor_config)
+    puller = pullers['pytest-socket-puller']
+    assert puller.target_actors is not pullers['other-puller'].target_actors
+    processors = preprocessor_generator.generate(preprocessor_config)
+
+    PreProcessorBindingManager(preprocessor_config, pullers, processors).process_bindings()
+
+    processor_proxy, = puller.target_actors
+    assert processor_proxy.actor_name == 'pytest-noop-preprocessor'
+    assert processors['pytest-noop-preprocessor'].target_actors == destinations
+    assert pullers['other-puller'].target_actors == destinations
+
+
+def test_preprocessor_binding_preserves_empty_targets(preprocessor_generator, preprocessor_config):
+    """
+    Test that binding leaves an unconnected puller and its processor without targets.
+    """
+    pullers = PullerGenerator([]).generate(preprocessor_config)
+    processors = preprocessor_generator.generate(preprocessor_config)
+
+    PreProcessorBindingManager(preprocessor_config, pullers, processors).process_bindings()
+
+    assert pullers['pytest-socket-puller'].target_actors == []
+    assert processors['pytest-noop-preprocessor'].target_actors == []

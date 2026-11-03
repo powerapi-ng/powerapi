@@ -29,7 +29,6 @@
 import pytest
 
 from powerapi.config.generator import PusherGenerator, PullerGenerator
-from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 
@@ -71,7 +70,7 @@ def test_puller_generator_with_valid_mongodb_config(mongodb_config):
     """
     PullerGenerator should generate a PullerActor with a MongoDB database driver.
     """
-    puller_generator = PullerGenerator(BroadcastReportFilter())
+    puller_generator = PullerGenerator([])
     pullers = puller_generator.generate(mongodb_config)
 
     assert len(pullers) == 1
