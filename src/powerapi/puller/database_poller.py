@@ -39,27 +39,29 @@ from typing import TYPE_CHECKING
 from powerapi.database.exceptions import DatabaseConnectionError, DatabaseReadError
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from powerapi.database.driver import ReadableDatabaseFactory
-    from powerapi.filter import ReportFilter
+    from powerapi.actor import ActorProxy
 
 
 class DatabasePollerThread(Thread):
     """
     Database Poller Thread.
-    Fetches reports from a database and forward it to theirs corresponding dispatcher.
+    Fetch reports from a database and broadcast them to target actors.
     """
 
-    def __init__(self, database_factory: ReadableDatabaseFactory, report_filter: ReportFilter, stream_mode: bool, poll_interval: float = 1.0):
+    def __init__(self, database_factory: ReadableDatabaseFactory, target_actors: Iterable[ActorProxy], stream_mode: bool, poll_interval: float = 1.0):
         """
         :param database_factory: Factory used to create the database driver
-        :param report_filter: Report filter used to dispatch the received reports
+        :param target_actors: Actors receiving every retrieved report
         :param stream_mode: If true, poll continuously from the database; otherwise, stop the poller thread on empty result
         :param poll_interval: Interval in seconds between database polls
         """
         super().__init__(name='database-poller-thread', daemon=True)
 
         self.database_factory = database_factory
-        self.report_filter = report_filter
+        self.target_actors = tuple(target_actors)
         self.stream_mode = stream_mode
         self.poll_interval = poll_interval
 
@@ -96,8 +98,8 @@ class DatabasePollerThread(Thread):
             logging.error('Failed to connect the database driver: %s', exn)
             return
 
-        for dispatcher in self.report_filter.dispatchers():
-            dispatcher.connect_data()
+        for target in self.target_actors:
+            target.connect_data()
 
         self._ready_event.set()
         logging.info('Database poller thread started')
@@ -105,8 +107,8 @@ class DatabasePollerThread(Thread):
         while not self._stop_event.is_set():
             try:
                 for report in database.read(self.stream_mode):
-                    for dispatcher in self.report_filter.route(report):
-                        dispatcher.send_data(report)
+                    for target in self.target_actors:
+                        target.send_data(report)
 
                 if not self.stream_mode:
                     logging.info('No reports available from database, shutting down poller thread')
@@ -116,8 +118,8 @@ class DatabasePollerThread(Thread):
 
             sleep(self.poll_interval)
 
-        for dispatcher in self.report_filter.dispatchers():
-            dispatcher.disconnect()
+        for target in self.target_actors:
+            target.disconnect()
 
         database.disconnect()
         logging.info('Database poller thread stopped')

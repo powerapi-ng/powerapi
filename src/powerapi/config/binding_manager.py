@@ -119,10 +119,10 @@ class PreProcessorBindingManager(ProcessorBindingManager):
             for target_actor_name in self._get_processor_target_names(processor_name):
                 puller_actor = self.actors[target_actor_name]
                 processor_proxy = processor.get_proxy()
-                current_dispatchers = list(puller_actor.report_filter.dispatchers())
-                for dispatcher in current_dispatchers:
-                    processor.add_target_actor(dispatcher)
-                    puller_actor.report_filter.replace(dispatcher, processor_proxy)
+                for target in puller_actor.target_actors:
+                    processor.add_target_actor(target)
+                if puller_actor.target_actors:
+                    puller_actor.target_actors = [processor_proxy]
 
     def check_processor_targets(self, processor_name: str, processor: ProcessorActor):
         """

@@ -34,33 +34,27 @@ from unittest.mock import Mock
 import pytest
 
 from powerapi.actor import StartMessageHandler
-from powerapi.filter import BroadcastReportFilter
 from powerapi.puller.puller_actor import PullerState
 from tests.utils.db import PrebuiltDatabaseFactory
 
 if TYPE_CHECKING:
-    from powerapi.filter import ReportFilter
+    from powerapi.actor import ActorProxy
 
 
 @pytest.fixture
-def empty_report_filter():
+def empty_targets():
     """
-    Fixture for an empty report filter.
+    Fixture for an empty destination list.
     """
-    return BroadcastReportFilter()
+    return []
 
 
 @pytest.fixture
-def broadcast_report_filter():
+def broadcast_targets():
     """
-    Fixture for a non-empty broadcast report filter.
+    Fixture for a non-empty destination list.
     """
-    report_filter = BroadcastReportFilter()
-    report_filter.register(lambda _: True, Mock(name="dispatcher_a"))
-    report_filter.register(lambda _: True, Mock(name="dispatcher_b"))
-    report_filter.register(lambda _: True, Mock(name="dispatcher_c"))
-
-    return report_filter
+    return [Mock(name="dispatcher_a"), Mock(name="dispatcher_b"), Mock(name="dispatcher_c")]
 
 
 @pytest.fixture
@@ -88,12 +82,12 @@ def puller_start_handler(make_fake_failing_database, fake_database_poller):
     """
     Factory fixture for creating a puller start handler.
     """
-    def _create_handler(report_filter: ReportFilter) -> StartMessageHandler:
+    def _create_handler(target_actors: list[ActorProxy]) -> StartMessageHandler:
         actor = Mock()
         database = make_fake_failing_database()
         database_factory = PrebuiltDatabaseFactory(database)
 
-        state = PullerState(actor, database_factory, report_filter, stream_mode=False)
+        state = PullerState(actor, database_factory, target_actors, stream_mode=False)
         state.db_poller_thread = fake_database_poller
 
         handler = StartMessageHandler(state)

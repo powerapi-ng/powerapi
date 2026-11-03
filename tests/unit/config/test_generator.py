@@ -29,6 +29,7 @@
 
 import logging
 from copy import deepcopy
+from unittest.mock import Mock
 
 import pytest
 
@@ -41,7 +42,6 @@ from powerapi.database.csv.driver import CSVInputFactory, CSVOutputFactory
 from powerapi.database.json.driver import JsonInputFactory, JsonOutputFactory
 from powerapi.database.socket.driver import SocketInputFactory
 from powerapi.config.exceptions import ConfigurationError
-from powerapi.filter import BroadcastReportFilter
 from powerapi.puller import PullerActor
 from powerapi.pusher import PusherActor
 from powerapi.report import FormulaReport, HWPCReport, PowerReport
@@ -59,7 +59,7 @@ def test_generate_puller_from_empty_config_dict_raise_an_exception():
     Test that PullerGenerator raises a ConfigurationError when there is no input argument.
     """
     conf = {}
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ConfigurationError):
         generator.generate(conf)
@@ -72,7 +72,7 @@ def test_generate_file_puller_in_stream_mode_raise_an_exception(several_inputs_o
     """
     config = deepcopy(several_inputs_outputs_stream_config)
     config['input'] = {name: value for name, value in config['input'].items() if value['type'] == input_type}
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ConfigurationError) as raised_exception:
         generator.generate(config)
@@ -85,7 +85,7 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_postmortem_
     """
     Test that several inputs are correctly used to generate the related actors.
     """
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
     pullers = generator.generate(several_inputs_outputs_postmortem_config)
 
     assert len(pullers) == len(several_inputs_outputs_postmortem_config['input'])
@@ -112,15 +112,16 @@ def test_generate_several_pullers_from_config(several_inputs_outputs_postmortem_
 
 def test_generate_streaming_puller_preserves_runtime_settings(several_inputs_outputs_stream_config):
     """
-    Test that a streaming puller receives its filter, stream mode, and logging level.
+    Test that a streaming puller receives its destinations, stream mode, and logging level.
     """
     config = deepcopy(several_inputs_outputs_stream_config)
     config['input'] = {'puller3': config['input']['puller3']}
-    report_filter = BroadcastReportFilter()
+    target_actors = [Mock()]
 
-    puller = PullerGenerator(report_filter).generate(config)['puller3']
+    puller = PullerGenerator(target_actors).generate(config)['puller3']
 
-    assert puller.report_filter is report_filter
+    assert puller.target_actors == target_actors
+    assert puller.target_actors is not target_actors
     assert puller.stream_mode is True
     assert puller.logging_level == logging.DEBUG
 
@@ -132,7 +133,7 @@ def test_generate_puller_with_registered_report_model(several_inputs_outputs_pos
     config = deepcopy(several_inputs_outputs_postmortem_config)
     config['input'] = {'puller2': config['input']['puller2']}
     config['input']['puller2']['model'] = 'CustomReport'
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
     generator.add_report_class('CustomReport', HWPCReport)
 
     puller = generator.generate(config)['puller2']
@@ -144,7 +145,7 @@ def test_register_existing_report_model_raises_value_error():
     """
     Test that a report model cannot be registered more than once.
     """
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ValueError, match='Report model "HWPCReport" is already registered'):
         generator.add_report_class('HWPCReport', HWPCReport)
@@ -154,7 +155,7 @@ def test_register_existing_database_type_raises_value_error():
     """
     Test that a database type cannot be registered more than once.
     """
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ValueError, match='Database type "csv" is already registered'):
         generator.add_db_factory('csv', generator.database_factories['csv'])
@@ -166,7 +167,7 @@ def test_generate_puller_with_unknown_report_model_raises_an_exception(several_i
     """
     config = deepcopy(several_inputs_outputs_postmortem_config)
     next(iter(config['input'].values()))['model'] = 'UnknownReport'
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ConfigurationError, match='Invalid configuration: Unknown report model "UnknownReport"'):
         generator.generate(config)
@@ -178,7 +179,7 @@ def test_generate_puller_with_unknown_database_type_raises_an_exception(several_
     """
     config = deepcopy(several_inputs_outputs_postmortem_config)
     next(iter(config['input'].values()))['type'] = 'unknown'
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
 
     with pytest.raises(ConfigurationError, match='Invalid configuration: Invalid database type: unknown'):
         generator.generate(config)
@@ -191,7 +192,7 @@ def test_generate_puller_with_unavailable_database_dependency_raises_an_exceptio
     config = deepcopy(several_inputs_outputs_postmortem_config)
     config['input'] = {'puller2': config['input']['puller2']}
     config['input']['puller2']['type'] = 'unavailable'
-    generator = PullerGenerator(BroadcastReportFilter())
+    generator = PullerGenerator([])
     generator.add_db_factory('unavailable', _unavailable_factory)
 
     with pytest.raises(ConfigurationError, match='Dependencies for unavailable database are not installed'):
@@ -203,7 +204,7 @@ def test_generate_does_not_modify_configuration(several_inputs_outputs_postmorte
     Test that generating pullers and pushers repeatedly preserves the canonical configuration.
     """
     expected = deepcopy(several_inputs_outputs_postmortem_config)
-    puller_generator = PullerGenerator(BroadcastReportFilter())
+    puller_generator = PullerGenerator([])
     pusher_generator = PusherGenerator()
 
     puller_generator.generate(several_inputs_outputs_postmortem_config)

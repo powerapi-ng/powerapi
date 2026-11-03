@@ -27,24 +27,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from powerapi.actor import StartMessage
+from powerapi.actor import ErrorMessage, StartMessage
 
 
-def test_start_handler_empty_report_filter_kill_actor(puller_start_handler, empty_report_filter):
+def test_start_handler_empty_targets_kill_actor(puller_start_handler, empty_targets):
     """
-    Test that start handler kills the actor when the report filter is empty.
+    Test that start handler kills the actor when the destination list is empty.
     """
-    handler = puller_start_handler(empty_report_filter)
+    handler = puller_start_handler(empty_targets)
     handler.handle(StartMessage())
 
     assert handler.state.alive is False
+    handler.state.db_poller_thread.start.assert_not_called()
+    handler.state.actor.send_control.assert_called_once()
+    assert isinstance(handler.state.actor.send_control.call_args.args[0], ErrorMessage)
 
 
-def test_puller_state_teardown_ignores_unstarted_database_poller(puller_start_handler, empty_report_filter):
+def test_puller_state_teardown_ignores_unstarted_database_poller(puller_start_handler, empty_targets):
     """
     Test that puller teardown ignores an unstarted database poller.
     """
-    handler = puller_start_handler(empty_report_filter)
+    handler = puller_start_handler(empty_targets)
     handler.handle(StartMessage())
     state = handler.state
 
@@ -54,22 +57,22 @@ def test_puller_state_teardown_ignores_unstarted_database_poller(puller_start_ha
     state.db_poller_thread.join.assert_not_called()
 
 
-def test_start_handler_initializes_database_poller(puller_start_handler, broadcast_report_filter):
+def test_start_handler_initializes_database_poller(puller_start_handler, broadcast_targets):
     """
     Test that start handler initializes the database poller.
     """
-    handler = puller_start_handler(broadcast_report_filter)
+    handler = puller_start_handler(broadcast_targets)
     handler.handle(StartMessage())
 
     assert handler.state.alive is True
     handler.state.db_poller_thread.start.assert_called_once()
 
 
-def test_start_handler_fail_initialize_database_poller_kill_actor(puller_start_handler, broadcast_report_filter):
+def test_start_handler_fail_initialize_database_poller_kill_actor(puller_start_handler, broadcast_targets):
     """
     Test that start handler kills the actor when the database poller fails to initialize.
     """
-    handler = puller_start_handler(broadcast_report_filter)
+    handler = puller_start_handler(broadcast_targets)
     handler.state.db_poller_thread.start.side_effect = None
     handler.state.db_poller_thread.is_alive.return_value = False
 
@@ -79,11 +82,11 @@ def test_start_handler_fail_initialize_database_poller_kill_actor(puller_start_h
     handler.state.db_poller_thread.start.assert_called_once()
 
 
-def test_puller_state_teardown_stops_database_poller(puller_start_handler, broadcast_report_filter):
+def test_puller_state_teardown_stops_database_poller(puller_start_handler, broadcast_targets):
     """
     Test that puller teardown stops the database poller.
     """
-    handler = puller_start_handler(broadcast_report_filter)
+    handler = puller_start_handler(broadcast_targets)
     handler.handle(StartMessage())
     state = handler.state
 
