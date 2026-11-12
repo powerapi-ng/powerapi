@@ -32,7 +32,7 @@ pytest.importorskip('kubernetes')
 
 from powerapi.config.generator import PreProcessorGenerator
 from powerapi.processor import PreProcessorActor
-from powerapi.processor.pre.k8s.processor import KubernetesProcessor
+from powerapi.processor.kubernetes.processor import KubernetesProcessor
 
 
 @pytest.fixture

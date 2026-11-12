@@ -471,8 +471,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Resolved Kubernetes pre-processor configuration.
         :return: Configured Kubernetes pre-processor actor.
         """
-        from powerapi.processor.pre.k8s.monitor_agent import KubernetesMonitorConfig
-        from powerapi.processor.pre.k8s.processor import KubernetesProcessor
+        from powerapi.processor.kubernetes.monitor_agent import KubernetesMonitorConfig
+        from powerapi.processor.kubernetes.processor import KubernetesProcessor
 
         api_mode = processor_config['api-mode']
         api_host = processor_config.get('api-host')

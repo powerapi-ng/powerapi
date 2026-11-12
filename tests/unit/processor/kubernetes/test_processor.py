@@ -34,9 +34,9 @@ import pytest
 
 pytest.importorskip('kubernetes')
 
-from powerapi.processor.pre.k8s.metadata_registry import KubernetesMetadataRegistry
-from powerapi.processor.pre.k8s.monitor_agent import KubernetesMonitorConfig
-from powerapi.processor.pre.k8s.processor import HWPCReportProcessor, KubernetesProcessor
+from powerapi.processor.kubernetes.metadata_registry import KubernetesMetadataRegistry
+from powerapi.processor.kubernetes.monitor_agent import KubernetesMonitorConfig
+from powerapi.processor.kubernetes.processor import HWPCReportProcessor, KubernetesProcessor
 from powerapi.report import HWPCReport
 
 
@@ -62,7 +62,7 @@ def manager_mock(monkeypatch: pytest.MonkeyPatch) -> Mock:
     Return a mocked multiprocessing manager.
     """
     manager = Mock(name='manager')
-    monkeypatch.setattr('powerapi.processor.pre.k8s.processor.Manager', Mock(return_value=manager))
+    monkeypatch.setattr('powerapi.processor.kubernetes.processor.Manager', Mock(return_value=manager))
     return manager
 
 
@@ -72,7 +72,7 @@ def registry_factory_mock(monkeypatch: pytest.MonkeyPatch, metadata_registry_moc
     Return a mocked Kubernetes metadata registry constructor.
     """
     factory = Mock(return_value=metadata_registry_mock)
-    monkeypatch.setattr('powerapi.processor.pre.k8s.processor.KubernetesMetadataRegistry', factory)
+    monkeypatch.setattr('powerapi.processor.kubernetes.processor.KubernetesMetadataRegistry', factory)
     return factory
 
 
@@ -83,7 +83,7 @@ def monitor_mock(monkeypatch: pytest.MonkeyPatch) -> Mock:
     """
     monitor = Mock(name='monitor', pid=None)
     monkeypatch.setattr(
-        'powerapi.processor.pre.k8s.processor.KubernetesMonitorAgent',
+        'powerapi.processor.kubernetes.processor.KubernetesMonitorAgent',
         Mock(return_value=monitor),
     )
     return monitor
@@ -174,8 +174,8 @@ def test_processor_construction_does_not_start_resources():
     Processor construction should defer resource creation until initialization.
     """
     with (
-        patch('powerapi.processor.pre.k8s.processor.Manager') as manager,
-        patch('powerapi.processor.pre.k8s.processor.KubernetesMonitorAgent') as monitor,
+        patch('powerapi.processor.kubernetes.processor.Manager') as manager,
+        patch('powerapi.processor.kubernetes.processor.KubernetesMonitorAgent') as monitor,
     ):
         KubernetesProcessor(Mock())
 

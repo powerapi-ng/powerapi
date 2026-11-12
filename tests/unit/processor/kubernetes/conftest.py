@@ -31,7 +31,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.processor.pre.k8s.metadata_registry import KubernetesMetadataRegistry
+from powerapi.processor.kubernetes.metadata_registry import KubernetesMetadataRegistry
 
 
 @pytest.fixture
