@@ -37,13 +37,13 @@ pytest.importorskip('kubernetes')
 from kubernetes.client import ApiException, CoreV1Api
 from urllib3.exceptions import ProtocolError
 
-from powerapi.processor.pre.k8s.metadata_registry import KubernetesMetadataRegistry
-from powerapi.processor.pre.k8s.monitor_agent import (
+from powerapi.processor.kubernetes.metadata_registry import KubernetesMetadataRegistry
+from powerapi.processor.kubernetes.monitor_agent import (
     KubernetesMonitorAgent,
     KubernetesMonitorConfig,
     build_k8s_api_client_configuration,
 )
-from powerapi.processor.pre.k8s.pod_event_handler import KubernetesPodEventHandler
+from powerapi.processor.kubernetes.pod_event_handler import KubernetesPodEventHandler
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ def watcher():
     """
     Return the watcher created by the monitor agent.
     """
-    with patch('powerapi.processor.pre.k8s.monitor_agent.Watch', autospec=True) as watch_class:
+    with patch('powerapi.processor.kubernetes.monitor_agent.Watch', autospec=True) as watch_class:
         yield watch_class.return_value
 
 

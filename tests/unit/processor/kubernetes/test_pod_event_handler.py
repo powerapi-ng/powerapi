@@ -35,7 +35,7 @@ pytest.importorskip("kubernetes")
 
 from kubernetes.client import V1ContainerStatus, V1ObjectMeta, V1Pod, V1PodStatus
 
-from powerapi.processor.pre.k8s.pod_event_handler import KubernetesPodEventHandler
+from powerapi.processor.kubernetes.pod_event_handler import KubernetesPodEventHandler
 from powerapi.utils.metadata import build_metadata_mapping
 
 

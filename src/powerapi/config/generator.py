@@ -471,8 +471,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Resolved Kubernetes pre-processor configuration.
         :return: Configured Kubernetes pre-processor actor.
         """
-        from powerapi.processor.pre.k8s.monitor_agent import KubernetesMonitorConfig
-        from powerapi.processor.pre.k8s.processor import KubernetesProcessor
+        from powerapi.processor.kubernetes.monitor_agent import KubernetesMonitorConfig
+        from powerapi.processor.kubernetes.processor import KubernetesProcessor
 
         api_mode = processor_config['api-mode']
         api_host = processor_config.get('api-host')
@@ -491,8 +491,8 @@ class PreProcessorGenerator(ProcessorGenerator):
         :param processor_config: Resolved OpenStack pre-processor configuration.
         :return: Configured OpenStack pre-processor actor.
         """
-        from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
-        from powerapi.processor.pre.openstack.processor import OpenStackProcessor
+        from powerapi.processor.openstack.monitor_agent import OpenStackMonitorConfig
+        from powerapi.processor.openstack.processor import OpenStackProcessor
 
         api_polling_interval = processor_config['polling-interval']
         metadata_mapping = build_metadata_mapping(processor_config.get('metadata', []), prefix='openstack_metadata_')

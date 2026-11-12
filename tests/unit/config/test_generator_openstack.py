@@ -32,7 +32,7 @@ pytest.importorskip('openstack')
 
 from powerapi.config.generator import PreProcessorGenerator
 from powerapi.processor import PreProcessorActor
-from powerapi.processor.pre.openstack.processor import OpenStackProcessor
+from powerapi.processor.openstack.processor import OpenStackProcessor
 
 
 @pytest.fixture

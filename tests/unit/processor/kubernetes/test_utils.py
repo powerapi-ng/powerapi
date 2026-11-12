@@ -29,8 +29,8 @@
 
 import os
 
-from powerapi.processor.pre.k8s._utils import extract_container_id_from_k8s_cgroups_path
-from powerapi.processor.pre.k8s._utils import is_target_a_valid_k8s_cgroups_path
+from powerapi.processor.kubernetes._utils import extract_container_id_from_k8s_cgroups_path
+from powerapi.processor.kubernetes._utils import is_target_a_valid_k8s_cgroups_path
 
 
 def test_extract_docker_container_id_from_cgroups_v2_path():

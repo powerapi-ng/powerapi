@@ -34,7 +34,7 @@ pytest.importorskip('openstack')
 
 from openstack.compute.v2.server import Server
 
-from powerapi.processor.pre.openstack.server_change_handler import (
+from powerapi.processor.openstack.server_change_handler import (
     OpenStackServerChangeHandler,
 )
 

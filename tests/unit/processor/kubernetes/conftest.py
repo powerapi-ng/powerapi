@@ -1,5 +1,5 @@
-# Copyright (c) 2023, Inria
-# Copyright (c) 2023, University of Lille
+# Copyright (c) 2024, Inria
+# Copyright (c) 2024, University of Lille
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,3 +26,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from unittest.mock import Mock
+
+import pytest
+
+from powerapi.processor.kubernetes.metadata_registry import KubernetesMetadataRegistry
+
+
+@pytest.fixture
+def metadata_registry():
+    """
+    Return a metadata registry.
+    """
+    manager = Mock()
+    manager.dict.return_value = {}
+    return KubernetesMetadataRegistry(manager)

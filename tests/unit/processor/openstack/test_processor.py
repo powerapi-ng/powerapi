@@ -34,9 +34,9 @@ import pytest
 
 pytest.importorskip('openstack')
 
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
-from powerapi.processor.pre.openstack.monitor_agent import OpenStackMonitorConfig
-from powerapi.processor.pre.openstack.processor import HWPCReportProcessor, OpenStackProcessor
+from powerapi.processor.openstack.metadata_registry import OpenStackMetadataRegistry
+from powerapi.processor.openstack.monitor_agent import OpenStackMonitorConfig
+from powerapi.processor.openstack.processor import HWPCReportProcessor, OpenStackProcessor
 from powerapi.report import HWPCReport
 
 
@@ -62,7 +62,7 @@ def manager_mock(monkeypatch: pytest.MonkeyPatch) -> Mock:
     Return a mocked multiprocessing manager.
     """
     manager = Mock(name='manager')
-    monkeypatch.setattr('powerapi.processor.pre.openstack.processor.Manager', Mock(return_value=manager))
+    monkeypatch.setattr('powerapi.processor.openstack.processor.Manager', Mock(return_value=manager))
     return manager
 
 
@@ -72,7 +72,7 @@ def registry_factory_mock(monkeypatch: pytest.MonkeyPatch, metadata_registry_moc
     Return a mocked OpenStack metadata registry constructor.
     """
     factory = Mock(return_value=metadata_registry_mock)
-    monkeypatch.setattr('powerapi.processor.pre.openstack.processor.OpenStackMetadataRegistry', factory)
+    monkeypatch.setattr('powerapi.processor.openstack.processor.OpenStackMetadataRegistry', factory)
     return factory
 
 
@@ -83,7 +83,7 @@ def monitor_mock(monkeypatch: pytest.MonkeyPatch) -> Mock:
     """
     monitor = Mock(name='monitor', pid=None)
     monkeypatch.setattr(
-        'powerapi.processor.pre.openstack.processor.OpenStackMonitorAgent',
+        'powerapi.processor.openstack.processor.OpenStackMonitorAgent',
         Mock(return_value=monitor),
     )
     return monitor
@@ -163,8 +163,8 @@ def test_processor_construction_does_not_start_resources():
     Processor construction should defer resource creation until initialization.
     """
     with (
-        patch('powerapi.processor.pre.openstack.processor.Manager') as manager,
-        patch('powerapi.processor.pre.openstack.processor.OpenStackMonitorAgent') as monitor,
+        patch('powerapi.processor.openstack.processor.Manager') as manager,
+        patch('powerapi.processor.openstack.processor.OpenStackMonitorAgent') as monitor,
     ):
         OpenStackProcessor(Mock())
 
