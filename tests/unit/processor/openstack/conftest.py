@@ -30,7 +30,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
+from powerapi.processor.openstack.metadata_registry import OpenStackMetadataRegistry
 
 
 @pytest.fixture

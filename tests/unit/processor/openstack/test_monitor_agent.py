@@ -36,8 +36,8 @@ pytest.importorskip('openstack')
 
 from openstack.exceptions import SDKException
 
-from powerapi.processor.pre.openstack.metadata_registry import OpenStackMetadataRegistry
-from powerapi.processor.pre.openstack.monitor_agent import (
+from powerapi.processor.openstack.metadata_registry import OpenStackMetadataRegistry
+from powerapi.processor.openstack.monitor_agent import (
     OpenStackMonitorAgent,
     OpenStackMonitorConfig,
 )
